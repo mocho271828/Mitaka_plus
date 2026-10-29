@@ -1,0 +1,14 @@
+submodule absent
+Run git submodule update --init --recursive first.
+make: *** [check-submodule] Error 1
+exit=2
+
+data missing
+Set DATA_ROOT to an absolute data directory.
+make: *** [check-data] Error 1
+exit=2
+
+data relative
+Set DATA_ROOT to an absolute data directory.
+make: *** [check-data] Error 1
+exit=2

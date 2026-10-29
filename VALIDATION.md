@@ -1,5 +1,21 @@
 # 検証記録
 
+## 2026-10-29: 衛星表示・描画品質・全画面・信頼したローカル HTML の採用
+
+共通実装を `002adcf663fd5005e14ac86c343a3ec7e56fa706` に固定した。fetch 後の `origin/main` に存在し、submodule 内の未保存差分がないことを確認した。追加衛星の表示・検索・日時追従、描画品質 4 項目、非同期全画面/About、信頼したローカル HTML の実クリックからの Lua、JSON v4 を採用した。
+
+`DATA_ROOT` に独自追加を含むローカル Plus の `data` を指定し、`make build test data-test reference-test` が終了コード 0 で完了した。[統合ログ](verification/unit4-final-pin-tests.log) と [5 ログの SHA-256](verification/unit4-SHA256SUMS) を保存した。衛星 340 行を保持し 330 行の位置を評価した。renderer 64、HTML policy 80、session 964、satellite controller 38、solar satellite 99、controlled fullscreen 31、controlled occlusion 46 checks が成功した。公式比較は CF96 5,427、自転 33,129、月 12,108 成分が成功した。
+
+submodule 未取得、空の DATA_ROOT、相対 DATA_ROOT はすべて案内付き終了コード 2 で停止した。[負例ログ](verification/unit4-negative.log) に記録する。通常データ経路は `data` を GUI、その親を core へ渡しており、Makefile の既存契約を変更していない。
+
+共通側の通常・ASan/UBSan・Rosetta x86_64 の全 test / script-test / controller-test / Plus full smoke、通常版データと smoke、新規 clone、原本保全の結果は [共通単位4記録](vendor/mitaka/investigation/native-plus/unit4/README.md) を参照する。原本保全は 16,365 files、6,622,642,667 bytes、465 symlinks、変更 0。ラッパーでは sanitizer・x86_64・full smoke・HTML 実ブラウザ結合を重複実行せず、採用 SHA の記録を参照した。個別 HTML host 試験で使った通常 arm64 helper と、共通 script-test の各構成 helper は区別されている。
+
+controlled occlusion は試験値による停止・復帰条件の検証であり、実 OS の完全遮蔽通知は未通過のまま残る。共通側の全画面実 OS 試験の成功を、複数画面や全操作の網羅と扱わない。Intel Mac と macOS 13 の実機確認も未実施。SAN timer、月 FMA、JSON 丸め、HTML 通常リンクの途中失敗と修正は共通側の記録を保持し、最終成功で隠さない。
+
+[Mitaka](verification/unit4-source-private.log) と [Mitaka_plus](verification/unit4-private.log) の双方が Private であることを再確認した。共通コード・原本・天文データの複製登録や新規依存はない。README、IMPLEMENTATION_POLICY.md、3 gate を JSON v4 と衛星・HTML・全画面の契約に更新した。物理時系・精度期間、衛星表面/自転・個体別可視性、探査機 GUI、旧 Lua の全 API は未対応のまま明記する。
+
+正確な `/simplifier-lai` は利用できず未実行。類似の `simplify-lai` は LobbyAI 専用のため対象外。既存依存、Makefile、gitlink、差分、登録範囲を手動レビューした。[今回の gate](temp_gates/2026-10-29-21-36-01/VALIDATION.md) は 3 gate / 26 条件を YES とした。Git 状態・変更ファイル・差分量と `git diff --check` を確認し、この採用を commit / push する。
+
 ## 2026-10-29: 表示設定・座標格子・カレンダーの更新
 
 共通実装を `cf4fcbfe5447adf554e5bca0b0caf5ae5f529505` に固定した。Mitaka の `origin/main` に存在し、submodule 自体に未保存の差分がないことを確認した。

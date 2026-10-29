@@ -1,0 +1,20 @@
+$ git -C vendor/mitaka rev-parse HEAD
+002adcf663fd5005e14ac86c343a3ec7e56fa706
+exit=0
+
+$ git -C vendor/mitaka status --porcelain
+
+exit=0
+
+$ git -C vendor/mitaka branch -r --contains HEAD
+  origin/HEAD -> origin/main
+  origin/main
+exit=0
+
+$ DATA_ROOT=<local Plus data absolute path> make build test data-test reference-test
+exit=0 (exec session 34452 completed)
+
+Exact /simplifier-lai: unavailable in provided skill catalog and local skill roots.
+Similar simplify-lai: LobbyAI-only; excluded for this repository.
+No dependency, implementation, build command, or original data file was changed by the wrapper adoption.
+Negative-case log: trailing empty line removed; command results and output unchanged.
