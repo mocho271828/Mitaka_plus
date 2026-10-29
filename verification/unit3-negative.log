@@ -1,0 +1,9 @@
+$ make check-submodule MITAKA=/nonexistent/mitaka-wrapper-check
+Run git submodule update --init --recursive first.
+make: *** [check-submodule] Error 1
+exit=2
+
+$ make check-data DATA_ROOT=relative
+Set DATA_ROOT to an absolute data directory.
+make: *** [check-data] Error 1
+exit=2
