@@ -19,7 +19,7 @@ test: check-submodule
 	$(MAKE) -C "$(MITAKA)/native/gui" test controller-test
 
 reference-test: check-submodule check-data
-	CF96_DATA="$${DATA_ROOT}/cf96.dat" $(MAKE) -C "$(MITAKA)/native/core" reference-test rotation-reference-test lunar-reference-test
+	CF96_DATA="$${DATA_ROOT}/cf96.dat" $(MAKE) -C "$(MITAKA)/native/core" reference-test rotation-reference-test lunar-reference-test atmosphere-reference-test eclipse-reference-test
 
 data-test: check-submodule check-data
 	$(MAKE) -C "$(MITAKA)/native/core" DATA_ROOT="$$(dirname "$${DATA_ROOT%/}")" data-test
