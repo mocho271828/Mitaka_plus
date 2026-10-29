@@ -1,7 +1,7 @@
 MITAKA = vendor/mitaka
 export DATA_ROOT
 
-.PHONY: all build test reference-test data-test run check-submodule check-data
+.PHONY: all build test reference-test data-test smoke run check-submodule check-data
 all: build
 
 check-submodule:
@@ -27,3 +27,6 @@ data-test: check-submodule check-data
 
 run: check-submodule check-data
 	$(MAKE) -C "$(MITAKA)/native/gui" run
+
+smoke: check-submodule check-data
+	$(MAKE) -C "$(MITAKA)/native/gui" smoke

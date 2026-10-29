@@ -2,16 +2,16 @@
 
 Mitaka_plus の既存天文データを、macOS ネイティブの共通コア・GUIで利用するためのリポジトリ。
 共通実装は [Mitaka](https://github.com/mocho271828/Mitaka) で管理し、`vendor/mitaka` の Git submodule で使用するコミットを固定する。
-現在の GUI には恒星表示、太陽系 3D、惑星・月の表面と自転、時間再生、地表移動、天体間の連続飛行がある。
+現在の GUI には恒星・地平表示、星座線・境界・名前、ローカルの NGC/IC・SDSS カタログ表示と検索、太陽系 3D、惑星・月の表面と自転、順逆の時間再生、地表移動、天体間の連続飛行がある。表示状態の保存・復元、PNG/JPEG/BMP 出力、投影ウィンドウ、信頼済みローカル Lua の実行にも対応する。
 
 このリポジトリに旧 Mitaka_plus の公式ソースは含まれない。
 入手できている公式 Mitaka 1.3.1 のソースから分離したコアと、新しく実装したネイティブ GUI を使用する。
-旧 Mitaka_plus の全機能や固有データ形式への対応を保証するものではない。
+旧 Mitaka_plus の全機能や固有データ形式への対応は未完了。原典と実装・不足の対応は [機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md) を参照。
 
 ## 取得とビルド
 
 macOS、Xcode または Command Line Tools、Git、`make` が必要。
-追加の外部ライブラリは不要。
+Lua helper 用に公式 Lua 5.4.9 をビルドする。初回は HTTPS でソースを取得し、固定 SHA-256 を検証して build 配下に展開するためネットワーク接続が必要。完成アプリには静的リンクされ、Homebrew や外部 Lua のインストールは不要。
 macOS の deployment target は 13.0。
 両リポジトリが Private のため、取得する GitHub アカウントには両方の読み取り権限が必要。
 
@@ -35,7 +35,7 @@ git submodule update --init --recursive
 
 `DATA_ROOT` に `hip.dat` と `cf96.dat` が直下にある `data` ディレクトリの絶対パスを指定する。
 表面画像は `data` と同じ親ディレクトリにある `textures` から読み込む。
-既存データをこのリポジトリにコピーする必要はない。
+独自追加を含むローカルデータを優先し、元ファイルを読み取り専用で使う。公開データへの置換・既知の件数への切り詰めは行わない。既存データをこのリポジトリにコピーする必要はない。
 
 ```sh
 export DATA_ROOT='/absolute/path/to/mitaka_plus/data'
@@ -58,12 +58,13 @@ open -n 'vendor/mitaka/native/gui/build/Mitaka Native.app'
 make test
 make data-test
 make reference-test
+make smoke
 ```
 
-`make test` はデータなしでコア・GUI・再生コントローラのテストを実行する。
+`make test` はデータなしでコア・GUI・再生・出力・Lua コントローラのテストを実行する。
 `make data-test` は指定された既存データを読み取り専用で検証する。
 `make reference-test` は公式 1.3.1 原本との惑星位置・自転・月計算の比較を実行する。
-後者 2 つには `DATA_ROOT` の指定が必要。
+`make smoke` は実アプリで描画・表示状態復元・画像符号化・再生・飛行・Lua 接続を検証する。`data-test`・`reference-test`・`smoke` には `DATA_ROOT` の指定が必要。
 Plus の Makefile は `DATA_ROOT` を常に `data` ディレクトリとして受け取り、コアのデータテストに渡すときだけ親ディレクトリへ変換する。
 
 ## 共通実装の更新
@@ -98,7 +99,9 @@ GitHub にはソース・文書・設定と共通実装への参照を保存す�
 既存の天文データ、独自追加データ、表面画像、旧アプリ、Wine 環境、ビルド生成物、認証情報は登録しない。
 データと旧アプリは利用者のローカル環境で保持する。
 
-公式 Mitaka 1.3.1 の由来と許諾表示は共通リポジトリの [ソース入手先の記録](vendor/mitaka/SOURCE_AVAILABILITY.md) と [第三者コードの表記](vendor/mitaka/native/gui/THIRD_PARTY_NOTICES.txt) を参照。
+公式 Mitaka 1.3.1 の由来と許諾表示は共通リポジトリの [ソース入手先の記録](vendor/mitaka/SOURCE_AVAILABILITY.md) と [第三者コードの表記](vendor/mitaka/native/gui/THIRD_PARTY_NOTICES.txt) を参照。Lua は [専用の許諾表示](vendor/mitaka/native/gui/LUA_LICENSE.txt) をアプリへ同梱する。
+
+Lua はユーザーが信頼して明示選択したローカルファイルを実行する。ファイル・OS 操作はユーザー権限で行われ、サンドボックスではない。対応 API と旧 Lua との差は [スクリプト説明](vendor/mitaka/native/gui/SCRIPTING.md) を参照。
 コードの許諾から旧 Mitaka_plus 本体や天文データ・画像の改変・再配布条件を推定しない。
 このリポジトリ全体に新たな一律のライセンスを付与しない。
 
