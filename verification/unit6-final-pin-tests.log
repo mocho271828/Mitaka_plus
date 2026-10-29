@@ -1,0 +1,450 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/gui" all
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/place_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere.cpp -o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere_multiple.cpp -o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere_multiple.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere_emission_map.cpp -o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere_emission_map.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art.cpp -o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/constellation_art.o
+xcrun ar rcs /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/astronomy.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/catalog.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/ephemeris.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/rotation.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/lunar.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/observation.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/extended_catalog.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/place_catalog.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/small_body_catalog.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/small_body_text.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/small_body_orbit.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_catalog.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_catalog_parser.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_position.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_rotation.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_model.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_registration.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/satellite_absolute.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/spacecraft_trajectory.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/spacecraft_trajectory_parser.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/spacecraft_position.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/minor_planet_position.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/small_body_orbit_path.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere_multiple.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/atmosphere_emission_map.o /Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/constellation_art.o
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build/AppController.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build/AppWindow.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build/AppObserverCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/observer_places.cpp -o "build/observer_places.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/gui_file_io.mm -o "build/gui_file_io.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build/AppPlusCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppDisplayCommands.mm -o "build/AppDisplayCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build/AppTimeCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build/AppSmallBodyCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build/AppSmallBodySmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build/SolarSmallBodies.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build/AppSessionCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build/AppScripting.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/CatalogBrowserController.mm -o "build/CatalogBrowserController.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ScriptController.mm -o "build/ScriptController.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/HorizonView.mm -o "build/HorizonView.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_state.mm -o "build/session_state.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/StarRenderer.mm -o "build/StarRenderer.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_labels.cpp -o "build/star_labels.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build/AppSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build/AppPlusSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build/AppScriptSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build/AppFlightSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyView.mm -o "build/SkyView.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build/SolarSystemView.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build/SolarSystemNavigation.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build/SolarSystemSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSceneRenderer.mm -o "build/SolarSceneRenderer.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/GridRenderer.mm -o "build/GridRenderer.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/planet_surface.cpp -o "build/planet_surface.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/planet_textures.mm -o "build/planet_textures.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/sky_background.mm -o "build/sky_background.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build/AppWindowCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteCommands.mm -o "build/AppSatelliteCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSatellites.mm -o "build/SolarSatellites.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteSmokeTests.mm -o "build/AppSatelliteSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSpacecraft.mm -o "build/SolarSpacecraft.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSpacecraftCommands.mm -o "build/AppSpacecraftCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_display.cpp -o "build/constellation_display.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppConstellationCommands.mm -o "build/AppConstellationCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ConstellationRenderer.mm -o "build/ConstellationRenderer.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_layers.mm -o "build/session_layers.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_layers_json.mm -o "build/session_layers_json.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionSmokeTests.mm -o "build/AppSessionSmokeTests.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppStarCommands.mm -o "build/AppStarCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/earth_layers.cpp -o "build/earth_layers.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere_renderer.cpp -o "build/atmosphere_renderer.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_brightness.cpp -o "build/star_brightness.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/StarBrightnessController.mm -o "build/StarBrightnessController.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppStarNameCommands.mm -o "build/AppStarNameCommands.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_name_selection.cpp -o "build/star_name_selection.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art_model.cpp -o "build/constellation_art_model.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art_projection.cpp -o "build/constellation_art_projection.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ConstellationArtRenderer.mm -o "build/ConstellationArtRenderer.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/lua/include" -fobjc-arc src/ScriptWorker.mm build/script_transport.o build/star_brightness.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/lua/liblua.a"  -framework Foundation -o "build/MitakaScript"
+mkdir -p "build/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 build/main.o build/AppController.o build/AppWindow.o build/AppObserverCommands.o build/observer_places.o build/gui_file_io.o build/AppPlusCommands.o build/AppDisplayCommands.o build/AppTimeCommands.o build/AppSmallBodyCommands.o build/AppSmallBodySmokeTests.o build/MediaController.o build/MediaImageView.o build/media_catalog.o build/SmallBodyController.o build/small_body_model.o build/SmallBodyRenderer.o build/SolarSmallBodies.o build/AppSessionCommands.o build/AppScripting.o build/CatalogBrowserController.o build/catalog_browser_model.o build/DisplayOutputController.o build/ScriptController.o build/script_transport.o build/HorizonView.o build/extended_catalogs.o build/session_state.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/AppSmokeTests.o build/AppPlusSmokeTests.o build/AppScriptSmokeTests.o build/AppFlightSmokeTests.o build/PlaybackController.o build/SkyView.o build/SolarSystemView.o build/SolarSystemNavigation.o build/SolarSystemSmokeTests.o build/SolarSceneRenderer.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o build/local_image.o build/sky_background.o build/calendar_time.o build/playback_clock.o build/surface_navigation.o build/interplanetary_flight.o build/AppWindowCommands.o build/WindowPresentationController.o build/html_bridge_policy.o build/HtmlBrowserController.o build/satellite_browser_model.o build/SatelliteController.o build/AppSatelliteCommands.o build/SatelliteRenderer.o build/SolarSatellites.o build/satellite_scene.o build/AppSatelliteSmokeTests.o build/SpacecraftController.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/SolarSpacecraft.o build/AppSpacecraftCommands.o build/small_body_display.o build/satellite_display.o build/constellation_display.o build/horizon_segments.o build/AppConstellationCommands.o build/small_body_orbit_model.o build/SmallBodyOrbitController.o build/ConstellationRenderer.o build/satellite_orbit_geometry.o build/session_layers.o build/session_layers_json.o build/AppSessionSmokeTests.o build/AppStarCommands.o build/earth_layers.o build/atmosphere_renderer.o build/star_brightness.o build/StarBrightnessController.o build/AppStarNameCommands.o build/star_name_selection.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp "build/MitakaScript" "build/Mitaka Native.app/Contents/MacOS/MitakaScript"
+cp Info.plist "build/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+cp LUA_LICENSE.txt "build/Mitaka Native.app/Contents/Resources/LUA_LICENSE.txt"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/core" test
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/place_catalog.cpp -o build/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere.cpp -o build/atmosphere.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere_multiple.cpp -o build/atmosphere_multiple.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere_emission_map.cpp -o build/atmosphere_emission_map.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/constellation_art.cpp -o build/constellation_art.o
+xcrun ar rcs build/libmitaka_core.a build/astronomy.o build/catalog.o build/ephemeris.o build/rotation.o build/lunar.o build/observation.o build/extended_catalog.o build/place_catalog.o build/small_body_catalog.o build/small_body_text.o build/small_body_orbit.o build/satellite_catalog.o build/satellite_catalog_parser.o build/satellite_position.o build/satellite_rotation.o build/satellite_model.o build/satellite_registration.o build/satellite_absolute.o build/spacecraft_trajectory.o build/spacecraft_trajectory_parser.o build/spacecraft_position.o build/minor_planet_position.o build/small_body_orbit_path.o build/atmosphere.o build/atmosphere_multiple.o build/atmosphere_emission_map.o build/constellation_art.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_astronomy.cpp build/libmitaka_core.a  -o build/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_catalog.cpp build/libmitaka_core.a  -o build/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_ephemeris.cpp build/libmitaka_core.a  -o build/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_rotation.cpp build/libmitaka_core.a  -o build/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_lunar.cpp build/libmitaka_core.a  -o build/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_observation.cpp build/libmitaka_core.a  -o build/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_extended_catalog.cpp build/libmitaka_core.a  -o build/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_place_catalog.cpp build/libmitaka_core.a  -o build/test_place_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_orbit.cpp build/libmitaka_core.a  -o build/test_small_body_orbit
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_catalog.cpp build/libmitaka_core.a  -o build/test_small_body_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_catalog.cpp build/libmitaka_core.a  -o build/test_satellite_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_position.cpp build/libmitaka_core.a  -o build/test_satellite_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_rotation.cpp build/libmitaka_core.a  -o build/test_satellite_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_model.cpp build/libmitaka_core.a  -o build/test_satellite_model
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_absolute.cpp build/libmitaka_core.a  -o build/test_satellite_absolute
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_spacecraft_trajectory.cpp build/libmitaka_core.a  -o build/test_spacecraft_trajectory
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_spacecraft_position.cpp build/libmitaka_core.a  -o build/test_spacecraft_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_minor_planet_position.cpp build/libmitaka_core.a  -o build/test_minor_planet_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_orbit_path.cpp build/libmitaka_core.a  -o build/test_small_body_orbit_path
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_atmosphere.cpp build/libmitaka_core.a  -o build/test_atmosphere
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_constellation_art.cpp build/libmitaka_core.a  -o build/test_constellation_art
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 117 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+PTH benchmark: 100003 samples, construction 0.130333 ms, 25000 queries 4.14283 ms
+spacecraft position: 75954 checks PASS
+minor-planet position: 90730 checks passed
+small_body_orbit_path: 141 checks passed
+atmosphere: 733 checks passed
+CAB tests passed: 98 checks
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/gui" test controller-test
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"
+make[2]: `/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_browser_model.mm build/spacecraft_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_spacecraft_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_renderer.mm build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/RendererQuality.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_spacecraft_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_small_body_display.cpp build/small_body_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"   -o "build/test_small_body_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_satellite_display.cpp build/satellite_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"   -o "build/test_satellite_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_scene.mm build/satellite_scene.o build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_browser_model.mm build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_grid_geometry.cpp build/grid_geometry.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_grid_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_distance_scales.cpp build/distance_scales.o build/grid_geometry.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_distance_scales"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_grid_renderer.mm build/GridRenderer.o build/RendererQuality.o build/grid_geometry.o build/distance_scales.o build/sky_model.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_grid_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o build/HorizonView.o build/SolarSceneRenderer.o build/SatelliteRenderer.o build/satellite_browser_model.o build/SmallBodyRenderer.o build/small_body_model.o build/small_body_display.o build/small_body_orbit_model.o build/satellite_display.o build/satellite_orbit_geometry.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/planet_surface.o build/surface_navigation.o build/earth_layers.o build/atmosphere_renderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_labels.cpp build/star_labels.o  -o "build/test_star_labels"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_model.mm build/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_calendar_time.cpp build/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_calendar_time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_background.mm build/sky_background.o build/grid_geometry.o build/local_image.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_gui_file_io.mm build/gui_file_io.o  -framework Foundation -o "build/test_gui_file_io"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_observer_places.cpp build/observer_places.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_model.mm build/catalog_browser_model.o build/extended_catalogs.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_extended_catalogs.cpp build/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_catalog_index.cpp build/sky_catalog_index.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_sky_catalog_index"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_state.mm build/session_state.o build/solar_camera.o build/playback_clock.o build/calendar_time.o build/session_layers.o build/session_layers_json.o build/small_body_display.o build/satellite_display.o build/star_brightness.o build/atmosphere_renderer.o build/planet_surface.o build/earth_layers.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_session_state"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build/sky_model.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_planet_surface.cpp build/planet_surface.o build/solar_camera.o build/earth_layers.o  -o "build/test_planet_surface"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build/planet_textures.o build/local_image.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_planet_textures"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_surface_navigation.cpp build/surface_navigation.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_surface_navigation"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_interplanetary_flight.cpp build/interplanetary_flight.o build/surface_navigation.o build/solar_camera.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_interplanetary_flight"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_display.cpp build/constellation_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"   -o "build/test_constellation_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_horizon_segments.cpp build/horizon_segments.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"   -o "build/test_horizon_segments"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_orbit_geometry.mm build/satellite_orbit_geometry.o build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_orbit_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_layers.mm build/session_layers.o build/small_body_display.o build/satellite_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_session_layers"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_model.mm build/small_body_orbit_model.o build/small_body_display.o build/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_small_body_orbit_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_controller.mm build/SmallBodyOrbitController.o build/small_body_orbit_model.o build/small_body_display.o build/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_small_body_orbit_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_earth_layers.cpp build/earth_layers.o build/planet_surface.o build/solar_camera.o  -o "build/test_earth_layers"
+"build/test_earth_layers"
+Earth layer tests passed: 63 checks
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_brightness.cpp build/star_brightness.o  -o "build/test_star_brightness"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_star_brightness_controller.mm build/StarBrightnessController.o build/star_brightness.o  -framework Foundation -o "build/test_star_brightness_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_name_selection.cpp build/star_name_selection.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_star_name_selection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_model.cpp build/constellation_art_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_constellation_art_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_projection.cpp build/constellation_art_projection.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_constellation_art_projection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_horizon_background_view.mm build/HorizonView.o build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_horizon_background_view"
+"build/test_star_brightness"
+Star brightness tests passed: 1084 checks
+"build/test_star_brightness_controller"
+Star brightness controller tests passed: 45 checks
+"build/test_star_name_selection"
+Star name selection tests passed: 16 checks
+"build/test_constellation_art_model"
+Constellation art model tests passed: 8 checks
+"build/test_constellation_art_projection"
+CAB projection tests passed: 120699 checks
+"build/test_horizon_background_view"
+horizon background view: 461593 checks passed (no windows)
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_earth_layer_scene.mm build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o build/HorizonView.o build/SolarSceneRenderer.o build/SatelliteRenderer.o build/satellite_browser_model.o build/SmallBodyRenderer.o build/small_body_model.o build/small_body_display.o build/small_body_orbit_model.o build/satellite_display.o build/satellite_orbit_geometry.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/planet_surface.o build/surface_navigation.o build/earth_layers.o build/atmosphere_renderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_earth_layer_scene"
+"build/test_earth_layer_scene"
+Earth scene tests passed (50 checks)
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_atmosphere_renderer.cpp build/atmosphere_renderer.o build/planet_surface.o build/earth_layers.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_atmosphere_renderer"
+"build/test_atmosphere_renderer"
+atmosphere renderer: 4259 checks passed
+"build/test_constellation_display"
+Constellation display tests passed: 112 checks
+"build/test_horizon_segments"
+Horizon segment tests passed: 101337 checks
+"build/test_satellite_orbit_geometry"
+Satellite orbit geometry: 24 checks PASS
+"build/test_session_layers"
+session layers: 31 checks passed
+"build/test_small_body_orbit_model"
+Small-body orbit model tests passed: 47 checks
+"build/test_small_body_orbit_controller"
+Small-body orbit controller tests passed: 59 checks
+"build/test_spacecraft_browser_model"
+Spacecraft browser model: 34 checks PASS
+"build/test_spacecraft_renderer"
+Spacecraft renderer: 28810 checks PASS
+"build/test_small_body_display"
+small_body_display: 295 checks passed
+"build/test_satellite_display"
+satellite_display: 138 checks passed
+"build/test_satellite_scene"
+Satellite scene: 658 checks PASS
+"build/test_satellite_browser_model"
+Satellite browser model: 21 checks PASS
+"build/test_grid_geometry"
+grid geometry tests passed
+"build/test_distance_scales"
+distance scale tests passed (127 checks)
+"build/test_grid_renderer"
+grid renderer tests passed (101 checks)
+"build/test_renderer_quality"
+renderer_quality: 64 checks passed
+"build/test_html_bridge_policy"
+html bridge policy: 80 checks passed
+"build/test_display_rendering"
+display rendering tests passed (103 checks)
+"build/test_star_labels"
+star labels and markings passed
+"build/test_small_body_model"
+Small-body model tests passed: 20135 checks
+"build/test_media_catalog"
+media_catalog: 45 checks passed
+"build/test_calendar_time"
+Calendar time tests passed: 333 checks
+"build/test_sky_background"
+sky background tests passed
+"build/test_gui_file_io"
+GUI file I/O: 51 checks passed
+"build/test_observer_places"
+Observer places: 445 checks passed
+"build/test_catalog_browser_model"
+Synthetic last-record search: 1000037 galaxies, 26.3851 ms
+Catalog browser model tests passed: 23 checks
+"build/test_extended_catalogs"
+Extended catalog aggregate tests passed
+"build/test_sky_catalog_index"
+sky catalog index tests passed
+"build/test_session_state"
+session state: 1464 checks passed
+"build/test_sky_model"
+sky model tests passed
+"build/test_solar_model"
+solar model tests passed
+"build/test_planet_surface"
+planet surface tests passed
+"build/test_planet_textures"
+planet texture tests passed
+"build/test_playback_clock"
+playback clock: 10134 checks passed
+"build/test_surface_navigation"
+surface navigation tests passed
+"build/test_interplanetary_flight"
+Interplanetary flight tests passed
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_controller.mm build/SpacecraftController.o build/spacecraft_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_spacecraft_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_solar_spacecraft.mm build/AppController.o build/AppWindow.o build/AppObserverCommands.o build/observer_places.o build/gui_file_io.o build/AppPlusCommands.o build/AppDisplayCommands.o build/AppTimeCommands.o build/AppSmallBodyCommands.o build/AppSmallBodySmokeTests.o build/MediaController.o build/MediaImageView.o build/media_catalog.o build/SmallBodyController.o build/small_body_model.o build/SmallBodyRenderer.o build/SolarSmallBodies.o build/AppSessionCommands.o build/AppScripting.o build/CatalogBrowserController.o build/catalog_browser_model.o build/DisplayOutputController.o build/ScriptController.o build/script_transport.o build/HorizonView.o build/extended_catalogs.o build/session_state.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/AppSmokeTests.o build/AppPlusSmokeTests.o build/AppScriptSmokeTests.o build/AppFlightSmokeTests.o build/PlaybackController.o build/SkyView.o build/SolarSystemView.o build/SolarSystemNavigation.o build/SolarSystemSmokeTests.o build/SolarSceneRenderer.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o build/local_image.o build/sky_background.o build/calendar_time.o build/playback_clock.o build/surface_navigation.o build/interplanetary_flight.o build/AppWindowCommands.o build/WindowPresentationController.o build/html_bridge_policy.o build/HtmlBrowserController.o build/satellite_browser_model.o build/SatelliteController.o build/AppSatelliteCommands.o build/SatelliteRenderer.o build/SolarSatellites.o build/satellite_scene.o build/AppSatelliteSmokeTests.o build/SpacecraftController.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/SolarSpacecraft.o build/AppSpacecraftCommands.o build/small_body_display.o build/satellite_display.o build/constellation_display.o build/horizon_segments.o build/AppConstellationCommands.o build/small_body_orbit_model.o build/SmallBodyOrbitController.o build/ConstellationRenderer.o build/satellite_orbit_geometry.o build/session_layers.o build/session_layers_json.o build/AppSessionSmokeTests.o build/AppStarCommands.o build/earth_layers.o build/atmosphere_renderer.o build/star_brightness.o build/StarBrightnessController.o build/AppStarNameCommands.o build/star_name_selection.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build/test_solar_spacecraft"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_controller.mm build/SatelliteController.o build/satellite_browser_model.o build/satellite_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_satellite_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_solar_satellites.mm build/AppController.o build/AppWindow.o build/AppObserverCommands.o build/observer_places.o build/gui_file_io.o build/AppPlusCommands.o build/AppDisplayCommands.o build/AppTimeCommands.o build/AppSmallBodyCommands.o build/AppSmallBodySmokeTests.o build/MediaController.o build/MediaImageView.o build/media_catalog.o build/SmallBodyController.o build/small_body_model.o build/SmallBodyRenderer.o build/SolarSmallBodies.o build/AppSessionCommands.o build/AppScripting.o build/CatalogBrowserController.o build/catalog_browser_model.o build/DisplayOutputController.o build/ScriptController.o build/script_transport.o build/HorizonView.o build/extended_catalogs.o build/session_state.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/AppSmokeTests.o build/AppPlusSmokeTests.o build/AppScriptSmokeTests.o build/AppFlightSmokeTests.o build/PlaybackController.o build/SkyView.o build/SolarSystemView.o build/SolarSystemNavigation.o build/SolarSystemSmokeTests.o build/SolarSceneRenderer.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o build/local_image.o build/sky_background.o build/calendar_time.o build/playback_clock.o build/surface_navigation.o build/interplanetary_flight.o build/AppWindowCommands.o build/WindowPresentationController.o build/html_bridge_policy.o build/HtmlBrowserController.o build/satellite_browser_model.o build/SatelliteController.o build/AppSatelliteCommands.o build/SatelliteRenderer.o build/SolarSatellites.o build/satellite_scene.o build/AppSatelliteSmokeTests.o build/SpacecraftController.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/SolarSpacecraft.o build/AppSpacecraftCommands.o build/small_body_display.o build/satellite_display.o build/constellation_display.o build/horizon_segments.o build/AppConstellationCommands.o build/small_body_orbit_model.o build/SmallBodyOrbitController.o build/ConstellationRenderer.o build/satellite_orbit_geometry.o build/session_layers.o build/session_layers_json.o build/AppSessionSmokeTests.o build/AppStarCommands.o build/earth_layers.o build/atmosphere_renderer.o build/star_brightness.o build/StarBrightnessController.o build/AppStarNameCommands.o build/star_name_selection.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build/test_solar_satellites"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_controller.mm build/SmallBodyController.o build/small_body_model.o build/small_body_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_small_body_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_solar_small_bodies.mm build/AppController.o build/AppWindow.o build/AppObserverCommands.o build/observer_places.o build/gui_file_io.o build/AppPlusCommands.o build/AppDisplayCommands.o build/AppTimeCommands.o build/AppSmallBodyCommands.o build/AppSmallBodySmokeTests.o build/MediaController.o build/MediaImageView.o build/media_catalog.o build/SmallBodyController.o build/small_body_model.o build/SmallBodyRenderer.o build/SolarSmallBodies.o build/AppSessionCommands.o build/AppScripting.o build/CatalogBrowserController.o build/catalog_browser_model.o build/DisplayOutputController.o build/ScriptController.o build/script_transport.o build/HorizonView.o build/extended_catalogs.o build/session_state.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/AppSmokeTests.o build/AppPlusSmokeTests.o build/AppScriptSmokeTests.o build/AppFlightSmokeTests.o build/PlaybackController.o build/SkyView.o build/SolarSystemView.o build/SolarSystemNavigation.o build/SolarSystemSmokeTests.o build/SolarSceneRenderer.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o build/local_image.o build/sky_background.o build/calendar_time.o build/playback_clock.o build/surface_navigation.o build/interplanetary_flight.o build/AppWindowCommands.o build/WindowPresentationController.o build/html_bridge_policy.o build/HtmlBrowserController.o build/satellite_browser_model.o build/SatelliteController.o build/AppSatelliteCommands.o build/SatelliteRenderer.o build/SolarSatellites.o build/satellite_scene.o build/AppSatelliteSmokeTests.o build/SpacecraftController.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/SolarSpacecraft.o build/AppSpacecraftCommands.o build/small_body_display.o build/satellite_display.o build/constellation_display.o build/horizon_segments.o build/AppConstellationCommands.o build/small_body_orbit_model.o build/SmallBodyOrbitController.o build/ConstellationRenderer.o build/satellite_orbit_geometry.o build/session_layers.o build/session_layers_json.o build/AppSessionSmokeTests.o build/AppStarCommands.o build/earth_layers.o build/atmosphere_renderer.o build/star_brightness.o build/StarBrightnessController.o build/AppStarNameCommands.o build/star_name_selection.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build/test_solar_small_bodies"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_controller.mm build/CatalogBrowserController.o build/catalog_browser_model.o build/sky_model.o build/constellation_display.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_catalog_browser_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_script_controller.mm build/ScriptController.o build/script_transport.o build/star_brightness.o  -framework Foundation -o "build/test_script_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/lua/include" -fobjc-arc src/ScriptWorker.mm build/script_transport.o build/star_brightness.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/lua/liblua.a"  -framework Foundation -o "build/MitakaScript"
+"build/test_script_controller" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/MitakaScript"
+Script controller tests passed
+"build/test_spacecraft_controller"
+Spacecraft controller tests passed: 37 checks
+"build/test_solar_spacecraft"
+Solar spacecraft tests passed: 67 checks
+"build/test_satellite_controller"
+Satellite controller tests passed: 52 checks
+"build/test_solar_satellites"
+Solar satellite tests passed: 130 checks
+"build/test_small_body_controller"
+Small-body controller tests passed: 60 checks
+"build/test_solar_small_bodies"
+Solar small-body tests passed: 42 checks
+"build/test_media_controller"
+media_controller: 43 checks passed
+"build/test_catalog_browser_controller"
+Catalog browser controller tests passed: 23 checks
+"build/test_playback_controller"
+2026-10-30 00:27:49.643 test_playback_controller[12010:10213926] 再生速度を変更できません: playback: rate magnitude must be in [1,2592000] seconds per second
+PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, forward/reverse, lower/upper boundaries, realtime, disabled, failure, interrupt, invalidate, UTC tracking, clock correction, sleep/hidden recovery, tracking failure
+"build/test_display_output"
+DisplayOutputController tests passed (controlled occlusion): 46 checks
+"build/test_window_presentation"
+WindowPresentationController tests passed (controlled transition): 31 checks
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/core" DATA_ROOT="$(dirname "${DATA_ROOT%/}")" data-test
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_data.cpp build/libmitaka_core.a  -o build/test_data
+build/test_data "${DATA_ROOT:?Set DATA_ROOT to an existing Mitaka application data root}"
+Hipparcos records=117956
+Constellation records=89 lines=165 boundary-points=13422
+CF96 planets=9 samples-per-planet=3
+Trajectories files=0 segments=0 midpoint-gaps=0
+Read-only data integration tests passed
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/gui" data-test
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"
+make[2]: `/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_browser_model.mm build/spacecraft_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_spacecraft_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_renderer.mm build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/RendererQuality.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_spacecraft_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_scene.mm build/satellite_scene.o build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_browser_model.mm build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o build/HorizonView.o build/SolarSceneRenderer.o build/SatelliteRenderer.o build/satellite_browser_model.o build/SmallBodyRenderer.o build/small_body_model.o build/small_body_display.o build/small_body_orbit_model.o build/satellite_display.o build/satellite_orbit_geometry.o build/SpacecraftRenderer.o build/spacecraft_browser_model.o build/planet_surface.o build/surface_navigation.o build/earth_layers.o build/atmosphere_renderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_model.mm build/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_background.mm build/sky_background.o build/grid_geometry.o build/local_image.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_observer_places.cpp build/observer_places.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_model.mm build/catalog_browser_model.o build/extended_catalogs.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_extended_catalogs.cpp build/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_view.mm build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_sky_view"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_horizon_view.mm build/HorizonView.o build/SkyView.o build/SkyCatalogRenderer.o build/StarRenderer.o build/RendererQuality.o build/star_labels.o build/sky_catalog_index.o build/sky_model.o build/sky_background.o build/local_image.o build/ConstellationRenderer.o build/constellation_display.o build/horizon_segments.o build/GridRenderer.o build/grid_geometry.o build/distance_scales.o build/solar_camera.o build/star_brightness.o build/constellation_art_model.o build/constellation_art_projection.o build/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_horizon_view"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build/sky_model.o build/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build/planet_textures.o build/local_image.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_planet_textures"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_interplanetary_flight.cpp build/interplanetary_flight.o build/surface_navigation.o build/solar_camera.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_interplanetary_flight"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_constellation_renderer.mm build/ConstellationRenderer.o build/RendererQuality.o build/horizon_segments.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_constellation_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_orbit_geometry.mm build/satellite_orbit_geometry.o build/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_satellite_orbit_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_model.mm build/small_body_orbit_model.o build/small_body_display.o build/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework Foundation -o "build/test_small_body_orbit_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_name_selection.cpp build/star_name_selection.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_star_name_selection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_model.cpp build/constellation_art_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_constellation_art_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_constellation_art_renderer.mm build/ConstellationArtRenderer.o build/constellation_art_model.o build/constellation_art_projection.o build/RendererQuality.o build/StarRenderer.o build/star_labels.o build/star_brightness.o build/sky_model.o "/Users/kota/mitaka/repositories/Mitaka_plus/vendor/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -o "build/test_constellation_art_renderer"
+"build/test_star_name_selection" "${DATA_ROOT:?Set DATA_ROOT}/star_names_jp.dat"
+Star name selection tests passed: 191 checks
+"build/test_constellation_art_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Constellation art model tests passed: 99 checks
+"build/test_constellation_art_renderer" "${DATA_ROOT:?Set DATA_ROOT}"
+Art/selected-name renderer tests passed: 537658 checks
+"build/test_constellation_renderer" "${DATA_ROOT:?Set DATA_ROOT}"
+Local source rows: 89
+Constellation renderer tests passed: 4300935 checks
+"build/test_satellite_orbit_geometry" "${DATA_ROOT:?Set DATA_ROOT}"
+Local satellite orbit rows=340 paths=328 jd=2.45154e+06
+Local satellite orbit rows=340 paths=328 jd=2.45155e+06
+Satellite orbit geometry: 169956 checks PASS
+"build/test_small_body_orbit_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local orbit rows=19475 requested=2457 unresolved=69
+Small-body orbit model tests passed: 30882 checks
+"build/test_spacecraft_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local spacecraft definitions=14 positioned=14
+Spacecraft browser model: 93 checks PASS
+"build/test_spacecraft_renderer" "${DATA_ROOT:?Set DATA_ROOT}"
+Local definitions=14 segments=79184 visit_ms=1.84367
+Spacecraft renderer: 107996 checks PASS
+"build/test_satellite_scene" "${DATA_ROOT:?Set DATA_ROOT}"
+Satellite scene: 770 checks PASS
+"build/test_satellite_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local satellite rows=340 positioned=330
+Satellite browser model: 708 checks PASS
+"build/test_display_rendering" "${DATA_ROOT:?Set DATA_ROOT}"
+display rendering tests passed (160 checks)
+"build/test_small_body_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local small bodies: records=19475 evaluable=10839 positioned=10839 packed=8451 comets=2388 frame_ms=14.093 hidden_ms=0.0094625 total_ms=477.698
+Small-body model tests passed: 58963 checks
+"build/test_media_catalog" "${DATA_ROOT:?Set DATA_ROOT}"
+local entries=9 unresolved=5
+media_catalog: 55 checks passed
+"build/test_sky_background" "${DATA_ROOT:?Set DATA_ROOT}"
+local backgrounds: 3/3; warnings: 0
+sky background tests passed
+"build/test_observer_places" "${DATA_ROOT:?Set DATA_ROOT}"
+Local observer places: 4, source rows: 108, sources: 4, selected: places_jp.dat, warnings: 0
+Observer places: 472 checks passed
+"build/test_catalog_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Synthetic last-record search: 1000037 galaxies, 25.7716 ms
+Local browser rows: 1059477, retained page: 500
+Catalog browser model tests passed: 31 checks
+"build/test_extended_catalogs" "${DATA_ROOT:?Set DATA_ROOT}"
+Local rows: NGC 10213, GAL 826360, QSO 104848, names 174, hosts 179
+Extended catalog aggregate tests passed
+"build/test_sky_view" "${DATA_ROOT:?Set DATA_ROOT}"
+sky view integration tests passed
+"build/test_horizon_view" "${DATA_ROOT:?Set DATA_ROOT}"
+horizon view: 33 checks passed
+"build/test_sky_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+read-only integration passed: "/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", HIP=117956, bodies=10
+sky model tests passed
+"build/test_solar_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+solar integration passed: "/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", bodies=11 orbits=9 lunar_orbits=1 rotations=10
+solar model tests passed
+"build/test_planet_textures" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+real textures: 11/11, warnings: 0
+Earth layers: 2/2; atmosphere bytes: 983088; map: 1; diagnostics: 0
+planet texture tests passed
+"build/test_interplanetary_flight" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+Interplanetary flight tests passed
+CF96_DATA="${DATA_ROOT}/cf96.dat" /Applications/Xcode.app/Contents/Developer/usr/bin/make -C "vendor/mitaka/native/core" reference-test rotation-reference-test lunar-reference-test
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_upstream.cpp build/reference_cf96.o build/libmitaka_core.a  -o build/test_upstream
+build/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_rotation_upstream.cpp build/reference_rotation.cpp build/libmitaka_core.a  -o build/test_rotation_upstream
+build/test_rotation_upstream
+rotation reference: 33129 components passed; maximum differences: J2000=4.4408920985e-16, 1700..2100=1.32350463922e-10, supported range=4.32943121631e-09
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build/reference_lunar_pos.o build/reference_lunar_orientation.cpp build/libmitaka_core.a  -o build/test_lunar_upstream
+build/test_lunar_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=9.48019440727e-13

@@ -1,5 +1,15 @@
 # 検証記録
 
+## 2026-10-30: 星座絵・恒星名と明るさ・地球層・大気の採用
+
+共通実装を `d1c361a750b2a1d71d71c423194954c4eade7a81` に固定した。fetch済みorigin/mainに存在し、submodule内はclean。地平図の天の川、全天図・地平図のCAB星座絵、恒星名のHIP選択と明るさ補間、地球の雲・夜景、大気のモードと強度、観測地点の読込規則、JSON v6を採用した。
+
+独自追加を含むローカルPlusのdataを指定し、`make build test data-test reference-test` は終了コード0。[統合ログ](verification/unit6-final-pin-tests.log)と[4ログのSHA-256](verification/unit6-SHA256SUMS)を保存した。公式比較はCF96 5,427、自転33,129、月12,108成分が成功。submodule未取得、空・相対DATA_ROOTも[負例ログ](verification/unit6-negative.log)のとおり案内付き終了コード2で拒否する。
+
+共通側の通常・ASan/UBSan・Rosetta x86_64のcore/GUI/controller、Plus full smoke 3構成、通常版full smoke、実データ、公式比較、新規cloneは[単位6記録](vendor/mitaka/investigation/native-plus/unit6/README.md)を参照する。JSON v6は恒星名HIP、明るさ、地球層、大気を全体検証し、不正入力で正常状態や明るさ補間を失わない。原本保全は16,365 files、6,622,642,667 bytes、465 symlinks、変更0。公式原本310ファイル一致。ラッパーではsanitizer・x86_64・full smokeを重複実行せず、採用SHAの結果を参照した。Intel/macOS13実機、複数画面、実OSの完全遮蔽通知、旧Plusとの全画素一致は未確認として残す。
+
+[Mitaka](verification/unit6-source-private.log)と[Mitaka_plus](verification/unit6-private.log)は双方Private。データ/原本の複製登録、新規依存、Makefile変更なし。README、IMPLEMENTATION_POLICY、3 gateを更新した。exact `/simplifier-lai` は利用不可・未実行、類似skillはLobbyAI専用のため不適用。既存依存・差分・登録範囲を手動レビューし、[3 gate / 37条件](temp_gates/2026-10-30-00-31-57/VALIDATION.md)をYESとした。Git状態・差分量・diff --checkを確認しcommit/pushする。
+
 ## 2026-10-29: 小天体・衛星集合、探査機、星座集合の採用
 
 共通実装を `5dd3409f8c551ff94666d84f4504f6f92f7047c7` に固定した。fetch後のorigin/mainに存在し、submodule内はclean。小天体・衛星の表示集合と軌道、PTH探査機の一覧・位置・軌跡、星座略号ごとの表示、JSON v5を採用した。
