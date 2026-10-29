@@ -1,5 +1,15 @@
 # 検証記録
 
+## 2026-10-29: 小天体・衛星集合、探査機、星座集合の採用
+
+共通実装を `5dd3409f8c551ff94666d84f4504f6f92f7047c7` に固定した。fetch後のorigin/mainに存在し、submodule内はclean。小天体・衛星の表示集合と軌道、PTH探査機の一覧・位置・軌跡、星座略号ごとの表示、JSON v5を採用した。
+
+独自追加を含むローカルPlusのdataを指定し、`make build test data-test reference-test` は終了コード0。[統合ログ](verification/unit5-final-pin-tests.log)と[ログのSHA-256](verification/unit5-SHA256SUMS)を保存した。公式比較はCF96 5,427、自転33,129、月12,108成分が成功。submodule未取得、空・相対DATA_ROOTも[負例ログ](verification/unit5-negative.log)のとおり案内付き終了コード2で拒否する。
+
+共通側の通常・ASan/UBSan・Rosetta x86_64のtest/script-test/controller-test、Plus/通常版のfull smoke、新規clone、JSON v5の正常復元と不正ID/出典不一致/上限超過の全体拒否は[単位5記録](vendor/mitaka/investigation/native-plus/unit5/README.md)を参照する。原本保全は16,365 files、6,622,642,667 bytes、465 symlinks、変更0。ラッパーではsanitizer・x86_64・full smokeを重複実行せず、採用SHAの結果を参照した。Intel/macOS13実機、複数画面、実OSの完全遮蔽通知、旧Plusとの全画素一致は確認済みと扱わない。
+
+[Mitaka](verification/unit5-source-private.log)と[Mitaka_plus](verification/unit5-private.log)は双方Private。データ/原本の複製登録、新規依存、Makefile変更なし。README、IMPLEMENTATION_POLICY、3 gateを更新した。exact `/simplifier-lai` は利用不可・未実行、類似skillはLobbyAI専用のため不適用。既存依存・差分・登録範囲を手動レビューし、[3 gate / 35条件](temp_gates/2026-10-29-23-05-13/VALIDATION.md)をYESとした。Git状態・差分量・diff --checkを確認しcommit/pushする。
+
 ## 2026-10-29: 衛星表示・描画品質・全画面・信頼したローカル HTML の採用
 
 共通実装を `002adcf663fd5005e14ac86c343a3ec7e56fa706` に固定した。fetch 後の `origin/main` に存在し、submodule 内の未保存差分がないことを確認した。追加衛星の表示・検索・日時追従、描画品質 4 項目、非同期全画面/About、信頼したローカル HTML の実クリックからの Lua、JSON v4 を採用した。
