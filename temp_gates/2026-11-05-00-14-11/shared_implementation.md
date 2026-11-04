@@ -6,15 +6,15 @@
 
 ## 判定条件
 
-- [x] 共通コア・GUI は `vendor/mitaka/` に通常ファイルとして含まれ、Git submodule の取得を必要としない。  **確認:** `git ls-files -s vendor/mitaka` は通常ファイルであり、`.gitmodules` と `vendor/mitaka/.git` はない。
+- [x] 共通コア・GUI は `vendor/mitaka/` に通常ファイルとして含まれ、Git submodule の取得を必要としない。  **確認:** `git ls-files -s vendor/mitaka` は通常ファイルであり、`.gitmodules` と `vendor/mitaka/.git` はない。commit `33267d6` のローカル clone でも gitlink と submodule はなく、GUI の Makefile と Lua アーカイブを確認。
 - [x] 同梱コードの採用元と基準 commit が文書に記録されている。  **確認:** README の「採用した実装の基点」に Mitaka の b901489 と採用経緯を記載。
 - [x] Makefile は本リポジトリ内のビルドターゲットを使用する。  **確認:** Makefile は `MITAKA = vendor/mitaka` を指定し、同梱ターゲットを実行する。
 - [x] 新たな依存を追加した場合、必要性と既存依存では不十分な理由を記録している。  **確認:** `vendor/mitaka/native/gui/SCRIPTING.md` の「依存とビルド」に Lua が必要な理由、macOS 標準依存に処理系がないこと、Homebrew 版を採用しない理由を記録。
 - [x] README に現在の実装の由来と、旧 Mitaka_plus の公式ソースを含まないことを明記している。  **確認:** README 冒頭と「採用した実装の基点」を確認。
 - [x] Lua は同梱した固定 SHA-256 の公式ソースを検証して使用し、helper へ静的リンクする。独自の Lua 処理系や外部 dylib の実行依存を追加しない。  **確認:** `tools/build_lua.sh` の SHA-256 とアーカイブの実測値が一致し、Makefile は `liblua.a` をリンクする。隔離ビルドの `MitakaScript` を `otool -L` で確認し、外部 Lua dylib はない。
 - [x] 旧 Plus の互換状況は共通の機能対応表を参照し、未対応のある状態で全機能完了と記載していない。  **確認:** README 冒頭は全機能が未完了と明記し、`vendor/mitaka/PLUS_FEATURE_MATRIX.md` を参照する。
-- [ ] HTML の Lua 呼出しを追加する場合、明示的に信頼したローカル HTML だけに許可し、オンライン文書・フレーム・遷移先から実行させない。  **未確認:** 今回この条件全体を検証していない。
-- [ ] HTML の実行は同一読み取りの内容・ファイル識別・メインページ・表示世代を検証し、通常リンク操作やファイル変更で信頼を失効させる。ページ JavaScript・Flash を有効にしない。  **未確認:** 今回この条件全体を検証していない。
+- [x] HTML の Lua 呼出しを追加する場合、明示的に信頼したローカル HTML だけに許可し、オンライン文書・フレーム・遷移先から実行させない。  **確認:** `HtmlBrowserController.mm` はユーザーによるローカルファイル選択、外部リソース遮断、メインフレームとユーザー操作の検査、遷移の取消・信頼失効を行う。隔離 `make test` の HTML policy は 80 checks PASS。
+- [x] HTML の実行は同一読み取りの内容・ファイル識別・メインページ・表示世代を検証し、通常リンク操作やファイル変更で信頼を失効させる。ページ JavaScript・Flash を有効にしない。  **確認:** `HtmlBrowserController.mm` の immutable snapshot・世代検査・JavaScript 無効化・リンク時の信頼解除と、`html_bridge_policy.mm` のファイル識別・ハッシュ再検査を確認。隔離テストの HTML policy 80 checks PASS。Flash を有効にする設定はない。
 - [ ] 描画品質、小天体・衛星の設定と表示集合、軌道標本化、探査機表示、星座集合・星座絵、恒星名選択・明るさ、地球層・大気、食・風景・旧Plus時間状態は共通モデルを使い、全画面/About は共通ウィンドウ処理へ委譲する。  **未確認:** 今回この条件全体を検証していない。
 - [ ] 単位7の JSON v7 の保存範囲と旧開発版 v1〜v6 の拒否を記載する。復元は停止状態とし、一時的な小天体・衛星・探査機のクリック選択、全画面・HTML 信頼・実行状態を復元しない。  **未確認:** 今回この条件全体を検証していない。
 - [ ] JSON v7 は未知・重複 ID、参照出典の SHA-256・バイト数、軌道標本上限などを全体の適用前に検証し、失敗した状態を部分適用しない。  **未確認:** 今回この条件全体を検証していない。
@@ -36,3 +36,5 @@ NO（合格保留）。各項目の未確認事項が残るため、gate 全体�
 今回の変更は共通コードと版固有資源の同梱、既定パス、Lua の同梱である。既存の機能契約全体を今回すべて再検証してはいない。未確認項目を今回の変更に由来する不具合と断定しない。
 
 今回、隔離コピーの build・test・data-test・reference-test・smoke は成功（`/private/tmp/mitaka-validation.oy7txY/`）。これらの成功だけで各 gate の全条件の検証完了とは扱わない。
+
+実 clone `/private/tmp/mitaka-plus-clean-clone-20261105` で、元 workspace の読み取りと外向き通信を禁止した状態の `make -j4 build` と `make smoke` は成功した。ログは `/private/tmp/mitaka-plus-clean-build-20261105.log` と `/private/tmp/mitaka-plus-clean-smoke-20261105.log`。
