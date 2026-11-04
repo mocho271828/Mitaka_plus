@@ -1,0 +1,11 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make BUILD_DIR=build/arm64 ARCH=arm64 all
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch arm64 -MMD -MP -c src/rotation.cpp -o build/arm64/rotation.o
+xcrun ar rcs build/arm64/libmitaka_core.a build/arm64/astronomy.o build/arm64/catalog.o build/arm64/ephemeris.o build/arm64/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch arm64 tools/core_probe.cpp build/arm64/libmitaka_core.a -arch arm64 -o build/arm64/core_probe
+/Applications/Xcode.app/Contents/Developer/usr/bin/make BUILD_DIR=build/x86_64 ARCH=x86_64 all
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/rotation.cpp -o build/x86_64/rotation.o
+xcrun ar rcs build/x86_64/libmitaka_core.a build/x86_64/astronomy.o build/x86_64/catalog.o build/x86_64/ephemeris.o build/x86_64/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tools/core_probe.cpp build/x86_64/libmitaka_core.a -arch x86_64 -o build/x86_64/core_probe
+mkdir -p build/universal
+xcrun lipo -create build/arm64/libmitaka_core.a build/x86_64/libmitaka_core.a -output build/universal/libmitaka_core.a
+xcrun lipo -create build/arm64/core_probe build/x86_64/core_probe -output build/universal/core_probe

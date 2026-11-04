@@ -1,0 +1,16 @@
+# Thule
+
+Name: Thule
+DisplayName: Thule
+No: 279
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 4.285231
+e: 0.010391
+w: 81.022133
+M0: 9.827832
+i: 2.337989
+node: 73.683388
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,134 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  5491f0: 55                           	push	ebp
+  5491f1: 8b ec                        	mov	ebp, esp
+  5491f3: 83 e4 f0                     	and	esp, -0x10
+  5491f6: 81 ec 90 00 00 00            	sub	esp, 0x90
+  5491fc: ff 75 08                     	push	dword ptr [ebp + 0x8]
+  5491ff: b9 e0 70 10 01               	mov	ecx, 0x11070e0
+  549204: e8 47 54 ff ff               	call	0x53e650 <.text+0x13d650>
+  549209: 8d 54 24 40                  	lea	edx, [esp + 0x40]
+  54920d: 52                           	push	edx
+  54920e: 8b c8                        	mov	ecx, eax
+  549210: e8 5b 1a ff ff               	call	0x53ac70 <.text+0x139c70>
+  549215: f2 0f 5a 44 24 40            	cvtsd2ss	xmm0, qword ptr [esp + 0x40]
+  54921b: f2 0f 5a 4c 24 58            	cvtsd2ss	xmm1, qword ptr [esp + 0x58]
+  549221: f2 0f 5a 54 24 70            	cvtsd2ss	xmm2, qword ptr [esp + 0x70]
+  549227: f2 0f 5a 5c 24 48            	cvtsd2ss	xmm3, qword ptr [esp + 0x48]
+  54922d: f2 0f 5a 64 24 60            	cvtsd2ss	xmm4, qword ptr [esp + 0x60]
+  549233: f2 0f 5a 6c 24 78            	cvtsd2ss	xmm5, qword ptr [esp + 0x78]
+  549239: f2 0f 5a 74 24 50            	cvtsd2ss	xmm6, qword ptr [esp + 0x50]
+  54923f: f2 0f 5a 7c 24 68            	cvtsd2ss	xmm7, qword ptr [esp + 0x68]
+  549245: f3 0f 11 04 24               	movss	dword ptr [esp], xmm0
+  54924a: f2 0f 5a 84 24 80 00 00 00   	cvtsd2ss	xmm0, qword ptr [esp + 0x80]
+  549253: f3 0f 11 4c 24 04            	movss	dword ptr [esp + 0x4], xmm1
+  549259: 0f 10 0d 24 29 c3 00         	movups	xmm1, xmmword ptr [0xc32924]
+  549260: f3 0f 11 54 24 08            	movss	dword ptr [esp + 0x8], xmm2
+  549266: f3 0f 11 5c 24 10            	movss	dword ptr [esp + 0x10], xmm3
+  54926c: f3 0f 11 64 24 14            	movss	dword ptr [esp + 0x14], xmm4
+  549272: f3 0f 11 6c 24 18            	movss	dword ptr [esp + 0x18], xmm5
+  549278: f3 0f 11 74 24 20            	movss	dword ptr [esp + 0x20], xmm6
+  54927e: f3 0f 11 7c 24 24            	movss	dword ptr [esp + 0x24], xmm7
+  549284: f3 0f 11 44 24 28            	movss	dword ptr [esp + 0x28], xmm0
+  54928a: 0f 29 4c 24 30               	movaps	xmmword ptr [esp + 0x30], xmm1
+  54928f: 8d 14 24                     	lea	edx, [esp]
+  549292: 33 c0                        	xor	eax, eax
+  549294: 89 44 24 0c                  	mov	dword ptr [esp + 0xc], eax
+  549298: 89 44 24 1c                  	mov	dword ptr [esp + 0x1c], eax
+  54929c: 89 44 24 2c                  	mov	dword ptr [esp + 0x2c], eax
+  5492a0: 52                           	push	edx
+  5492a1: ff 15 f0 59 c2 00            	call	dword ptr [0xc259f0]
+  5492a7: 8b e5                        	mov	esp, ebp
+  5492a9: 5d                           	pop	ebp
+  5492aa: c3                           	ret
+  5492ab: 90                           	nop
+  5492ac: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5492b0: 55                           	push	ebp
+  5492b1: 8b ec                        	mov	ebp, esp
+  5492b3: 83 e4 c0                     	and	esp, -0x40
+  5492b6: 81 ec c0 00 00 00            	sub	esp, 0xc0
+  5492bc: ff 75 08                     	push	dword ptr [ebp + 0x8]
+  5492bf: b9 60 74 10 01               	mov	ecx, 0x1107460
+  5492c4: e8 b7 f9 00 00               	call	0x558c80 <.text+0x157c80>
+  5492c9: 8d 54 24 40                  	lea	edx, [esp + 0x40]
+  5492cd: 52                           	push	edx
+  5492ce: 8b c8                        	mov	ecx, eax
+  5492d0: e8 fb ce 00 00               	call	0x5561d0 <.text+0x1551d0>
+  5492d5: f2 0f 5a 44 24 40            	cvtsd2ss	xmm0, qword ptr [esp + 0x40]
+  5492db: f2 0f 5a 4c 24 58            	cvtsd2ss	xmm1, qword ptr [esp + 0x58]
+  5492e1: f2 0f 5a 54 24 70            	cvtsd2ss	xmm2, qword ptr [esp + 0x70]
+  5492e7: f2 0f 5a 5c 24 48            	cvtsd2ss	xmm3, qword ptr [esp + 0x48]
+  5492ed: f2 0f 5a 64 24 60            	cvtsd2ss	xmm4, qword ptr [esp + 0x60]
+  5492f3: f2 0f 5a 6c 24 78            	cvtsd2ss	xmm5, qword ptr [esp + 0x78]
+  5492f9: f2 0f 5a 74 24 50            	cvtsd2ss	xmm6, qword ptr [esp + 0x50]
+  5492ff: f2 0f 5a 7c 24 68            	cvtsd2ss	xmm7, qword ptr [esp + 0x68]
+  549305: f3 0f 11 04 24               	movss	dword ptr [esp], xmm0
+  54930a: f2 0f 5a 84 24 80 00 00 00   	cvtsd2ss	xmm0, qword ptr [esp + 0x80]
+  549313: f3 0f 11 4c 24 04            	movss	dword ptr [esp + 0x4], xmm1
+  549319: 0f 10 0d 44 29 c3 00         	movups	xmm1, xmmword ptr [0xc32944]
+  549320: f3 0f 11 54 24 08            	movss	dword ptr [esp + 0x8], xmm2
+  549326: f3 0f 11 5c 24 10            	movss	dword ptr [esp + 0x10], xmm3
+  54932c: f3 0f 11 64 24 14            	movss	dword ptr [esp + 0x14], xmm4
+  549332: f3 0f 11 6c 24 18            	movss	dword ptr [esp + 0x18], xmm5
+  549338: f3 0f 11 74 24 20            	movss	dword ptr [esp + 0x20], xmm6
+  54933e: f3 0f 11 7c 24 24            	movss	dword ptr [esp + 0x24], xmm7
+  549344: f3 0f 11 44 24 28            	movss	dword ptr [esp + 0x28], xmm0
+  54934a: 0f 29 4c 24 30               	movaps	xmmword ptr [esp + 0x30], xmm1
+  54934f: 8d 14 24                     	lea	edx, [esp]
+  549352: 33 c0                        	xor	eax, eax
+  549354: 89 44 24 0c                  	mov	dword ptr [esp + 0xc], eax
+  549358: 89 44 24 1c                  	mov	dword ptr [esp + 0x1c], eax
+  54935c: 89 44 24 2c                  	mov	dword ptr [esp + 0x2c], eax
+  549360: 52                           	push	edx
+  549361: ff 15 f0 59 c2 00            	call	dword ptr [0xc259f0]
+  549367: 8b 45 0c                     	mov	eax, dword ptr [ebp + 0xc]
+  54936a: f2 0f 10 15 58 2a c3 00      	movsd	xmm2, qword ptr [0xc32a58]
+  549372: f2 0f 10 00                  	movsd	xmm0, qword ptr [eax]
+  549376: 83 c4 e0                     	add	esp, -0x20
+  549379: f2 0f 11 04 24               	movsd	qword ptr [esp], xmm0
+  54937e: f2 0f 11 54 24 18            	movsd	qword ptr [esp + 0x18], xmm2
+  549384: 66 0f ef c9                  	pxor	xmm1, xmm1
+  549388: f2 0f 11 4c 24 08            	movsd	qword ptr [esp + 0x8], xmm1
+  54938e: f2 0f 11 4c 24 10            	movsd	qword ptr [esp + 0x10], xmm1
+  549394: ff 15 74 59 c2 00            	call	dword ptr [0xc25974]
+  54939a: 8b e5                        	mov	esp, ebp
+  54939c: 5d                           	pop	ebp
+  54939d: c3                           	ret
+  54939e: 8b f6                        	mov	esi, esi
+  5493a0: 55                           	push	ebp
+  5493a1: 8b ec                        	mov	ebp, esp
+  5493a3: 83 e4 f8                     	and	esp, -0x8
+  5493a6: 83 ec 10                     	sub	esp, 0x10
+  5493a9: 8b 45 08                     	mov	eax, dword ptr [ebp + 0x8]
+  5493ac: f2 0f 10 05 60 2a c3 00      	movsd	xmm0, qword ptr [0xc32a60]
+  5493b4: f2 0f 10 08                  	movsd	xmm1, qword ptr [eax]
+  5493b8: f2 0f 10 50 08               	movsd	xmm2, qword ptr [eax + 0x8]
+  5493bd: f2 0f 10 78 10               	movsd	xmm7, qword ptr [eax + 0x10]
+  5493c2: 0f 28 e9                     	movaps	xmm5, xmm1
+  5493c5: 0f 28 da                     	movaps	xmm3, xmm2
+  5493c8: 0f 28 e7                     	movaps	xmm4, xmm7
+  5493cb: f2 0f 59 e9                  	mulsd	xmm5, xmm1
+  5493cf: f2 0f 59 da                  	mulsd	xmm3, xmm2
+  5493d3: f2 0f 59 e7                  	mulsd	xmm4, xmm7
+  5493d7: c7 44 24 0c 00 00 00 00      	mov	dword ptr [esp + 0xc], 0x0
+  5493df: 8d 14 24                     	lea	edx, [esp]
+  5493e2: f2 0f 58 eb                  	addsd	xmm5, xmm3
+  5493e6: f2 0f 58 ec                  	addsd	xmm5, xmm4
+  5493ea: f2 0f 51 f5                  	sqrtsd	xmm6, xmm5
+  5493ee: f2 0f 5e c6                  	divsd	xmm0, xmm6
+  5493f2: 66 0f ef ed                  	pxor	xmm5, xmm5
+  5493f6: 0f 28 dd                     	movaps	xmm3, xmm5
+  5493f9: f2 0f 59 c8                  	mulsd	xmm1, xmm0
+  5493fd: f2 0f 59 d0                  	mulsd	xmm2, xmm0
+  549401: f2 0f 59 c7                  	mulsd	xmm0, xmm7
+  549405: 0f 28 e5                     	movaps	xmm4, xmm5
+  549408: f2 0f 5c d9                  	subsd	xmm3, xmm1
+  54940c: f2 0f 5a cb                  	cvtsd2ss	xmm1, xmm3
+  549410: f3 0f 11 0c 24               	movss	dword ptr [esp], xmm1
+  549415: f2 0f 5c e2                  	subsd	xmm4, xmm2
+  549419: f2 0f 5a d4                  	cvtsd2ss	xmm2, xmm4
+  54941d: f3 0f 11 54 24 04            	movss	dword ptr [esp + 0x4], xmm2

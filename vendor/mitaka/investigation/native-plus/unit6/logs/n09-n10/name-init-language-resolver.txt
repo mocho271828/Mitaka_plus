@@ -1,0 +1,279 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  41c0d0: 55                           	push	ebp
+  41c0d1: 8b ec                        	mov	ebp, esp
+  41c0d3: 6a ff                        	push	-0x1
+  41c0d5: 68 b0 1a bf 00               	push	0xbf1ab0
+  41c0da: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]
+  41c0e0: 50                           	push	eax
+  41c0e1: 64 89 25 00 00 00 00         	mov	dword ptr fs:[0x0], esp
+  41c0e8: 81 ec 14 05 00 00            	sub	esp, 0x514
+  41c0ee: 89 65 f0                     	mov	dword ptr [ebp - 0x10], esp
+  41c0f1: 89 5d e8                     	mov	dword ptr [ebp - 0x18], ebx
+  41c0f4: 89 7d e0                     	mov	dword ptr [ebp - 0x20], edi
+  41c0f7: 89 75 e4                     	mov	dword ptr [ebp - 0x1c], esi
+  41c0fa: 8b 5d 0c                     	mov	ebx, dword ptr [ebp + 0xc]
+  41c0fd: a1 10 53 d8 00               	mov	eax, dword ptr [0xd85310]
+  41c102: 89 45 ec                     	mov	dword ptr [ebp - 0x14], eax
+  41c105: 8d b5 e0 fa ff ff            	lea	esi, [ebp - 0x520]
+  41c10b: 8d 7b 04                     	lea	edi, [ebx + 0x4]
+  41c10e: 83 7b 18 10                  	cmp	dword ptr [ebx + 0x18], 0x10
+  41c112: 0f 43 7b 04                  	cmovae	edi, dword ptr [ebx + 0x4]
+  41c116: 8a 17                        	mov	dl, byte ptr [edi]
+  41c118: 47                           	inc	edi
+  41c119: 88 16                        	mov	byte ptr [esi], dl
+  41c11b: 46                           	inc	esi
+  41c11c: 84 d2                        	test	dl, dl
+  41c11e: 75 f6                        	jne	0x41c116 <.text+0x1b116>
+  41c120: 6a 2e                        	push	0x2e
+  41c122: 8d 85 e0 fa ff ff            	lea	eax, [ebp - 0x520]
+  41c128: 50                           	push	eax
+  41c129: ff 15 44 56 c2 00            	call	dword ptr [0xc25644]
+  41c12f: 83 c4 08                     	add	esp, 0x8
+  41c132: 8b c8                        	mov	ecx, eax
+  41c134: 8d b5 e0 fe ff ff            	lea	esi, [ebp - 0x120]
+  41c13a: 8b f9                        	mov	edi, ecx
+  41c13c: 8a 17                        	mov	dl, byte ptr [edi]
+  41c13e: 47                           	inc	edi
+  41c13f: 88 16                        	mov	byte ptr [esi], dl
+  41c141: 46                           	inc	esi
+  41c142: 84 d2                        	test	dl, dl
+  41c144: 75 f6                        	jne	0x41c13c <.text+0x1b13c>
+  41c146: c6 01 00                     	mov	byte ptr [ecx], 0x0
+  41c149: e8 d2 01 18 00               	call	0x59c320 <.text+0x19b320>
+  41c14e: 0f be c0                     	movsx	eax, al
+  41c151: 83 f8 02                     	cmp	eax, 0x2
+  41c154: 74 1f                        	je	0x41c175 <.text+0x1b175>
+  41c156: 8d bd e0 fa ff ff            	lea	edi, [ebp - 0x520]
+  41c15c: ba a4 91 c2 00               	mov	edx, 0xc291a4
+  41c161: b9 ff ff ff ff               	mov	ecx, 0xffffffff
+  41c166: 33 c0                        	xor	eax, eax
+  41c168: f2 ae                        	repne		scasb	al, byte ptr es:[edi]
+  41c16a: 4f                           	dec	edi
+  41c16b: 8a 02                        	mov	al, byte ptr [edx]
+  41c16d: 42                           	inc	edx
+  41c16e: 88 07                        	mov	byte ptr [edi], al
+  41c170: 47                           	inc	edi
+  41c171: 84 c0                        	test	al, al
+  41c173: 75 f6                        	jne	0x41c16b <.text+0x1b16b>
+  41c175: 8d bd e0 fa ff ff            	lea	edi, [ebp - 0x520]
+  41c17b: 8d 95 e0 fe ff ff            	lea	edx, [ebp - 0x120]
+  41c181: b9 ff ff ff ff               	mov	ecx, 0xffffffff
+  41c186: 33 c0                        	xor	eax, eax
+  41c188: f2 ae                        	repne		scasb	al, byte ptr es:[edi]
+  41c18a: 4f                           	dec	edi
+  41c18b: 8a 02                        	mov	al, byte ptr [edx]
+  41c18d: 42                           	inc	edx
+  41c18e: 88 07                        	mov	byte ptr [edi], al
+  41c190: 47                           	inc	edi
+  41c191: 84 c0                        	test	al, al
+  41c193: 75 f6                        	jne	0x41c18b <.text+0x1b18b>
+  41c195: 6a ff                        	push	-0x1
+  41c197: 8d 85 e0 fa ff ff            	lea	eax, [ebp - 0x520]
+  41c19d: 50                           	push	eax
+  41c19e: ff 15 08 61 c2 00            	call	dword ptr [0xc26108]
+  41c1a4: 83 c4 08                     	add	esp, 0x8
+  41c1a7: c7 45 fc 09 00 00 00         	mov	dword ptr [ebp - 0x4], 0x9
+  41c1ae: 89 85 1c ff ff ff            	mov	dword ptr [ebp - 0xe4], eax
+  41c1b4: 8d 85 1c ff ff ff            	lea	eax, [ebp - 0xe4]
+  41c1ba: 50                           	push	eax
+  41c1bb: 8d 8d 18 ff ff ff            	lea	ecx, [ebp - 0xe8]
+  41c1c1: ff 15 04 61 c2 00            	call	dword ptr [0xc26104]
+  41c1c7: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  41c1ce: 8b 95 1c ff ff ff            	mov	edx, dword ptr [ebp - 0xe4]
+  41c1d4: 83 c8 ff                     	or	eax, -0x1
+  41c1d7: f0                           	lock
+  41c1d8: 0f c1 02                     	xadd	dword ptr [edx], eax
+  41c1db: 48                           	dec	eax
+  41c1dc: 85 c0                        	test	eax, eax
+  41c1de: 75 11                        	jne	0x41c1f1 <.text+0x1b1f1>
+  41c1e0: 8b 85 1c ff ff ff            	mov	eax, dword ptr [ebp - 0xe4]
+  41c1e6: 50                           	push	eax
+  41c1e7: 89 04 24                     	mov	dword ptr [esp], eax
+  41c1ea: ff 15 88 61 c2 00            	call	dword ptr [0xc26188]
+  41c1f0: 59                           	pop	ecx
+  41c1f1: 8d 8d 18 ff ff ff            	lea	ecx, [ebp - 0xe8]
+  41c1f7: ff 15 00 61 c2 00            	call	dword ptr [0xc26100]
+  41c1fd: 8b 75 08                     	mov	esi, dword ptr [ebp + 0x8]
+  41c200: 0f b6 c0                     	movzx	eax, al
+  41c203: 85 c0                        	test	eax, eax
+  41c205: 0f 84 6e 01 00 00            	je	0x41c379 <.text+0x1b379>
+  41c20b: c7 46 18 0f 00 00 00         	mov	dword ptr [esi + 0x18], 0xf
+  41c212: 33 c0                        	xor	eax, eax
+  41c214: 8d 95 e0 fa ff ff            	lea	edx, [ebp - 0x520]
+  41c21a: 89 46 14                     	mov	dword ptr [esi + 0x14], eax
+  41c21d: 88 46 04                     	mov	byte ptr [esi + 0x4], al
+  41c220: 8b ca                        	mov	ecx, edx
+  41c222: 83 e2 f0                     	and	edx, -0x10
+  41c225: 66 0f ef c0                  	pxor	xmm0, xmm0
+  41c229: 66 0f 74 02                  	pcmpeqb	xmm0, xmmword ptr [edx]
+  41c22d: 66 0f d7 c0                  	pmovmskb	eax, xmm0
+  41c231: 83 e1 0f                     	and	ecx, 0xf
+  41c234: d3 e8                        	shr	eax, cl
+  41c236: 0f bc c0                     	bsf	eax, eax
+  41c239: 75 09                        	jne	0x41c244 <.text+0x1b244>
+  41c23b: 8b c2                        	mov	eax, edx
+  41c23d: 03 d1                        	add	edx, ecx
+  41c23f: e8 8c 55 67 00               	call	0xa917d0 <.text+0x6907d0>
+  41c244: 8b f8                        	mov	edi, eax
+  41c246: 8b 4e 18                     	mov	ecx, dword ptr [esi + 0x18]
+  41c249: 89 b5 08 ff ff ff            	mov	dword ptr [ebp - 0xf8], esi
+  41c24f: 8d 85 e0 fa ff ff            	lea	eax, [ebp - 0x520]
+  41c255: 83 f9 10                     	cmp	ecx, 0x10
+  41c258: 89 85 0c ff ff ff            	mov	dword ptr [ebp - 0xf4], eax
+  41c25e: 89 bd 10 ff ff ff            	mov	dword ptr [ebp - 0xf0], edi
+  41c264: 72 05                        	jb	0x41c26b <.text+0x1b26b>
+  41c266: 8b 56 04                     	mov	edx, dword ptr [esi + 0x4]
+  41c269: eb 03                        	jmp	0x41c26e <.text+0x1b26e>
+  41c26b: 8d 56 04                     	lea	edx, [esi + 0x4]
+  41c26e: 8d 85 e0 fa ff ff            	lea	eax, [ebp - 0x520]
+  41c274: 3b c2                        	cmp	eax, edx
+  41c276: 0f 83 8c 04 00 00            	jae	0x41c708 <.text+0x1b708>
+  41c27c: 33 c0                        	xor	eax, eax
+  41c27e: 85 c0                        	test	eax, eax
+  41c280: 0f 84 88 00 00 00            	je	0x41c30e <.text+0x1b30e>
+  41c286: 83 f9 10                     	cmp	ecx, 0x10
+  41c289: 72 05                        	jb	0x41c290 <.text+0x1b290>
+  41c28b: 8b 46 04                     	mov	eax, dword ptr [esi + 0x4]
+  41c28e: eb 03                        	jmp	0x41c293 <.text+0x1b293>
+  41c290: 8d 46 04                     	lea	eax, [esi + 0x4]
+  41c293: 8d 9d e0 fa ff ff            	lea	ebx, [ebp - 0x520]
+  41c299: 2b d8                        	sub	ebx, eax
+  41c29b: 8b 46 14                     	mov	eax, dword ptr [esi + 0x14]
+  41c29e: 89 9d e4 fe ff ff            	mov	dword ptr [ebp - 0x11c], ebx
+  41c2a4: 3b c3                        	cmp	eax, ebx
+  41c2a6: 72 0b                        	jb	0x41c2b3 <.text+0x1b2b3>
+  41c2a8: 8b d0                        	mov	edx, eax
+  41c2aa: 2b d3                        	sub	edx, ebx
+  41c2ac: 3b fa                        	cmp	edi, edx
+  41c2ae: 0f 42 d7                     	cmovb	edx, edi
+  41c2b1: eb 1b                        	jmp	0x41c2ce <.text+0x1b2ce>
+  41c2b3: ff 15 dc 53 c2 00            	call	dword ptr [0xc253dc]
+  41c2b9: 8b 75 08                     	mov	esi, dword ptr [ebp + 0x8]
+  41c2bc: 8b 9d e4 fe ff ff            	mov	ebx, dword ptr [ebp - 0x11c]
+  41c2c2: 8b 46 14                     	mov	eax, dword ptr [esi + 0x14]
+  41c2c5: 8b d0                        	mov	edx, eax
+  41c2c7: 2b d3                        	sub	edx, ebx
+  41c2c9: 3b fa                        	cmp	edi, edx
+  41c2cb: 0f 42 d7                     	cmovb	edx, edi
+  41c2ce: 03 da                        	add	ebx, edx
+  41c2d0: 8b 15 d0 53 c2 00            	mov	edx, dword ptr [0xc253d0]
+  41c2d6: 8b 3a                        	mov	edi, dword ptr [edx]
+  41c2d8: 3b c3                        	cmp	eax, ebx
+  41c2da: 73 0c                        	jae	0x41c2e8 <.text+0x1b2e8>
+  41c2dc: ff 15 dc 53 c2 00            	call	dword ptr [0xc253dc]
+  41c2e2: 8b 75 08                     	mov	esi, dword ptr [ebp + 0x8]
+  41c2e5: 8b 46 14                     	mov	eax, dword ptr [esi + 0x14]
+  41c2e8: 8b d0                        	mov	edx, eax
+  41c2ea: 2b d3                        	sub	edx, ebx
+  41c2ec: 3b d7                        	cmp	edx, edi
+  41c2ee: 0f 42 fa                     	cmovb	edi, edx
+  41c2f1: 85 ff                        	test	edi, edi
+  41c2f3: 0f 87 90 01 00 00            	ja	0x41c489 <.text+0x1b489>
+  41c2f9: 8b 9d e4 fe ff ff            	mov	ebx, dword ptr [ebp - 0x11c]
+  41c2ff: 3b c3                        	cmp	eax, ebx
+  41c301: 0f 42 d8                     	cmovb	ebx, eax
+  41c304: 85 db                        	test	ebx, ebx
+  41c306: 0f 87 2f 01 00 00            	ja	0x41c43b <.text+0x1b43b>
+  41c30c: eb 34                        	jmp	0x41c342 <.text+0x1b342>
+  41c30e: 89 bd 04 ff ff ff            	mov	dword ptr [ebp - 0xfc], edi
+  41c314: 83 ff fe                     	cmp	edi, -0x2
+  41c317: 76 0c                        	jbe	0x41c325 <.text+0x1b325>
+  41c319: ff 15 d4 53 c2 00            	call	dword ptr [0xc253d4]
+  41c31f: 8b 75 08                     	mov	esi, dword ptr [ebp + 0x8]
+  41c322: 8b 4e 18                     	mov	ecx, dword ptr [esi + 0x18]
+  41c325: 3b cf                        	cmp	ecx, edi
+  41c327: 0f 82 30 02 00 00            	jb	0x41c55d <.text+0x1b55d>
+  41c32d: 85 ff                        	test	edi, edi
+  41c32f: 0f 84 0c 02 00 00            	je	0x41c541 <.text+0x1b541>
+  41c335: 83 bd 04 ff ff ff 00         	cmp	dword ptr [ebp - 0xfc], 0x0
+  41c33c: 0f 87 ab 01 00 00            	ja	0x41c4ed <.text+0x1b4ed>
+  41c342: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  41c349: 8d 8d 18 ff ff ff            	lea	ecx, [ebp - 0xe8]
+  41c34f: ff 15 fc 60 c2 00            	call	dword ptr [0xc260fc]
+  41c355: 8b 5d 08                     	mov	ebx, dword ptr [ebp + 0x8]
+  41c358: 8b 4d ec                     	mov	ecx, dword ptr [ebp - 0x14]
+  41c35b: e8 60 2b 67 00               	call	0xa8eec0 <.text+0x68dec0>
+  41c360: 8b 7d e0                     	mov	edi, dword ptr [ebp - 0x20]
+  41c363: 8b 75 e4                     	mov	esi, dword ptr [ebp - 0x1c]
+  41c366: 8b c3                        	mov	eax, ebx
+  41c368: 8b 5d e8                     	mov	ebx, dword ptr [ebp - 0x18]
+  41c36b: 8b 4d f4                     	mov	ecx, dword ptr [ebp - 0xc]
+  41c36e: 64 89 0d 00 00 00 00         	mov	dword ptr fs:[0x0], ecx
+  41c375: 8b e5                        	mov	esp, ebp
+  41c377: 5d                           	pop	ebp
+  41c378: c3                           	ret
+  41c379: 8b 3d d0 53 c2 00            	mov	edi, dword ptr [0xc253d0]
+  41c37f: 8b 17                        	mov	edx, dword ptr [edi]
+  41c381: c7 46 18 0f 00 00 00         	mov	dword ptr [esi + 0x18], 0xf
+  41c388: 33 c0                        	xor	eax, eax
+  41c38a: 89 b5 0c ff ff ff            	mov	dword ptr [ebp - 0xf4], esi
+  41c390: 89 9d 10 ff ff ff            	mov	dword ptr [ebp - 0xf0], ebx
+  41c396: 89 85 14 ff ff ff            	mov	dword ptr [ebp - 0xec], eax
+  41c39c: 89 95 e0 fe ff ff            	mov	dword ptr [ebp - 0x120], edx
+  41c3a2: 89 46 14                     	mov	dword ptr [esi + 0x14], eax
+  41c3a5: 88 46 04                     	mov	byte ptr [esi + 0x4], al
+  41c3a8: 8b 7b 14                     	mov	edi, dword ptr [ebx + 0x14]
+  41c3ab: 3b d7                        	cmp	edx, edi
+  41c3ad: 0f 42 fa                     	cmovb	edi, edx
+  41c3b0: 89 bd 08 ff ff ff            	mov	dword ptr [ebp - 0xf8], edi
+  41c3b6: 3b f3                        	cmp	esi, ebx
+  41c3b8: 0f 84 a0 05 00 00            	je	0x41c95e <.text+0x1b95e>
+  41c3be: 89 bd 04 ff ff ff            	mov	dword ptr [ebp - 0xfc], edi
+  41c3c4: 83 ff fe                     	cmp	edi, -0x2
+  41c3c7: 76 0f                        	jbe	0x41c3d8 <.text+0x1b3d8>
+  41c3c9: ff 15 d4 53 c2 00            	call	dword ptr [0xc253d4]
+  41c3cf: 8b 75 08                     	mov	esi, dword ptr [ebp + 0x8]
+  41c3d2: 8b bd 04 ff ff ff            	mov	edi, dword ptr [ebp - 0xfc]
+  41c3d8: 8b 4e 18                     	mov	ecx, dword ptr [esi + 0x18]
+  41c3db: 3b cf                        	cmp	ecx, edi
+  41c3dd: 0f 82 ca 03 00 00            	jb	0x41c7ad <.text+0x1b7ad>
+  41c3e3: 85 ff                        	test	edi, edi
+  41c3e5: 0f 84 a6 03 00 00            	je	0x41c791 <.text+0x1b791>
+  41c3eb: 85 ff                        	test	edi, edi
+  41c3ed: 0f 87 3d 03 00 00            	ja	0x41c730 <.text+0x1b730>
+  41c3f3: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  41c3fa: 8d 8d 18 ff ff ff            	lea	ecx, [ebp - 0xe8]
+  41c400: ff 15 fc 60 c2 00            	call	dword ptr [0xc260fc]
+  41c406: 8b 5d 08                     	mov	ebx, dword ptr [ebp + 0x8]
+  41c409: 8b 4d ec                     	mov	ecx, dword ptr [ebp - 0x14]
+  41c40c: e8 af 2a 67 00               	call	0xa8eec0 <.text+0x68dec0>
+  41c411: 8b 7d e0                     	mov	edi, dword ptr [ebp - 0x20]
+  41c414: 8b 75 e4                     	mov	esi, dword ptr [ebp - 0x1c]
+  41c417: 8b c3                        	mov	eax, ebx
+  41c419: 8b 5d e8                     	mov	ebx, dword ptr [ebp - 0x18]
+  41c41c: 8b 4d f4                     	mov	ecx, dword ptr [ebp - 0xc]
+  41c41f: 64 89 0d 00 00 00 00         	mov	dword ptr fs:[0x0], ecx
+  41c426: 8b e5                        	mov	esp, ebp
+  41c428: 5d                           	pop	ebp
+  41c429: c3                           	ret
+  41c42a: 8d 8d 18 ff ff ff            	lea	ecx, [ebp - 0xe8]
+  41c430: ff 15 fc 60 c2 00            	call	dword ptr [0xc260fc]
+  41c436: e9 73 56 7d 00               	jmp	0xbf1aae
+  41c43b: 8b 4e 18                     	mov	ecx, dword ptr [esi + 0x18]
+  41c43e: 83 f9 10                     	cmp	ecx, 0x10
+  41c441: 72 05                        	jb	0x41c448 <.text+0x1b448>
+  41c443: 8b 56 04                     	mov	edx, dword ptr [esi + 0x4]
+  41c446: eb 03                        	jmp	0x41c44b <.text+0x1b44b>
+  41c448: 8d 56 04                     	lea	edx, [esi + 0x4]
+  41c44b: 83 c4 f0                     	add	esp, -0x10
+  41c44e: 89 14 24                     	mov	dword ptr [esp], edx
+  41c451: 89 4c 24 04                  	mov	dword ptr [esp + 0x4], ecx
+  41c455: 03 d3                        	add	edx, ebx
+  41c457: 89 54 24 08                  	mov	dword ptr [esp + 0x8], edx
+  41c45b: 2b c3                        	sub	eax, ebx
+  41c45d: 89 44 24 0c                  	mov	dword ptr [esp + 0xc], eax
+  41c461: ff 15 f8 55 c2 00            	call	dword ptr [0xc255f8]
+  41c467: 83 c4 10                     	add	esp, 0x10
+  41c46a: 8b 46 14                     	mov	eax, dword ptr [esi + 0x14]
+  41c46d: 2b c3                        	sub	eax, ebx
+  41c46f: 83 7e 18 10                  	cmp	dword ptr [esi + 0x18], 0x10
+  41c473: 89 46 14                     	mov	dword ptr [esi + 0x14], eax
+  41c476: 72 05                        	jb	0x41c47d <.text+0x1b47d>
+  41c478: 8b 76 04                     	mov	esi, dword ptr [esi + 0x4]
+  41c47b: eb 03                        	jmp	0x41c480 <.text+0x1b480>
+  41c47d: 83 c6 04                     	add	esi, 0x4

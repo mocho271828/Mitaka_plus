@@ -1,0 +1,6 @@
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_script_controller.mm build/ScriptController.o build/script_transport.o  -framework Foundation -o "build/test_script_controller"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/Users/kota/mitaka/repositories/Mitaka/native/gui/build/lua/include" -fobjc-arc src/ScriptWorker.mm build/script_transport.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build/lua/liblua.a"  -framework Foundation -o "build/MitakaScript"
+"build/test_script_controller" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build/MitakaScript"
+Script controller tests passed

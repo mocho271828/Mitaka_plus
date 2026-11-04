@@ -1,0 +1,16 @@
+# Metis
+
+Name: Metis
+DisplayName: Metis
+No: 9
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.386785
+e: 0.121275
+w: 5.755145
+M0: 45.789532
+i: 5.577839
+node: 69.012154
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,13 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build-sanitize/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build-sanitize/sky_model.o "/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-sanitize/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build-sanitize/sky_model.o build-sanitize/solar_camera.o "/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-sanitize/test_solar_model"
+"build-sanitize/test_sky_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+read-only integration passed: "/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", HIP=117956, bodies=9
+sky model tests passed
+"build-sanitize/test_solar_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+solar integration passed: "/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", bodies=10 orbits=9 rotations=9
+solar model tests passed
+"build-sanitize/test_planet_textures" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+real textures: 10/10, warnings: 0
+planet texture tests passed

@@ -1,0 +1,91 @@
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build-unit5-n01/AppWindow.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build-unit5-n01/AppObserverCommands.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-unit5-n01/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build-unit5-n01/AppPlusCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppDisplayCommands.mm -o "build-unit5-n01/AppDisplayCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build-unit5-n01/AppTimeCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build-unit5-n01/AppSmallBodyCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build-unit5-n01/AppSmallBodySmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build-unit5-n01/SolarSmallBodies.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build-unit5-n01/AppSessionCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit5-n01/AppScripting.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build-unit5-n01/AppSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit5-n01/AppPlusSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit5-n01/AppScriptSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build-unit5-n01/AppFlightSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit5-n01/SolarSystemView.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build-unit5-n01/SolarSystemNavigation.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build-unit5-n01/SolarSystemSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build-unit5-n01/AppWindowCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteCommands.mm -o "build-unit5-n01/AppSatelliteCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSatellites.mm -o "build-unit5-n01/SolarSatellites.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteSmokeTests.mm -o "build-unit5-n01/AppSatelliteSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSpacecraft.mm -o "build-unit5-n01/SolarSpacecraft.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSpacecraftCommands.mm -o "build-unit5-n01/AppSpacecraftCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppConstellationCommands.mm -o "build-unit5-n01/AppConstellationCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionSmokeTests.mm -o "build-unit5-n01/AppSessionSmokeTests.o"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-n01/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-n01/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-n01/core/libmitaka_core.a' is up to date.
+src/AppSessionSmokeTests.mm:20:21: error: unknown type name 'SmallBodyId'; did you mean 'mitaka::SmallBodyId'?
+   20 |         std::vector<SmallBodyId> smallIds;
+      |                     ^~~~~~~~~~~
+      |                     mitaka::SmallBodyId
+../core/include/mitaka/small_body_catalog.hpp:31:8: note: 'mitaka::SmallBodyId' declared here
+   31 | struct SmallBodyId {
+      |        ^
+src/AppSessionSmokeTests.mm:25:33: error: use of undeclared identifier 'SmallBodyKind'; did you mean 'mitaka::SmallBodyKind'?
+   25 |         for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet})
+      |                                 ^~~~~~~~~~~~~
+      |                                 mitaka::SmallBodyKind
+../core/include/mitaka/small_body_catalog.hpp:11:12: note: 'mitaka::SmallBodyKind' declared here
+   11 | enum class SmallBodyKind { asteroid, trans_neptunian, comet };
+      |            ^
+src/AppSessionSmokeTests.mm:25:58: error: use of undeclared identifier 'SmallBodyKind'; did you mean 'mitaka::SmallBodyKind'?
+   25 |         for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet})
+      |                                                          ^~~~~~~~~~~~~
+      |                                                          mitaka::SmallBodyKind
+../core/include/mitaka/small_body_catalog.hpp:11:12: note: 'mitaka::SmallBodyKind' declared here
+   11 | enum class SmallBodyKind { asteroid, trans_neptunian, comet };
+      |            ^
+src/AppSessionSmokeTests.mm:25:90: error: use of undeclared identifier 'SmallBodyKind'; did you mean 'mitaka::SmallBodyKind'?
+   25 |         for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet})
+      |                                                                                          ^~~~~~~~~~~~~
+      |                                                                                          mitaka::SmallBodyKind
+../core/include/mitaka/small_body_catalog.hpp:11:12: note: 'mitaka::SmallBodyKind' declared here
+   11 | enum class SmallBodyKind { asteroid, trans_neptunian, comet };
+      |            ^
+src/AppSessionSmokeTests.mm:29:21: error: unknown type name 'SatelliteRecordId'; did you mean 'mitaka::SatelliteRecordId'?
+   29 |         std::vector<SatelliteRecordId> satelliteIds;
+      |                     ^~~~~~~~~~~~~~~~~
+      |                     mitaka::SatelliteRecordId
+../core/include/mitaka/satellite_catalog.hpp:27:8: note: 'mitaka::SatelliteRecordId' declared here
+   27 | struct SatelliteRecordId {
+      |        ^
+5 errors generated.
+make: *** [build-unit5-n01/AppSessionSmokeTests.o] Error 1

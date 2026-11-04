@@ -1,0 +1,16 @@
+# Ottilia
+
+Name: Ottilia
+DisplayName: Ottilia
+No: 401
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.344285
+e: 0.045584
+w: 285.668427
+M0: 198.236053
+i: 5.968590
+node: 36.366283
+Size: 500 500 500
+B_V: 0.75

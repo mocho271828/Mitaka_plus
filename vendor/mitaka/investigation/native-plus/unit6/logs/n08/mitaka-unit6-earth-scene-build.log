@@ -1,0 +1,4 @@
+mkdir -p "build-unit6-earth"
+mkdir -p "build-unit6-earth"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit6-earth/SolarSystemView.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSceneRenderer.mm -o "build-unit6-earth/SolarSceneRenderer.o"

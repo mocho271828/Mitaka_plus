@@ -1,0 +1,16 @@
+# 2003 EL61
+
+Name: 2003EL61
+DisplayName: 2003 EL61
+No: 136108
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 43.316000
+e: 0.190000
+w: 239.100006
+M0: 199.899994
+i: 28.200001
+node: 122.000000
+Size: 1000 1000 1000
+B_V: 0.63

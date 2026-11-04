@@ -1,0 +1,16 @@
+# Alinda
+
+Name: Alinda
+DisplayName: Alinda
+No: 887
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.485499
+e: 0.562723
+w: 350.054596
+M0: 77.418602
+i: 9.303285
+node: 110.716751
+Size: 500 500 500
+B_V: 0.75

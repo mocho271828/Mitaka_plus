@@ -1,0 +1,11 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build-sanitize/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a"
+mkdir -p "build-sanitize"
+mkdir -p "build-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-sanitize/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-sanitize/SolarSystemView.o"
+make[1]: `/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a' is up to date.
+mkdir -p "build-sanitize/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined build-sanitize/main.o build-sanitize/AppController.o build-sanitize/SkyView.o build-sanitize/SolarSystemView.o build-sanitize/sky_model.o build-sanitize/solar_camera.o build-sanitize/planet_surface.o build-sanitize/planet_textures.o "/Users/kota/mitaka/native/gui/build-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-sanitize/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp Info.plist "build-sanitize/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-sanitize/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build-sanitize/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"

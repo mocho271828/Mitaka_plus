@@ -6,8 +6,8 @@ build-*/
 .env
 .env.*
 !.env.example
-data/
-textures/
+/data/
+/textures/
 *.app/
 *.exe
 *.dll

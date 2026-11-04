@@ -1,0 +1,16 @@
+# Ixion
+
+Name: Ixion
+DisplayName: Ixion
+No: 28978
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 39.658001
+e: 0.242000
+w: 298.899994
+M0: 268.000000
+i: 19.600000
+node: 71.000000
+Size: 500 500 500
+B_V: 0.75

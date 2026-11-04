@@ -1,0 +1,11 @@
+2026-10-29 15:19:05 UTC
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+arm64
+Apple clang version 21.0.0 (clang-2100.3.34.2)
+Target: arm64-apple-darwin25.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+native/gui/build-unit7-n16-normal/test_sdss_spatial_model: Mach-O 64-bit executable arm64
+native/gui/build-unit7-n16-x86/test_sdss_spatial_model:    Mach-O 64-bit executable x86_64

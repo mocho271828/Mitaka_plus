@@ -1,0 +1,16 @@
+# Ra-Shalom
+
+Name: Ra-Shalom
+DisplayName: Ra-Shalom
+No: 2100
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 0.832036
+e: 0.436603
+w: 355.970276
+M0: 222.751724
+i: 15.751590
+node: 170.924072
+Size: 500 500 500
+B_V: 0.75

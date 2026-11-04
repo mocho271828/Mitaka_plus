@@ -1,0 +1,16 @@
+# Eos
+
+Name: Eos
+DisplayName: Eos
+No: 221
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.013282
+e: 0.097865
+w: 195.537018
+M0: 259.679352
+i: 10.860400
+node: 142.198914
+Size: 500 500 500
+B_V: 0.75

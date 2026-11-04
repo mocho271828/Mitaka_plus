@@ -1,0 +1,16 @@
+# Phaethon
+
+Name: Phaethon
+DisplayName: Phaethon
+No: 3200
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.271319
+e: 0.890042
+w: 321.831055
+M0: 128.196518
+i: 22.104296
+node: 265.573181
+Size: 500 500 500
+B_V: 0.75

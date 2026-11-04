@@ -1,0 +1,4 @@
+PTH benchmark: 100003 samples, construction 0.137166 ms, 25000 queries 5.28688 ms
+real spacecraft position: 21 sources, 14 definitions, 55405 PTH rows, 14 equal-time pairs, 0 PPI trajectories withheld
+real spacecraft position: 31 sources, 13 definitions, 0 PTH rows, 0 equal-time pairs, 17 PPI trajectories withheld
+spacecraft position: 353093 checks PASS

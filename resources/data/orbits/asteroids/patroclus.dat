@@ -1,0 +1,16 @@
+# Patroclus
+
+Name: Patroclus
+DisplayName: Patroclus
+No: 617
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 5.228938
+e: 0.139197
+w: 306.946808
+M0: 295.970825
+i: 22.050360
+node: 44.414455
+Size: 500 500 500
+B_V: 0.75

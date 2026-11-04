@@ -1,0 +1,27 @@
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_playback_controller.mm build-playback-sanitized/PlaybackController.o build-playback-sanitized/playback_clock.o -fsanitize=address,undefined -framework AppKit -o "build-playback-sanitized/test_playback_controller"
+"build-playback-sanitized/test_playback_controller"
+PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, disabled/end, failure, interrupt, invalidate
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build-playback-sanitized/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/native/gui/build-playback-sanitized/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/native/gui/build-playback-sanitized/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build-playback-sanitized/sky_model.o "/Users/kota/mitaka/native/gui/build-playback-sanitized/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-playback-sanitized/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build-playback-sanitized/sky_model.o build-playback-sanitized/solar_camera.o "/Users/kota/mitaka/native/gui/build-playback-sanitized/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-playback-sanitized/test_solar_model"
+"build-playback-sanitized/test_sky_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+read-only integration passed: "/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", HIP=117956, bodies=9
+sky model tests passed
+"build-playback-sanitized/test_solar_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+solar integration passed: "/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", bodies=10 orbits=9 rotations=9
+solar model tests passed
+"build-playback-sanitized/test_planet_textures" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+real textures: 10/10, warnings: 0
+planet texture tests passed
+mkdir -p "build-playback-sanitized/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined build-playback-sanitized/main.o build-playback-sanitized/AppController.o build-playback-sanitized/PlaybackController.o build-playback-sanitized/SkyView.o build-playback-sanitized/SolarSystemView.o build-playback-sanitized/sky_model.o build-playback-sanitized/solar_camera.o build-playback-sanitized/planet_surface.o build-playback-sanitized/planet_textures.o build-playback-sanitized/playback_clock.o "/Users/kota/mitaka/native/gui/build-playback-sanitized/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-playback-sanitized/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp Info.plist "build-playback-sanitized/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-playback-sanitized/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build-playback-sanitized/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+"build-playback-sanitized/Mitaka Native.app/Contents/MacOS/MitakaNative" --data-root "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}" --smoke-test
+AppKit smoke passed: HIP=117956 visible=7983 bodies=9 lit_samples=12072 render=2000x1206
+Solar AppKit smoke passed: bodies=10 camera=orbit,pan,zoom,focus,date-tracking lit_samples=1190
+Texture AppKit smoke passed: loaded=10 closeup,rotation,picking,fallback
+Rotation AppKit smoke passed: dated Earth surface, fixed camera and illumination
+Playback AppKit smoke passed: real timer, shared JD, orbit/spin, tracking, pause, manual seek

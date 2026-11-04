@@ -1,0 +1,16 @@
+# Aten
+
+Name: Aten
+DisplayName: Aten
+No: 2062
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 0.966442
+e: 0.182543
+w: 147.878952
+M0: 103.757759
+i: 18.931259
+node: 108.658028
+Size: 500 500 500
+B_V: 0.75

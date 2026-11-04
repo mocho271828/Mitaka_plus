@@ -1,0 +1,79 @@
+{
+  "captured_at_utc": "2026-10-29T04:25:46.417997+00:00",
+  "phase": "native_textures_final",
+  "purpose": "Current core implementation fingerprint for future comparisons; no pre-texture SHA256 baseline exists for these implementation files.",
+  "pre_change_baseline_available": false,
+  "unchanged_verified": false,
+  "files": [
+    {
+      "path": "native/core/Makefile",
+      "bytes": 2531,
+      "sha256": "99d3e63324b1f9eb223965c82ee2bac5fd952f5b0b712370d527375ee79b01af"
+    },
+    {
+      "path": "native/core/include/mitaka/astronomy.hpp",
+      "bytes": 2422,
+      "sha256": "9ee53d7bf6e6d8fac680dcf77271397d8ac30a3126bba6c6e1d62e7b1d00a0a3"
+    },
+    {
+      "path": "native/core/include/mitaka/catalog.hpp",
+      "bytes": 2512,
+      "sha256": "f21cc3971745d1c4c6d56210713a4c0c14e63cd45ecae0413c3c3fcb9520e8e6"
+    },
+    {
+      "path": "native/core/include/mitaka/ephemeris.hpp",
+      "bytes": 1549,
+      "sha256": "b0408dd7b311368141db2c2dbbcdb9e0d39fbb70c572c88913816a64e4ccdad9"
+    },
+    {
+      "path": "native/core/src/astronomy.cpp",
+      "bytes": 13563,
+      "sha256": "0a394b2e9579ca9f5bbbef1ad357c68712b3222637e44847a36f8b8f93191b94"
+    },
+    {
+      "path": "native/core/src/catalog.cpp",
+      "bytes": 8658,
+      "sha256": "faa3f84ce4b0ac78cbded91084db2b1ff149df0fb94d02b15219f6ce04bf84eb"
+    },
+    {
+      "path": "native/core/src/ephemeris.cpp",
+      "bytes": 12533,
+      "sha256": "4d42157ffa60762ca72f37051ece9071930c2658b8cdd9f969955dd6d93a37e4"
+    },
+    {
+      "path": "native/core/tests/test_astronomy.cpp",
+      "bytes": 9622,
+      "sha256": "539f5fa08c6dac64af37efd263f872df938679ff1e5ba3fda08d91cedc9e7382"
+    },
+    {
+      "path": "native/core/tests/test_catalog.cpp",
+      "bytes": 9170,
+      "sha256": "67a52165d622c22363426df7016ddf5b183fc37a7155da0e319b94be6cbb2736"
+    },
+    {
+      "path": "native/core/tests/test_data.cpp",
+      "bytes": 6154,
+      "sha256": "feefee47088bf0287f7ae8db6c94a79a0d4b9696d5642222c0c1799c3ba55780"
+    },
+    {
+      "path": "native/core/tests/test_ephemeris.cpp",
+      "bytes": 8121,
+      "sha256": "23b888ba1ecd9216499b987b789a5e043d7656bea63657f330f03923372e2920"
+    },
+    {
+      "path": "native/core/tests/test_upstream.cpp",
+      "bytes": 5306,
+      "sha256": "2e0087f1b7690f6a785a4bbbad69f4efef3cc09b8235addea360c868afce0a34"
+    },
+    {
+      "path": "native/core/tools/core_probe.cpp",
+      "bytes": 3396,
+      "sha256": "4951f0107027b8521452f49305c5f6888aaca4e3d3e4b41fe73df8e6d8c95f66"
+    },
+    {
+      "path": "native/core/tools/generate_astronomy_reference.cpp",
+      "bytes": 1207,
+      "sha256": "544ae2a47b8d8be4acacd8c8731aee50df497411bceabb796e4ae54b5a074988"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_rotation_upstream.cpp build/reference_rotation.cpp build/libmitaka_core.a  -o build/test_rotation_upstream
+build/test_rotation_upstream
+rotation reference: 33129 components passed; maximum differences: J2000=4.4408920985e-16, 1700..2100=1.32350463922e-10, supported range=4.32943121631e-09
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build/reference_lunar_pos.o build/reference_lunar_orientation.cpp build/libmitaka_core.a  -o build/test_lunar_upstream
+build/test_lunar_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=9.48019440727e-13
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_upstream.cpp build/reference_cf96.o build/libmitaka_core.a  -o build/test_upstream
+build/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day

@@ -1,0 +1,72 @@
+stars-wrappers
+Source SHA-256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+Method: /usr/bin/objdump --disassemble --x86-asm-syntax=intel; selected VA ranges, no binary execution.
+
+VA [0x662310, 0x6623ac):
+  662310: 55                           	push	ebp
+  662311: 53                           	push	ebx
+  662312: 8b 6c 24 0c                  	mov	ebp, dword ptr [esp + 0xc]
+  662316: 6a 00                        	push	0x0
+  662318: 6a 01                        	push	0x1
+  66231a: 55                           	push	ebp
+  66231b: e8 50 d1 22 00               	call	0x88f470 <.text+0x48e470>
+  662320: 8b d8                        	mov	ebx, eax
+  662322: 6a 00                        	push	0x0
+  662324: 6a 02                        	push	0x2
+  662326: 55                           	push	ebp
+  662327: e8 04 d1 22 00               	call	0x88f430 <.text+0x48e430>
+  66232c: 83 c4 18                     	add	esp, 0x18
+  66232f: 50                           	push	eax
+  662330: 8b cb                        	mov	ecx, ebx
+  662332: e8 49 41 f8 ff               	call	0x5e6480 <.text+0x1e5480>
+  662337: 33 c0                        	xor	eax, eax
+  662339: 5b                           	pop	ebx
+  66233a: 5d                           	pop	ebp
+  66233b: c3                           	ret
+  66233c: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  662340: 55                           	push	ebp
+  662341: 53                           	push	ebx
+  662342: 8b 6c 24 0c                  	mov	ebp, dword ptr [esp + 0xc]
+  662346: 6a 00                        	push	0x0
+  662348: 6a 01                        	push	0x1
+  66234a: 55                           	push	ebp
+  66234b: e8 20 d1 22 00               	call	0x88f470 <.text+0x48e470>
+  662350: 8b d8                        	mov	ebx, eax
+  662352: 6a 00                        	push	0x0
+  662354: 6a 02                        	push	0x2
+  662356: 55                           	push	ebp
+  662357: e8 d4 d0 22 00               	call	0x88f430 <.text+0x48e430>
+  66235c: 83 c4 18                     	add	esp, 0x18
+  66235f: 50                           	push	eax
+  662360: 8b cb                        	mov	ecx, ebx
+  662362: e8 39 41 f8 ff               	call	0x5e64a0 <.text+0x1e54a0>
+  662367: 33 c0                        	xor	eax, eax
+  662369: 5b                           	pop	ebx
+  66236a: 5d                           	pop	ebp
+  66236b: c3                           	ret
+  66236c: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  662370: 57                           	push	edi
+  662371: 53                           	push	ebx
+  662372: 8b 7c 24 0c                  	mov	edi, dword ptr [esp + 0xc]
+  662376: 6a 00                        	push	0x0
+  662378: 6a 01                        	push	0x1
+  66237a: 57                           	push	edi
+  66237b: e8 f0 d0 22 00               	call	0x88f470 <.text+0x48e470>
+  662380: 8b d8                        	mov	ebx, eax
+  662382: 6a 00                        	push	0x0
+  662384: 6a 02                        	push	0x2
+  662386: 57                           	push	edi
+  662387: e8 a4 d0 22 00               	call	0x88f430 <.text+0x48e430>
+  66238c: 83 c4 18                     	add	esp, 0x18
+  66238f: 50                           	push	eax
+  662390: 8b cb                        	mov	ecx, ebx
+  662392: e8 29 41 f8 ff               	call	0x5e64c0 <.text+0x1e54c0>
+  662397: 0f b6 c0                     	movzx	eax, al
+  66239a: 50                           	push	eax
+  66239b: 57                           	push	edi
+  66239c: e8 6f d4 22 00               	call	0x88f810 <.text+0x48e810>
+  6623a1: 83 c4 08                     	add	esp, 0x8
+  6623a4: b8 01 00 00 00               	mov	eax, 0x1
+  6623a9: 5b                           	pop	ebx
+  6623aa: 5f                           	pop	edi
+  6623ab: c3                           	ret

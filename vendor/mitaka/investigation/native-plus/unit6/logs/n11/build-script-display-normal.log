@@ -1,0 +1,111 @@
+mkdir -p "build-unit6-stars"
+mkdir -p "build-unit6-stars"
+mkdir -p "build-unit6-stars"
+bash tools/build_lua.sh "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/lua" "" ""
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ScriptController.mm -o "build-unit6-stars/ScriptController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_brightness.cpp -o "build-unit6-stars/star_brightness.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/script_transport.cpp -o "build-unit6-stars/script_transport.o"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/libmitaka_core.a"
+mkdir -p "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/astronomy.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/astronomy.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyView.mm -o "build-unit6-stars/SkyView.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/catalog.o
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyCatalogRenderer.mm -o "build-unit6-stars/SkyCatalogRenderer.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/ephemeris.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/ephemeris.o
+ 26  364k   26 98007    0     0  57079      0  0:00:06  0:00:01  0:00:05 57080mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/StarRenderer.mm -o "build-unit6-stars/StarRenderer.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/rotation.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/rotation.o
+100  364k  100  364k    0     0   159k      0  0:00:02  0:00:02 --:--:--  159k
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/lunar.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/lunar.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/RendererQuality.mm -o "build-unit6-stars/RendererQuality.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/observation.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/extended_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/extended_catalog.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_labels.cpp -o "build-unit6-stars/star_labels.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/place_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_text.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_text.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_catalog_parser.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_catalog_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_position.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_rotation.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_model.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_registration.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_registration.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_absolute.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_absolute.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_trajectory.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_trajectory.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/sky_catalog_index.cpp -o "build-unit6-stars/sky_catalog_index.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/sky_model.cpp -o "build-unit6-stars/sky_model.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_trajectory_parser.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/sky_background.mm -o "build-unit6-stars/sky_background.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/local_image.mm -o "build-unit6-stars/local_image.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ConstellationRenderer.mm -o "build-unit6-stars/ConstellationRenderer.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_position.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_position.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_display.cpp -o "build-unit6-stars/constellation_display.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/horizon_segments.cpp -o "build-unit6-stars/horizon_segments.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/GridRenderer.mm -o "build-unit6-stars/GridRenderer.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/minor_planet_position.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/minor_planet_position.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/grid_geometry.cpp -o "build-unit6-stars/grid_geometry.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit_path.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_orbit_path.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/distance_scales.cpp -o "build-unit6-stars/distance_scales.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere_multiple.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere_multiple.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/solar_camera.cpp -o "build-unit6-stars/solar_camera.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art_model.cpp -o "build-unit6-stars/constellation_art_model.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art_projection.cpp -o "build-unit6-stars/constellation_art_projection.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/atmosphere_emission_map.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere_emission_map.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ConstellationArtRenderer.mm -o "build-unit6-stars/ConstellationArtRenderer.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/HorizonView.mm -o "build-unit6-stars/HorizonView.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_art.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/constellation_art.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSceneRenderer.mm -o "build-unit6-stars/SolarSceneRenderer.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SatelliteRenderer.mm -o "build-unit6-stars/SatelliteRenderer.o"
+xcrun ar rcs /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/libmitaka_core.a /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/astronomy.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/ephemeris.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/lunar.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/observation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/extended_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/place_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_text.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_orbit.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_catalog_parser.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_model.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_registration.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/satellite_absolute.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_trajectory.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_trajectory_parser.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/spacecraft_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/minor_planet_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/small_body_orbit_path.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere_multiple.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/atmosphere_emission_map.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/constellation_art.o
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/satellite_browser_model.mm -o "build-unit6-stars/satellite_browser_model.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SmallBodyRenderer.mm -o "build-unit6-stars/SmallBodyRenderer.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/small_body_model.mm -o "build-unit6-stars/small_body_model.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_display.cpp -o "build-unit6-stars/small_body_display.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit_model.cpp -o "build-unit6-stars/small_body_orbit_model.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_display.cpp -o "build-unit6-stars/satellite_display.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_orbit_geometry.cpp -o "build-unit6-stars/satellite_orbit_geometry.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SpacecraftRenderer.mm -o "build-unit6-stars/SpacecraftRenderer.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/spacecraft_browser_model.mm -o "build-unit6-stars/spacecraft_browser_model.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/planet_surface.cpp -o "build-unit6-stars/planet_surface.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/surface_navigation.cpp -o "build-unit6-stars/surface_navigation.o"
+mkdir -p "build-unit6-stars"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/earth_layers.cpp -o "build-unit6-stars/earth_layers.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_script_controller.mm build-unit6-stars/ScriptController.o build-unit6-stars/script_transport.o build-unit6-stars/star_brightness.o  -framework Foundation -o "build-unit6-stars/test_script_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/lua/include" -fobjc-arc src/ScriptWorker.mm build-unit6-stars/script_transport.o build-unit6-stars/star_brightness.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/lua/liblua.a"  -framework Foundation -o "build-unit6-stars/MitakaScript"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build-unit6-stars/SkyView.o build-unit6-stars/SkyCatalogRenderer.o build-unit6-stars/StarRenderer.o build-unit6-stars/RendererQuality.o build-unit6-stars/star_labels.o build-unit6-stars/sky_catalog_index.o build-unit6-stars/sky_model.o build-unit6-stars/sky_background.o build-unit6-stars/local_image.o build-unit6-stars/ConstellationRenderer.o build-unit6-stars/constellation_display.o build-unit6-stars/horizon_segments.o build-unit6-stars/GridRenderer.o build-unit6-stars/grid_geometry.o build-unit6-stars/distance_scales.o build-unit6-stars/solar_camera.o build-unit6-stars/star_brightness.o build-unit6-stars/constellation_art_model.o build-unit6-stars/constellation_art_projection.o build-unit6-stars/ConstellationArtRenderer.o build-unit6-stars/HorizonView.o build-unit6-stars/SolarSceneRenderer.o build-unit6-stars/SatelliteRenderer.o build-unit6-stars/satellite_browser_model.o build-unit6-stars/SmallBodyRenderer.o build-unit6-stars/small_body_model.o build-unit6-stars/small_body_display.o build-unit6-stars/small_body_orbit_model.o build-unit6-stars/satellite_display.o build-unit6-stars/satellite_orbit_geometry.o build-unit6-stars/SpacecraftRenderer.o build-unit6-stars/spacecraft_browser_model.o build-unit6-stars/planet_surface.o build-unit6-stars/surface_navigation.o build-unit6-stars/earth_layers.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-stars/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-stars/test_display_rendering"

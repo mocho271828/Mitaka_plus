@@ -6,7 +6,7 @@
 
 独自追加を含むローカルPlusのdataを指定した `make build test data-test reference-test` は終了コード0。[統合ログ](verification/unit7-final-pin-tests.log)と[4ログのSHA-256](verification/unit7-SHA256SUMS)を保存した。公式比較はCF96 5,427、自転33,129、月12,108、大気12,606+792、食7,993成分が成功。submodule未取得、空・相対DATA_ROOTは[負例ログ](verification/unit7-negative.log)のとおり案内付き終了コード2で拒否する。
 
-共通側の通常・ASan/UBSan・Rosetta x86_64のcore/GUI/controller、Plus full smoke 3構成、通常版full smoke、実データ、公式比較、新規cloneは[単位7記録](vendor/mitaka/investigation/native-plus/unit7/README.md)と[統合記録](vendor/mitaka/investigation/native-plus/unit7/integration/README.md)を参照する。JSON v7はID・座標・出典・設定を全体検証し、通常再生・時計追従・旧Plus連続再生を停止して復元する。食は衛星マーク表示と独立、風景の画像失敗は他定義への差替えで隠さない。原本保全は16,365 files、6,622,642,667 bytes、465 symlinks、変更0。公式原本310ファイル一致。ラッパーではsanitizer・x86_64・full smokeを重複実行せず、採用SHAの結果を参照した。Intel/macOS13実機、複数画面、実OSの完全遮蔽通知、旧Plusとの全画素一致は未確認として残す。
+共通側の通常・ASan/UBSan・Rosetta x86_64のcore/GUI/controller、Plus full smoke 3構成、通常版full smoke、実データ、公式比較、新規cloneは[単位7記録](vendor/mitaka/investigation/native-plus/unit7/README.md)と[統合記録](vendor/mitaka/investigation/native-plus/unit7/logs/integration/README.md)を参照する。JSON v7はID・座標・出典・設定を全体検証し、通常再生・時計追従・旧Plus連続再生を停止して復元する。食は衛星マーク表示と独立、風景の画像失敗は他定義への差替えで隠さない。原本保全は16,365 files、6,622,642,667 bytes、465 symlinks、変更0。公式原本310ファイル一致。ラッパーではsanitizer・x86_64・full smokeを重複実行せず、採用SHAの結果を参照した。Intel/macOS13実機、複数画面、実OSの完全遮蔽通知、旧Plusとの全画素一致は未確認として残す。
 
 [Mitaka](verification/unit7-source-private.log)と[Mitaka_plus](verification/unit7-private.log)は双方Private。データ/原本の複製登録、新規依存なし。既存Makefileに大気・食の公式比較を追加し、README、IMPLEMENTATION_POLICY、3 gateを更新した。exact `/simplifier-lai` は利用不可・未実行、類似skillはLobbyAI専用のため不適用。既存依存・差分・登録範囲を手動レビューし、[3 gate / 39条件](temp_gates/2026-10-30-02-12-29/VALIDATION.md)をYESとした。Git状態・差分量・diff --checkを確認しcommit/pushする。
 

@@ -1,0 +1,5 @@
+local rows=89 identities=88
+Constellation display tests passed: 7897 checks
+Horizon segment tests passed: 101341 checks
+Local source rows: 89
+Constellation renderer tests passed: 4300936 checks

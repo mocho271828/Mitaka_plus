@@ -1,0 +1,16 @@
+# Eros
+
+Name: Eros
+DisplayName: Eros
+No: 433
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.458168
+e: 0.222981
+w: 178.623169
+M0: 112.952576
+i: 10.830837
+node: 304.431244
+Size: 500 500 500
+B_V: 0.75

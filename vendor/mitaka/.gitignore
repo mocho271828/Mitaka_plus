@@ -1,0 +1,17 @@
+.DS_Store
+**/build/
+**/build-*/
+*.dSYM/
+.env
+.env.*
+!.env.example
+local.mk
+*.p12
+*.pem
+*.key
+/data/
+/textures/
+/mitaka/
+/mitaka_plus/
+/sources/reference/
+/archive/

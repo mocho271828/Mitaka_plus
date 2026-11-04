@@ -1,0 +1,8 @@
+build/test_data "${DATA_ROOT:?Set DATA_ROOT to an existing Mitaka application data root}"
+Hipparcos records=117956
+Constellation records=89 lines=165 boundary-points=13422
+CF96 planets=9 samples-per-planet=3
+Trajectories files=0 segments=0 midpoint-gaps=0
+Read-only data integration tests passed
+build/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day

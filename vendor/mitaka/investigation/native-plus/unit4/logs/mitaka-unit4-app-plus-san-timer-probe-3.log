@@ -1,0 +1,49 @@
+PROBE draw elapsed=0.007574 end=722738.599432
+PROBE draw elapsed=0.006284 end=722738.673317
+PROBE draw elapsed=0.006367 end=722738.705450
+PROBE clock start now=722738.710354 jd=2461343.0046583461
+PROBE sample now=722738.719870 jd=2461343.0046583461
+PROBE sample event=0 next=2461343.0046451655
+PROBE draw elapsed=0.005886 end=722738.750566
+PROBE draw elapsed=0.006608 end=722738.793732
+PROBE draw elapsed=0.006341 end=722739.037523
+PROBE draw elapsed=0.006296 end=722739.063915
+PROBE draw elapsed=0.002610 end=722739.080148
+PROBE draw elapsed=0.004872 end=722739.319170
+PROBE draw elapsed=0.010249 end=722739.954365
+PROBE draw elapsed=0.011841 end=722740.111438
+PROBE draw elapsed=0.006470 end=722741.975456
+PROBE clock start now=722742.635049 jd=2451501.5
+PROBE draw elapsed=0.005285 end=722744.044388
+PROBE draw elapsed=0.026831 end=722744.071939
+PROBE draw elapsed=0.027066 end=722744.178248
+PROBE draw elapsed=0.024716 end=722744.267385
+PROBE draw elapsed=0.003365 end=722747.252389
+PROBE draw elapsed=0.019966 end=722747.273133
+PROBE draw elapsed=0.008388 end=722747.899544
+PROBE draw elapsed=0.011165 end=722747.910842
+PROBE draw elapsed=0.000827 end=722747.913561
+PROBE draw elapsed=0.002033 end=722747.915737
+PROBE draw elapsed=0.008021 end=722747.924340
+PROBE draw elapsed=0.010628 end=722747.935104
+PROBE draw elapsed=0.008014 end=722747.949294
+PROBE draw elapsed=0.011995 end=722747.961446
+PROBE draw elapsed=0.010205 end=722747.971960
+PROBE clock start now=722747.995592 jd=2451500.5
+PROBE play jd=2451500.5 playing=1
+PROBE draw elapsed=0.008920 end=722748.520694
+PROBE sample now=722748.695444 jd=2451500.5
+PROBE sample event=0 next=2451501.1998415003
+PROBE draw elapsed=0.008675 end=722748.720413
+PROBE sample now=722748.731363 jd=2451501.1998415003
+PROBE sample event=0 next=2451501.2357610827
+PROBE draw elapsed=0.008205 end=722748.750373
+PROBE assertion elapsed=0.758501 jd=2451501.2357610827 playbackJD=2451501.2357610827 playing=1 state=再生中
+Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,display-options,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API
+Small-body AppKit smoke passed: 18 checks; source_rows=19475 evaluable=2388 focus=tested diagnosis=tested
+Satellite AppKit smoke passed: 30 checks; source_rows=340 positioned=330 focus=tested diagnosis=tested distinct-source=tested
+Plus AppKit smoke passed: local observers, calendar grid/offset controls, 21 layer toggles, four renderer quality settings, three star markings, time information, three modes, full session restore, playback/tracking stop, nine encoded scene captures
+AppKit smoke passed: HIP=117956 visible=7983 bodies=10 lit_samples=11988 render=2000x1218
+Solar AppKit smoke passed: bodies=11 camera=orbit,pan,zoom,focus,date-tracking lit_samples=4098
+Texture AppKit smoke passed: loaded=11 closeup,rotation,picking,fallback
+Rotation AppKit smoke passed: dated Earth surface, fixed camera and illumination

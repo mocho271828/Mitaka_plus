@@ -1,0 +1,2 @@
+build-unit6-root/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day

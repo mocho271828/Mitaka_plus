@@ -1,0 +1,4 @@
+48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+8249eca831cfd2b6f9235f60e245ea08a8d0eb9f74f54fadf2f41da174f2d4e6  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/doc/script_jp/time.html
+49abcc449bb0925ca4bce492767159a7ff972e7ae4c924321d5c850a1038c2f5  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/scripts/gui.lua
+64a0592f69d834a6884e0010e663e28a482d7506a18d10a87214342d5d0132f2  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/scripts/shortcuts.lua

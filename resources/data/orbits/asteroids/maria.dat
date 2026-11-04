@@ -1,0 +1,16 @@
+# Maria
+
+Name: Maria
+DisplayName: Maria
+No: 170
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.552970
+e: 0.063423
+w: 157.564468
+M0: 295.269714
+i: 14.411132
+node: 301.535156
+Size: 500 500 500
+B_V: 0.75

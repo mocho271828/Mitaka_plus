@@ -1,0 +1,1 @@
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_lunar.cpp build-unit4-absolute/libmitaka_core.a  -o build-unit4-absolute/test_lunar

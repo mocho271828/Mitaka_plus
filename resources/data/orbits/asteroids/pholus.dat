@@ -1,0 +1,16 @@
+# Pholus
+
+Name: Pholus
+DisplayName: Pholus
+No: 5145
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 20.216906
+e: 0.571465
+w: 354.487885
+M0: 26.912762
+i: 24.700176
+node: 119.399567
+Size: 500 500 500
+B_V: 0.75

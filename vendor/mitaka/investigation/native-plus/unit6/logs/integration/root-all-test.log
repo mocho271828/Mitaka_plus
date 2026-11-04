@@ -1,0 +1,150 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"
+mkdir -p "build-unit6-root"
+mkdir -p "build-unit6-root"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit6-root/AppScriptSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/observer_places.cpp -o "build-unit6-root/observer_places.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_renderer_quality.mm build-unit6-root/RendererQuality.o  -framework AppKit -o "build-unit6-root/test_renderer_quality"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_html_bridge_policy.mm build-unit6-root/html_bridge_policy.o  -framework Foundation -o "build-unit6-root/test_html_bridge_policy"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_labels.cpp build-unit6-root/star_labels.o  -o "build-unit6-root/test_star_labels"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_media_catalog.mm build-unit6-root/media_catalog.o  -framework Foundation -o "build-unit6-root/test_media_catalog"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_calendar_time.cpp build-unit6-root/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_calendar_time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_background.mm build-unit6-root/sky_background.o build-unit6-root/grid_geometry.o build-unit6-root/local_image.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-root/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_gui_file_io.mm build-unit6-root/gui_file_io.o  -framework Foundation -o "build-unit6-root/test_gui_file_io"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_observer_places.cpp build-unit6-root/observer_places.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_model.mm build-unit6-root/catalog_browser_model.o build-unit6-root/extended_catalogs.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_extended_catalogs.cpp build-unit6-root/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_catalog_index.cpp build-unit6-root/sky_catalog_index.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_sky_catalog_index"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_state.mm build-unit6-root/session_state.o build-unit6-root/solar_camera.o build-unit6-root/playback_clock.o build-unit6-root/calendar_time.o build-unit6-root/session_layers.o build-unit6-root/session_layers_json.o build-unit6-root/small_body_display.o build-unit6-root/satellite_display.o build-unit6-root/star_brightness.o build-unit6-root/atmosphere_renderer.o build-unit6-root/planet_surface.o build-unit6-root/earth_layers.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_session_state"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build-unit6-root/sky_model.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_planet_surface.cpp build-unit6-root/planet_surface.o build-unit6-root/solar_camera.o build-unit6-root/earth_layers.o  -o "build-unit6-root/test_planet_surface"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build-unit6-root/planet_textures.o build-unit6-root/local_image.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-root/test_planet_textures"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_playback_clock.cpp build-unit6-root/playback_clock.o  -o "build-unit6-root/test_playback_clock"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_surface_navigation.cpp build-unit6-root/surface_navigation.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_surface_navigation"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_interplanetary_flight.cpp build-unit6-root/interplanetary_flight.o build-unit6-root/surface_navigation.o build-unit6-root/solar_camera.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_interplanetary_flight"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_display.cpp build-unit6-root/constellation_display.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"   -o "build-unit6-root/test_constellation_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_horizon_segments.cpp build-unit6-root/horizon_segments.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"   -o "build-unit6-root/test_horizon_segments"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_orbit_geometry.mm build-unit6-root/satellite_orbit_geometry.o build-unit6-root/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_satellite_orbit_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_layers.mm build-unit6-root/session_layers.o build-unit6-root/small_body_display.o build-unit6-root/satellite_display.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_session_layers"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_model.mm build-unit6-root/small_body_orbit_model.o build-unit6-root/small_body_display.o build-unit6-root/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_small_body_orbit_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_controller.mm build-unit6-root/SmallBodyOrbitController.o build-unit6-root/small_body_orbit_model.o build-unit6-root/small_body_display.o build-unit6-root/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_small_body_orbit_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_earth_layers.cpp build-unit6-root/earth_layers.o build-unit6-root/planet_surface.o build-unit6-root/solar_camera.o  -o "build-unit6-root/test_earth_layers"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_brightness.cpp build-unit6-root/star_brightness.o  -o "build-unit6-root/test_star_brightness"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_star_brightness_controller.mm build-unit6-root/StarBrightnessController.o build-unit6-root/star_brightness.o  -framework Foundation -o "build-unit6-root/test_star_brightness_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_name_selection.cpp build-unit6-root/star_name_selection.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_star_name_selection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_model.cpp build-unit6-root/constellation_art_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_constellation_art_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_projection.cpp build-unit6-root/constellation_art_projection.o build-unit6-root/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_constellation_art_projection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_horizon_background_view.mm build-unit6-root/HorizonView.o build-unit6-root/SkyView.o build-unit6-root/SkyCatalogRenderer.o build-unit6-root/StarRenderer.o build-unit6-root/RendererQuality.o build-unit6-root/star_labels.o build-unit6-root/sky_catalog_index.o build-unit6-root/sky_model.o build-unit6-root/sky_background.o build-unit6-root/local_image.o build-unit6-root/ConstellationRenderer.o build-unit6-root/constellation_display.o build-unit6-root/horizon_segments.o build-unit6-root/GridRenderer.o build-unit6-root/grid_geometry.o build-unit6-root/distance_scales.o build-unit6-root/solar_camera.o build-unit6-root/star_brightness.o build-unit6-root/constellation_art_model.o build-unit6-root/constellation_art_projection.o build-unit6-root/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-root/test_horizon_background_view"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_earth_layer_scene.mm build-unit6-root/SkyView.o build-unit6-root/SkyCatalogRenderer.o build-unit6-root/StarRenderer.o build-unit6-root/RendererQuality.o build-unit6-root/star_labels.o build-unit6-root/sky_catalog_index.o build-unit6-root/sky_model.o build-unit6-root/sky_background.o build-unit6-root/local_image.o build-unit6-root/ConstellationRenderer.o build-unit6-root/constellation_display.o build-unit6-root/horizon_segments.o build-unit6-root/GridRenderer.o build-unit6-root/grid_geometry.o build-unit6-root/distance_scales.o build-unit6-root/solar_camera.o build-unit6-root/star_brightness.o build-unit6-root/constellation_art_model.o build-unit6-root/constellation_art_projection.o build-unit6-root/ConstellationArtRenderer.o build-unit6-root/HorizonView.o build-unit6-root/SolarSceneRenderer.o build-unit6-root/SatelliteRenderer.o build-unit6-root/satellite_browser_model.o build-unit6-root/SmallBodyRenderer.o build-unit6-root/small_body_model.o build-unit6-root/small_body_display.o build-unit6-root/small_body_orbit_model.o build-unit6-root/satellite_display.o build-unit6-root/satellite_orbit_geometry.o build-unit6-root/SpacecraftRenderer.o build-unit6-root/spacecraft_browser_model.o build-unit6-root/planet_surface.o build-unit6-root/surface_navigation.o build-unit6-root/earth_layers.o build-unit6-root/atmosphere_renderer.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-root/test_earth_layer_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_atmosphere_renderer.cpp build-unit6-root/atmosphere_renderer.o build-unit6-root/planet_surface.o build-unit6-root/earth_layers.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_atmosphere_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/lua/include" -fobjc-arc src/ScriptWorker.mm build-unit6-root/script_transport.o build-unit6-root/star_brightness.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/lua/liblua.a"  -framework Foundation -o "build-unit6-root/MitakaScript"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_browser_model.mm build-unit6-root/spacecraft_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_spacecraft_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_renderer.mm build-unit6-root/SpacecraftRenderer.o build-unit6-root/spacecraft_browser_model.o build-unit6-root/RendererQuality.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -o "build-unit6-root/test_spacecraft_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_small_body_display.cpp build-unit6-root/small_body_display.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"   -o "build-unit6-root/test_small_body_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_satellite_display.cpp build-unit6-root/satellite_display.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"   -o "build-unit6-root/test_satellite_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_scene.mm build-unit6-root/satellite_scene.o build-unit6-root/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_browser_model.mm build-unit6-root/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_grid_geometry.cpp build-unit6-root/grid_geometry.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_grid_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_distance_scales.cpp build-unit6-root/distance_scales.o build-unit6-root/grid_geometry.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -o "build-unit6-root/test_distance_scales"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_grid_renderer.mm build-unit6-root/GridRenderer.o build-unit6-root/RendererQuality.o build-unit6-root/grid_geometry.o build-unit6-root/distance_scales.o build-unit6-root/sky_model.o build-unit6-root/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -o "build-unit6-root/test_grid_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build-unit6-root/SkyView.o build-unit6-root/SkyCatalogRenderer.o build-unit6-root/StarRenderer.o build-unit6-root/RendererQuality.o build-unit6-root/star_labels.o build-unit6-root/sky_catalog_index.o build-unit6-root/sky_model.o build-unit6-root/sky_background.o build-unit6-root/local_image.o build-unit6-root/ConstellationRenderer.o build-unit6-root/constellation_display.o build-unit6-root/horizon_segments.o build-unit6-root/GridRenderer.o build-unit6-root/grid_geometry.o build-unit6-root/distance_scales.o build-unit6-root/solar_camera.o build-unit6-root/star_brightness.o build-unit6-root/constellation_art_model.o build-unit6-root/constellation_art_projection.o build-unit6-root/ConstellationArtRenderer.o build-unit6-root/HorizonView.o build-unit6-root/SolarSceneRenderer.o build-unit6-root/SatelliteRenderer.o build-unit6-root/satellite_browser_model.o build-unit6-root/SmallBodyRenderer.o build-unit6-root/small_body_model.o build-unit6-root/small_body_display.o build-unit6-root/small_body_orbit_model.o build-unit6-root/satellite_display.o build-unit6-root/satellite_orbit_geometry.o build-unit6-root/SpacecraftRenderer.o build-unit6-root/spacecraft_browser_model.o build-unit6-root/planet_surface.o build-unit6-root/surface_navigation.o build-unit6-root/earth_layers.o build-unit6-root/atmosphere_renderer.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-root/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_model.mm build-unit6-root/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework Foundation -o "build-unit6-root/test_small_body_model"
+"build-unit6-root/test_earth_layers"
+Earth layer tests passed: 63 checks
+"build-unit6-root/test_star_brightness"
+Star brightness tests passed: 1084 checks
+"build-unit6-root/test_star_brightness_controller"
+"build-unit6-root/test_earth_layer_scene"
+Star brightness controller tests passed: 45 checks
+"build-unit6-root/test_star_name_selection"
+Star name selection tests passed: 16 checks
+"build-unit6-root/test_constellation_art_model"
+Constellation art model tests passed: 8 checks
+"build-unit6-root/test_atmosphere_renderer"
+"build-unit6-root/test_constellation_art_projection"
+atmosphere renderer: 4259 checks passed
+mkdir -p "build-unit6-root/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 build-unit6-root/main.o build-unit6-root/AppController.o build-unit6-root/AppWindow.o build-unit6-root/AppObserverCommands.o build-unit6-root/observer_places.o build-unit6-root/gui_file_io.o build-unit6-root/AppPlusCommands.o build-unit6-root/AppDisplayCommands.o build-unit6-root/AppTimeCommands.o build-unit6-root/AppSmallBodyCommands.o build-unit6-root/AppSmallBodySmokeTests.o build-unit6-root/MediaController.o build-unit6-root/MediaImageView.o build-unit6-root/media_catalog.o build-unit6-root/SmallBodyController.o build-unit6-root/small_body_model.o build-unit6-root/SmallBodyRenderer.o build-unit6-root/SolarSmallBodies.o build-unit6-root/AppSessionCommands.o build-unit6-root/AppScripting.o build-unit6-root/CatalogBrowserController.o build-unit6-root/catalog_browser_model.o build-unit6-root/DisplayOutputController.o build-unit6-root/ScriptController.o build-unit6-root/script_transport.o build-unit6-root/HorizonView.o build-unit6-root/extended_catalogs.o build-unit6-root/session_state.o build-unit6-root/SkyCatalogRenderer.o build-unit6-root/StarRenderer.o build-unit6-root/RendererQuality.o build-unit6-root/star_labels.o build-unit6-root/sky_catalog_index.o build-unit6-root/AppSmokeTests.o build-unit6-root/AppPlusSmokeTests.o build-unit6-root/AppScriptSmokeTests.o build-unit6-root/AppFlightSmokeTests.o build-unit6-root/PlaybackController.o build-unit6-root/SkyView.o build-unit6-root/SolarSystemView.o build-unit6-root/SolarSystemNavigation.o build-unit6-root/SolarSystemSmokeTests.o build-unit6-root/SolarSceneRenderer.o build-unit6-root/GridRenderer.o build-unit6-root/grid_geometry.o build-unit6-root/distance_scales.o build-unit6-root/sky_model.o build-unit6-root/solar_camera.o build-unit6-root/planet_surface.o build-unit6-root/planet_textures.o build-unit6-root/local_image.o build-unit6-root/sky_background.o build-unit6-root/calendar_time.o build-unit6-root/playback_clock.o build-unit6-root/surface_navigation.o build-unit6-root/interplanetary_flight.o build-unit6-root/AppWindowCommands.o build-unit6-root/WindowPresentationController.o build-unit6-root/html_bridge_policy.o build-unit6-root/HtmlBrowserController.o build-unit6-root/satellite_browser_model.o build-unit6-root/SatelliteController.o build-unit6-root/AppSatelliteCommands.o build-unit6-root/SatelliteRenderer.o build-unit6-root/SolarSatellites.o build-unit6-root/satellite_scene.o build-unit6-root/AppSatelliteSmokeTests.o build-unit6-root/SpacecraftController.o build-unit6-root/SpacecraftRenderer.o build-unit6-root/spacecraft_browser_model.o build-unit6-root/SolarSpacecraft.o build-unit6-root/AppSpacecraftCommands.o build-unit6-root/small_body_display.o build-unit6-root/satellite_display.o build-unit6-root/constellation_display.o build-unit6-root/horizon_segments.o build-unit6-root/AppConstellationCommands.o build-unit6-root/small_body_orbit_model.o build-unit6-root/SmallBodyOrbitController.o build-unit6-root/ConstellationRenderer.o build-unit6-root/satellite_orbit_geometry.o build-unit6-root/session_layers.o build-unit6-root/session_layers_json.o build-unit6-root/AppSessionSmokeTests.o build-unit6-root/AppStarCommands.o build-unit6-root/earth_layers.o build-unit6-root/atmosphere_renderer.o build-unit6-root/star_brightness.o build-unit6-root/StarBrightnessController.o build-unit6-root/AppStarNameCommands.o build-unit6-root/star_name_selection.o build-unit6-root/constellation_art_model.o build-unit6-root/constellation_art_projection.o build-unit6-root/ConstellationArtRenderer.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-root/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build-unit6-root/Mitaka Native.app/Contents/MacOS/MitakaNative"
+CAB projection tests passed: 120699 checks
+"build-unit6-root/test_horizon_background_view"
+cp "build-unit6-root/MitakaScript" "build-unit6-root/Mitaka Native.app/Contents/MacOS/MitakaScript"
+cp Info.plist "build-unit6-root/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-unit6-root/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build-unit6-root/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+cp LUA_LICENSE.txt "build-unit6-root/Mitaka Native.app/Contents/Resources/LUA_LICENSE.txt"
+Earth scene tests passed (49 checks)
+horizon background view: 461593 checks passed (no windows)
+"build-unit6-root/test_constellation_display"
+Constellation display tests passed: 112 checks
+"build-unit6-root/test_horizon_segments"
+Horizon segment tests passed: 101337 checks
+"build-unit6-root/test_satellite_orbit_geometry"
+Satellite orbit geometry: 24 checks PASS
+"build-unit6-root/test_session_layers"
+session layers: 31 checks passed
+"build-unit6-root/test_small_body_orbit_model"
+Small-body orbit model tests passed: 47 checks
+"build-unit6-root/test_small_body_orbit_controller"
+Small-body orbit controller tests passed: 59 checks
+"build-unit6-root/test_spacecraft_browser_model"
+Spacecraft browser model: 34 checks PASS
+"build-unit6-root/test_spacecraft_renderer"
+Spacecraft renderer: 28810 checks PASS
+"build-unit6-root/test_small_body_display"
+small_body_display: 295 checks passed
+"build-unit6-root/test_satellite_display"
+satellite_display: 138 checks passed
+"build-unit6-root/test_satellite_scene"
+Satellite scene: 658 checks PASS
+"build-unit6-root/test_satellite_browser_model"
+Satellite browser model: 21 checks PASS
+"build-unit6-root/test_grid_geometry"
+grid geometry tests passed
+"build-unit6-root/test_distance_scales"
+distance scale tests passed (127 checks)
+"build-unit6-root/test_grid_renderer"
+grid renderer tests passed (101 checks)
+"build-unit6-root/test_renderer_quality"
+renderer_quality: 64 checks passed
+"build-unit6-root/test_html_bridge_policy"
+html bridge policy: 80 checks passed
+"build-unit6-root/test_display_rendering"
+display rendering tests passed (103 checks)
+"build-unit6-root/test_star_labels"
+star labels and markings passed
+"build-unit6-root/test_small_body_model"
+Small-body model tests passed: 20135 checks
+"build-unit6-root/test_media_catalog"
+media_catalog: 45 checks passed
+"build-unit6-root/test_calendar_time"
+Calendar time tests passed: 333 checks
+"build-unit6-root/test_sky_background"
+sky background tests passed
+"build-unit6-root/test_gui_file_io"
+GUI file I/O: 51 checks passed
+"build-unit6-root/test_observer_places"
+Observer places: 445 checks passed
+"build-unit6-root/test_catalog_browser_model"
+Synthetic last-record search: 1000037 galaxies, 25.9136 ms
+Catalog browser model tests passed: 23 checks
+"build-unit6-root/test_extended_catalogs"
+Extended catalog aggregate tests passed
+"build-unit6-root/test_sky_catalog_index"
+sky catalog index tests passed
+"build-unit6-root/test_session_state"
+session state: 1464 checks passed
+"build-unit6-root/test_sky_model"
+sky model tests passed
+"build-unit6-root/test_solar_model"
+solar model tests passed
+"build-unit6-root/test_planet_surface"
+planet surface tests passed
+"build-unit6-root/test_planet_textures"
+planet texture tests passed
+"build-unit6-root/test_playback_clock"
+playback clock: 10134 checks passed
+"build-unit6-root/test_surface_navigation"
+surface navigation tests passed
+"build-unit6-root/test_interplanetary_flight"
+Interplanetary flight tests passed

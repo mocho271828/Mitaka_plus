@@ -1,0 +1,73 @@
+mkdir -p "build-unit6-root-x86"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/astronomy.cpp -o build-unit6-root-x86/astronomy.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/catalog.cpp -o build-unit6-root-x86/catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/ephemeris.cpp -o build-unit6-root-x86/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/rotation.cpp -o build-unit6-root-x86/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/lunar.cpp -o build-unit6-root-x86/lunar.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/observation.cpp -o build-unit6-root-x86/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/extended_catalog.cpp -o build-unit6-root-x86/extended_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/place_catalog.cpp -o build-unit6-root-x86/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/small_body_catalog.cpp -o build-unit6-root-x86/small_body_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/small_body_text.cpp -o build-unit6-root-x86/small_body_text.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/small_body_orbit.cpp -o build-unit6-root-x86/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_catalog.cpp -o build-unit6-root-x86/satellite_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_catalog_parser.cpp -o build-unit6-root-x86/satellite_catalog_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_position.cpp -o build-unit6-root-x86/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_rotation.cpp -o build-unit6-root-x86/satellite_rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_model.cpp -o build-unit6-root-x86/satellite_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_registration.cpp -o build-unit6-root-x86/satellite_registration.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/satellite_absolute.cpp -o build-unit6-root-x86/satellite_absolute.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/spacecraft_trajectory.cpp -o build-unit6-root-x86/spacecraft_trajectory.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o build-unit6-root-x86/spacecraft_trajectory_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/spacecraft_position.cpp -o build-unit6-root-x86/spacecraft_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/minor_planet_position.cpp -o build-unit6-root-x86/minor_planet_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/small_body_orbit_path.cpp -o build-unit6-root-x86/small_body_orbit_path.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/atmosphere.cpp -o build-unit6-root-x86/atmosphere.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/atmosphere_multiple.cpp -o build-unit6-root-x86/atmosphere_multiple.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/atmosphere_emission_map.cpp -o build-unit6-root-x86/atmosphere_emission_map.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -MMD -MP -c src/constellation_art.cpp -o build-unit6-root-x86/constellation_art.o
+xcrun ar rcs build-unit6-root-x86/libmitaka_core.a build-unit6-root-x86/astronomy.o build-unit6-root-x86/catalog.o build-unit6-root-x86/ephemeris.o build-unit6-root-x86/rotation.o build-unit6-root-x86/lunar.o build-unit6-root-x86/observation.o build-unit6-root-x86/extended_catalog.o build-unit6-root-x86/place_catalog.o build-unit6-root-x86/small_body_catalog.o build-unit6-root-x86/small_body_text.o build-unit6-root-x86/small_body_orbit.o build-unit6-root-x86/satellite_catalog.o build-unit6-root-x86/satellite_catalog_parser.o build-unit6-root-x86/satellite_position.o build-unit6-root-x86/satellite_rotation.o build-unit6-root-x86/satellite_model.o build-unit6-root-x86/satellite_registration.o build-unit6-root-x86/satellite_absolute.o build-unit6-root-x86/spacecraft_trajectory.o build-unit6-root-x86/spacecraft_trajectory_parser.o build-unit6-root-x86/spacecraft_position.o build-unit6-root-x86/minor_planet_position.o build-unit6-root-x86/small_body_orbit_path.o build-unit6-root-x86/atmosphere.o build-unit6-root-x86/atmosphere_multiple.o build-unit6-root-x86/atmosphere_emission_map.o build-unit6-root-x86/constellation_art.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tools/core_probe.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/core_probe
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_astronomy.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_catalog.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_ephemeris.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_rotation.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_lunar.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_observation.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_extended_catalog.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_place_catalog.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_place_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_small_body_orbit.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_small_body_orbit
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_small_body_catalog.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_small_body_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_catalog.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_satellite_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_position.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_satellite_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_rotation.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_satellite_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_model.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_satellite_model
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_absolute.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_satellite_absolute
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_spacecraft_trajectory.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_spacecraft_trajectory
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_spacecraft_position.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_spacecraft_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_minor_planet_position.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_minor_planet_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_small_body_orbit_path.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_small_body_orbit_path
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_atmosphere.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_atmosphere
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_constellation_art.cpp build-unit6-root-x86/libmitaka_core.a -arch x86_64 -o build-unit6-root-x86/test_constellation_art
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 117 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+PTH benchmark: 100003 samples, construction 0.163 ms, 25000 queries 3.79062 ms
+spacecraft position: 75954 checks PASS
+minor-planet position: 90730 checks passed
+small_body_orbit_path: 141 checks passed
+atmosphere: 733 checks passed
+CAB tests passed: 98 checks

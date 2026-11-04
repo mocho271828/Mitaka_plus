@@ -1,0 +1,16 @@
+# Varuna
+
+Name: Varuna
+DisplayName: Varuna
+No: 20000
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 42.900001
+e: 0.052000
+w: 265.799988
+M0: 98.199997
+i: 17.200001
+node: 97.300003
+Size: 300 300 300
+B_V: 0.85

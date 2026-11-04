@@ -1,0 +1,73 @@
+mkdir -p "build"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/astronomy.cpp -o build/astronomy.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/catalog.cpp -o build/catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/ephemeris.cpp -o build/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/rotation.cpp -o build/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/lunar.cpp -o build/lunar.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/observation.cpp -o build/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/extended_catalog.cpp -o build/extended_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/place_catalog.cpp -o build/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/small_body_catalog.cpp -o build/small_body_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/small_body_text.cpp -o build/small_body_text.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/small_body_orbit.cpp -o build/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_catalog.cpp -o build/satellite_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_catalog_parser.cpp -o build/satellite_catalog_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_position.cpp -o build/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_rotation.cpp -o build/satellite_rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_model.cpp -o build/satellite_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_registration.cpp -o build/satellite_registration.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/satellite_absolute.cpp -o build/satellite_absolute.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/spacecraft_trajectory.cpp -o build/spacecraft_trajectory.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o build/spacecraft_trajectory_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/spacecraft_position.cpp -o build/spacecraft_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/minor_planet_position.cpp -o build/minor_planet_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/small_body_orbit_path.cpp -o build/small_body_orbit_path.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere.cpp -o build/atmosphere.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere_multiple.cpp -o build/atmosphere_multiple.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/atmosphere_emission_map.cpp -o build/atmosphere_emission_map.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/constellation_art.cpp -o build/constellation_art.o
+xcrun ar rcs build/libmitaka_core.a build/astronomy.o build/catalog.o build/ephemeris.o build/rotation.o build/lunar.o build/observation.o build/extended_catalog.o build/place_catalog.o build/small_body_catalog.o build/small_body_text.o build/small_body_orbit.o build/satellite_catalog.o build/satellite_catalog_parser.o build/satellite_position.o build/satellite_rotation.o build/satellite_model.o build/satellite_registration.o build/satellite_absolute.o build/spacecraft_trajectory.o build/spacecraft_trajectory_parser.o build/spacecraft_position.o build/minor_planet_position.o build/small_body_orbit_path.o build/atmosphere.o build/atmosphere_multiple.o build/atmosphere_emission_map.o build/constellation_art.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tools/core_probe.cpp build/libmitaka_core.a  -o build/core_probe
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_astronomy.cpp build/libmitaka_core.a  -o build/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_catalog.cpp build/libmitaka_core.a  -o build/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_ephemeris.cpp build/libmitaka_core.a  -o build/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_rotation.cpp build/libmitaka_core.a  -o build/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_lunar.cpp build/libmitaka_core.a  -o build/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_observation.cpp build/libmitaka_core.a  -o build/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_extended_catalog.cpp build/libmitaka_core.a  -o build/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_place_catalog.cpp build/libmitaka_core.a  -o build/test_place_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_orbit.cpp build/libmitaka_core.a  -o build/test_small_body_orbit
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_catalog.cpp build/libmitaka_core.a  -o build/test_small_body_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_catalog.cpp build/libmitaka_core.a  -o build/test_satellite_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_position.cpp build/libmitaka_core.a  -o build/test_satellite_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_rotation.cpp build/libmitaka_core.a  -o build/test_satellite_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_model.cpp build/libmitaka_core.a  -o build/test_satellite_model
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_satellite_absolute.cpp build/libmitaka_core.a  -o build/test_satellite_absolute
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_spacecraft_trajectory.cpp build/libmitaka_core.a  -o build/test_spacecraft_trajectory
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_spacecraft_position.cpp build/libmitaka_core.a  -o build/test_spacecraft_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_minor_planet_position.cpp build/libmitaka_core.a  -o build/test_minor_planet_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_small_body_orbit_path.cpp build/libmitaka_core.a  -o build/test_small_body_orbit_path
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_atmosphere.cpp build/libmitaka_core.a  -o build/test_atmosphere
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_constellation_art.cpp build/libmitaka_core.a  -o build/test_constellation_art
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 117 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+PTH benchmark: 100003 samples, construction 0.106583 ms, 25000 queries 3.57908 ms
+spacecraft position: 75954 checks PASS
+minor-planet position: 90730 checks passed
+small_body_orbit_path: 141 checks passed
+atmosphere: 733 checks passed
+CAB tests passed: 98 checks

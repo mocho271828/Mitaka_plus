@@ -1,0 +1,16 @@
+# Chaos
+
+Name: Chaos
+DisplayName: Chaos
+No: 19521
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 45.564001
+e: 0.101000
+w: 59.000000
+M0: 325.700012
+i: 12.100000
+node: 50.000000
+Size: 500 500 500
+B_V: 0.75

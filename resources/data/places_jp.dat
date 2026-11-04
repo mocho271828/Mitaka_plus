@@ -1,0 +1,10 @@
+Places:addLabelGroup("Default", 0.0, 0.8, 0.7, 0.7, 0.7, 1.0);
+
+Places:addLandscape("Planet.Earth", "Shinjuku", "textures/shinjuku.png", 0.25, 0, 0);
+Places:addLandscape("Planet.Earth", "city2", "textures/seki2.png", 0.25, 0, 0);
+
+Places:addPlace("Planet.Earth.Tatesho", "国立立山青少年自然の家", 139.758, 36.1957, "", "city2");
+Places:addPlace("Planet.Earth.Place", "立少", 137.41, 36.59, "", "");
+Places:addPlace("Planet.Earth.Place_2", "北極", 0, 90, "", "");
+Places:addPlace("Planet.Earth.Place_3", "新規観測地", 79.6364, 33.6145, "", "");
+

@@ -1,0 +1,16 @@
+# Flora
+
+Name: Flora
+DisplayName: Flora
+No: 8
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.201433
+e: 0.156083
+w: 285.008087
+M0: 61.796822
+i: 5.885890
+node: 111.057365
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,16 @@
+# Amor
+
+Name: Amor
+DisplayName: Amor
+No: 1221
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.919121
+e: 0.435632
+w: 26.274300
+M0: 314.455078
+i: 11.894771
+node: 171.512375
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,7 @@
+raw href preserved: mtkp://Camera.zoom = 0.001; Stars.visible=true;
+raw href preserved: mtkp://Time:setTime(2009,7,22,0,30,0);Time.speed=0;
+raw href preserved: mtkp://Camera:toggleModeTo();
+raw href preserved: mtkp://Camera.target = 'Planet.Earth';
+raw href preserved: mtkp://dofile('ui/scripts/eclipse_20090722.lua');
+external resource requests: protected=0 baseline=4
+WebKit raw href probe: 65 checks passed

@@ -1,0 +1,399 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  5901b0: 53                           	push	ebx
+  5901b1: 8b dc                        	mov	ebx, esp
+  5901b3: 83 e4 f8                     	and	esp, -0x8
+  5901b6: 55                           	push	ebp
+  5901b7: 55                           	push	ebp
+  5901b8: 8b 6b 04                     	mov	ebp, dword ptr [ebx + 0x4]
+  5901bb: 89 6c 24 04                  	mov	dword ptr [esp + 0x4], ebp
+  5901bf: 8b ec                        	mov	ebp, esp
+  5901c1: 6a ff                        	push	-0x1
+  5901c3: 68 c0 a5 bf 00               	push	0xbfa5c0
+  5901c8: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]
+  5901ce: 50                           	push	eax
+  5901cf: 64 89 25 00 00 00 00         	mov	dword ptr fs:[0x0], esp
+  5901d6: 81 ec 64 04 00 00            	sub	esp, 0x464
+  5901dc: 89 5d ec                     	mov	dword ptr [ebp - 0x14], ebx
+  5901df: 89 7d e0                     	mov	dword ptr [ebp - 0x20], edi
+  5901e2: 89 75 e4                     	mov	dword ptr [ebp - 0x1c], esi
+  5901e5: 8b f9                        	mov	edi, ecx
+  5901e7: a1 10 53 d8 00               	mov	eax, dword ptr [0xd85310]
+  5901ec: 68 d4 97 c2 00               	push	0xc297d4
+  5901f1: 89 45 e8                     	mov	dword ptr [ebp - 0x18], eax
+  5901f4: 8d b5 f4 fe ff ff            	lea	esi, [ebp - 0x10c]
+  5901fa: 8b ce                        	mov	ecx, esi
+  5901fc: ff 15 b8 53 c2 00            	call	dword ptr [0xc253b8]
+  590202: 8b 53 0c                     	mov	edx, dword ptr [ebx + 0xc]
+  590205: c7 45 fc 0f 00 00 00         	mov	dword ptr [ebp - 0x4], 0xf
+  59020c: 8d 45 d0                     	lea	eax, [ebp - 0x30]
+  59020f: 83 c4 f4                     	add	esp, -0xc
+  590212: 89 04 24                     	mov	dword ptr [esp], eax
+  590215: 89 54 24 04                  	mov	dword ptr [esp + 0x4], edx
+  590219: 89 74 24 08                  	mov	dword ptr [esp + 0x8], esi
+  59021d: e8 de 11 e8 ff               	call	0x411400 <.text+0x10400>
+  590222: 83 c4 0c                     	add	esp, 0xc
+  590225: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  59022c: 8b ce                        	mov	ecx, esi
+  59022e: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  590234: 8b 73 08                     	mov	esi, dword ptr [ebx + 0x8]
+  590237: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  59023a: e8 81 1c 00 00               	call	0x591ec0 <.text+0x190ec0>
+  59023f: 85 c0                        	test	eax, eax
+  590241: 74 2c                        	je	0x59026f <.text+0x18f26f>
+  590243: 6a 00                        	push	0x0
+  590245: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  590248: e8 a3 1c 00 00               	call	0x591ef0 <.text+0x190ef0>
+  59024d: 83 c4 f8                     	add	esp, -0x8
+  590250: c7 44 24 04 b0 d5 c2 00      	mov	dword ptr [esp + 0x4], 0xc2d5b0
+  590258: 89 04 24                     	mov	dword ptr [esp], eax
+  59025b: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  590261: 83 c4 08                     	add	esp, 0x8
+  590264: 0f b6 c0                     	movzx	eax, al
+  590267: 85 c0                        	test	eax, eax
+  590269: 0f 84 f7 00 00 00            	je	0x590366 <.text+0x18f366>
+  59026f: 68 b0 d5 c2 00               	push	0xc2d5b0
+  590274: 8d bd d8 fe ff ff            	lea	edi, [ebp - 0x128]
+  59027a: 8b cf                        	mov	ecx, edi
+  59027c: ff 15 b8 53 c2 00            	call	dword ptr [0xc253b8]
+  590282: c7 45 fc 0e 00 00 00         	mov	dword ptr [ebp - 0x4], 0xe
+  590289: 8d 55 b8                     	lea	edx, [ebp - 0x48]
+  59028c: 83 c4 ec                     	add	esp, -0x14
+  59028f: c7 44 24 0c 00 00 80 3f      	mov	dword ptr [esp + 0xc], 0x3f800000
+  590297: 66 0f ef c0                  	pxor	xmm0, xmm0
+  59029b: f2 0f 11 45 b8               	movsd	qword ptr [ebp - 0x48], xmm0
+  5902a0: f2 0f 11 45 c0               	movsd	qword ptr [ebp - 0x40], xmm0
+  5902a5: f2 0f 11 45 c8               	movsd	qword ptr [ebp - 0x38], xmm0
+  5902aa: 89 7c 24 04                  	mov	dword ptr [esp + 0x4], edi
+  5902ae: 89 54 24 10                  	mov	dword ptr [esp + 0x10], edx
+  5902b2: 33 c0                        	xor	eax, eax
+  5902b4: 88 04 24                     	mov	byte ptr [esp], al
+  5902b7: 8b ce                        	mov	ecx, esi
+  5902b9: 89 44 24 08                  	mov	dword ptr [esp + 0x8], eax
+  5902bd: e8 0e 96 00 00               	call	0x5998d0 <.text+0x1988d0>
+  5902c2: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  5902c9: 8b cf                        	mov	ecx, edi
+  5902cb: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  5902d1: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  5902d8: 8b 7d d4                     	mov	edi, dword ptr [ebp - 0x2c]
+  5902db: 85 ff                        	test	edi, edi
+  5902dd: 74 59                        	je	0x590338 <.text+0x18f338>
+  5902df: 8b 4d d8                     	mov	ecx, dword ptr [ebp - 0x28]
+  5902e2: 89 8d 90 fb ff ff            	mov	dword ptr [ebp - 0x470], ecx
+  5902e8: 33 c0                        	xor	eax, eax
+  5902ea: 33 d2                        	xor	edx, edx
+  5902ec: 2b cf                        	sub	ecx, edi
+  5902ee: 83 da 00                     	sbb	edx, 0x0
+  5902f1: 50                           	push	eax
+  5902f2: 83 c1 1b                     	add	ecx, 0x1b
+  5902f5: 83 d2 00                     	adc	edx, 0x0
+  5902f8: 6a 1c                        	push	0x1c
+  5902fa: 52                           	push	edx
+  5902fb: 51                           	push	ecx
+  5902fc: e8 6f ed 4f 00               	call	0xa8f070 <.text+0x68e070>
+  590301: 3b bd 90 fb ff ff            	cmp	edi, dword ptr [ebp - 0x470]
+  590307: 74 28                        	je	0x590331 <.text+0x18f331>
+  590309: 33 d2                        	xor	edx, edx
+  59030b: 33 c9                        	xor	ecx, ecx
+  59030d: 83 7f 18 10                  	cmp	dword ptr [edi + 0x18], 0x10
+  590311: 0f 83 cb 09 00 00            	jae	0x590ce2 <.text+0x18fce2>
+  590317: c7 47 18 0f 00 00 00         	mov	dword ptr [edi + 0x18], 0xf
+  59031e: 33 d2                        	xor	edx, edx
+  590320: 89 57 14                     	mov	dword ptr [edi + 0x14], edx
+  590323: 88 57 04                     	mov	byte ptr [edi + 0x4], dl
+  590326: 83 c7 1c                     	add	edi, 0x1c
+  590329: 41                           	inc	ecx
+  59032a: 3b c8                        	cmp	ecx, eax
+  59032c: 72 df                        	jb	0x59030d <.text+0x18f30d>
+  59032e: 8b 7d d4                     	mov	edi, dword ptr [ebp - 0x2c]
+  590331: 57                           	push	edi
+  590332: e8 5b ec 4f 00               	call	0xa8ef92 <.text+0x68df92>
+  590337: 59                           	pop	ecx
+  590338: 33 c0                        	xor	eax, eax
+  59033a: 89 45 d4                     	mov	dword ptr [ebp - 0x2c], eax
+  59033d: 89 45 d8                     	mov	dword ptr [ebp - 0x28], eax
+  590340: 89 45 dc                     	mov	dword ptr [ebp - 0x24], eax
+  590343: 8b 4d e8                     	mov	ecx, dword ptr [ebp - 0x18]
+  590346: e8 75 eb 4f 00               	call	0xa8eec0 <.text+0x68dec0>
+  59034b: 8b 7d e0                     	mov	edi, dword ptr [ebp - 0x20]
+  59034e: 8b c6                        	mov	eax, esi
+  590350: 8b 75 e4                     	mov	esi, dword ptr [ebp - 0x1c]
+  590353: 8b 4d f4                     	mov	ecx, dword ptr [ebp - 0xc]
+  590356: 64 89 0d 00 00 00 00         	mov	dword ptr fs:[0x0], ecx
+  59035d: 8b e5                        	mov	esp, ebp
+  59035f: 5d                           	pop	ebp
+  590360: 8b e3                        	mov	esp, ebx
+  590362: 5b                           	pop	ebx
+  590363: c2 08 00                     	ret	0x8
+  590366: 6a 00                        	push	0x0
+  590368: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  59036b: e8 80 1b 00 00               	call	0x591ef0 <.text+0x190ef0>
+  590370: 8d 8d bc fe ff ff            	lea	ecx, [ebp - 0x144]
+  590376: 50                           	push	eax
+  590377: ff 15 14 54 c2 00            	call	dword ptr [0xc25414]
+  59037d: c7 45 fc 01 00 00 00         	mov	dword ptr [ebp - 0x4], 0x1
+  590384: 8d 8d a0 fe ff ff            	lea	ecx, [ebp - 0x160]
+  59038a: ff 15 18 54 c2 00            	call	dword ptr [0xc25418]
+  590390: c7 45 fc 02 00 00 00         	mov	dword ptr [ebp - 0x4], 0x2
+  590397: 8d 8d 84 fe ff ff            	lea	ecx, [ebp - 0x17c]
+  59039d: ff 15 18 54 c2 00            	call	dword ptr [0xc25418]
+  5903a3: c7 45 fc 03 00 00 00         	mov	dword ptr [ebp - 0x4], 0x3
+  5903aa: 8d 8d 68 fe ff ff            	lea	ecx, [ebp - 0x198]
+  5903b0: ff 15 18 54 c2 00            	call	dword ptr [0xc25418]
+  5903b6: c7 45 fc 04 00 00 00         	mov	dword ptr [ebp - 0x4], 0x4
+  5903bd: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  5903c3: 50                           	push	eax
+  5903c4: 8d 8d 84 fe ff ff            	lea	ecx, [ebp - 0x17c]
+  5903ca: ff 15 1c 54 c2 00            	call	dword ptr [0xc2541c]
+  5903d0: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  5903d3: e8 e8 1a 00 00               	call	0x591ec0 <.text+0x190ec0>
+  5903d8: 83 f8 01                     	cmp	eax, 0x1
+  5903db: 0f 86 bc 00 00 00            	jbe	0x59049d <.text+0x18f49d>
+  5903e1: 6a 01                        	push	0x1
+  5903e3: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  5903e6: e8 05 1b 00 00               	call	0x591ef0 <.text+0x190ef0>
+  5903eb: 50                           	push	eax
+  5903ec: 8d 8d a0 fe ff ff            	lea	ecx, [ebp - 0x160]
+  5903f2: ff 15 1c 54 c2 00            	call	dword ptr [0xc2541c]
+  5903f8: 68 d4 97 c2 00               	push	0xc297d4
+  5903fd: 8d 8d 4c fe ff ff            	lea	ecx, [ebp - 0x1b4]
+  590403: ff 15 b8 53 c2 00            	call	dword ptr [0xc253b8]
+  590409: c7 45 fc 0c 00 00 00         	mov	dword ptr [ebp - 0x4], 0xc
+  590410: 8d 85 30 fe ff ff            	lea	eax, [ebp - 0x1d0]
+  590416: 8d 95 4c fe ff ff            	lea	edx, [ebp - 0x1b4]
+  59041c: 8d 8d a0 fe ff ff            	lea	ecx, [ebp - 0x160]
+  590422: 83 c4 f4                     	add	esp, -0xc
+  590425: 89 04 24                     	mov	dword ptr [esp], eax
+  590428: 89 54 24 04                  	mov	dword ptr [esp + 0x4], edx
+  59042c: 89 4c 24 08                  	mov	dword ptr [esp + 0x8], ecx
+  590430: ff 15 f0 53 c2 00            	call	dword ptr [0xc253f0]
+  590436: 83 c4 0c                     	add	esp, 0xc
+  590439: c7 45 fc 0d 00 00 00         	mov	dword ptr [ebp - 0x4], 0xd
+  590440: 8d 85 30 fe ff ff            	lea	eax, [ebp - 0x1d0]
+  590446: 50                           	push	eax
+  590447: 8d 8d 84 fe ff ff            	lea	ecx, [ebp - 0x17c]
+  59044d: ff 15 20 54 c2 00            	call	dword ptr [0xc25420]
+  590453: c7 45 fc 0c 00 00 00         	mov	dword ptr [ebp - 0x4], 0xc
+  59045a: 8d 8d 30 fe ff ff            	lea	ecx, [ebp - 0x1d0]
+  590460: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  590466: c7 45 fc 04 00 00 00         	mov	dword ptr [ebp - 0x4], 0x4
+  59046d: 8d 8d 4c fe ff ff            	lea	ecx, [ebp - 0x1b4]
+  590473: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  590479: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  59047c: e8 3f 1a 00 00               	call	0x591ec0 <.text+0x190ec0>
+  590481: 83 f8 02                     	cmp	eax, 0x2
+  590484: 76 17                        	jbe	0x59049d <.text+0x18f49d>
+  590486: 6a 02                        	push	0x2
+  590488: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  59048b: e8 60 1a 00 00               	call	0x591ef0 <.text+0x190ef0>
+  590490: 50                           	push	eax
+  590491: 8d 8d 68 fe ff ff            	lea	ecx, [ebp - 0x198]
+  590497: ff 15 1c 54 c2 00            	call	dword ptr [0xc2541c]
+  59049d: 8d 95 84 fe ff ff            	lea	edx, [ebp - 0x17c]
+  5904a3: 8d 8d d0 fd ff ff            	lea	ecx, [ebp - 0x230]
+  5904a9: 83 c4 ec                     	add	esp, -0x14
+  5904ac: 89 54 24 04                  	mov	dword ptr [esp + 0x4], edx
+  5904b0: 66 0f ef c0                  	pxor	xmm0, xmm0
+  5904b4: f2 0f 11 45 a0               	movsd	qword ptr [ebp - 0x60], xmm0
+  5904b9: f2 0f 11 45 a8               	movsd	qword ptr [ebp - 0x58], xmm0
+  5904be: f2 0f 11 45 b0               	movsd	qword ptr [ebp - 0x50], xmm0
+  5904c3: 33 c0                        	xor	eax, eax
+  5904c5: 88 04 24                     	mov	byte ptr [esp], al
+  5904c8: c7 44 24 0c 00 00 80 3f      	mov	dword ptr [esp + 0xc], 0x3f800000
+  5904d0: 89 44 24 08                  	mov	dword ptr [esp + 0x8], eax
+  5904d4: 8d 45 a0                     	lea	eax, [ebp - 0x60]
+  5904d7: 89 44 24 10                  	mov	dword ptr [esp + 0x10], eax
+  5904db: e8 f0 93 00 00               	call	0x5998d0 <.text+0x1988d0>
+  5904e0: c7 45 fc 05 00 00 00         	mov	dword ptr [ebp - 0x4], 0x5
+  5904e7: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  5904ed: 83 c4 f8                     	add	esp, -0x8
+  5904f0: c7 44 24 04 b0 c9 c2 00      	mov	dword ptr [esp + 0x4], 0xc2c9b0
+  5904f8: 89 04 24                     	mov	dword ptr [esp], eax
+  5904fb: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  590501: 83 c4 08                     	add	esp, 0x8
+  590504: 0f b6 c0                     	movzx	eax, al
+  590507: 85 c0                        	test	eax, eax
+  590509: 0f 84 95 00 00 00            	je	0x5905a4 <.text+0x18f5a4>
+  59050f: 8d 8d 70 fd ff ff            	lea	ecx, [ebp - 0x290]
+  590515: 8d 85 84 fe ff ff            	lea	eax, [ebp - 0x17c]
+  59051b: 8d 55 88                     	lea	edx, [ebp - 0x78]
+  59051e: 83 c4 ec                     	add	esp, -0x14
+  590521: 66 0f ef c0                  	pxor	xmm0, xmm0
+  590525: f2 0f 11 45 88               	movsd	qword ptr [ebp - 0x78], xmm0
+  59052a: f2 0f 11 45 90               	movsd	qword ptr [ebp - 0x70], xmm0
+  59052f: f2 0f 11 45 98               	movsd	qword ptr [ebp - 0x68], xmm0
+  590534: 89 44 24 04                  	mov	dword ptr [esp + 0x4], eax
+  590538: c6 04 24 01                  	mov	byte ptr [esp], 0x1
+  59053c: 89 54 24 10                  	mov	dword ptr [esp + 0x10], edx
+  590540: c7 44 24 08 00 00 00 00      	mov	dword ptr [esp + 0x8], 0x0
+  590548: c7 44 24 0c 00 00 80 3f      	mov	dword ptr [esp + 0xc], 0x3f800000
+  590550: e8 7b 93 00 00               	call	0x5998d0 <.text+0x1988d0>
+  590555: c7 45 fc 0b 00 00 00         	mov	dword ptr [ebp - 0x4], 0xb
+  59055c: 8d 85 70 fd ff ff            	lea	eax, [ebp - 0x290]
+  590562: 50                           	push	eax
+  590563: 8d 8d d0 fd ff ff            	lea	ecx, [ebp - 0x230]
+  590569: e8 d2 19 00 00               	call	0x591f40 <.text+0x190f40>
+  59056e: c7 45 fc 05 00 00 00         	mov	dword ptr [ebp - 0x4], 0x5
+  590575: 8d 8d 70 fd ff ff            	lea	ecx, [ebp - 0x290]
+  59057b: e8 60 7a ee ff               	call	0x477fe0 <.text+0x76fe0>
+  590580: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  590583: e8 38 19 00 00               	call	0x591ec0 <.text+0x190ec0>
+  590588: 83 f8 01                     	cmp	eax, 0x1
+  59058b: 76 17                        	jbe	0x5905a4 <.text+0x18f5a4>
+  59058d: 6a 01                        	push	0x1
+  59058f: 8d 4d d0                     	lea	ecx, [ebp - 0x30]
+  590592: e8 59 19 00 00               	call	0x591ef0 <.text+0x190ef0>
+  590597: 50                           	push	eax
+  590598: 8d 8d 68 fe ff ff            	lea	ecx, [ebp - 0x198]
+  59059e: ff 15 1c 54 c2 00            	call	dword ptr [0xc2541c]
+  5905a4: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  5905aa: 83 c4 f8                     	add	esp, -0x8
+  5905ad: c7 44 24 04 14 1f c3 00      	mov	dword ptr [esp + 0x4], 0xc31f14
+  5905b5: 89 04 24                     	mov	dword ptr [esp], eax
+  5905b8: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  5905be: 83 c4 08                     	add	esp, 0x8
+  5905c1: 0f b6 c0                     	movzx	eax, al
+  5905c4: 85 c0                        	test	eax, eax
+  5905c6: 74 65                        	je	0x59062d <.text+0x18f62d>
+  5905c8: 8b cf                        	mov	ecx, edi
+  5905ca: e8 31 0d 00 00               	call	0x591300 <.text+0x190300>
+  5905cf: 85 c0                        	test	eax, eax
+  5905d1: 0f 86 ef 05 00 00            	jbe	0x590bc6 <.text+0x18fbc6>
+  5905d7: 33 c0                        	xor	eax, eax
+  5905d9: 89 85 90 fb ff ff            	mov	dword ptr [ebp - 0x470], eax
+  5905df: ff b5 90 fb ff ff            	push	dword ptr [ebp - 0x470]
+  5905e5: 8b cf                        	mov	ecx, edi
+  5905e7: e8 44 0d 00 00               	call	0x591330 <.text+0x190330>
+  5905ec: 83 c4 f8                     	add	esp, -0x8
+  5905ef: 83 c0 04                     	add	eax, 0x4
+  5905f2: 89 04 24                     	mov	dword ptr [esp], eax
+  5905f5: 8d 85 84 fe ff ff            	lea	eax, [ebp - 0x17c]
+  5905fb: 89 44 24 04                  	mov	dword ptr [esp + 0x4], eax
+  5905ff: ff 15 00 54 c2 00            	call	dword ptr [0xc25400]
+  590605: 83 c4 08                     	add	esp, 0x8
+  590608: 0f b6 c0                     	movzx	eax, al
+  59060b: 85 c0                        	test	eax, eax
+  59060d: 0f 85 56 07 00 00            	jne	0x590d69 <.text+0x18fd69>
+  590613: ff 85 90 fb ff ff            	inc	dword ptr [ebp - 0x470]
+  590619: 8b cf                        	mov	ecx, edi
+  59061b: e8 e0 0c 00 00               	call	0x591300 <.text+0x190300>
+  590620: 3b 85 90 fb ff ff            	cmp	eax, dword ptr [ebp - 0x470]
+  590626: 77 b7                        	ja	0x5905df <.text+0x18f5df>
+  590628: e9 99 05 00 00               	jmp	0x590bc6 <.text+0x18fbc6>
+  59062d: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  590633: 83 c4 f8                     	add	esp, -0x8
+  590636: c7 44 24 04 08 1f c3 00      	mov	dword ptr [esp + 0x4], 0xc31f08
+  59063e: 89 04 24                     	mov	dword ptr [esp], eax
+  590641: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  590647: 83 c4 08                     	add	esp, 0x8
+  59064a: 0f b6 c0                     	movzx	eax, al
+  59064d: 85 c0                        	test	eax, eax
+  59064f: 74 68                        	je	0x5906b9 <.text+0x18f6b9>
+  590651: 83 c7 10                     	add	edi, 0x10
+  590654: 8b cf                        	mov	ecx, edi
+  590656: e8 a5 0c 00 00               	call	0x591300 <.text+0x190300>
+  59065b: 85 c0                        	test	eax, eax
+  59065d: 0f 86 63 05 00 00            	jbe	0x590bc6 <.text+0x18fbc6>
+  590663: 33 c0                        	xor	eax, eax
+  590665: 89 85 90 fb ff ff            	mov	dword ptr [ebp - 0x470], eax
+  59066b: ff b5 90 fb ff ff            	push	dword ptr [ebp - 0x470]
+  590671: 8b cf                        	mov	ecx, edi
+  590673: e8 b8 0c 00 00               	call	0x591330 <.text+0x190330>
+  590678: 83 c4 f8                     	add	esp, -0x8
+  59067b: 83 c0 04                     	add	eax, 0x4
+  59067e: 89 04 24                     	mov	dword ptr [esp], eax
+  590681: 8d 85 84 fe ff ff            	lea	eax, [ebp - 0x17c]
+  590687: 89 44 24 04                  	mov	dword ptr [esp + 0x4], eax
+  59068b: ff 15 00 54 c2 00            	call	dword ptr [0xc25400]
+  590691: 83 c4 08                     	add	esp, 0x8
+  590694: 0f b6 c0                     	movzx	eax, al
+  590697: 85 c0                        	test	eax, eax
+  590699: 0f 85 e8 06 00 00            	jne	0x590d87 <.text+0x18fd87>
+  59069f: ff 85 90 fb ff ff            	inc	dword ptr [ebp - 0x470]
+  5906a5: 8b cf                        	mov	ecx, edi
+  5906a7: e8 54 0c 00 00               	call	0x591300 <.text+0x190300>
+  5906ac: 3b 85 90 fb ff ff            	cmp	eax, dword ptr [ebp - 0x470]
+  5906b2: 77 b7                        	ja	0x59066b <.text+0x18f66b>
+  5906b4: e9 0d 05 00 00               	jmp	0x590bc6 <.text+0x18fbc6>
+  5906b9: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  5906bf: 83 c4 f8                     	add	esp, -0x8
+  5906c2: c7 44 24 04 dc f5 c2 00      	mov	dword ptr [esp + 0x4], 0xc2f5dc
+  5906ca: 89 04 24                     	mov	dword ptr [esp], eax
+  5906cd: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  5906d3: 83 c4 08                     	add	esp, 0x8
+  5906d6: 0f b6 c0                     	movzx	eax, al
+  5906d9: 85 c0                        	test	eax, eax
+  5906db: 74 6a                        	je	0x590747 <.text+0x18f747>
+  5906dd: 83 c7 20                     	add	edi, 0x20
+  5906e0: 8b cf                        	mov	ecx, edi
+  5906e2: e8 19 0c 00 00               	call	0x591300 <.text+0x190300>
+  5906e7: 85 c0                        	test	eax, eax
+  5906e9: 0f 86 d7 04 00 00            	jbe	0x590bc6 <.text+0x18fbc6>
+  5906ef: c7 85 90 fb ff ff 00 00 00 00	mov	dword ptr [ebp - 0x470], 0x0
+  5906f9: ff b5 90 fb ff ff            	push	dword ptr [ebp - 0x470]
+  5906ff: 8b cf                        	mov	ecx, edi
+  590701: e8 2a 0c 00 00               	call	0x591330 <.text+0x190330>
+  590706: 83 c4 f8                     	add	esp, -0x8
+  590709: 83 c0 04                     	add	eax, 0x4
+  59070c: 89 04 24                     	mov	dword ptr [esp], eax
+  59070f: 8d 85 84 fe ff ff            	lea	eax, [ebp - 0x17c]
+  590715: 89 44 24 04                  	mov	dword ptr [esp + 0x4], eax
+  590719: ff 15 00 54 c2 00            	call	dword ptr [0xc25400]
+  59071f: 83 c4 08                     	add	esp, 0x8
+  590722: 0f b6 c0                     	movzx	eax, al
+  590725: 85 c0                        	test	eax, eax
+  590727: 0f 85 78 06 00 00            	jne	0x590da5 <.text+0x18fda5>
+  59072d: ff 85 90 fb ff ff            	inc	dword ptr [ebp - 0x470]
+  590733: 8b cf                        	mov	ecx, edi
+  590735: e8 c6 0b 00 00               	call	0x591300 <.text+0x190300>
+  59073a: 3b 85 90 fb ff ff            	cmp	eax, dword ptr [ebp - 0x470]
+  590740: 77 b7                        	ja	0x5906f9 <.text+0x18f6f9>
+  590742: e9 7f 04 00 00               	jmp	0x590bc6 <.text+0x18fbc6>
+  590747: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  59074d: 83 c4 f8                     	add	esp, -0x8
+  590750: c7 44 24 04 f0 0c c3 00      	mov	dword ptr [esp + 0x4], 0xc30cf0
+  590758: 89 04 24                     	mov	dword ptr [esp], eax
+  59075b: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  590761: 83 c4 08                     	add	esp, 0x8
+  590764: 0f b6 c0                     	movzx	eax, al
+  590767: 85 c0                        	test	eax, eax
+  590769: 74 75                        	je	0x5907e0 <.text+0x18f7e0>
+  59076b: 83 c7 30                     	add	edi, 0x30
+  59076e: 8b cf                        	mov	ecx, edi
+  590770: e8 8b 0b 00 00               	call	0x591300 <.text+0x190300>
+  590775: 85 c0                        	test	eax, eax
+  590777: 76 53                        	jbe	0x5907cc <.text+0x18f7cc>
+  590779: c7 85 90 fb ff ff 00 00 00 00	mov	dword ptr [ebp - 0x470], 0x0
+  590783: ff b5 90 fb ff ff            	push	dword ptr [ebp - 0x470]
+  590789: 8b cf                        	mov	ecx, edi
+  59078b: e8 a0 0b 00 00               	call	0x591330 <.text+0x190330>
+  590790: 83 c4 f8                     	add	esp, -0x8
+  590793: 83 c0 04                     	add	eax, 0x4
+  590796: 89 04 24                     	mov	dword ptr [esp], eax
+  590799: 8d 85 84 fe ff ff            	lea	eax, [ebp - 0x17c]
+  59079f: 89 44 24 04                  	mov	dword ptr [esp + 0x4], eax
+  5907a3: ff 15 00 54 c2 00            	call	dword ptr [0xc25400]
+  5907a9: 83 c4 08                     	add	esp, 0x8
+  5907ac: 0f b6 c0                     	movzx	eax, al
+  5907af: 85 c0                        	test	eax, eax
+  5907b1: 0f 85 0c 06 00 00            	jne	0x590dc3 <.text+0x18fdc3>
+  5907b7: ff 85 90 fb ff ff            	inc	dword ptr [ebp - 0x470]
+  5907bd: 8b cf                        	mov	ecx, edi
+  5907bf: e8 3c 0b 00 00               	call	0x591300 <.text+0x190300>
+  5907c4: 3b 85 90 fb ff ff            	cmp	eax, dword ptr [ebp - 0x470]
+  5907ca: 77 b7                        	ja	0x590783 <.text+0x18f783>
+  5907cc: 0f be 85 d0 fd ff ff         	movsx	eax, byte ptr [ebp - 0x230]
+  5907d3: 85 c0                        	test	eax, eax
+  5907d5: 0f 84 96 09 00 00            	je	0x591171 <.text+0x190171>
+  5907db: e9 ed 03 00 00               	jmp	0x590bcd <.text+0x18fbcd>
+  5907e0: 8d 85 bc fe ff ff            	lea	eax, [ebp - 0x144]
+  5907e6: 83 c4 f8                     	add	esp, -0x8
+  5907e9: c7 44 24 04 a0 51 c3 00      	mov	dword ptr [esp + 0x4], 0xc351a0
+  5907f1: 89 04 24                     	mov	dword ptr [esp], eax
+  5907f4: ff 15 c8 53 c2 00            	call	dword ptr [0xc253c8]
+  5907fa: 83 c4 08                     	add	esp, 0x8
+  5907fd: 0f b6 c0                     	movzx	eax, al

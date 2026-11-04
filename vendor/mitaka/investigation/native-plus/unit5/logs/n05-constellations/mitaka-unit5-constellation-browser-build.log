@@ -1,0 +1,2 @@
+mkdir -p "build-unit5-time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/CatalogBrowserController.mm -o "build-unit5-time/CatalogBrowserController.o"

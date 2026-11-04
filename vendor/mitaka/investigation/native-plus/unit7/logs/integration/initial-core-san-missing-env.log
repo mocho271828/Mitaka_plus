@@ -1,0 +1,106 @@
+mkdir -p "build-unit7-root-san"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/astronomy.cpp -o build-unit7-root-san/astronomy.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/catalog.cpp -o build-unit7-root-san/catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/ephemeris.cpp -o build-unit7-root-san/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/rotation.cpp -o build-unit7-root-san/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/lunar.cpp -o build-unit7-root-san/lunar.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/observation.cpp -o build-unit7-root-san/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/extended_catalog.cpp -o build-unit7-root-san/extended_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/place_catalog.cpp -o build-unit7-root-san/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_catalog.cpp -o build-unit7-root-san/small_body_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_text.cpp -o build-unit7-root-san/small_body_text.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_orbit.cpp -o build-unit7-root-san/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog.cpp -o build-unit7-root-san/satellite_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog_parser.cpp -o build-unit7-root-san/satellite_catalog_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_position.cpp -o build-unit7-root-san/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_rotation.cpp -o build-unit7-root-san/satellite_rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_model.cpp -o build-unit7-root-san/satellite_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_registration.cpp -o build-unit7-root-san/satellite_registration.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_absolute.cpp -o build-unit7-root-san/satellite_absolute.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory.cpp -o build-unit7-root-san/spacecraft_trajectory.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o build-unit7-root-san/spacecraft_trajectory_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_position.cpp -o build-unit7-root-san/spacecraft_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/minor_planet_position.cpp -o build-unit7-root-san/minor_planet_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_orbit_path.cpp -o build-unit7-root-san/small_body_orbit_path.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/atmosphere.cpp -o build-unit7-root-san/atmosphere.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/atmosphere_multiple.cpp -o build-unit7-root-san/atmosphere_multiple.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/atmosphere_emission_map.cpp -o build-unit7-root-san/atmosphere_emission_map.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/constellation_art.cpp -o build-unit7-root-san/constellation_art.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/eclipse.cpp -o build-unit7-root-san/eclipse.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/terrain.cpp -o build-unit7-root-san/terrain.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/terrain_sampling.cpp -o build-unit7-root-san/terrain_sampling.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/galaxy_catalog.cpp -o build-unit7-root-san/galaxy_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/our_galaxy_model.cpp -o build-unit7-root-san/our_galaxy_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types -Wno-unused-variable -c ../../sources/official/mitaka_source/common/astro/cf96.cpp -o build-unit7-root-san/reference_cf96.o
+LC_ALL=C awk -f tests/extract_rotation.awk "../../sources/official/mitaka_source/Mitaka/mtk_planet_orientation.cpp" > "build-unit7-root-san/reference_rotation.cpp.tmp"
+mv "build-unit7-root-san/reference_rotation.cpp.tmp" "build-unit7-root-san/reference_rotation.cpp"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types -Wno-missing-braces -c ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o build-unit7-root-san/reference_lunar_pos.o
+LC_ALL=C awk -f tests/extract_lunar_orientation.awk "../../sources/official/mitaka_source/Mitaka/mtk_satellite_orientation.cpp" > "build-unit7-root-san/reference_lunar_orientation.cpp.tmp"
+mv "build-unit7-root-san/reference_lunar_orientation.cpp.tmp" "build-unit7-root-san/reference_lunar_orientation.cpp"
+LC_ALL=C awk -f tests/extract_atmosphere.awk "../../sources/official/mitaka_source/Mitaka/mtk_atmosphere.cpp" > "build-unit7-root-san/reference_atmosphere.cpp.tmp"
+mv "build-unit7-root-san/reference_atmosphere.cpp.tmp" "build-unit7-root-san/reference_atmosphere.cpp"
+LC_ALL=C awk -f tests/extract_eclipse.awk "../../sources/official/mitaka_source/Mitaka/mtk_eclipse.cpp" > "build-unit7-root-san/eclipse_upstream.inc.tmp"
+mv "build-unit7-root-san/eclipse_upstream.inc.tmp" "build-unit7-root-san/eclipse_upstream.inc"
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/Mitaka -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types -Wno-unused-variable -c build-unit7-root-san/reference_atmosphere.cpp -o build-unit7-root-san/reference_atmosphere.o
+xcrun ar rcs build-unit7-root-san/libmitaka_core.a build-unit7-root-san/astronomy.o build-unit7-root-san/catalog.o build-unit7-root-san/ephemeris.o build-unit7-root-san/rotation.o build-unit7-root-san/lunar.o build-unit7-root-san/observation.o build-unit7-root-san/extended_catalog.o build-unit7-root-san/place_catalog.o build-unit7-root-san/small_body_catalog.o build-unit7-root-san/small_body_text.o build-unit7-root-san/small_body_orbit.o build-unit7-root-san/satellite_catalog.o build-unit7-root-san/satellite_catalog_parser.o build-unit7-root-san/satellite_position.o build-unit7-root-san/satellite_rotation.o build-unit7-root-san/satellite_model.o build-unit7-root-san/satellite_registration.o build-unit7-root-san/satellite_absolute.o build-unit7-root-san/spacecraft_trajectory.o build-unit7-root-san/spacecraft_trajectory_parser.o build-unit7-root-san/spacecraft_position.o build-unit7-root-san/minor_planet_position.o build-unit7-root-san/small_body_orbit_path.o build-unit7-root-san/atmosphere.o build-unit7-root-san/atmosphere_multiple.o build-unit7-root-san/atmosphere_emission_map.o build-unit7-root-san/constellation_art.o build-unit7-root-san/eclipse.o build-unit7-root-san/terrain.o build-unit7-root-san/terrain_sampling.o build-unit7-root-san/galaxy_catalog.o build-unit7-root-san/our_galaxy_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tools/core_probe.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/core_probe
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_astronomy.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_ephemeris.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_rotation.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_lunar.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_observation.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_extended_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_place_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_place_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_small_body_orbit.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_small_body_orbit
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_small_body_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_small_body_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_satellite_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_position.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_satellite_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_rotation.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_satellite_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_model.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_satellite_model
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_absolute.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_satellite_absolute
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_spacecraft_trajectory.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_spacecraft_trajectory
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_spacecraft_position.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_spacecraft_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_minor_planet_position.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_minor_planet_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_small_body_orbit_path.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_small_body_orbit_path
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_atmosphere.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_atmosphere
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_constellation_art.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_constellation_art
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_eclipse.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_eclipse
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_terrain.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_terrain
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_galaxy_catalog.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_galaxy_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_our_galaxy_model.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_our_galaxy_model
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_upstream.cpp build-unit7-root-san/reference_cf96.o build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_upstream
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_rotation_upstream.cpp build-unit7-root-san/reference_rotation.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_rotation_upstream
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build-unit7-root-san/reference_lunar_pos.o build-unit7-root-san/reference_lunar_orientation.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_lunar_upstream
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_atmosphere_upstream.cpp build-unit7-root-san/reference_atmosphere.o build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_atmosphere_upstream
+xcrun clang++ -Iinclude -I"build-unit7-root-san" -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_eclipse_upstream.cpp build-unit7-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit7-root-san/test_eclipse_upstream
+astronomy: 1275 checks passed
+build-unit7-root-san/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+/bin/sh: CF96_DATA: Set CF96_DATA to an existing cf96.dat
+make: *** [reference-test] Error 127
+make: *** Waiting for unfinished jobs....
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 117 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+PTH benchmark: 100003 samples, construction 0.7375 ms, 25000 queries 21.8709 ms
+spacecraft position: 75954 checks PASS
+minor-planet position: 90730 checks passed
+small_body_orbit_path: 141 checks passed
+atmosphere: 733 checks passed
+CAB tests passed: 98 checks
+eclipse: 10192 checks PASS
+terrain: 471 checks passed
+galaxy catalog: 1275 checks passed
+our galaxy model: 330 checks passed

@@ -1,0 +1,16 @@
+# Themis
+
+Name: Themis
+DisplayName: Themis
+No: 24
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.127584
+e: 0.134189
+w: 109.333977
+M0: 81.418701
+i: 0.761760
+node: 36.082310
+Size: 500 500 500
+B_V: 0.75

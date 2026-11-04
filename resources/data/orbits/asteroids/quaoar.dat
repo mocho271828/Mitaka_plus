@@ -1,0 +1,16 @@
+# Quaoar
+
+Name: Quaoar
+DisplayName: Quaoar
+No: 50000
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 43.584999
+e: 0.036000
+w: 148.600006
+M0: 282.600006
+i: 8.000000
+node: 188.800003
+Size: 500 500 500
+B_V: 0.94

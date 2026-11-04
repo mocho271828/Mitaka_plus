@@ -1,0 +1,40 @@
+# Mitaka-macOS: SwiftUI / SceneKit / Xcode 静的調査
+
+確認日: 2026-10-29. 対象: `/Users/kota/mitaka/sources/reference/Mitaka-macOS`, commit `ab63d81723a9261b663c8ab1283de2e7607f1094`. 参照リポジトリの `AGENTS.md` を確認済み. コードの静的解析と Apple 一次資料の確認のみを行い, ビルド・テスト・起動は実行していない. 本レポートの再利用評価は技術面の判断であり, ライセンス判断は親担当の調査に分離している.
+
+**結論**: SwiftUI のウィンドウ, 天体一覧, 時刻操作, C ABI を呼ぶ境界は移植の土台として再利用候補になる. SceneKit 部分は 9 天体を表示する太陽系のデモとして参考になるが, Mitaka の広い機能を移植済みと扱えない. 特に, 観測用の星空表示と長期保守の renderer をこれから設計する必要がある.
+
+| 層 | 実装済みの内容と根拠 | 再利用判断 |
+| --- | --- | --- |
+| SwiftUI app | `WindowGroup`, 最小 960×640, 初期 1280×800, Space で停止/再生, Cmd+R で現在時刻. [MitakaMacApp.swift:8](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/MitakaMacApp.swift:8) | macOS の app/window/menu の小さな雛形として有用. 全ウィンドウが app 所有の `AppModel` を共有するため, 複数の独立した表示を持たせる場合は状態所有範囲を変更する. |
+| 一覧・選択・表示操作 | `NavigationSplitView`, 日英名検索, 天体選択, 軌道/名称表示切替, 非公式版と原作者の表示. [ContentView.swift:7](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/ContentView.swift:7), [ContentView.swift:85](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/ContentView.swift:85) | 一覧と表示エンジンの接点が小さく, UI shell の継承は容易. 現在の検索対象は組み込みの惑星群のみ. |
+| 時刻・状態管理 | `@MainActor` の ObservableObject, C ABI からの天体情報取得, Unix time→JD 変換, 30 Hz timer. 実時間/1時間/1日/30日/1年毎秒の 5 段階. [AppModel.swift:15](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/AppModel.swift:15), [AppModel.swift:24](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/AppModel.swift:24), [AppModel.swift:43](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/AppModel.swift:43) | UI と計算 API を結ぶパターンは再利用候補. 時間系の要求と同期方式は別途確認が必要. |
+| SwiftUI→SceneKit | `NSViewRepresentable` + Coordinator が JD, 選択 ID, 軌道/名称フラグを受け取る. SCNView のカメラ操作を利用. [UniverseSceneView.swift:24](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:24) | C++ コアとは分離されており, 表示側を差し替える境界として参考になる. ObjC++ 実装はなく, この境界は Swift/AppKit. |
+| 3D 表示 | 球状惑星, 土星の環, 太陽と照明, billboard 名称, 240 分割軌道線, 選択時のカメラ移動. [UniverseSceneView.swift:92](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:92), [UniverseSceneView.swift:198](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:198) | 軌道線生成や選択 UI の試作例として有用. 実測カタログや本家描画を置換できる完成度の根拠にはならない. |
+| Xcode target | app は Swift 4 ファイル + `MitakaCore.cpp` のみをコンパイル. 原本 `Upstream` は active target に含まれない. [project.pbxproj:149](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/project.pbxproj:149) | 小規模な native app の起点として有用. C ブリッジを使う C++17 + Swift の構成であり, .mm による ObjC++ 移植例ではない. |
+
+**不足機能と技術的な課題**
+
+1. 科学的な距離比・大きさをそのまま描画していない. 惑星半径は `0.075 + log10(radiusEarth + 1) * 0.105`, 距離は `1.2 + log10(length + 1) * 3.35` に変換し, 描画座標を Float にしている. 対数圧縮は図示として明示し, 観測表示/実寸表示と分ける必要がある. 地表から宇宙の大規模構造まで扱う場合は座標精度, camera-relative coordinates, LOD 等の設計が別途必要になるという評価. [UniverseSceneView.swift:150](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:150), [UniverseSceneView.swift:265](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:265)
+2. 背景は固定 seed から生成した 1,600 個の乱数点. 実際の恒星の位置・等級・固有運動を持つ星表ではない. 球の色も固定配列で, 惑星テクスチャ・自転・軸の姿勢を反映するコードはない. 土星の環は index 5 のときに追加するトーラス. 天体順の変更や拡張時は配列 index と物理的属性の結合を解く必要がある. [UniverseSceneView.swift:5](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:5), [UniverseSceneView.swift:163](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:163), [UniverseSceneView.swift:225](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:225)
+3. カメラは選択 ID が変わった時だけ移動する. 時刻進行による天体移動を追尾しない. `nil` 選択時には `lastSelectedPlanetID` を更新しないため, 選択解除後に同じ ID を戻しても focus が再実行されない条件がある. 3D オブジェクトのクリック選択も実装されていない. 追尾/自由飛行/観測地点モードの要件を決める必要がある. [UniverseSceneView.swift:77](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:77), [UniverseSceneView.swift:252](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:252)
+4. 軌道線は scene 作成時に固定 epoch `2452640.5` と `365.256 * a^1.5` の周期で一度生成する. 現在日時の周辺で引き直す方式ではない. より詳細な時間依存の軌道モデルを接続する場合, 表示中の天体位置と軌道線が合うか再検証が必要. [UniverseSceneView.swift:131](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:131), [UniverseSceneView.swift:198](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:198)
+5. 日時は表示のみで, 任意日時の入力や逆再生はない. timer の経過時間は最大 0.25 秒に切り詰められるため, 停滞・復帰後の「実時間」は壁時計とずれる条件がある. これはジャンプ抑制策としては理解できるが, 実時間同期の仕様として明示または修正が必要. [ContentView.swift:48](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/ContentView.swift:48), [AppModel.swift:84](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/AppModel.swift:84)
+6. 位置更新は 30 Hz, SceneKit は希望 60 fps・常時描画で, 時間停止でも常時描画設定は変えない. 電力・大型カタログ読み込み・描画性能の評価は未実施. UI は小規模データの同期更新が前提で, ストリーミング処理や読み込み状態/失敗表示はない. [AppModel.swift:56](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/AppModel.swift:56), [UniverseSceneView.swift:56](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:56)
+7. 衛星を含むカタログ, プラネタリウム観測者モード, 銀河・大規模構造, stereo/dome, movie/network は文書でも Planned. これらを実装済みと扱う根拠はない. [docs/PORTING.md:23](/Users/kota/mitaka/sources/reference/Mitaka-macOS/docs/PORTING.md:23)
+
+**Xcode・配布・検証の状態**
+
+- deployment target は macOS 14.0. project の C++20 設定より target の C++17 が優先される. Swift language mode 5.0, strict concurrency は minimal. Swift 6 の厳格な並行性検証を通った構成ではない. AppModel は MainActor で保護されているが, 将来の背景読み込みと renderer 更新は境界を決めて検証する必要がある. [project.pbxproj:214](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/project.pbxproj:214), [project.pbxproj:273](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/project.pbxproj:273)
+- shared scheme の `TestAction` は空で, `Testables` がない. `Tests/MitakaCoreTests.cpp` は存在するが, Xcode の test action に UI/統合テストは接続されていない. UI と C ABI の結合, カメラ選択, 時間制御, macOS 表示の検証は今後必要. 本担当はテストを実行していない. [MitakaMac.xcscheme:25](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/xcshareddata/xcschemes/MitakaMac.xcscheme:25)
+- Bundle version は 0.1.0. automatic signing と hardened runtime は有効だが development team の指定はなく, 配布署名・notarization の完了をこの設定だけでは確認できない. 親担当からは Xcode 27.1 / macOS 26.6.2 で arm64 + x86_64 Universal build と既存 core tests が成功したとの連絡あり. 起動・画面操作は未検証. 本担当によるビルドの再実行はしていない. [project.pbxproj:274](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/project.pbxproj:274)
+- Resources build phase は空. 現行 target に星表・画像・LICENSE 文書を組み込む設定はない. UI の著作権表示はあるが, 配布時の必要な告知の同梱は別途確認事項. [project.pbxproj:139](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac.xcodeproj/project.pbxproj:139)
+- `.metal`, `.mm`, `.m`, entitlement, YAML CI ファイルは対象 checkout の検索で見つからなかった. SceneKit は `SCNView(frame: .zero)` で初期化され, rendering API を明示指定するコードはない. README の Metal backend という説明とは別に, 独自の Metal renderer/passes は未実装で, 実際の backend は実行時確認が必要. [UniverseSceneView.swift:57](/Users/kota/mitaka/sources/reference/Mitaka-macOS/MitakaMac/UniverseSceneView.swift:57)
+
+**SceneKit の現在状況: Apple 一次資料, 2026-10-29 確認**
+
+Apple は WWDC25 で SceneKit を全プラットフォームで soft deprecation とし, 既存 app は動作を継続する一方, 新規 app や大きな更新には推奨しないと説明している. maintenance mode では重大な不具合のみ対応し, 新機能や最適化は予定しない. 同説明時点で hard deprecation の計画はなく, 将来変更する場合は十分前に通知するとしている. [Apple: Bring your SceneKit project to RealityKit](https://developer.apple.com/videos/play/wwdc2025/288/) の transcript 冒頭, 特に 0:00–5:03 が根拠. 2026-04 の Apple DTS の回答も hard deprecation の日付はないと再確認している. [Apple Developer Forums: SceneKit is now deprecated](https://developer.apple.com/forums/thread/795520)
+
+このため, 小さな既存デモの検証に SceneKit を用いることと, 今後の本体 renderer を SceneKit に集中して実装することは別に判断する. 後者については, SwiftUI と計算 API の境界を活かし, RealityKit または Metal の適合性を実データ・精度・多視点/dome 要件で評価する案が妥当と考える. これは Apple の推奨と対象コードからの技術的な提案であり, RealityKit が Mitaka の全要件を満たすと確認したものではない.
+
+**作業結果**: 参照 repo と公式原本は無変更. `git status --short` と `git diff --stat` は空で, commit は作成していない. policy/IMPLEMENTATION_POLICY は更新せず, simplifier 系 skill は実行していない. 指示どおりビルド・テストは親担当に委ねた. `/tmp/mitaka-131-ui-findings.md` のみを作成した.

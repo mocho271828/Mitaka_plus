@@ -1,7 +1,7 @@
 # Mitaka_plus
 
-Mitaka_plus の既存天文データを、macOS ネイティブの共通コア・GUIで利用するためのリポジトリ。
-共通実装は [Mitaka](https://github.com/mocho271828/Mitaka) で管理し、`vendor/mitaka` の Git submodule で使用するコミットを固定する。
+Mitaka_plus の天文データを macOS ネイティブのコア・GUI で利用するためのリポジトリ。
+`vendor/mitaka` には Mitaka の実装を通常のファイルとして収録している。実行データは `resources/` に収録している。
 現在の GUI には恒星・地平表示、星座線・境界・名前、ローカルの NGC/IC・SDSS カタログ表示と検索、太陽系 3D、惑星・月の表面と自転、順逆の時間再生、地表移動、天体間の連続飛行がある。表示状態の保存・復元、PNG/JPEG/BMP 出力、投影ウィンドウ、信頼済みローカル Lua の実行にも対応する。
 ローカルの小天体一覧と計算可能な軌道、可視光・赤外線の天の川、画像・動画一覧にも対応する。解釈できない行や参照先が見つからない画像も一覧に保持する。日時は年月日と時差で入力でき、月・年単位の送りと実時間追従を選べる。
 恒星名・連星／系外惑星マーク、惑星の本体・名称・軌道・自転軸、座標格子・距離目盛をメニューと Lua で操作できる。月間カレンダーは日曜始まりの 42 セルを使い、日時情報の表示設定とともに JSON の状態保存へ接続している。状態形式は採用する共通実装の単位に従う。
@@ -43,47 +43,40 @@ Lua は `Asteroids` / `TNObjects` / `Comets` / `Satellites` の表示・名称�
 
 ## 取得とビルド
 
-macOS、Xcode または Command Line Tools、Git、`make` が必要。
-Lua helper 用に公式 Lua 5.4.9 をビルドする。初回は HTTPS でソースを取得し、固定 SHA-256 を検証して build 配下に展開するためネットワーク接続が必要。完成アプリには静的リンクされ、Homebrew や外部 Lua のインストールは不要。
-macOS の deployment target は 13.0。
-両リポジトリが Private のため、取得する GitHub アカウントには両方の読み取り権限が必要。
+macOS 13.0 以降、Xcode または Command Line Tools、Git、`make` が必要。
+Lua helper は同梱した公式 Lua 5.4.9 のソースを SHA-256 で検証してビルドし、静的にリンクする。ビルド時に別リポジトリやネットワークへの接続は必要ない。
 
 ```sh
-git clone --recurse-submodules https://github.com/mocho271828/Mitaka_plus.git
+git clone https://github.com/mocho271828/Mitaka_plus.git
 cd Mitaka_plus
 make build
 make test
 ```
 
-submodule を取得せずに clone した場合は、次を実行する。
+出力は `vendor/mitaka/native/gui/build/Mitaka Native.app`。
+
+## データと起動
+
+`make run` は既定で `resources/data` を使う。`resources/` には旧 Plus のデータと関連ファイルのコピーを収録する。表面画像や探査機の定義も同じ親ディレクトリから読み込み、データは読み取り専用で参照する。
 
 ```sh
-git submodule update --init --recursive
+make run
 ```
 
-出力は `vendor/mitaka/native/gui/build/Mitaka Native.app`。
-アプリ名と実装は共通の Mitaka Native を使い、別の GUI コピーは持たない。
-
-## 既存データで起動
-
-`DATA_ROOT` に `hip.dat` と `cf96.dat` が直下にある `data` ディレクトリの絶対パスを指定する。
-表面画像は `data` と同じ親ディレクトリにある `textures` から読み込む。
-独自追加を含むローカルデータを優先し、元ファイルを読み取り専用で使う。公開データへの置換・既知の件数への切り詰めは行わない。既存データをこのリポジトリにコピーする必要はない。
+別のデータを使う場合は、`hip.dat` と `cf96.dat` が直下にある `data` ディレクトリの絶対パスを指定する。表面画像や探査機データは指定した `data` と同じ親ディレクトリにある `textures`、`spacecraft` を参照する。
 
 ```sh
 export DATA_ROOT='/absolute/path/to/mitaka_plus/data'
 make run
 ```
 
-旧アプリのパッケージ内部にデータがある場合も、その `data` のパスを直接指定できる。
-そのパスに Wine 関連のディレクトリ名が含まれていても、アプリはデータを読むだけで Wine を実行しない。
-データを起動後に選ぶ場合は、ビルド後のアプリを直接開く。
+起動後にデータを選択する場合は、ビルド後のアプリを直接開く。
 
 ```sh
 open -n 'vendor/mitaka/native/gui/build/Mitaka Native.app'
 ```
 
-操作方法と表示上の制約は [共通 GUI の説明](vendor/mitaka/native/gui/README.md) を参照。
+操作方法と表示上の制約は [GUI の説明](vendor/mitaka/native/gui/README.md) を参照。
 
 ## 検証
 
@@ -95,50 +88,26 @@ make smoke
 ```
 
 `make test` はデータなしでコア・GUI・再生・出力・Lua コントローラのテストを実行する。
-`make data-test` は指定された既存データを読み取り専用で検証する。
+`make data-test` は同梱データ、または `DATA_ROOT` に指定されたデータを読み取り専用で検証する。
 `make reference-test` は公式 1.3.1 原本との惑星位置・自転・月・大気・食計算の比較を実行する。
-`make smoke` は実アプリで描画・表示状態復元・画像符号化・再生・飛行・Lua 接続を検証する。`data-test`・`reference-test`・`smoke` には `DATA_ROOT` の指定が必要。
+`make smoke` は実アプリで描画・表示状態復元・画像符号化・再生・飛行・Lua 接続を検証する。`data-test`・`reference-test`・`smoke` には既定の同梱データを使用できる。
 Plus の Makefile は `DATA_ROOT` を常に `data` ディレクトリとして受け取り、コアのデータテストに渡すときだけ親ディレクトリへ変換する。
 
 ## 採用した共通実装の検証
 
-現在の採用・検証済み範囲は単位7である。2026-10-30 に共通実装を `b901489c9b08a85742ff2d5a0ce1d9db522fe246` へ固定した。
+採用した実装の基点は単位7であり、2026-10-30 に Mitaka の `b901489c9b08a85742ff2d5a0ce1d9db522fe246` を検証した。その後、同実装をこのリポジトリ内の通常ファイルとして収録している。
 ラッパーからの検証結果は [VALIDATION.md](VALIDATION.md)、共通側の検証範囲と残る制約は [単位7の記録](vendor/mitaka/investigation/native-plus/unit7/README.md) に記載する。
 投影ウィンドウの制御された遮蔽状態によるテストと、実 OS の完全遮蔽通知は区別する。実 OS 通知の試験は共通側で未通過として残している。
 
-## 共通実装の更新
+## 実装の更新
 
-通常の取得・更新では、Plus が記録したコミットを使用する。
-
-```sh
-git pull --ff-only
-git submodule update --init --recursive
-```
-
-共通実装の採用バージョンを変更するときは、Mitaka に push 済みのコミットを明示して切り替え、テスト後に gitlink を記録する。
-`<commit>` は採用するコミット ID に置き換える。
-
-```sh
-git -C vendor/mitaka fetch origin
-git -C vendor/mitaka checkout --detach <commit>
-make build
-make test
-make data-test
-make reference-test
-git add vendor/mitaka
-git commit -m 'Update shared Mitaka implementation'
-```
-
-共通コア・GUI の修正は Mitaka 側で行い、Plus 側ではそのコミットを採用する。
-submodule 内の変更を Plus のコミットだけで保存することはできない。
+`vendor/mitaka` はこのリポジトリが所有する通常のファイルであり、Git submodule ではない。Mitaka 側の変更を取り込む際は、変更元と対象範囲を確認し、Plus のデータを使ってビルド・テスト・実データ検証を行う。Mitaka の更新は自動では反映されない。
 
 ## 保存範囲と利用条件
 
-GitHub にはソース・文書・設定と共通実装への参照を保存する。
-既存の天文データ、独自追加データ、表面画像、旧アプリ、Wine 環境、ビルド生成物、認証情報は登録しない。
-データと旧アプリは利用者のローカル環境で保持する。
+このリポジトリには実行に必要なソース・設定と、Plus の天文データ・画像を `resources/` に収録する。旧アプリと Wine 環境の原本は保持し、ビルド生成物や認証情報は登録しない。データには独自追加が含まれるため、共有する際は公開範囲と各データの利用条件を確認する。
 
-公式 Mitaka 1.3.1 の由来と許諾表示は共通リポジトリの [ソース入手先の記録](vendor/mitaka/SOURCE_AVAILABILITY.md) と [第三者コードの表記](vendor/mitaka/native/gui/THIRD_PARTY_NOTICES.txt) を参照。Lua は [専用の許諾表示](vendor/mitaka/native/gui/LUA_LICENSE.txt) をアプリへ同梱する。
+公式 Mitaka 1.3.1 の由来と許諾表示は同梱した [ソース入手先の記録](vendor/mitaka/SOURCE_AVAILABILITY.md) と [第三者コードの表記](vendor/mitaka/native/gui/THIRD_PARTY_NOTICES.txt) を参照。Lua は [専用の許諾表示](vendor/mitaka/native/gui/LUA_LICENSE.txt) をアプリへ同梱する。
 
 Lua はユーザーが信頼して明示選択したローカルファイルを実行する。ファイル・OS 操作はユーザー権限で行われ、サンドボックスではない。対応 API と旧 Lua との差は [スクリプト説明](vendor/mitaka/native/gui/SCRIPTING.md) を参照。
 コードの許諾から旧 Mitaka_plus 本体や天文データ・画像の改変・再配布条件を推定しない。

@@ -1,0 +1,138 @@
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build-unit5-n01/AppWindow.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-unit5-n01/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build-unit5-n01/AppObserverCommands.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build-unit5-n01/AppPlusCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppDisplayCommands.mm -o "build-unit5-n01/AppDisplayCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build-unit5-n01/AppTimeCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build-unit5-n01/AppSmallBodyCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build-unit5-n01/AppSmallBodySmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build-unit5-n01/SolarSmallBodies.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build-unit5-n01/AppSessionCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit5-n01/AppScripting.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build-unit5-n01/AppSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit5-n01/AppPlusSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit5-n01/AppScriptSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build-unit5-n01/AppFlightSmokeTests.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit5-n01/SolarSystemView.o"
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build-unit5-n01/SolarSystemSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build-unit5-n01/SolarSystemNavigation.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build-unit5-n01/AppWindowCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteCommands.mm -o "build-unit5-n01/AppSatelliteCommands.o"
+mkdir -p "build-unit5-n01"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSatellites.mm -o "build-unit5-n01/SolarSatellites.o"
+src/AppSatelliteCommands.mm:83:12: error: property 'satellitesVisible' not found on object of type 'SolarSystemView *'
+   83 |     _solar.satellitesVisible = YES;
+      |            ^
+1 error generated.
+mkdir -p "build-unit5-n01"
+mkdir -p "build-unit5-n01"
+make: *** [build-unit5-n01/AppSatelliteCommands.o] Error 1
+make: *** Waiting for unfinished jobs....
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSpacecraft.mm -o "build-unit5-n01/SolarSpacecraft.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteSmokeTests.mm -o "build-unit5-n01/AppSatelliteSmokeTests.o"
+src/SolarSatellites.mm:11:36: error: use of undeclared identifier '_satellitesVisible'; did you mean '_satelliteDisplay'?
+   11 | - (BOOL)satellitesVisible { return _satellitesVisible; }
+      |                                    ^~~~~~~~~~~~~~~~~~
+      |                                    _satelliteDisplay
+src/SolarSystemViewInternal.h:42:63: note: '_satelliteDisplay' declared here
+   42 |     std::shared_ptr<const mitaka::gui::SatelliteDisplayModel> _satelliteDisplay;
+      |                                                               ^
+src/SolarSatellites.mm:11:36: error: no viable conversion from returned value of type 'std::shared_ptr<const mitaka::gui::SatelliteDisplayModel>' to function return type 'BOOL' (aka 'bool')
+   11 | - (BOOL)satellitesVisible { return _satellitesVisible; }
+      |                                    ^~~~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:594:34: note: explicit conversion function is not a candidate
+  594 |   _LIBCPP_HIDE_FROM_ABI explicit operator bool() const _NOEXCEPT { return get() != nullptr; }
+      |                                  ^
+src/SolarSatellites.mm:12:46: error: use of undeclared identifier '_satellitesVisible'; did you mean '_satelliteDisplay'?
+   12 | - (void)setSatellitesVisible:(BOOL)visible { _satellitesVisible = visible; self.needsDisplay = YES; }
+      |                                              ^~~~~~~~~~~~~~~~~~
+      |                                              _satelliteDisplay
+src/SolarSystemViewInternal.h:42:63: note: '_satelliteDisplay' declared here
+   42 |     std::shared_ptr<const mitaka::gui::SatelliteDisplayModel> _satelliteDisplay;
+      |                                                               ^
+src/SolarSatellites.mm:12:65: error: no viable overloaded '='
+   12 | - (void)setSatellitesVisible:(BOOL)visible { _satellitesVisible = visible; self.needsDisplay = YES; }
+      |                                              ~~~~~~~~~~~~~~~~~~ ^ ~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:506:42: note: candidate function not viable: no known conversion from 'BOOL' (aka 'bool') to 'const shared_ptr<const mitaka::gui::SatelliteDisplayModel>' for 1st argument
+  506 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(const shared_ptr& __r) _NOEXCEPT {
+      |                                          ^         ~~~~~~~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:517:42: note: candidate function not viable: no known conversion from 'BOOL' (aka 'bool') to 'shared_ptr<const mitaka::gui::SatelliteDisplayModel>' for 1st argument
+  517 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(shared_ptr&& __r) _NOEXCEPT {
+      |                                          ^         ~~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:512:42: note: candidate template ignored: could not match 'shared_ptr<_Yp>' against 'BOOL' (aka 'bool')
+  512 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(const shared_ptr<_Yp>& __r) _NOEXCEPT {
+      |                                          ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:523:42: note: candidate template ignored: could not match 'shared_ptr<_Yp>' against 'BOOL' (aka 'bool')
+  523 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(shared_ptr<_Yp>&& __r) {
+      |                                          ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:543:42: note: candidate template ignored: could not match 'unique_ptr<_Yp, _Dp>' against 'BOOL' (aka 'bool')
+  543 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(unique_ptr<_Yp, _Dp>&& __r) {
+      |                                          ^
+src/SolarSatellites.mm:15:12: error: use of undeclared identifier '_satellitesVisible'; did you mean '_satelliteDisplay'?
+   15 |     return _satellitesVisible && _satelliteSnapshot && (!_satelliteDisplay || _satelliteDisplay->options().visible) && !_earthMoonMode && !_surfacePreview && !_surfaceActive && !_journeyActive;
+      |            ^~~~~~~~~~~~~~~~~~
+      |            _satelliteDisplay
+src/SolarSystemViewInternal.h:42:63: note: '_satelliteDisplay' declared here
+   42 |     std::shared_ptr<const mitaka::gui::SatelliteDisplayModel> _satelliteDisplay;
+      |                                                               ^
+src/SolarSatellites.mm:83:5: error: use of undeclared identifier '_satellitesVisible'; did you mean '_satelliteDisplay'?
+   83 |     _satellitesVisible = YES;
+      |     ^~~~~~~~~~~~~~~~~~
+      |     _satelliteDisplay
+src/SolarSystemViewInternal.h:42:63: note: '_satelliteDisplay' declared here
+   42 |     std::shared_ptr<const mitaka::gui::SatelliteDisplayModel> _satelliteDisplay;
+      |                                                               ^
+src/SolarSatellites.mm:83:24: error: no viable overloaded '='
+   83 |     _satellitesVisible = YES;
+      |     ~~~~~~~~~~~~~~~~~~ ^ ~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:506:42: note: candidate function not viable: no known conversion from 'BOOL' (aka 'bool') to 'const shared_ptr<const mitaka::gui::SatelliteDisplayModel>' for 1st argument
+  506 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(const shared_ptr& __r) _NOEXCEPT {
+      |                                          ^         ~~~~~~~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:517:42: note: candidate function not viable: no known conversion from 'BOOL' (aka 'bool') to 'shared_ptr<const mitaka::gui::SatelliteDisplayModel>' for 1st argument
+  517 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(shared_ptr&& __r) _NOEXCEPT {
+      |                                          ^         ~~~~~~~~~~~~~~~~
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:512:42: note: candidate template ignored: could not match 'shared_ptr<_Yp>' against 'BOOL' (aka 'bool')
+  512 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(const shared_ptr<_Yp>& __r) _NOEXCEPT {
+      |                                          ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:523:42: note: candidate template ignored: could not match 'shared_ptr<_Yp>' against 'BOOL' (aka 'bool')
+  523 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(shared_ptr<_Yp>&& __r) {
+      |                                          ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__memory/shared_ptr.h:543:42: note: candidate template ignored: could not match 'unique_ptr<_Yp, _Dp>' against 'BOOL' (aka 'bool')
+  543 |   _LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp>& operator=(unique_ptr<_Yp, _Dp>&& __r) {
+      |                                          ^
+7 errors generated.
+make: *** [build-unit5-n01/SolarSatellites.o] Error 1
+src/AppSatelliteSmokeTests.mm:69:73: error: property 'satellitesVisible' not found on object of type 'SolarSystemView *'
+   69 |     const BOOL smallBodies = view.smallBodiesVisible, satellites = view.satellitesVisible;
+      |                                                                         ^
+src/AppSatelliteSmokeTests.mm:74:36: error: property 'satellitesVisible' not found on object of type 'SolarSystemView *'
+   74 |     view.smallBodiesVisible = view.satellitesVisible = NO;
+      |                                    ^
+src/AppSatelliteSmokeTests.mm:79:10: error: property 'satellitesVisible' not found on object of type 'SolarSystemView *'
+   79 |     view.satellitesVisible = satellites;
+      |          ^
+src/AppSatelliteSmokeTests.mm:142:16: error: property 'satellitesVisible' not found on object of type 'SolarSystemView *'
+  142 |         _solar.satellitesVisible = YES;
+      |                ^
+4 errors generated.
+make: *** [build-unit5-n01/AppSatelliteSmokeTests.o] Error 1

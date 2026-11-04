@@ -1,0 +1,16 @@
+# Ida
+
+Name: Ida
+DisplayName: Ida
+No: 243
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.861351
+e: 0.045135
+w: 112.268341
+M0: 133.381638
+i: 1.136731
+node: 324.410156
+Size: 500 500 500
+B_V: 0.75

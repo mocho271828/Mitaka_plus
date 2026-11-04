@@ -1,0 +1,19 @@
+mkdir -p "build-place7-x86_64"
+mkdir -p "build-place7-x86_64"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -fobjc-arc -MMD -MP -c src/earth_landscapes.mm -o "build-place7-x86_64/earth_landscapes.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -MMD -MP -c src/landscape_selection.cpp -o "build-place7-x86_64/landscape_selection.o"
+mkdir -p "build-place7-x86_64"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -MMD -MP -c src/landscape_projection.cpp -o "build-place7-x86_64/landscape_projection.o"
+mkdir -p "build-place7-x86_64"
+make: `build-place7-x86_64/landscape_geometry.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -MMD -MP -c src/place_display_model.cpp -o "build-place7-x86_64/place_display_model.o"
+mkdir -p "build-place7-x86_64"
+make: `build-place7-x86_64/sky_model.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -MMD -MP -c src/observer_places.cpp -o "build-place7-x86_64/observer_places.o"
+mkdir -p "build-place7-x86_64"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -fobjc-arc -MMD -MP -c src/local_image.mm -o "build-place7-x86_64/local_image.o"
+mkdir -p "build-place7-x86_64"
+make: `build-place7-x86_64/RendererQuality.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -fobjc-arc -MMD -MP -c src/HorizonLandscapeRenderer.mm -o "build-place7-x86_64/HorizonLandscapeRenderer.o"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-x86_64/core" ARCH="x86_64" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-x86_64/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-x86_64/core/libmitaka_core.a' is up to date.

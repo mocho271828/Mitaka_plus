@@ -1,0 +1,83 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  53ac70: 8b 44 24 04                  	mov	eax, dword ptr [esp + 0x4]
+  53ac74: f2 0f 10 81 a8 01 00 00      	movsd	xmm0, qword ptr [ecx + 0x1a8]
+  53ac7c: f2 0f 11 00                  	movsd	qword ptr [eax], xmm0
+  53ac80: f2 0f 10 89 c0 01 00 00      	movsd	xmm1, qword ptr [ecx + 0x1c0]
+  53ac88: f2 0f 11 48 08               	movsd	qword ptr [eax + 0x8], xmm1
+  53ac8d: f2 0f 10 91 d8 01 00 00      	movsd	xmm2, qword ptr [ecx + 0x1d8]
+  53ac95: f2 0f 11 50 10               	movsd	qword ptr [eax + 0x10], xmm2
+  53ac9a: f2 0f 10 99 b0 01 00 00      	movsd	xmm3, qword ptr [ecx + 0x1b0]
+  53aca2: f2 0f 11 58 18               	movsd	qword ptr [eax + 0x18], xmm3
+  53aca7: f2 0f 10 a1 c8 01 00 00      	movsd	xmm4, qword ptr [ecx + 0x1c8]
+  53acaf: f2 0f 11 60 20               	movsd	qword ptr [eax + 0x20], xmm4
+  53acb4: f2 0f 10 a9 e0 01 00 00      	movsd	xmm5, qword ptr [ecx + 0x1e0]
+  53acbc: f2 0f 11 68 28               	movsd	qword ptr [eax + 0x28], xmm5
+  53acc1: f2 0f 10 b1 b8 01 00 00      	movsd	xmm6, qword ptr [ecx + 0x1b8]
+  53acc9: f2 0f 11 70 30               	movsd	qword ptr [eax + 0x30], xmm6
+  53acce: f2 0f 10 b9 d0 01 00 00      	movsd	xmm7, qword ptr [ecx + 0x1d0]
+  53acd6: f2 0f 11 78 38               	movsd	qword ptr [eax + 0x38], xmm7
+  53acdb: f2 0f 10 81 e8 01 00 00      	movsd	xmm0, qword ptr [ecx + 0x1e8]
+  53ace3: f2 0f 11 40 40               	movsd	qword ptr [eax + 0x40], xmm0
+  53ace8: c2 04 00                     	ret	0x4
+  53aceb: 90                           	nop
+  53acec: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  53acf0: 55                           	push	ebp
+  53acf1: 8b ec                        	mov	ebp, esp
+  53acf3: 83 e4 f0                     	and	esp, -0x10
+  53acf6: 83 ec 50                     	sub	esp, 0x50
+  53acf9: f2 0f 10 81 e8 01 00 00      	movsd	xmm0, qword ptr [ecx + 0x1e8]
+  53ad01: f2 0f 11 44 24 40            	movsd	qword ptr [esp + 0x40], xmm0
+  53ad07: b8 40 00 00 00               	mov	eax, 0x40
+  53ad0c: f2 0f 10 84 01 a0 01 00 00   	movsd	xmm0, qword ptr [ecx + eax + 0x1a0]
+  53ad15: f2 0f 11 44 04 f8            	movsd	qword ptr [esp + eax - 0x8], xmm0
+  53ad1b: f2 0f 10 8c 01 98 01 00 00   	movsd	xmm1, qword ptr [ecx + eax + 0x198]
+  53ad24: f2 0f 11 4c 04 f0            	movsd	qword ptr [esp + eax - 0x10], xmm1
+  53ad2a: f2 0f 10 94 01 90 01 00 00   	movsd	xmm2, qword ptr [ecx + eax + 0x190]
+  53ad33: f2 0f 11 54 04 e8            	movsd	qword ptr [esp + eax - 0x18], xmm2
+  53ad39: f2 0f 10 9c 01 88 01 00 00   	movsd	xmm3, qword ptr [ecx + eax + 0x188]
+  53ad42: f2 0f 11 5c 04 e0            	movsd	qword ptr [esp + eax - 0x20], xmm3
+  53ad48: 83 e8 20                     	sub	eax, 0x20
+  53ad4b: 75 bf                        	jne	0x53ad0c <.text+0x139d0c>
+  53ad4d: 8b 4d 10                     	mov	ecx, dword ptr [ebp + 0x10]
+  53ad50: 8b 55 0c                     	mov	edx, dword ptr [ebp + 0xc]
+  53ad53: 8b 45 08                     	mov	eax, dword ptr [ebp + 0x8]
+  53ad56: f2 0f 10 04 24               	movsd	xmm0, qword ptr [esp]
+  53ad5b: f2 0f 10 4c 24 08            	movsd	xmm1, qword ptr [esp + 0x8]
+  53ad61: f2 0f 10 54 24 10            	movsd	xmm2, qword ptr [esp + 0x10]
+  53ad67: f2 0f 10 5c 24 18            	movsd	xmm3, qword ptr [esp + 0x18]
+  53ad6d: f2 0f 10 64 24 20            	movsd	xmm4, qword ptr [esp + 0x20]
+  53ad73: f2 0f 10 6c 24 28            	movsd	xmm5, qword ptr [esp + 0x28]
+  53ad79: f2 0f 10 74 24 30            	movsd	xmm6, qword ptr [esp + 0x30]
+  53ad7f: f2 0f 10 7c 24 38            	movsd	xmm7, qword ptr [esp + 0x38]
+  53ad85: f2 0f 11 00                  	movsd	qword ptr [eax], xmm0
+  53ad89: f2 0f 10 44 24 40            	movsd	xmm0, qword ptr [esp + 0x40]
+  53ad8f: f2 0f 11 48 08               	movsd	qword ptr [eax + 0x8], xmm1
+  53ad94: f2 0f 11 50 10               	movsd	qword ptr [eax + 0x10], xmm2
+  53ad99: f2 0f 11 1a                  	movsd	qword ptr [edx], xmm3
+  53ad9d: f2 0f 11 62 08               	movsd	qword ptr [edx + 0x8], xmm4
+  53ada2: f2 0f 11 6a 10               	movsd	qword ptr [edx + 0x10], xmm5
+  53ada7: f2 0f 11 31                  	movsd	qword ptr [ecx], xmm6
+  53adab: f2 0f 11 79 08               	movsd	qword ptr [ecx + 0x8], xmm7
+  53adb0: f2 0f 11 41 10               	movsd	qword ptr [ecx + 0x10], xmm0
+  53adb5: 8b e5                        	mov	esp, ebp
+  53adb7: 5d                           	pop	ebp
+  53adb8: c2 0c 00                     	ret	0xc
+  53adbb: 90                           	nop
+  53adbc: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  53adc0: 55                           	push	ebp
+  53adc1: 8b ec                        	mov	ebp, esp
+  53adc3: 83 e4 f0                     	and	esp, -0x10
+  53adc6: 83 ec 60                     	sub	esp, 0x60
+  53adc9: f2 0f 10 81 e8 01 00 00      	movsd	xmm0, qword ptr [ecx + 0x1e8]
+  53add1: f2 0f 11 44 24 40            	movsd	qword ptr [esp + 0x40], xmm0
+  53add7: b8 40 00 00 00               	mov	eax, 0x40
+  53addc: f2 0f 10 84 01 a0 01 00 00   	movsd	xmm0, qword ptr [ecx + eax + 0x1a0]
+  53ade5: f2 0f 11 44 04 f8            	movsd	qword ptr [esp + eax - 0x8], xmm0
+  53adeb: f2 0f 10 8c 01 98 01 00 00   	movsd	xmm1, qword ptr [ecx + eax + 0x198]
+  53adf4: f2 0f 11 4c 04 f0            	movsd	qword ptr [esp + eax - 0x10], xmm1
+  53adfa: f2 0f 10 94 01 90 01 00 00   	movsd	xmm2, qword ptr [ecx + eax + 0x190]

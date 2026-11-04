@@ -1,0 +1,313 @@
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+bytes=12288000 SHA256=48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+double 0xc3cd90: 1.0
+double 0xc3cd88: 2.0
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x64ee30 --stop-address=0x64ef10 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64ee30: 8b 44 24 04                  	mov	eax, dword ptr [esp + 0x4]
+  64ee34: 53                           	push	ebx
+  64ee35: 83 ec 10                     	sub	esp, 0x10
+  64ee38: 8b d8                        	mov	ebx, eax
+  64ee3a: 53                           	push	ebx
+  64ee3b: e8 a0 1a 24 00               	call	0x8908e0 <.text+0x48f8e0>
+  64ee40: 68 98 cd c3 00               	push	0xc3cd98
+  64ee45: 53                           	push	ebx
+  64ee46: e8 85 13 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64ee4b: 68 1c 9d c3 00               	push	0xc39d1c
+  64ee50: 53                           	push	ebx
+  64ee51: e8 7a 13 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64ee56: 33 c0                        	xor	eax, eax
+  64ee58: 50                           	push	eax
+  64ee59: 50                           	push	eax
+  64ee5a: 53                           	push	ebx
+  64ee5b: e8 c0 14 24 00               	call	0x890320 <.text+0x48f320>
+  64ee60: 6a 00                        	push	0x0
+  64ee62: 53                           	push	ebx
+  64ee63: e8 78 14 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64ee68: 6a 00                        	push	0x0
+  64ee6a: 68 3c 9d c3 00               	push	0xc39d3c
+  64ee6f: 53                           	push	ebx
+  64ee70: e8 ab 14 24 00               	call	0x890320 <.text+0x48f320>
+  64ee75: 68 3c 9d c3 00               	push	0xc39d3c
+  64ee7a: 53                           	push	ebx
+  64ee7b: e8 60 14 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64ee80: 83 c4 3c                     	add	esp, 0x3c
+  64ee83: c7 44 24 04 a8 cd c3 00      	mov	dword ptr [esp + 0x4], 0xc3cda8
+  64ee8b: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64ee8e: 66 0f ef c0                  	pxor	xmm0, xmm0
+  64ee92: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64ee98: e8 63 17 24 00               	call	0x890600 <.text+0x48f600>
+  64ee9d: f2 0f 10 05 90 cd c3 00      	movsd	xmm0, qword ptr [0xc3cd90]
+  64eea5: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64eeab: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64eeae: c7 44 24 04 b4 cd c3 00      	mov	dword ptr [esp + 0x4], 0xc3cdb4
+  64eeb6: e8 45 17 24 00               	call	0x890600 <.text+0x48f600>
+  64eebb: f2 0f 10 05 88 cd c3 00      	movsd	xmm0, qword ptr [0xc3cd88]
+  64eec3: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64eec9: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64eecc: c7 44 24 04 c4 cd c3 00      	mov	dword ptr [esp + 0x4], 0xc3cdc4
+  64eed4: e8 27 17 24 00               	call	0x890600 <.text+0x48f600>
+  64eed9: c7 44 24 04 d4 cd c3 00      	mov	dword ptr [esp + 0x4], 0xc3cdd4
+  64eee1: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64eee4: 66 0f ef c0                  	pxor	xmm0, xmm0
+  64eee8: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64eeee: e8 0d 17 24 00               	call	0x890600 <.text+0x48f600>
+  64eef3: f2 0f 10 05 90 cd c3 00      	movsd	xmm0, qword ptr [0xc3cd90]
+  64eefb: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64ef01: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64ef04: c7 44 24 04 e0 cd c3 00      	mov	dword ptr [esp + 0x4], 0xc3cde0
+  64ef0c: e8 ef 16 24 00               	call	0x890600 <.text+0x48f600>
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x64f0d0 --stop-address=0x64f110 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64f0d0: 00 68 4c                     	add	byte ptr [eax + 0x4c], ch
+  64f0d3: ce                           	into
+  64f0d4: c3                           	ret
+  64f0d5: 00 53 e8                     	add	byte ptr [ebx - 0x18], dl
+  64f0d8: f4                           	hlt
+  64f0d9: 14 24                        	adc	al, 0x24
+  64f0db: 00 68 40                     	add	byte ptr [eax + 0x40], ch
+  64f0de: db 64 00 68                  	<unknown>
+  64f0e2: 5c                           	pop	esp
+  64f0e3: ce                           	into
+  64f0e4: c3                           	ret
+  64f0e5: 00 53 e8                     	add	byte ptr [ebx - 0x18], dl
+  64f0e8: e4 14                        	in	al, 0x14
+  64f0ea: 24 00                        	and	al, 0x0
+  64f0ec: 68 80 db 64 00               	push	0x64db80
+  64f0f1: 68 6c ce c3 00               	push	0xc3ce6c
+  64f0f6: 53                           	push	ebx
+  64f0f7: e8 d4 14 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64f0fc: 83 c4 78                     	add	esp, 0x78
+  64f0ff: 68 a0 db 64 00               	push	0x64dba0
+  64f104: 68 80 ce c3 00               	push	0xc3ce80
+  64f109: 53                           	push	ebx
+  64f10a: e8 c1 14 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64f10f: 68 e0 db 64 00               	push	0x64dbe0
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x64f3a0 --stop-address=0x64f3e0 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64f3a0: d0 c3                        	rol	bl
+  64f3a2: 00 53 e8                     	add	byte ptr [ebx - 0x18], dl
+  64f3a5: 87 12                        	xchg	dword ptr [edx], edx
+  64f3a7: 24 00                        	and	al, 0x0
+  64f3a9: 68 50 e8 64 00               	push	0x64e850
+  64f3ae: 68 00 e8 64 00               	push	0x64e800
+  64f3b3: 68 88 d0 c3 00               	push	0xc3d088
+  64f3b8: 53                           	push	ebx
+  64f3b9: e8 72 12 24 00               	call	0x890630 <.text+0x48f630>
+  64f3be: 68 e0 e8 64 00               	push	0x64e8e0
+  64f3c3: 68 a0 e8 64 00               	push	0x64e8a0
+  64f3c8: 68 94 d0 c3 00               	push	0xc3d094
+  64f3cd: 53                           	push	ebx
+  64f3ce: e8 5d 12 24 00               	call	0x890630 <.text+0x48f630>
+  64f3d3: 68 60 e9 64 00               	push	0x64e960
+  64f3d8: 68 30 e9 64 00               	push	0x64e930
+  64f3dd: 68 a0 d0 c3 00               	push	0xc3d0a0
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x64db80 --stop-address=0x64dba0 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64db80: 6a 00                        	push	0x0
+  64db82: 6a 01                        	push	0x1
+  64db84: ff 74 24 0c                  	push	dword ptr [esp + 0xc]
+  64db88: e8 e3 18 24 00               	call	0x88f470 <.text+0x48e470>
+  64db8d: 83 c4 0c                     	add	esp, 0xc
+  64db90: 8b c8                        	mov	ecx, eax
+  64db92: e8 69 d6 f7 ff               	call	0x5cb200 <.text+0x1ca200>
+  64db97: 33 c0                        	xor	eax, eax
+  64db99: c3                           	ret
+  64db9a: 8d b6 00 00 00 00            	lea	esi, [esi]
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x64e8a0 --stop-address=0x64e930 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64e8a0: 53                           	push	ebx
+  64e8a1: 83 ec 0c                     	sub	esp, 0xc
+  64e8a4: 8b 5c 24 14                  	mov	ebx, dword ptr [esp + 0x14]
+  64e8a8: 6a 00                        	push	0x0
+  64e8aa: 6a 01                        	push	0x1
+  64e8ac: 53                           	push	ebx
+  64e8ad: e8 be 0b 24 00               	call	0x88f470 <.text+0x48e470>
+  64e8b2: 83 c4 0c                     	add	esp, 0xc
+  64e8b5: 8b c8                        	mov	ecx, eax
+  64e8b7: e8 14 c9 f7 ff               	call	0x5cb1d0 <.text+0x1ca1d0>
+  64e8bc: f2 0f 2a c0                  	cvtsi2sd	xmm0, eax
+  64e8c0: f2 0f 11 44 24 04            	movsd	qword ptr [esp + 0x4], xmm0
+  64e8c6: 89 1c 24                     	mov	dword ptr [esp], ebx
+  64e8c9: e8 52 0f 24 00               	call	0x88f820 <.text+0x48e820>
+  64e8ce: b8 01 00 00 00               	mov	eax, 0x1
+  64e8d3: 83 c4 0c                     	add	esp, 0xc
+  64e8d6: 5b                           	pop	ebx
+  64e8d7: c3                           	ret
+  64e8d8: 90                           	nop
+  64e8d9: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  64e8e0: 56                           	push	esi
+  64e8e1: 55                           	push	ebp
+  64e8e2: 83 ec 18                     	sub	esp, 0x18
+  64e8e5: 8b 74 24 24                  	mov	esi, dword ptr [esp + 0x24]
+  64e8e9: 6a 00                        	push	0x0
+  64e8eb: 6a 01                        	push	0x1
+  64e8ed: 56                           	push	esi
+  64e8ee: e8 7d 0b 24 00               	call	0x88f470 <.text+0x48e470>
+  64e8f3: 83 c4 0c                     	add	esp, 0xc
+  64e8f6: 8b e8                        	mov	ebp, eax
+  64e8f8: c7 44 24 04 02 00 00 00      	mov	dword ptr [esp + 0x4], 0x2
+  64e900: 89 34 24                     	mov	dword ptr [esp], esi
+  64e903: 66 0f ef c0                  	pxor	xmm0, xmm0
+  64e907: f2 0f 11 44 24 08            	movsd	qword ptr [esp + 0x8], xmm0
+  64e90d: e8 de 0a 24 00               	call	0x88f3f0 <.text+0x48e3f0>
+  64e912: dd 5c 24 10                  	fstp	qword ptr [esp + 0x10]
+  64e916: f2 0f 10 44 24 10            	movsd	xmm0, qword ptr [esp + 0x10]
+  64e91c: 8b cd                        	mov	ecx, ebp
+  64e91e: f2 0f 2c c0                  	cvttsd2si	eax, xmm0
+  64e922: 50                           	push	eax
+  64e923: e8 38 c8 f7 ff               	call	0x5cb160 <.text+0x1ca160>
+  64e928: 33 c0                        	xor	eax, eax
+  64e92a: 83 c4 18                     	add	esp, 0x18
+  64e92d: 5d                           	pop	ebp
+  64e92e: 5e                           	pop	esi
+  64e92f: c3                           	ret
+
+/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x5cb160 --stop-address=0x5cb2a0 /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  5cb160: 0f be 15 2c 1e d7 00         	movsx	edx, byte ptr [0xd71e2c]
+  5cb167: 85 d2                        	test	edx, edx
+  5cb169: 74 16                        	je	0x5cb181 <.text+0x1ca181>
+  5cb16b: 83 fa 01                     	cmp	edx, 0x1
+  5cb16e: 75 07                        	jne	0x5cb177 <.text+0x1ca177>
+  5cb170: ba 01 00 00 00               	mov	edx, 0x1
+  5cb175: eb 0c                        	jmp	0x5cb183 <.text+0x1ca183>
+  5cb177: 33 c0                        	xor	eax, eax
+  5cb179: 83 fa 02                     	cmp	edx, 0x2
+  5cb17c: 0f 45 d0                     	cmovne	edx, eax
+  5cb17f: eb 02                        	jmp	0x5cb183 <.text+0x1ca183>
+  5cb181: 33 d2                        	xor	edx, edx
+  5cb183: 8b 44 24 04                  	mov	eax, dword ptr [esp + 0x4]
+  5cb187: 3b c2                        	cmp	eax, edx
+  5cb189: 74 34                        	je	0x5cb1bf <.text+0x1ca1bf>
+  5cb18b: 85 c0                        	test	eax, eax
+  5cb18d: 74 1c                        	je	0x5cb1ab <.text+0x1ca1ab>
+  5cb18f: 83 f8 01                     	cmp	eax, 0x1
+  5cb192: 75 09                        	jne	0x5cb19d <.text+0x1ca19d>
+  5cb194: 6a 01                        	push	0x1
+  5cb196: e8 c5 9f eb ff               	call	0x485160 <.text+0x84160>
+  5cb19b: eb 15                        	jmp	0x5cb1b2 <.text+0x1ca1b2>
+  5cb19d: 83 f8 02                     	cmp	eax, 0x2
+  5cb1a0: 75 11                        	jne	0x5cb1b3 <.text+0x1ca1b3>
+  5cb1a2: 6a 02                        	push	0x2
+  5cb1a4: e8 b7 9f eb ff               	call	0x485160 <.text+0x84160>
+  5cb1a9: eb 07                        	jmp	0x5cb1b2 <.text+0x1ca1b2>
+  5cb1ab: 6a 00                        	push	0x0
+  5cb1ad: e8 ae 9f eb ff               	call	0x485160 <.text+0x84160>
+  5cb1b2: 59                           	pop	ecx
+  5cb1b3: e8 b8 d2 00 00               	call	0x5d8470 <.text+0x1d7470>
+  5cb1b8: 8b c8                        	mov	ecx, eax
+  5cb1ba: e8 21 da 00 00               	call	0x5d8be0 <.text+0x1d7be0>
+  5cb1bf: c2 04 00                     	ret	0x4
+  5cb1c2: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  5cb1c9: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5cb1d0: 0f be 05 2c 1e d7 00         	movsx	eax, byte ptr [0xd71e2c]
+  5cb1d7: 85 c0                        	test	eax, eax
+  5cb1d9: 74 16                        	je	0x5cb1f1 <.text+0x1ca1f1>
+  5cb1db: 83 f8 01                     	cmp	eax, 0x1
+  5cb1de: 75 06                        	jne	0x5cb1e6 <.text+0x1ca1e6>
+  5cb1e0: b8 01 00 00 00               	mov	eax, 0x1
+  5cb1e5: c3                           	ret
+  5cb1e6: 83 f8 02                     	cmp	eax, 0x2
+  5cb1e9: 75 06                        	jne	0x5cb1f1 <.text+0x1ca1f1>
+  5cb1eb: b8 02 00 00 00               	mov	eax, 0x2
+  5cb1f0: c3                           	ret
+  5cb1f1: 33 c0                        	xor	eax, eax
+  5cb1f3: c3                           	ret
+  5cb1f4: 8d b6 00 00 00 00            	lea	esi, [esi]
+  5cb1fa: 8d bf 00 00 00 00            	lea	edi, [edi]
+  5cb200: 55                           	push	ebp
+  5cb201: 0f be 2d 2c 1e d7 00         	movsx	ebp, byte ptr [0xd71e2c]
+  5cb208: 85 ed                        	test	ebp, ebp
+  5cb20a: 74 16                        	je	0x5cb222 <.text+0x1ca222>
+  5cb20c: 83 fd 01                     	cmp	ebp, 0x1
+  5cb20f: 75 07                        	jne	0x5cb218 <.text+0x1ca218>
+  5cb211: b9 01 00 00 00               	mov	ecx, 0x1
+  5cb216: eb 0c                        	jmp	0x5cb224 <.text+0x1ca224>
+  5cb218: 33 c9                        	xor	ecx, ecx
+  5cb21a: 83 fd 02                     	cmp	ebp, 0x2
+  5cb21d: 0f 44 cd                     	cmove	ecx, ebp
+  5cb220: eb 02                        	jmp	0x5cb224 <.text+0x1ca224>
+  5cb222: 33 c9                        	xor	ecx, ecx
+  5cb224: b8 56 55 55 55               	mov	eax, 0x55555556
+  5cb229: 41                           	inc	ecx
+  5cb22a: f7 e9                        	imul	ecx
+  5cb22c: 8b c1                        	mov	eax, ecx
+  5cb22e: c1 f8 1f                     	sar	eax, 0x1f
+  5cb231: 2b d0                        	sub	edx, eax
+  5cb233: 8d 04 52                     	lea	eax, [edx + 2*edx]
+  5cb236: 2b c8                        	sub	ecx, eax
+  5cb238: 85 ed                        	test	ebp, ebp
+  5cb23a: 74 16                        	je	0x5cb252 <.text+0x1ca252>
+  5cb23c: 83 fd 01                     	cmp	ebp, 0x1
+  5cb23f: 75 07                        	jne	0x5cb248 <.text+0x1ca248>
+  5cb241: bd 01 00 00 00               	mov	ebp, 0x1
+  5cb246: eb 0c                        	jmp	0x5cb254 <.text+0x1ca254>
+  5cb248: 33 c0                        	xor	eax, eax
+  5cb24a: 83 fd 02                     	cmp	ebp, 0x2
+  5cb24d: 0f 45 e8                     	cmovne	ebp, eax
+  5cb250: eb 02                        	jmp	0x5cb254 <.text+0x1ca254>
+  5cb252: 33 ed                        	xor	ebp, ebp
+  5cb254: 3b cd                        	cmp	ecx, ebp
+  5cb256: 74 34                        	je	0x5cb28c <.text+0x1ca28c>
+  5cb258: 85 c9                        	test	ecx, ecx
+  5cb25a: 74 1c                        	je	0x5cb278 <.text+0x1ca278>
+  5cb25c: 83 f9 01                     	cmp	ecx, 0x1
+  5cb25f: 75 09                        	jne	0x5cb26a <.text+0x1ca26a>
+  5cb261: 6a 01                        	push	0x1
+  5cb263: e8 f8 9e eb ff               	call	0x485160 <.text+0x84160>
+  5cb268: eb 15                        	jmp	0x5cb27f <.text+0x1ca27f>
+  5cb26a: 83 f9 02                     	cmp	ecx, 0x2
+  5cb26d: 75 11                        	jne	0x5cb280 <.text+0x1ca280>
+  5cb26f: 6a 02                        	push	0x2
+  5cb271: e8 ea 9e eb ff               	call	0x485160 <.text+0x84160>
+  5cb276: eb 07                        	jmp	0x5cb27f <.text+0x1ca27f>
+  5cb278: 6a 00                        	push	0x0
+  5cb27a: e8 e1 9e eb ff               	call	0x485160 <.text+0x84160>
+  5cb27f: 59                           	pop	ecx
+  5cb280: e8 eb d1 00 00               	call	0x5d8470 <.text+0x1d7470>
+  5cb285: 8b c8                        	mov	ecx, eax
+  5cb287: e8 54 d9 00 00               	call	0x5d8be0 <.text+0x1d7be0>
+  5cb28c: 5d                           	pop	ebp
+  5cb28d: c3                           	ret
+  5cb28e: 8b f6                        	mov	esi, esi
+  5cb290: 0f b6 44 24 04               	movzx	eax, byte ptr [esp + 0x4]
+  5cb295: 68 00 00 80 bf               	push	0xbf800000
+  5cb29a: 83 c1 7c                     	add	ecx, 0x7c
+  5cb29d: 50                           	push	eax
+  5cb29e: e8 7d 7f 18 00               	call	0x753220 <.text+0x352220>

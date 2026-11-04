@@ -1,0 +1,29 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"
+mkdir -p "build"
+mkdir -p "build"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyView.mm -o "build/SkyView.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build/SolarSystemView.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build/AppController.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/rotation.cpp -o /Users/kota/mitaka/native/gui/build/core/rotation.o
+xcrun ar rcs /Users/kota/mitaka/native/gui/build/core/libmitaka_core.a /Users/kota/mitaka/native/gui/build/core/astronomy.o /Users/kota/mitaka/native/gui/build/core/catalog.o /Users/kota/mitaka/native/gui/build/core/ephemeris.o /Users/kota/mitaka/native/gui/build/core/rotation.o
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/sky_model.cpp -o "build/sky_model.o"
+mkdir -p "build"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/planet_textures.mm -o "build/planet_textures.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build/sky_model.o "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build/sky_model.o build/solar_camera.o "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"  -o "build/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build/planet_textures.o  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/test_planet_textures"
+mkdir -p "build/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 build/main.o build/AppController.o build/SkyView.o build/SolarSystemView.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp Info.plist "build/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+"build/test_sky_model"
+sky model tests passed
+"build/test_solar_model"
+solar model tests passed
+"build/test_planet_surface"
+planet surface tests passed
+"build/test_planet_textures"
+planet texture tests passed

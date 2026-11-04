@@ -1,0 +1,16 @@
+# Koronis
+
+Name: Koronis
+DisplayName: Koronis
+No: 158
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.869376
+e: 0.053917
+w: 145.870926
+M0: 112.439453
+i: 1.003972
+node: 278.718842
+Size: 500 500 500
+B_V: 0.75

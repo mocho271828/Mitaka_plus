@@ -1,0 +1,21 @@
+Local SDSS/QSO rows: 931208, zero distance: 7
+Record storage bytes: 22348992, snapshot row bytes: 59597312
+SDSS spatial model tests passed: 18624636 checks
+        0.23 real         0.20 user         0.02 sys
+           111312896  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                8156  page reclaims
+                   4  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                  48  involuntary context switches
+          4471680597  instructions retired
+           780171924  cycles elapsed
+           112020888  peak memory footprint

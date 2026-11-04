@@ -1,0 +1,77 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_browser_model.mm build-unit5-integration/spacecraft_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_spacecraft_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_renderer.mm build-unit5-integration/SpacecraftRenderer.o build-unit5-integration/spacecraft_browser_model.o build-unit5-integration/RendererQuality.o build-unit5-integration/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework AppKit -o "build-unit5-integration/test_spacecraft_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_scene.mm build-unit5-integration/satellite_scene.o build-unit5-integration/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_browser_model.mm build-unit5-integration/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build-unit5-integration/SkyView.o build-unit5-integration/SkyCatalogRenderer.o build-unit5-integration/StarRenderer.o build-unit5-integration/RendererQuality.o build-unit5-integration/star_labels.o build-unit5-integration/sky_catalog_index.o build-unit5-integration/sky_model.o build-unit5-integration/sky_background.o build-unit5-integration/local_image.o build-unit5-integration/ConstellationRenderer.o build-unit5-integration/constellation_display.o build-unit5-integration/horizon_segments.o build-unit5-integration/GridRenderer.o build-unit5-integration/grid_geometry.o build-unit5-integration/distance_scales.o build-unit5-integration/solar_camera.o build-unit5-integration/HorizonView.o build-unit5-integration/SolarSceneRenderer.o build-unit5-integration/SatelliteRenderer.o build-unit5-integration/satellite_browser_model.o build-unit5-integration/SmallBodyRenderer.o build-unit5-integration/small_body_model.o build-unit5-integration/small_body_display.o build-unit5-integration/small_body_orbit_model.o build-unit5-integration/satellite_display.o build-unit5-integration/satellite_orbit_geometry.o build-unit5-integration/SpacecraftRenderer.o build-unit5-integration/spacecraft_browser_model.o build-unit5-integration/planet_surface.o build-unit5-integration/surface_navigation.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-integration/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_model.mm build-unit5-integration/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_background.mm build-unit5-integration/sky_background.o build-unit5-integration/grid_geometry.o build-unit5-integration/local_image.o build-unit5-integration/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-integration/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_observer_places.cpp build-unit5-integration/observer_places.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -o "build-unit5-integration/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_model.mm build-unit5-integration/catalog_browser_model.o build-unit5-integration/extended_catalogs.o build-unit5-integration/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_extended_catalogs.cpp build-unit5-integration/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -o "build-unit5-integration/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_view.mm build-unit5-integration/SkyView.o build-unit5-integration/SkyCatalogRenderer.o build-unit5-integration/StarRenderer.o build-unit5-integration/RendererQuality.o build-unit5-integration/star_labels.o build-unit5-integration/sky_catalog_index.o build-unit5-integration/sky_model.o build-unit5-integration/sky_background.o build-unit5-integration/local_image.o build-unit5-integration/ConstellationRenderer.o build-unit5-integration/constellation_display.o build-unit5-integration/horizon_segments.o build-unit5-integration/GridRenderer.o build-unit5-integration/grid_geometry.o build-unit5-integration/distance_scales.o build-unit5-integration/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-integration/test_sky_view"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_horizon_view.mm build-unit5-integration/HorizonView.o build-unit5-integration/SkyView.o build-unit5-integration/SkyCatalogRenderer.o build-unit5-integration/StarRenderer.o build-unit5-integration/RendererQuality.o build-unit5-integration/star_labels.o build-unit5-integration/sky_catalog_index.o build-unit5-integration/sky_model.o build-unit5-integration/sky_background.o build-unit5-integration/local_image.o build-unit5-integration/ConstellationRenderer.o build-unit5-integration/constellation_display.o build-unit5-integration/horizon_segments.o build-unit5-integration/GridRenderer.o build-unit5-integration/grid_geometry.o build-unit5-integration/distance_scales.o build-unit5-integration/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-integration/test_horizon_view"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build-unit5-integration/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -o "build-unit5-integration/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build-unit5-integration/sky_model.o build-unit5-integration/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -o "build-unit5-integration/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_interplanetary_flight.cpp build-unit5-integration/interplanetary_flight.o build-unit5-integration/surface_navigation.o build-unit5-integration/solar_camera.o build-unit5-integration/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -o "build-unit5-integration/test_interplanetary_flight"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_constellation_renderer.mm build-unit5-integration/ConstellationRenderer.o build-unit5-integration/RendererQuality.o build-unit5-integration/horizon_segments.o build-unit5-integration/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework AppKit -o "build-unit5-integration/test_constellation_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_orbit_geometry.mm build-unit5-integration/satellite_orbit_geometry.o build-unit5-integration/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_satellite_orbit_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_model.mm build-unit5-integration/small_body_orbit_model.o build-unit5-integration/small_body_display.o build-unit5-integration/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit5-integration/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-integration/test_small_body_orbit_model"
+"build-unit5-integration/test_constellation_renderer" "${DATA_ROOT:?Set DATA_ROOT}"
+Local source rows: 89
+Constellation renderer tests passed: 4300935 checks
+"build-unit5-integration/test_satellite_orbit_geometry" "${DATA_ROOT:?Set DATA_ROOT}"
+Local satellite orbit rows=340 paths=328 jd=2.45154e+06
+Local satellite orbit rows=340 paths=328 jd=2.45155e+06
+Satellite orbit geometry: 169955 checks PASS
+"build-unit5-integration/test_small_body_orbit_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local orbit rows=19475 requested=2457 unresolved=69
+Small-body orbit model tests passed: 30882 checks
+"build-unit5-integration/test_spacecraft_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local spacecraft definitions=14 positioned=14
+Spacecraft browser model: 93 checks PASS
+"build-unit5-integration/test_spacecraft_renderer" "${DATA_ROOT:?Set DATA_ROOT}"
+Local definitions=14 segments=79184 visit_ms=1.8925
+Spacecraft renderer: 107996 checks PASS
+"build-unit5-integration/test_satellite_scene" "${DATA_ROOT:?Set DATA_ROOT}"
+Satellite scene: 770 checks PASS
+"build-unit5-integration/test_satellite_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local satellite rows=340 positioned=330
+Satellite browser model: 708 checks PASS
+"build-unit5-integration/test_display_rendering" "${DATA_ROOT:?Set DATA_ROOT}"
+display rendering tests passed (145 checks)
+"build-unit5-integration/test_small_body_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Local small bodies: records=19475 evaluable=10839 positioned=10839 packed=8451 comets=2388 frame_ms=14.2557 hidden_ms=0.0094889 total_ms=481.208
+Small-body model tests passed: 58963 checks
+"build-unit5-integration/test_media_catalog" "${DATA_ROOT:?Set DATA_ROOT}"
+local entries=9 unresolved=5
+media_catalog: 55 checks passed
+"build-unit5-integration/test_sky_background" "${DATA_ROOT:?Set DATA_ROOT}"
+local backgrounds: 3/3; warnings: 0
+sky background tests passed
+"build-unit5-integration/test_observer_places" "${DATA_ROOT:?Set DATA_ROOT}"
+Local observer places: 56, source rows: 56, user rows: 4, optional missing: 0
+Observer places: 75 checks passed
+"build-unit5-integration/test_catalog_browser_model" "${DATA_ROOT:?Set DATA_ROOT}"
+Synthetic last-record search: 1000037 galaxies, 25.6734 ms
+Local browser rows: 1059477, retained page: 500
+Catalog browser model tests passed: 31 checks
+"build-unit5-integration/test_extended_catalogs" "${DATA_ROOT:?Set DATA_ROOT}"
+Local rows: NGC 10213, GAL 826360, QSO 104848, names 174, hosts 179
+Extended catalog aggregate tests passed
+"build-unit5-integration/test_sky_view" "${DATA_ROOT:?Set DATA_ROOT}"
+sky view integration tests passed
+"build-unit5-integration/test_horizon_view" "${DATA_ROOT:?Set DATA_ROOT}"
+horizon view: 33 checks passed
+"build-unit5-integration/test_sky_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+read-only integration passed: "/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", HIP=117956, bodies=10
+sky model tests passed
+"build-unit5-integration/test_solar_model" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+solar integration passed: "/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", bodies=11 orbits=9 lunar_orbits=1 rotations=10
+solar model tests passed
+"build-unit5-integration/test_planet_textures" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+real textures: 11/11, warnings: 0
+planet texture tests passed
+"build-unit5-integration/test_interplanetary_flight" "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
+Interplanetary flight tests passed

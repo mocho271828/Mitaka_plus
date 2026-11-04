@@ -1,0 +1,381 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64cc90: ff 33                        	push	dword ptr [ebx]
+  64cc92: c0 5b 5f c3                  	rcr	byte ptr [ebx + 0x5f], 0xc3
+  64cc96: 8d 76 00                     	lea	esi, [esi]
+  64cc99: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  64cca0: 56                           	push	esi
+  64cca1: 8b 74 24 08                  	mov	esi, dword ptr [esp + 0x8]
+  64cca5: 56                           	push	esi
+  64cca6: e8 35 3c 24 00               	call	0x8908e0 <.text+0x48f8e0>
+  64ccab: 68 1c 9d c3 00               	push	0xc39d1c
+  64ccb0: 56                           	push	esi
+  64ccb1: e8 1a 35 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64ccb6: 68 b0 cc c3 00               	push	0xc3ccb0
+  64ccbb: 56                           	push	esi
+  64ccbc: e8 0f 35 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64ccc1: 33 c0                        	xor	eax, eax
+  64ccc3: 50                           	push	eax
+  64ccc4: 50                           	push	eax
+  64ccc5: 56                           	push	esi
+  64ccc6: e8 55 36 24 00               	call	0x890320 <.text+0x48f320>
+  64cccb: 6a 00                        	push	0x0
+  64cccd: 56                           	push	esi
+  64ccce: e8 0d 36 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64ccd3: 6a 00                        	push	0x0
+  64ccd5: 68 3c 9d c3 00               	push	0xc39d3c
+  64ccda: 56                           	push	esi
+  64ccdb: e8 40 36 24 00               	call	0x890320 <.text+0x48f320>
+  64cce0: 68 3c 9d c3 00               	push	0xc39d3c
+  64cce5: 56                           	push	esi
+  64cce6: e8 f5 35 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64cceb: 68 a0 93 64 00               	push	0x6493a0
+  64ccf0: 68 1c 9d c3 00               	push	0xc39d1c
+  64ccf5: 68 b0 cc c3 00               	push	0xc3ccb0
+  64ccfa: 68 bc cc c3 00               	push	0xc3ccbc
+  64ccff: 56                           	push	esi
+  64cd00: e8 1b 37 24 00               	call	0x890420 <.text+0x48f420>
+  64cd05: 68 bc cc c3 00               	push	0xc3ccbc
+  64cd0a: 56                           	push	esi
+  64cd0b: e8 d0 35 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64cd10: 68 c0 93 64 00               	push	0x6493c0
+  64cd15: 68 40 9d c3 00               	push	0xc39d40
+  64cd1a: 56                           	push	esi
+  64cd1b: e8 b0 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd20: 68 70 94 64 00               	push	0x649470
+  64cd25: 68 44 9d c3 00               	push	0xc39d44
+  64cd2a: 56                           	push	esi
+  64cd2b: e8 a0 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd30: 68 70 94 64 00               	push	0x649470
+  64cd35: 68 50 9d c3 00               	push	0xc39d50
+  64cd3a: 56                           	push	esi
+  64cd3b: e8 90 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd40: 83 c4 7c                     	add	esp, 0x7c
+  64cd43: 68 20 95 64 00               	push	0x649520
+  64cd48: 68 58 9d c3 00               	push	0xc39d58
+  64cd4d: 56                           	push	esi
+  64cd4e: e8 7d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd53: 68 40 95 64 00               	push	0x649540
+  64cd58: 68 60 9d c3 00               	push	0xc39d60
+  64cd5d: 56                           	push	esi
+  64cd5e: e8 6d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd63: 68 60 95 64 00               	push	0x649560
+  64cd68: 68 6c 9d c3 00               	push	0xc39d6c
+  64cd6d: 56                           	push	esi
+  64cd6e: e8 5d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd73: 68 20 99 64 00               	push	0x649920
+  64cd78: 68 c4 cc c3 00               	push	0xc3ccc4
+  64cd7d: 56                           	push	esi
+  64cd7e: e8 4d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd83: 68 90 9f 64 00               	push	0x649f90
+  64cd88: 68 d4 cc c3 00               	push	0xc3ccd4
+  64cd8d: 56                           	push	esi
+  64cd8e: e8 3d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cd93: 68 e0 c0 64 00               	push	0x64c0e0
+  64cd98: 68 e4 cc c3 00               	push	0xc3cce4
+  64cd9d: 56                           	push	esi
+  64cd9e: e8 2d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cda3: 68 80 b7 64 00               	push	0x64b780
+  64cda8: 68 e4 cc c3 00               	push	0xc3cce4
+  64cdad: 56                           	push	esi
+  64cdae: e8 1d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cdb3: 68 10 ab 64 00               	push	0x64ab10
+  64cdb8: 68 e4 cc c3 00               	push	0xc3cce4
+  64cdbd: 56                           	push	esi
+  64cdbe: e8 0d 38 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cdc3: 68 60 c8 64 00               	push	0x64c860
+  64cdc8: 68 f0 cc c3 00               	push	0xc3ccf0
+  64cdcd: 56                           	push	esi
+  64cdce: e8 fd 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cdd3: 68 a0 c8 64 00               	push	0x64c8a0
+  64cdd8: 68 fc cc c3 00               	push	0xc3ccfc
+  64cddd: 56                           	push	esi
+  64cdde: e8 ed 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cde3: 83 c4 78                     	add	esp, 0x78
+  64cde6: 68 d0 c8 64 00               	push	0x64c8d0
+  64cdeb: 68 08 cd c3 00               	push	0xc3cd08
+  64cdf0: 56                           	push	esi
+  64cdf1: e8 da 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cdf6: 68 f0 c8 64 00               	push	0x64c8f0
+  64cdfb: 68 98 9d c3 00               	push	0xc39d98
+  64ce00: 56                           	push	esi
+  64ce01: e8 ca 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce06: 68 30 c9 64 00               	push	0x64c930
+  64ce0b: 68 a4 9d c3 00               	push	0xc39da4
+  64ce10: 56                           	push	esi
+  64ce11: e8 ba 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce16: 68 60 c9 64 00               	push	0x64c960
+  64ce1b: 68 b0 9d c3 00               	push	0xc39db0
+  64ce20: 56                           	push	esi
+  64ce21: e8 aa 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce26: 68 80 c9 64 00               	push	0x64c980
+  64ce2b: 68 18 cd c3 00               	push	0xc3cd18
+  64ce30: 56                           	push	esi
+  64ce31: e8 9a 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce36: 68 d0 c9 64 00               	push	0x64c9d0
+  64ce3b: 68 28 cd c3 00               	push	0xc3cd28
+  64ce40: 56                           	push	esi
+  64ce41: e8 8a 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce46: 68 20 ca 64 00               	push	0x64ca20
+  64ce4b: 68 38 cd c3 00               	push	0xc3cd38
+  64ce50: 56                           	push	esi
+  64ce51: e8 7a 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce56: 68 60 ca 64 00               	push	0x64ca60
+  64ce5b: 68 48 cd c3 00               	push	0xc3cd48
+  64ce60: 56                           	push	esi
+  64ce61: e8 6a 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce66: 68 90 ca 64 00               	push	0x64ca90
+  64ce6b: 68 58 cd c3 00               	push	0xc3cd58
+  64ce70: 56                           	push	esi
+  64ce71: e8 5a 37 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64ce76: 68 e0 ca 64 00               	push	0x64cae0
+  64ce7b: 68 b0 ca 64 00               	push	0x64cab0
+  64ce80: 68 68 cd c3 00               	push	0xc3cd68
+  64ce85: 56                           	push	esi
+  64ce86: e8 a5 37 24 00               	call	0x890630 <.text+0x48f630>
+  64ce8b: 83 c4 7c                     	add	esp, 0x7c
+  64ce8e: 68 50 cb 64 00               	push	0x64cb50
+  64ce93: 68 20 cb 64 00               	push	0x64cb20
+  64ce98: 68 60 9e c3 00               	push	0xc39e60
+  64ce9d: 56                           	push	esi
+  64ce9e: e8 8d 37 24 00               	call	0x890630 <.text+0x48f630>
+  64cea3: 68 e0 cb 64 00               	push	0x64cbe0
+  64cea8: 68 90 cb 64 00               	push	0x64cb90
+  64cead: 68 70 cd c3 00               	push	0xc3cd70
+  64ceb2: 56                           	push	esi
+  64ceb3: e8 78 37 24 00               	call	0x890630 <.text+0x48f630>
+  64ceb8: 68 60 cc 64 00               	push	0x64cc60
+  64cebd: 68 30 cc 64 00               	push	0x64cc30
+  64cec2: 68 7c cd c3 00               	push	0xc3cd7c
+  64cec7: 56                           	push	esi
+  64cec8: e8 63 37 24 00               	call	0x890630 <.text+0x48f630>
+  64cecd: 56                           	push	esi
+  64cece: e8 3d 34 24 00               	call	0x890310 <.text+0x48f310>
+  64ced3: 56                           	push	esi
+  64ced4: e8 37 34 24 00               	call	0x890310 <.text+0x48f310>
+  64ced9: 56                           	push	esi
+  64ceda: e8 31 34 24 00               	call	0x890310 <.text+0x48f310>
+  64cedf: 83 c4 3c                     	add	esp, 0x3c
+  64cee2: b8 01 00 00 00               	mov	eax, 0x1
+  64cee7: 5e                           	pop	esi
+  64cee8: c3                           	ret
+  64cee9: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  64cef0: 56                           	push	esi
+  64cef1: 8b 74 24 08                  	mov	esi, dword ptr [esp + 0x8]
+  64cef5: 56                           	push	esi
+  64cef6: e8 e5 39 24 00               	call	0x8908e0 <.text+0x48f8e0>
+  64cefb: 68 1c 9d c3 00               	push	0xc39d1c
+  64cf00: 56                           	push	esi
+  64cf01: e8 ca 32 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64cf06: 68 b0 cc c3 00               	push	0xc3ccb0
+  64cf0b: 56                           	push	esi
+  64cf0c: e8 bf 32 24 00               	call	0x8901d0 <.text+0x48f1d0>
+  64cf11: 33 c0                        	xor	eax, eax
+  64cf13: 50                           	push	eax
+  64cf14: 50                           	push	eax
+  64cf15: 56                           	push	esi
+  64cf16: e8 05 34 24 00               	call	0x890320 <.text+0x48f320>
+  64cf1b: 6a 00                        	push	0x0
+  64cf1d: 56                           	push	esi
+  64cf1e: e8 bd 33 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64cf23: 6a 00                        	push	0x0
+  64cf25: 68 3c 9d c3 00               	push	0xc39d3c
+  64cf2a: 56                           	push	esi
+  64cf2b: e8 f0 33 24 00               	call	0x890320 <.text+0x48f320>
+  64cf30: 68 3c 9d c3 00               	push	0xc39d3c
+  64cf35: 56                           	push	esi
+  64cf36: e8 a5 33 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64cf3b: 68 a0 93 64 00               	push	0x6493a0
+  64cf40: 68 1c 9d c3 00               	push	0xc39d1c
+  64cf45: 68 b0 cc c3 00               	push	0xc3ccb0
+  64cf4a: 68 bc cc c3 00               	push	0xc3ccbc
+  64cf4f: 56                           	push	esi
+  64cf50: e8 cb 34 24 00               	call	0x890420 <.text+0x48f420>
+  64cf55: 68 bc cc c3 00               	push	0xc3ccbc
+  64cf5a: 56                           	push	esi
+  64cf5b: e8 80 33 24 00               	call	0x8902e0 <.text+0x48f2e0>
+  64cf60: 68 c0 93 64 00               	push	0x6493c0
+  64cf65: 68 40 9d c3 00               	push	0xc39d40
+  64cf6a: 56                           	push	esi
+  64cf6b: e8 60 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cf70: 68 70 94 64 00               	push	0x649470
+  64cf75: 68 44 9d c3 00               	push	0xc39d44
+  64cf7a: 56                           	push	esi
+  64cf7b: e8 50 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cf80: 68 70 94 64 00               	push	0x649470
+  64cf85: 68 50 9d c3 00               	push	0xc39d50
+  64cf8a: 56                           	push	esi
+  64cf8b: e8 40 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cf90: 83 c4 7c                     	add	esp, 0x7c
+  64cf93: 68 20 95 64 00               	push	0x649520
+  64cf98: 68 58 9d c3 00               	push	0xc39d58
+  64cf9d: 56                           	push	esi
+  64cf9e: e8 2d 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cfa3: 68 40 95 64 00               	push	0x649540
+  64cfa8: 68 60 9d c3 00               	push	0xc39d60
+  64cfad: 56                           	push	esi
+  64cfae: e8 1d 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cfb3: 68 60 95 64 00               	push	0x649560
+  64cfb8: 68 6c 9d c3 00               	push	0xc39d6c
+  64cfbd: 56                           	push	esi
+  64cfbe: e8 0d 36 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cfc3: 68 20 99 64 00               	push	0x649920
+  64cfc8: 68 c4 cc c3 00               	push	0xc3ccc4
+  64cfcd: 56                           	push	esi
+  64cfce: e8 fd 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cfd3: 68 90 9f 64 00               	push	0x649f90
+  64cfd8: 68 d4 cc c3 00               	push	0xc3ccd4
+  64cfdd: 56                           	push	esi
+  64cfde: e8 ed 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cfe3: 68 e0 c0 64 00               	push	0x64c0e0
+  64cfe8: 68 e4 cc c3 00               	push	0xc3cce4
+  64cfed: 56                           	push	esi
+  64cfee: e8 dd 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64cff3: 68 80 b7 64 00               	push	0x64b780
+  64cff8: 68 e4 cc c3 00               	push	0xc3cce4
+  64cffd: 56                           	push	esi
+  64cffe: e8 cd 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d003: 68 10 ab 64 00               	push	0x64ab10
+  64d008: 68 e4 cc c3 00               	push	0xc3cce4
+  64d00d: 56                           	push	esi
+  64d00e: e8 bd 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d013: 68 60 c8 64 00               	push	0x64c860
+  64d018: 68 f0 cc c3 00               	push	0xc3ccf0
+  64d01d: 56                           	push	esi
+  64d01e: e8 ad 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d023: 68 a0 c8 64 00               	push	0x64c8a0
+  64d028: 68 fc cc c3 00               	push	0xc3ccfc
+  64d02d: 56                           	push	esi
+  64d02e: e8 9d 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d033: 83 c4 78                     	add	esp, 0x78
+  64d036: 68 d0 c8 64 00               	push	0x64c8d0
+  64d03b: 68 08 cd c3 00               	push	0xc3cd08
+  64d040: 56                           	push	esi
+  64d041: e8 8a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d046: 68 f0 c8 64 00               	push	0x64c8f0
+  64d04b: 68 98 9d c3 00               	push	0xc39d98
+  64d050: 56                           	push	esi
+  64d051: e8 7a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d056: 68 30 c9 64 00               	push	0x64c930
+  64d05b: 68 a4 9d c3 00               	push	0xc39da4
+  64d060: 56                           	push	esi
+  64d061: e8 6a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d066: 68 60 c9 64 00               	push	0x64c960
+  64d06b: 68 b0 9d c3 00               	push	0xc39db0
+  64d070: 56                           	push	esi
+  64d071: e8 5a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d076: 68 80 c9 64 00               	push	0x64c980
+  64d07b: 68 18 cd c3 00               	push	0xc3cd18
+  64d080: 56                           	push	esi
+  64d081: e8 4a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d086: 68 d0 c9 64 00               	push	0x64c9d0
+  64d08b: 68 28 cd c3 00               	push	0xc3cd28
+  64d090: 56                           	push	esi
+  64d091: e8 3a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d096: 68 20 ca 64 00               	push	0x64ca20
+  64d09b: 68 38 cd c3 00               	push	0xc3cd38
+  64d0a0: 56                           	push	esi
+  64d0a1: e8 2a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d0a6: 68 60 ca 64 00               	push	0x64ca60
+  64d0ab: 68 48 cd c3 00               	push	0xc3cd48
+  64d0b0: 56                           	push	esi
+  64d0b1: e8 1a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d0b6: 68 90 ca 64 00               	push	0x64ca90
+  64d0bb: 68 58 cd c3 00               	push	0xc3cd58
+  64d0c0: 56                           	push	esi
+  64d0c1: e8 0a 35 24 00               	call	0x8905d0 <.text+0x48f5d0>
+  64d0c6: 68 e0 ca 64 00               	push	0x64cae0
+  64d0cb: 68 b0 ca 64 00               	push	0x64cab0
+  64d0d0: 68 68 cd c3 00               	push	0xc3cd68
+  64d0d5: 56                           	push	esi
+  64d0d6: e8 55 35 24 00               	call	0x890630 <.text+0x48f630>
+  64d0db: 83 c4 7c                     	add	esp, 0x7c
+  64d0de: 68 50 cb 64 00               	push	0x64cb50
+  64d0e3: 68 20 cb 64 00               	push	0x64cb20
+  64d0e8: 68 60 9e c3 00               	push	0xc39e60
+  64d0ed: 56                           	push	esi
+  64d0ee: e8 3d 35 24 00               	call	0x890630 <.text+0x48f630>
+  64d0f3: 68 e0 cb 64 00               	push	0x64cbe0
+  64d0f8: 68 90 cb 64 00               	push	0x64cb90
+  64d0fd: 68 70 cd c3 00               	push	0xc3cd70
+  64d102: 56                           	push	esi
+  64d103: e8 28 35 24 00               	call	0x890630 <.text+0x48f630>
+  64d108: 68 60 cc 64 00               	push	0x64cc60
+  64d10d: 68 30 cc 64 00               	push	0x64cc30
+  64d112: 68 7c cd c3 00               	push	0xc3cd7c
+  64d117: 56                           	push	esi
+  64d118: e8 13 35 24 00               	call	0x890630 <.text+0x48f630>
+  64d11d: 56                           	push	esi
+  64d11e: e8 ed 31 24 00               	call	0x890310 <.text+0x48f310>
+  64d123: 56                           	push	esi
+  64d124: e8 e7 31 24 00               	call	0x890310 <.text+0x48f310>
+  64d129: 56                           	push	esi
+  64d12a: e8 e1 31 24 00               	call	0x890310 <.text+0x48f310>
+  64d12f: 83 c4 3c                     	add	esp, 0x3c
+  64d132: b8 01 00 00 00               	mov	eax, 0x1
+  64d137: 5e                           	pop	esi
+  64d138: c3                           	ret
+  64d139: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  64d140: 56                           	push	esi
+  64d141: 8b f1                        	mov	esi, ecx
+  64d143: e8 98 d4 f7 ff               	call	0x5ca5e0 <.text+0x1c95e0>
+  64d148: f6 44 24 08 01               	test	byte ptr [esp + 0x8], 0x1
+  64d14d: 75 06                        	jne	0x64d155 <.text+0x24c155>
+  64d14f: 8b c6                        	mov	eax, esi
+  64d151: 5e                           	pop	esi
+  64d152: c2 04 00                     	ret	0x4
+  64d155: 56                           	push	esi
+  64d156: e8 37 1e 44 00               	call	0xa8ef92 <.text+0x68df92>
+  64d15b: 59                           	pop	ecx
+  64d15c: eb f1                        	jmp	0x64d14f <.text+0x24c14f>
+  64d15e: 8b f6                        	mov	esi, esi
+  64d160: 6a 00                        	push	0x0
+  64d162: 6a 01                        	push	0x1
+  64d164: ff 74 24 0c                  	push	dword ptr [esp + 0xc]
+  64d168: e8 03 23 24 00               	call	0x88f470 <.text+0x48e470>
+  64d16d: 83 c4 0c                     	add	esp, 0xc
+  64d170: 85 c0                        	test	eax, eax
+  64d172: 74 09                        	je	0x64d17d <.text+0x24c17d>
+  64d174: 6a 01                        	push	0x1
+  64d176: 8b c8                        	mov	ecx, eax
+  64d178: e8 c3 ff ff ff               	call	0x64d140 <.text+0x24c140>
+  64d17d: 33 c0                        	xor	eax, eax
+  64d17f: c3                           	ret
+  64d180: 55                           	push	ebp
+  64d181: 8b ec                        	mov	ebp, esp
+  64d183: 6a ff                        	push	-0x1
+  64d185: 68 20 d2 64 00               	push	0x64d220
+  64d18a: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]
+  64d190: 50                           	push	eax
+  64d191: 64 89 25 00 00 00 00         	mov	dword ptr fs:[0x0], esp
+  64d198: 83 ec 18                     	sub	esp, 0x18
+  64d19b: 89 5d ec                     	mov	dword ptr [ebp - 0x14], ebx
+  64d19e: 89 7d e4                     	mov	dword ptr [ebp - 0x1c], edi
+  64d1a1: 89 75 e8                     	mov	dword ptr [ebp - 0x18], esi
+  64d1a4: c7 45 dc 00 00 00 00         	mov	dword ptr [ebp - 0x24], 0x0
+  64d1ab: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  64d1b2: 50                           	push	eax
+  64d1b3: c7 04 24 a4 00 00 00         	mov	dword ptr [esp], 0xa4
+  64d1ba: e8 4b 1e 44 00               	call	0xa8f00a <.text+0x68e00a>
+  64d1bf: 59                           	pop	ecx
+  64d1c0: 89 45 e0                     	mov	dword ptr [ebp - 0x20], eax
+  64d1c3: 85 c0                        	test	eax, eax
+  64d1c5: 74 1a                        	je	0x64d1e1 <.text+0x24c1e1>
+  64d1c7: c7 45 dc 01 00 00 00         	mov	dword ptr [ebp - 0x24], 0x1
+  64d1ce: 8b c8                        	mov	ecx, eax
+  64d1d0: e8 6b d2 f7 ff               	call	0x5ca440 <.text+0x1c9440>
+  64d1d5: 8b 45 e0                     	mov	eax, dword ptr [ebp - 0x20]
+  64d1d8: c7 45 dc 00 00 00 00         	mov	dword ptr [ebp - 0x24], 0x0
+  64d1df: eb 02                        	jmp	0x64d1e3 <.text+0x24c1e3>
+  64d1e1: 33 c0                        	xor	eax, eax
+  64d1e3: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  64d1ea: 68 98 cd c3 00               	push	0xc3cd98
+  64d1ef: 50                           	push	eax
+  64d1f0: ff 75 08                     	push	dword ptr [ebp + 0x8]
+  64d1f3: e8 88 26 24 00               	call	0x88f880 <.text+0x48e880>
+  64d1f8: 83 c4 0c                     	add	esp, 0xc
+  64d1fb: b8 01 00 00 00               	mov	eax, 0x1

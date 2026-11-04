@@ -1,0 +1,149 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  4db868: 55                           	pushl	%ebp
+  4db869: 8b ec                        	movl	%esp, %ebp
+  4db86b: 83 e4 f8                     	andl	$-0x8, %esp
+  4db86e: 57                           	pushl	%edi
+  4db86f: 56                           	pushl	%esi
+  4db870: 53                           	pushl	%ebx
+  4db871: 83 ec 1c                     	subl	$0x1c, %esp
+  4db874: 8b fa                        	movl	%edx, %edi
+  4db876: 8b f0                        	movl	%eax, %esi
+  4db878: 56                           	pushl	%esi
+  4db879: 6a 01                        	pushl	$0x1
+  4db87b: 6a 04                        	pushl	$0x4
+  4db87d: 57                           	pushl	%edi
+  4db87e: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db884: 83 c4 10                     	addl	$0x10, %esp
+  4db887: 85 c0                        	testl	%eax, %eax
+  4db889: 7f 0f                        	jg	0x4db89a <.text+0xda89a>
+  4db88b: b8 02 00 00 00               	movl	$0x2, %eax
+  4db890: 83 c4 1c                     	addl	$0x1c, %esp
+  4db893: 5b                           	popl	%ebx
+  4db894: 5e                           	popl	%esi
+  4db895: 5f                           	popl	%edi
+  4db896: 8b e5                        	movl	%ebp, %esp
+  4db898: 5d                           	popl	%ebp
+  4db899: c3                           	retl
+  4db89a: 56                           	pushl	%esi
+  4db89b: 6a 01                        	pushl	$0x1
+  4db89d: 8d 47 04                     	leal	0x4(%edi), %eax
+  4db8a0: 6a 04                        	pushl	$0x4
+  4db8a2: 50                           	pushl	%eax
+  4db8a3: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8a9: 56                           	pushl	%esi
+  4db8aa: 6a 01                        	pushl	$0x1
+  4db8ac: 8d 5f 08                     	leal	0x8(%edi), %ebx
+  4db8af: 6a 04                        	pushl	$0x4
+  4db8b1: 53                           	pushl	%ebx
+  4db8b2: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8b8: 56                           	pushl	%esi
+  4db8b9: 6a 01                        	pushl	$0x1
+  4db8bb: 8d 47 10                     	leal	0x10(%edi), %eax
+  4db8be: 6a 04                        	pushl	$0x4
+  4db8c0: 50                           	pushl	%eax
+  4db8c1: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8c7: 56                           	pushl	%esi
+  4db8c8: 6a 01                        	pushl	$0x1
+  4db8ca: 8d 47 14                     	leal	0x14(%edi), %eax
+  4db8cd: 6a 04                        	pushl	$0x4
+  4db8cf: 50                           	pushl	%eax
+  4db8d0: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8d6: 56                           	pushl	%esi
+  4db8d7: 8d 57 0c                     	leal	0xc(%edi), %edx
+  4db8da: b8 01 00 00 00               	movl	$0x1, %eax
+  4db8df: 50                           	pushl	%eax
+  4db8e0: 50                           	pushl	%eax
+  4db8e1: 52                           	pushl	%edx
+  4db8e2: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8e8: 56                           	pushl	%esi
+  4db8e9: 8d 57 18                     	leal	0x18(%edi), %edx
+  4db8ec: b8 01 00 00 00               	movl	$0x1, %eax
+  4db8f1: 50                           	pushl	%eax
+  4db8f2: 50                           	pushl	%eax
+  4db8f3: 52                           	pushl	%edx
+  4db8f4: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db8fa: 56                           	pushl	%esi
+  4db8fb: 8d 57 19                     	leal	0x19(%edi), %edx
+  4db8fe: b8 01 00 00 00               	movl	$0x1, %eax
+  4db903: 50                           	pushl	%eax
+  4db904: 50                           	pushl	%eax
+  4db905: 52                           	pushl	%edx
+  4db906: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db90c: 83 c4 70                     	addl	$0x70, %esp
+  4db90f: 56                           	pushl	%esi
+  4db910: 6a 01                        	pushl	$0x1
+  4db912: 8d 47 1c                     	leal	0x1c(%edi), %eax
+  4db915: 6a 04                        	pushl	$0x4
+  4db917: 50                           	pushl	%eax
+  4db918: ff 15 08 56 c2 00            	calll	*0xc25608
+  4db91e: 83 c4 10                     	addl	$0x10, %esp
+  4db921: f3 0f 5a 57 10               	cvtss2sd	0x10(%edi), %xmm2
+  4db926: f3 0f 5a 4f 08               	cvtss2sd	0x8(%edi), %xmm1
+  4db92b: f3 0f 5a 27                  	cvtss2sd	(%edi), %xmm4
+  4db92f: f3 0f 5a 47 04               	cvtss2sd	0x4(%edi), %xmm0
+  4db934: f2 0f 59 15 68 ea c2 00      	mulsd	0xc2ea68, %xmm2
+  4db93c: f2 0f 59 d1                  	mulsd	%xmm1, %xmm2
+  4db940: f2 0f 5a da                  	cvtsd2ss	%xmm2, %xmm3
+  4db944: f2 0f 10 2d 70 ea c2 00      	movsd	0xc2ea70, %xmm5
+  4db94c: f3 0f 11 5f 20               	movss	%xmm3, 0x20(%edi)
+  4db951: f2 0f 59 e5                  	mulsd	%xmm5, %xmm4
+  4db955: f2 0f 11 24 24               	movsd	%xmm4, (%esp)
+  4db95a: f2 0f 59 c5                  	mulsd	%xmm5, %xmm0
+  4db95e: e8 ad 34 5b 00               	calll	0xa8ee10 <.text+0x68de10>
+  4db963: f2 0f 11 44 24 08            	movsd	%xmm0, 0x8(%esp)
+  4db969: f2 0f 10 04 24               	movsd	(%esp), %xmm0
+  4db96e: f2 0f 11 4c 24 10            	movsd	%xmm1, 0x10(%esp)
+  4db974: e8 97 34 5b 00               	calll	0xa8ee10 <.text+0x68de10>
+  4db979: f2 0f 5a 6c 24 08            	cvtsd2ss	0x8(%esp), %xmm5
+  4db97f: f2 0f 10 64 24 10            	movsd	0x10(%esp), %xmm4
+  4db985: f2 0f 59 cc                  	mulsd	%xmm4, %xmm1
+  4db989: f2 0f 5a f1                  	cvtsd2ss	%xmm1, %xmm6
+  4db98d: f2 0f 59 e0                  	mulsd	%xmm0, %xmm4
+  4db991: f2 0f 5a fc                  	cvtsd2ss	%xmm4, %xmm7
+  4db995: f2 0f 10 25 48 38 d9 00      	movsd	0xd93848, %xmm4
+  4db99d: f3 0f 10 03                  	movss	(%ebx), %xmm0
+  4db9a1: f3 0f 59 f0                  	mulss	%xmm0, %xmm6
+  4db9a5: f3 0f 5a de                  	cvtss2sd	%xmm6, %xmm3
+  4db9a9: f3 0f 59 f8                  	mulss	%xmm0, %xmm7
+  4db9ad: f3 0f 5a d7                  	cvtss2sd	%xmm7, %xmm2
+  4db9b1: f3 0f 59 c5                  	mulss	%xmm5, %xmm0
+  4db9b5: f3 0f 5a c8                  	cvtss2sd	%xmm0, %xmm1
+  4db9b9: f2 0f 59 e2                  	mulsd	%xmm2, %xmm4
+  4db9bd: f2 0f 10 05 40 38 d9 00      	movsd	0xd93840, %xmm0
+  4db9c5: f2 0f 59 c3                  	mulsd	%xmm3, %xmm0
+  4db9c9: 33 c0                        	xorl	%eax, %eax
+  4db9cb: f2 0f 10 2d 50 38 d9 00      	movsd	0xd93850, %xmm5
+  4db9d3: f2 0f 59 e9                  	mulsd	%xmm1, %xmm5
+  4db9d7: f2 0f 10 35 60 38 d9 00      	movsd	0xd93860, %xmm6
+  4db9df: f2 0f 59 f2                  	mulsd	%xmm2, %xmm6
+  4db9e3: f2 0f 59 15 78 38 d9 00      	mulsd	0xd93878, %xmm2
+  4db9eb: f2 0f 58 c4                  	addsd	%xmm4, %xmm0
+  4db9ef: f2 0f 10 25 68 38 d9 00      	movsd	0xd93868, %xmm4
+  4db9f7: f2 0f 59 e1                  	mulsd	%xmm1, %xmm4
+  4db9fb: f2 0f 59 0d 80 38 d9 00      	mulsd	0xd93880, %xmm1
+  4dba03: f2 0f 58 c5                  	addsd	%xmm5, %xmm0
+  4dba07: f2 0f 10 2d 58 38 d9 00      	movsd	0xd93858, %xmm5
+  4dba0f: f2 0f 59 eb                  	mulsd	%xmm3, %xmm5
+  4dba13: f2 0f 59 1d 70 38 d9 00      	mulsd	0xd93870, %xmm3
+  4dba1b: f2 0f 58 ee                  	addsd	%xmm6, %xmm5
+  4dba1f: f2 0f 58 ec                  	addsd	%xmm4, %xmm5
+  4dba23: f2 0f 58 da                  	addsd	%xmm2, %xmm3
+  4dba27: f2 0f 5a d5                  	cvtsd2ss	%xmm5, %xmm2
+  4dba2b: f3 0f 11 57 28               	movss	%xmm2, 0x28(%edi)
+  4dba30: f2 0f 58 d9                  	addsd	%xmm1, %xmm3
+  4dba34: f2 0f 5a c8                  	cvtsd2ss	%xmm0, %xmm1
+  4dba38: f2 0f 5a db                  	cvtsd2ss	%xmm3, %xmm3
+  4dba3c: f3 0f 11 4f 24               	movss	%xmm1, 0x24(%edi)
+  4dba41: f3 0f 11 5f 2c               	movss	%xmm3, 0x2c(%edi)
+  4dba46: 83 c4 1c                     	addl	$0x1c, %esp
+  4dba49: 5b                           	popl	%ebx
+  4dba4a: 5e                           	popl	%esi
+  4dba4b: 5f                           	popl	%edi
+  4dba4c: 8b e5                        	movl	%ebp, %esp
+  4dba4e: 5d                           	popl	%ebp
+  4dba4f: c3                           	retl

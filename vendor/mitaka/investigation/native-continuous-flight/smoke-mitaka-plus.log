@@ -1,0 +1,15 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a' is up to date.
+mkdir -p "build/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 build/main.o build/AppController.o build/AppSmokeTests.o build/AppFlightSmokeTests.o build/PlaybackController.o build/SkyView.o build/SolarSystemView.o build/SolarSystemNavigation.o build/SolarSystemSmokeTests.o build/SolarSceneRenderer.o build/sky_model.o build/solar_camera.o build/planet_surface.o build/planet_textures.o build/playback_clock.o build/surface_navigation.o build/interplanetary_flight.o "/Users/kota/mitaka/native/gui/build/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp Info.plist "build/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+"build/Mitaka Native.app/Contents/MacOS/MitakaNative" --data-root "${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}" --smoke-test
+AppKit smoke passed: HIP=117956 visible=7983 bodies=10 lit_samples=12150 render=2000x1218
+Solar AppKit smoke passed: bodies=11 camera=orbit,pan,zoom,focus,date-tracking lit_samples=1150
+Texture AppKit smoke passed: loaded=11 closeup,rotation,picking,fallback
+Rotation AppKit smoke passed: dated Earth surface, fixed camera and illumination
+Playback AppKit smoke passed: real timer, shared JD, orbit/spin, tracking, pause, manual seek
+Moon/travel AppKit smoke passed: Moon orbit/spin, landing targets, real flight timer, interruption, completion
+Continuous flight AppKit smoke passed: real timer, moving Moon, stop, restart, fixed destination, surface arrival

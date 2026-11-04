@@ -1,0 +1,54 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  64ece0: 56                           	pushl	%esi
+  64ece1: 83 ec 14                     	subl	$0x14, %esp
+  64ece4: 8b 74 24 1c                  	movl	0x1c(%esp), %esi
+  64ece8: 6a 00                        	pushl	$0x0
+  64ecea: 6a 01                        	pushl	$0x1
+  64ecec: 56                           	pushl	%esi
+  64eced: e8 7e 07 24 00               	calll	0x88f470 <.text+0x48e470>
+  64ecf2: 83 c4 0c                     	addl	$0xc, %esp
+  64ecf5: 8b c8                        	movl	%eax, %ecx
+  64ecf7: e8 d4 cf f7 ff               	calll	0x5cbcd0 <.text+0x1cacd0>
+  64ecfc: d9 5c 24 0c                  	fstps	0xc(%esp)
+  64ed00: f3 0f 10 44 24 0c            	movss	0xc(%esp), %xmm0
+  64ed06: f3 0f 5a c0                  	cvtss2sd	%xmm0, %xmm0
+  64ed0a: f2 0f 11 44 24 04            	movsd	%xmm0, 0x4(%esp)
+  64ed10: 89 34 24                     	movl	%esi, (%esp)
+  64ed13: e8 08 0b 24 00               	calll	0x88f820 <.text+0x48e820>
+  64ed18: b8 01 00 00 00               	movl	$0x1, %eax
+  64ed1d: 83 c4 14                     	addl	$0x14, %esp
+  64ed20: 5e                           	popl	%esi
+  64ed21: c3                           	retl
+  64ed22: 8d b4 26 00 00 00 00         	leal	(%esi,%eiz), %esi
+  64ed29: 8d bc 27 00 00 00 00         	leal	(%edi,%eiz), %edi
+  64ed30: 57                           	pushl	%edi
+  64ed31: 56                           	pushl	%esi
+  64ed32: 83 ec 10                     	subl	$0x10, %esp
+  64ed35: 8b 74 24 1c                  	movl	0x1c(%esp), %esi
+  64ed39: 6a 00                        	pushl	$0x0
+  64ed3b: 6a 01                        	pushl	$0x1
+  64ed3d: 56                           	pushl	%esi
+  64ed3e: e8 2d 07 24 00               	calll	0x88f470 <.text+0x48e470>
+  64ed43: 83 c4 0c                     	addl	$0xc, %esp
+  64ed46: 8b f8                        	movl	%eax, %edi
+  64ed48: c7 44 24 04 02 00 00 00      	movl	$0x2, 0x4(%esp)
+  64ed50: 89 34 24                     	movl	%esi, (%esp)
+  64ed53: 66 0f ef c0                  	pxor	%xmm0, %xmm0
+  64ed57: f2 0f 11 44 24 08            	movsd	%xmm0, 0x8(%esp)
+  64ed5d: e8 8e 06 24 00               	calll	0x88f3f0 <.text+0x48e3f0>
+  64ed62: 50                           	pushl	%eax
+  64ed63: d9 1c 24                     	fstps	(%esp)
+  64ed66: 8b cf                        	movl	%edi, %ecx
+  64ed68: e8 23 cf f7 ff               	calll	0x5cbc90 <.text+0x1cac90>
+  64ed6d: 33 c0                        	xorl	%eax, %eax
+  64ed6f: 83 c4 10                     	addl	$0x10, %esp
+  64ed72: 5e                           	popl	%esi
+  64ed73: 5f                           	popl	%edi
+  64ed74: c3                           	retl
+  64ed75: 8d 74 26 00                  	leal	(%esi,%eiz), %esi
+  64ed79: 8d bc 27 00 00 00 00         	leal	(%edi,%eiz), %edi

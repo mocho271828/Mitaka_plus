@@ -1,0 +1,2 @@
+"build-unit4-window-san/test_window_presentation" --system-fullscreen
+WindowPresentationController tests passed (system fullscreen): 5 checks

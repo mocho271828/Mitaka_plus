@@ -1,0 +1,18 @@
+Session v5 の局所検証記録（2026-10-29）
+実行ディレクトリ: native/gui
+
+通常: build-unit5-session/test_session_state と test_session_layers
+ASan+UBSan: build-unit5-session-san/test_session_state と test_session_layers
+Rosetta x86_64: build-unit5-session-x86/test_session_state と test_session_layers
+各構成: state 1233 checks / layers 31 checks、exit 0。
+コンパイラオプションとリンク対象は各 build log に記録。
+smoke-build は AppSessionSmokeTests / AppPlusSmokeTests / AppSatelliteSmokeTests
+の厳格コンパイルのみであり、全 App smoke の実行成功ではない。
+
+旧 build/ を誤指定した実行は mitaka-unit5-session-old-build-test.log に分離。
+旧 state 964 checks は exit 0、その後の build/test_session_layers は存在せず exit 127。
+専用 build の 1233 / 31 checks を再実行し normal-test.log に保存した。
+旧 964 checks と欠損の実行を v5 の成功根拠に含めない。
+
+SOURCE_SHA256SUMS は採取時点の Session 所有ソースの hash。
+最終統合 tree と full smoke の判定は unit5/README.md と最終 gate で別に行う。

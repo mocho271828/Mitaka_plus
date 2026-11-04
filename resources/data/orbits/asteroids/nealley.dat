@@ -1,0 +1,16 @@
+# Nealley
+
+Name: Nealley
+DisplayName: Nealley
+No: 903
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.241125
+e: 0.032190
+w: 241.708084
+M0: 187.865265
+i: 11.719526
+node: 159.932892
+Size: 500 500 500
+B_V: 0.75

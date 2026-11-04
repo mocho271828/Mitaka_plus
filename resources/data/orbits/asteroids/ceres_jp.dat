@@ -1,0 +1,17 @@
+# Ceres
+
+Name: Ceres
+DisplayName: ÉZÉåÉX
+No: 1
+Type: Asteroid
+DwarfPlanet: 1
+Epoch: 2451000.5
+a: 2.766180
+e: 0.077887
+w: 73.799240
+M0: 249.600143
+i: 10.582927
+node: 80.501633
+Size: 500 500 500
+B_V: 0.75
+Visible: 1

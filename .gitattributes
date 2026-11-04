@@ -1,0 +1,3 @@
+# 天文データと公式原本は改行やエンコーディングを変えず原バイトを保持する。
+/resources/** -text -whitespace
+/vendor/mitaka/sources/official/** -text -whitespace

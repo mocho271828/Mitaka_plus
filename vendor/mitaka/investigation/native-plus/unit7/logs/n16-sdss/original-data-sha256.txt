@@ -1,0 +1,4 @@
+5ae86c8ca46ea441b64dfb4154339dc7ed129b5f5d6e3fcaa257c042dd221e8a  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/SDSS_GAL.dat
+863ff128b811c2d6363ea4b5eca876e6cc872dc1f3bddcf001b738dd143c21ff  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/SDSS_QSO.dat
+5ae86c8ca46ea441b64dfb4154339dc7ed129b5f5d6e3fcaa257c042dd221e8a  /Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/SDSS_GAL.dat
+863ff128b811c2d6363ea4b5eca876e6cc872dc1f3bddcf001b738dd143c21ff  /Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/SDSS_QSO.dat

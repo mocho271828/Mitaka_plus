@@ -1,0 +1,16 @@
+# Achilles
+
+Name: Achilles
+DisplayName: Achilles
+No: 588
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 5.183104
+e: 0.148590
+w: 131.827713
+M0: 326.486664
+i: 10.327963
+node: 316.590912
+Size: 500 500 500
+B_V: 0.75

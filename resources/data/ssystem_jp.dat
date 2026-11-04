@@ -1,0 +1,1825 @@
+Ssystem
+{
+    Sun
+    {
+        Name: Sun {太陽|たいよう}
+        Radius: 696000 1.0
+
+        Planet
+        {
+            Name: Mercury {水星|すいせい}
+            Radius: 2439.7 1.0
+            Magnitude: -2.4
+            Orbit: ./data/orbits/mercury.dat
+            Color: 0.804 0.464 0.242
+            Texture: ./textures/mercury.jpg
+        }
+
+        Planet
+        {
+            Name: Venus {金星|きんせい}
+            Radius: 6051.8 1.0
+            Magnitude: -4.7
+            Orbit: ./data/orbits/venus.dat
+            Color: 1 1 .8
+            Texture: ./textures/venus.jpg
+        }
+
+        Planet
+        {
+            Name: Earth {地球|ちきゅう}
+            Radius: 6378.14 0.9966
+            Magnitude: -4.0
+            Orbit: ./data/orbits/earth.dat
+            Color: 0.316 0.339 0.554
+            Texture: ./textures/earth.jpg
+
+            Satellite
+            {
+                Name: Moon {月|つき}
+                Radius: 1738.4 1.0
+                Magnitude: -12.7
+                Orbit: ./data/orbits/moon.dat
+                Color: 0.562 0.542 0.50
+                Texture: ./textures/moon.jpg
+                Visible: 1
+            }
+        }
+
+        Planet
+        {
+            Name: Mars {火星|かせい}
+            Radius: 3396.19 0.9948
+            Magnitude: -3.0
+            Orbit: ./data/orbits/mars.dat
+            Color: 0.574 0.195 0.125
+            Texture: ./textures/mars.jpg
+
+            Satellite
+            {
+                Name: Phobos フォボス
+                Radius: 13.5 1.0
+                Magnitude: 11.3
+                Orbit: ./data/orbits/phobos.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/phobos.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Deimos ダイモス
+                Radius: 7.5 1.0
+                Magnitude: 12.4
+                Orbit: ./data/orbits/deimos.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/deimos.jpg
+                Visible: 1
+            }
+        }
+
+        Planet
+        {
+            Name: Jupiter {木星|もくせい}
+            Radius: 71492 0.935 0.25
+            Magnitude: -2.8
+            Orbit: ./data/orbits/jupiter.dat
+            Color: 0.921 0.562 0.339
+            Texture: ./textures/jupiter.jpg
+
+            Satellite
+            {
+                Name: Metis メティス
+                Radius: 20.0 1.0
+                Magnitude: 17.5
+                Orbit: ./data/orbits/metis.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Adrastea アドラステア
+                Radius: 12.5 1.0
+                Magnitude: 18.7
+                Orbit: ./data/orbits/adrastea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Amalthea アマルテア
+                Radius: 135 1.0
+                Magnitude: 14.1
+                Orbit: ./data/orbits/amalthea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Thebe テーベ
+                Radius: 55 1.0
+                Magnitude: 16.0
+                Orbit: ./data/orbits/thebe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Io イオ
+                Radius: 1815 1.0
+                Magnitude: 5.0
+                Orbit: ./data/orbits/io.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/io.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Europa エウロパ
+                Radius: 1569 1.0
+                Magnitude: 5.3
+                Orbit: ./data/orbits/europa.dat
+                Color: 1.0 0.781 0.691
+                Texture: ./textures/europa.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Ganymede ガニメデ
+                Radius: 2631 1.0
+                Magnitude: 4.6
+                Orbit: ./data/orbits/ganymede.dat
+                Color: 0.757 0.531 0.406
+                Texture: ./textures/ganymede.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Callisto カリスト
+                Radius: 2400 1.0
+                Magnitude: 5.6
+                Orbit: ./data/orbits/callisto.dat
+                Color: 0.628 0.472 0.410
+                Texture: ./textures/callisto.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Themisto テミスト
+                Radius: 4 1.0
+                Magnitude: 21.0
+                Orbit: ./data/orbits/themisto.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Leda レダ
+                Radius: 10 1.0
+                Magnitude: 19.2
+                Orbit: ./data/orbits/leda.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Himalia ヒマリア
+                Radius: 85 1.0
+                Magnitude: 14.2
+                Orbit: ./data/orbits/himalia.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Lysithea リシテア
+                Radius: 18 1.0
+                Magnitude: 17.9
+                Orbit: ./data/orbits/lysithea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Elara エララ
+                Radius: 43 1.0
+                Magnitude: 16.0
+                Orbit: ./data/orbits/elara.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Carpo カルポ
+                Radius: 1.5 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/carpo.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J3 S/2003J3
+                Radius: 1 1.0
+                Magnitude: 23.4
+                Orbit: ./data/orbits/s2003j3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J4 S/2003J4
+                Radius: 1 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/s2003j4.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J12 S/2003J12
+                Radius: 0.5 1.0
+                Magnitude: 23.9
+                Orbit: ./data/orbits/s2003j12.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Euporie エウポリエ
+                Radius: 1 1.0
+                Magnitude: 23.1
+                Orbit: ./data/orbits/euporie.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Mneme ムネメ
+                Radius: 1 1.0
+                Magnitude: 23.1
+                Orbit: ./data/orbits/mneme.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Thelxinoe テルクシノエ
+                Radius: 1 1.0
+                Magnitude: 23.5
+                Orbit: ./data/orbits/thelxinoe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J18 S/2003J18
+                Radius: 1 1.0
+                Magnitude: 23.4
+                Orbit: ./data/orbits/s2003j18.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Helike ヘリケ
+                Radius: 2 1.0
+                Magnitude: 22.6
+                Orbit: ./data/orbits/helike.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J16 S/2003J16
+                Radius: 1 1.0
+                Magnitude: 23.5
+                Orbit: ./data/orbits/s2003j16.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Euanthe エウアンテ
+                Radius: 1.5 1.0
+                Magnitude: 22.8
+                Orbit: ./data/orbits/euanthe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Harpalyke ハルパリケ
+                Radius: 2 1.0
+                Magnitude: 22.2
+                Orbit: ./data/orbits/harpalyke.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Praxidike プラクシディーケ
+                Radius: 3.5 1.0
+                Magnitude: 21.1
+                Orbit: ./data/orbits/praxidike.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Orthosie オルトシエ
+                Radius: 1 1.0
+                Magnitude: 23.1
+                Orbit: ./data/orbits/orthosie.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Hermippe ヘルミッペ
+                Radius: 2 1.0
+                Magnitude: 22.1
+                Orbit: ./data/orbits/hermippe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Iocaste イオカステ
+                Radius: 2.5 1.0
+                Magnitude: 21.8
+                Orbit: ./data/orbits/iocaste.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Ananke アナンケ
+                Radius: 14 1.0
+                Magnitude: 18.3
+                Orbit: ./data/orbits/ananke.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Thyone ティオネ
+                Radius: 2 1.0
+                Magnitude: 22.3
+                Orbit: ./data/orbits/thyone.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J15 S/2003J15
+                Radius: 1 1.0
+                Magnitude: 23.5
+                Orbit: ./data/orbits/s2003j15.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J17 S/2003J17
+                Radius: 1 1.0
+                Magnitude: 23.4
+                Orbit: ./data/orbits/s2003j17.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Kallichore カリコレ
+                Radius: 1 1.0
+                Magnitude: 23.7
+                Orbit: ./data/orbits/kallichore.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J9 S/2003J9
+                Radius: 0.5 1.0
+                Magnitude: 23.7
+                Orbit: ./data/orbits/s2003j9.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J19 S/2003J19
+                Radius: 1 1.0
+                Magnitude: 23.7
+                Orbit: ./data/orbits/s2003j19.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Pasithee パシテエ
+                Radius: 1 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/pasithee.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Arche アルケ
+                Radius: 1.5 1.0
+                Magnitude: 22.8
+                Orbit: ./data/orbits/arche.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2002_J1 S/2002_J1
+                Radius: 2 1.5
+                Magnitude: 22.8
+                Orbit: ./data/orbits/s2002_j1.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Kale カレ
+                Radius: 1 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/kale.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Chaldene カルデネ
+                Radius: 2 1.0
+                Magnitude: 22.5
+                Orbit: ./data/orbits/chaldene.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Isonoe イソノエ
+                Radius: 2 1.0
+                Magnitude: 22.5
+                Orbit: ./data/orbits/isonoe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Eurydome エウリドメ
+                Radius: 1.5 1.0
+                Magnitude: 22.7
+                Orbit: ./data/orbits/eurydome.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Erinome エリノーメ
+                Radius: 1.5 1.0
+                Magnitude: 22.8
+                Orbit: ./data/orbits/erinome.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Taygete タイゲテ
+                Radius: 2.5 1.0
+                Magnitude: 21.9
+                Orbit: ./data/orbits/taygete.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Carme カルメ
+                Radius: 23 1.0
+                Magnitude: 17.6
+                Orbit: ./data/orbits/carme.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Aitne アイトネ
+                Radius: 1.5 1.0
+                Magnitude: 22.7
+                Orbit: ./data/orbits/aitne.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Kalyke カリケ
+                Radius: 2.5 1.0
+                Magnitude: 21.8
+                Orbit: ./data/orbits/kalyke.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Pasiphae パシファエ
+                Radius: 30 1.0
+                Magnitude: 17.0
+                Orbit: ./data/orbits/pasiphae.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Megaclite メガクリテ
+                Radius: 3 1.0
+                Magnitude: 21.7
+                Orbit: ./data/orbits/megaclite.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Aoede アオエデ
+                Radius: 2 1.0
+                Magnitude: 22.5
+                Orbit: ./data/orbits/aoede.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Sponde スポンデ
+                Radius: 1 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/sponde.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Sinope シノーペ
+                Radius: 19 1.0
+                Magnitude: 18.1
+                Orbit: ./data/orbits/sinope.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Cyllene キレーネ
+                Radius: 1 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/cyllene.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J23 S/2003J23
+                Radius: 1 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/s2003j23.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J5 S/2003J5
+                Radius: 2 1.0
+                Magnitude: 22.4
+                Orbit: ./data/orbits/s2003j5.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Callirrhoe カリロエ
+                Radius: 4 1.0
+                Magnitude: 20.7
+                Orbit: ./data/orbits/callirrhoe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Autonoe アウトノエ
+                Radius: 2 1.0
+                Magnitude: 22.0
+                Orbit: ./data/orbits/autonoe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J10 S/2003J10
+                Radius: 1 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/s2003j10.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Hegemone ヘゲモネ
+                Radius: 1 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/hegemone.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Eukelade エウケラーデ
+                Radius: 2 1.0
+                Magnitude: 22.6
+                Orbit: ./data/orbits/eukelade.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J14 S/2003J14
+                Radius: 1 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/s2003j14.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003J2 S/2003J2
+                Radius: 1 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/s2003j2.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+        }
+
+        Planet
+        {
+            Name: Saturn {土星|どせい}
+            Radius: 60268 0.892
+            Magnitude: -0.5
+            Orbit: ./data/orbits/saturn.dat
+            Color: 0.835 0.585 0.281
+            Texture: ./textures/saturn.jpg
+            Ring: 1.236 2.329
+            RingTexture: ./textures/saturn_rings.png
+
+            Satellite
+            {
+                Name: Pan パン
+                Radius: 10 1.0
+                Magnitude: 19.4
+                Orbit: ./data/orbits/pan.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Daphnis ダフニス
+                Radius: 4 1.0
+                Magnitude: 22.0
+                Orbit: ./data/orbits/daphnis.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Atlas アトラス
+                Radius: 19 1.0
+                Magnitude: 19.0
+                Orbit: ./data/orbits/atlas.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Prometheus プロメテウス
+                Radius: 70 1.0
+                Magnitude: 15.8
+                Orbit: ./data/orbits/prometheus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Pandora パンドラ
+                Radius: 55 1.0
+                Magnitude: 16.4
+                Orbit: ./data/orbits/pandora.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Epimetheus エピメテウス
+                Radius: 70 1.0
+                Magnitude: 15.6
+                Orbit: ./data/orbits/epimetheus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Janus ヤヌス
+                Radius: 110 1.0
+                Magnitude: 14.4
+                Orbit: ./data/orbits/janus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Mimas ミマス
+                Radius: 197 1.0
+                Magnitude: 12.8
+                Orbit: ./data/orbits/mimas.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/mimas.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Methone メトネ
+                Radius: 1.5 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/methone.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Pallene パレネ
+                Radius: 2 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/pallene.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Enceladus エンケラドゥス
+                Radius: 251 1.0
+                Magnitude: 11.8
+                Orbit: ./data/orbits/enceladus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Tethys テティス
+                Radius: 524 1.0
+                Magnitude: 10.2
+                Orbit: ./data/orbits/tethys.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Telesto テレスト
+                Radius: 12 1.0
+                Magnitude: 18.5
+                Orbit: ./data/orbits/telesto.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Calypso カリプソ
+                Radius: 15 1.0
+                Magnitude: 18.0
+                Orbit: ./data/orbits/calypso.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Dione ディオーネ
+                Radius: 559 1.0
+                Magnitude: 10.4
+                Orbit: ./data/orbits/dione.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Helene ヘレネ
+                Radius: 18 1.0
+                Magnitude: 18.4
+                Orbit: ./data/orbits/helene.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Polydeuces ポリデウセス
+                Radius: 2 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/polydeuces.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Rhea レア
+                Radius: 764 1.0
+                Magnitude: 9.6
+                Orbit: ./data/orbits/rhea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Rhea レア
+                Radius: 764 1.0
+                Magnitude: 9.6
+                Orbit: ./data/orbits/rhea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Titan タイタン
+                Radius: 2575 1.0
+                Magnitude: 8.4
+                Orbit: ./data/orbits/titan.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/titan.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Hyperion ヒペリオン
+                Radius: 175 1.0
+                Magnitude: 14.4
+                Orbit: ./data/orbits/hyperion.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Iapetus イアペトゥス
+                Radius: 718 1.0
+                Magnitude: 10.2
+                Orbit: ./data/orbits/iapetus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Kiviuq キビウク
+                Radius: 7 1.0
+                Magnitude: 22.0
+                Orbit: ./data/orbits/kiviuq.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Ijiraq イジラク
+                Radius: 5 1.0
+                Magnitude: 22.6
+                Orbit: ./data/orbits/ijiraq.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Phoebe フェーベ
+                Radius: 115 1.0
+                Magnitude: 16.4
+                Orbit: ./data/orbits/phoebe.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Paaliaq パーリアク
+                Radius: 9.5 1.0
+                Magnitude: 21.3
+                Orbit: ./data/orbits/paaliaq.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Skathi スカティ
+                Radius: 3 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/skathi.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Albiorix アルビオリックス
+                Radius: 13 1.0
+                Magnitude: 20.5
+                Orbit: ./data/orbits/albiorix.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2007_S2 S/2007_S2
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2007_s2.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Bebhionn ベブヒオン
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/bebhionn.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Erriapo エリアポ
+                Radius: 4.5 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/erriapo.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Skoll スコル
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/skoll.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2007_S1 S/2007_S1
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2007_s1.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2004_S13 S/2004_S13
+                Radius: 3 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2004_s13.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2006_S4 S/2006_S4
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2006_s4.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2007_S3 S/2007_S3
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2007_s3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Siarnaq シャルナック
+                Radius: 16 1.0
+                Magnitude: 20.1
+                Orbit: ./data/orbits/siarnaq.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Tarvos タルボス
+                Radius: 6.5 1.0
+                Magnitude: 22.1
+                Orbit: ./data/orbits/tarvos.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Hyrokkin ヒュロッキン
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/hyrokkin.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2006_S6 S/2006_S6
+                Radius: 2 1.0
+                Magnitude: 24.8
+                Orbit: ./data/orbits/s2006_s6.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Mundilfari ムンディルファリ
+                Radius: 3 1.0
+                Magnitude: 23.8
+                Orbit: ./data/orbits/mundilfari.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2006_S1 S/2006_S1
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2006_s1.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2004_S17 S/2004_S17
+                Radius: 3 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2004_s17.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Narvi ナルビ
+                Radius: 4 1.0
+                Magnitude: 24.0
+                Orbit: ./data/orbits/narvi.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Bergelmir ベルゲルミル
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/bergelmir.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Suttungr ストゥングル
+                Radius: 3 1.0
+                Magnitude: 23.9
+                Orbit: ./data/orbits/suttungr.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Hati ハティ
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/hati.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2004_S12 S/2004_S12
+                Radius: 3 1.0
+                Magnitude: 24.8
+                Orbit: ./data/orbits/s2004_s12.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Bestla ベストラ
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/bestla.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Aegir アエギル
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/aegir.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Farbauti ファールバウティ
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/farbauti.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Thrymr トリュムル
+                Radius: 3 1.0
+                Magnitude: 23.9
+                Orbit: ./data/orbits/thrymr.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2004_S7 S/2004_S7
+                Radius: 3 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2004_s7.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2006_S3 S/2006_S3
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/s2006_s3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Kari カリ
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/kari.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Fenrir フェンリール
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/fenrir.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Surtur スルトゥール
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/surtur.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Ymir ユミル
+                Radius: 8 1.0
+                Magnitude: 21.7
+                Orbit: ./data/orbits/ymir.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Loge ロゲ
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/loge.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Fornjot フォルニョット
+                Radius: 2 1.0
+                Magnitude: 24.5
+                Orbit: ./data/orbits/fornjot.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+        }
+
+        Planet
+        {
+            Name: Uranus {天王星|てんのうせい}
+            Radius: 25559 0.977
+            Magnitude: 5.3
+            Orbit: ./data/orbits/uranus.dat
+            Color: 0.066 0.425 0.664
+            Texture: ./textures/uranus.jpg
+            Ring: 1.487 2.001
+            RingTexture: ./textures/uranus_rings.png
+
+            Satellite
+            {
+                Name: Cordelia コーディーリア
+                Radius: 20 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/cordelia.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Ophelia オフィーリア
+                Radius: 12 1.0
+                Magnitude: 23.3
+                Orbit: ./data/orbits/ophelia.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Bianca ビアンカ
+                Radius: 25 1.0
+                Magnitude: 22.5
+                Orbit: ./data/orbits/bianca.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Cressida クレシダ
+                Radius: 40 1.0
+                Magnitude: 21.6
+                Orbit: ./data/orbits/cressida.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Desdemona デスデモーナ
+                Radius: 32 1.0
+                Magnitude: 22.0
+                Orbit: ./data/orbits/desdemona.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Juliet ジュリエット
+                Radius: 47 1.0
+                Magnitude: 21.1
+                Orbit: ./data/orbits/juliet.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Portia ポーシア
+                Radius: 68 1.0
+                Magnitude: 20.4
+                Orbit: ./data/orbits/portia.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Rosalind ロザリンド
+                Radius: 36 1.0
+                Magnitude: 21.8
+                Orbit: ./data/orbits/rosalind.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Cupid キュピド
+                Radius: 5 1.0
+                Magnitude: 26.0
+                Orbit: ./data/orbits/cupid.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Belinda ベリンダ
+                Radius: 40 1.0
+                Magnitude: 21.5
+                Orbit: ./data/orbits/belinda.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Perdita ペルディータ
+                Radius: 20 1.0
+                Magnitude: 23.6
+                Orbit: ./data/orbits/perdita.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Puck パック
+                Radius: 80 1.0
+                Magnitude: 19.8
+                Orbit: ./data/orbits/puck.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Mab マブ
+                Radius: 5 1.0
+                Magnitude: 26.0
+                Orbit: ./data/orbits/mab.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Miranda ミランダ
+                Radius: 235 1.0
+                Magnitude: 15.8
+                Orbit: ./data/orbits/miranda.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Ariel エアリエル
+                Radius: 580 1.0
+                Magnitude: 13.7
+                Orbit: ./data/orbits/ariel.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Umbriel ウンブリエル
+                Radius: 585 1.0
+                Magnitude: 14.5
+                Orbit: ./data/orbits/umbriel.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Titania ティタニア
+                Radius: 790 1.0
+                Magnitude: 13.5
+                Orbit: ./data/orbits/titania.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Oberon オベロン
+                Radius: 760 1.0
+                Magnitude: 13.7
+                Orbit: ./data/orbits/oberon.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Francisco フランシスコ
+                Radius: 6 1.0
+                Magnitude: 25.0
+                Orbit: ./data/orbits/s2001_u3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Caliban キャリバン
+                Radius: 45 1.0
+                Magnitude: 22.4
+                Orbit: ./data/orbits/caliban.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Stephano ステファーノ
+                Radius: 10 1.0
+                Magnitude: 24.1
+                Orbit: ./data/orbits/stephano.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Trinculo タリンクロ
+                Radius: 5 1.0
+                Magnitude: 25.4
+                Orbit: ./data/orbits/trinculo.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Sycorax シコラックス
+                Radius: 95 1.0
+                Magnitude: 20.8
+                Orbit: ./data/orbits/sycorax.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Margaret マーガレット
+                Radius: 5.5 1.0
+                Magnitude: 25.2
+                Orbit: ./data/orbits/s2003_u3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Prospero プロスペロー
+                Radius: 15 1.0
+                Magnitude: 20.8
+                Orbit: ./data/orbits/prospero.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Setebos セティボス
+                Radius: 15 1.0
+                Magnitude: 23.2
+                Orbit: ./data/orbits/setebos.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Ferdinand フェルディナンド
+                Radius: 6 1.0
+                Magnitude: 25.1
+                Orbit: ./data/orbits/s2001_u2.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+        }
+
+        Planet
+        {
+            Name: Neptune {海王星|かいおうせい}
+            Radius: 24764 0.983
+            Magnitude: 7.8
+            Orbit: ./data/orbits/neptune.dat
+            Color: 0.125 0.324 0.828
+            Texture: ./textures/neptune.jpg
+
+            Satellite
+            {
+                Name: Naiad ナイアッド
+                Radius: 29 1.0
+                Magnitude: 24.6
+                Orbit: ./data/orbits/naiad.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Thalassa タラッサ
+                Radius: 40 1.0
+                Magnitude: 23.9
+                Orbit: ./data/orbits/thalassa.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Despina デスピナ
+                Radius: 74 1.0
+                Magnitude: 22.5
+                Orbit: ./data/orbits/despina.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Galatea ガラテア
+                Radius: 79 1.0
+                Magnitude: 22.4
+                Orbit: ./data/orbits/galatea.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Larissa ラリッサ
+                Radius: 96 1.0
+                Magnitude: 22.0
+                Orbit: ./data/orbits/larissa.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Proteus プロテウス
+                Radius: 208 1.0
+                Magnitude: 20.3
+                Orbit: ./data/orbits/proteus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Proteus プロテウス
+                Radius: 208 1.0
+                Magnitude: 20.3
+                Orbit: ./data/orbits/proteus.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Triton トリトン
+                Radius: 1350 1.0
+                Magnitude: 13.5
+                Orbit: ./data/orbits/triton.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Nereid ネレイド
+                Radius: 170 1.0
+                Magnitude: 19.7
+                Orbit: ./data/orbits/nereid.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: S/2002_N1 S/2002_N1
+                Radius: 15 1.0
+                Magnitude: 25.5
+                Orbit: ./data/orbits/s2002_n1.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2002_N2 S/2002_N2
+                Radius: 15 1.0
+                Magnitude: 25.1
+                Orbit: ./data/orbits/s2002_n2.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2002_N3 S/2002_N3
+                Radius: 15 1.0
+                Magnitude: 25.1
+                Orbit: ./data/orbits/s2002_n3.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2003_N1 S/2003_N1
+                Radius: 18 1.0
+                Magnitude: 25.1
+                Orbit: ./data/orbits/s2003_n1.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: S/2002_N4 S/2002_N4
+                Radius: 21.5 1.0
+                Magnitude: 24.7
+                Orbit: ./data/orbits/s2002_n4.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+        }
+
+        Planet
+        {
+            Name: Pluto {冥王星|めいおうせい}
+            Radius: 1153 1.0
+            Magnitude: 13.6
+            Orbit: ./data/orbits/pluto.dat
+            Color: 0.296 0.369 0.437
+            Texture: ./textures/pluto.jpg
+
+            Satellite
+            {
+                Name: Charon カロン
+                Radius: 642 1.0
+                Magnitude: 16.8
+                Orbit: ./data/orbits/charon.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/charon.jpg
+                Visible: 1
+            }
+
+            Satellite
+            {
+                Name: Nix ニックス
+                Radius: 30 1.0
+                Magnitude: 23.0
+                Orbit: ./data/orbits/nix.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+
+            Satellite
+            {
+                Name: Hydra ヒドラ
+                Radius: 25 1.0
+                Magnitude: 23.4
+                Orbit: ./data/orbits/hydra.dat
+                Color: 0.25 0.25 0.25
+                Texture: ./textures/comet.jpg
+            }
+        }
+    }
+}

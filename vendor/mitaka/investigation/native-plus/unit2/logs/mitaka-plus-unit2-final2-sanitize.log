@@ -1,0 +1,94 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a"
+mkdir -p "build-unit2-sanitize"
+mkdir -p "build-unit2-sanitize"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-unit2-sanitize/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build-unit2-sanitize/AppWindow.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build-unit2-sanitize/AppObserverCommands.o"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a' is up to date.
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build-unit2-sanitize/AppPlusCommands.o"
+mkdir -p "build-unit2-sanitize"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build-unit2-sanitize/AppTimeCommands.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build-unit2-sanitize/AppSmallBodyCommands.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build-unit2-sanitize/AppSmallBodySmokeTests.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/MediaImageView.mm -o "build-unit2-sanitize/MediaImageView.o"
+mkdir -p "build-unit2-sanitize"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build-unit2-sanitize/SolarSmallBodies.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build-unit2-sanitize/AppSessionCommands.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit2-sanitize/AppScripting.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build-unit2-sanitize/AppSmokeTests.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit2-sanitize/AppPlusSmokeTests.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit2-sanitize/AppScriptSmokeTests.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build-unit2-sanitize/AppFlightSmokeTests.o"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit2-sanitize/SolarSystemView.o"
+mkdir -p "build-unit2-sanitize"
+mkdir -p "build-unit2-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build-unit2-sanitize/SolarSystemNavigation.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build-unit2-sanitize/SolarSystemSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -I"/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/lua/include" -fobjc-arc src/ScriptWorker.mm build-unit2-sanitize/script_transport.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/lua/liblua.a" -fsanitize=address,undefined -framework Foundation -o "build-unit2-sanitize/MitakaScript"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_small_body_model.mm build-unit2-sanitize/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit2-sanitize/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_media_catalog.mm build-unit2-sanitize/media_catalog.o -fsanitize=address,undefined -framework Foundation -o "build-unit2-sanitize/test_media_catalog"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_calendar_time.cpp build-unit2-sanitize/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_calendar_time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_sky_background.mm build-unit2-sanitize/sky_background.o build-unit2-sanitize/local_image.o build-unit2-sanitize/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit2-sanitize/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_observer_places.cpp build-unit2-sanitize/observer_places.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_catalog_browser_model.mm build-unit2-sanitize/catalog_browser_model.o build-unit2-sanitize/extended_catalogs.o build-unit2-sanitize/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit2-sanitize/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_extended_catalogs.cpp build-unit2-sanitize/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_catalog_index.cpp build-unit2-sanitize/sky_catalog_index.o build-unit2-sanitize/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_sky_catalog_index"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_session_state.mm build-unit2-sanitize/session_state.o build-unit2-sanitize/solar_camera.o build-unit2-sanitize/playback_clock.o build-unit2-sanitize/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit2-sanitize/test_session_state"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build-unit2-sanitize/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build-unit2-sanitize/sky_model.o build-unit2-sanitize/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_surface_navigation.cpp build-unit2-sanitize/surface_navigation.o build-unit2-sanitize/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_surface_navigation"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_interplanetary_flight.cpp build-unit2-sanitize/interplanetary_flight.o build-unit2-sanitize/surface_navigation.o build-unit2-sanitize/solar_camera.o build-unit2-sanitize/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit2-sanitize/test_interplanetary_flight"
+mkdir -p "build-unit2-sanitize/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined build-unit2-sanitize/main.o build-unit2-sanitize/AppController.o build-unit2-sanitize/AppWindow.o build-unit2-sanitize/AppObserverCommands.o build-unit2-sanitize/observer_places.o build-unit2-sanitize/gui_file_io.o build-unit2-sanitize/AppPlusCommands.o build-unit2-sanitize/AppTimeCommands.o build-unit2-sanitize/AppSmallBodyCommands.o build-unit2-sanitize/AppSmallBodySmokeTests.o build-unit2-sanitize/MediaController.o build-unit2-sanitize/MediaImageView.o build-unit2-sanitize/media_catalog.o build-unit2-sanitize/SmallBodyController.o build-unit2-sanitize/small_body_model.o build-unit2-sanitize/SmallBodyRenderer.o build-unit2-sanitize/SolarSmallBodies.o build-unit2-sanitize/AppSessionCommands.o build-unit2-sanitize/AppScripting.o build-unit2-sanitize/CatalogBrowserController.o build-unit2-sanitize/catalog_browser_model.o build-unit2-sanitize/DisplayOutputController.o build-unit2-sanitize/ScriptController.o build-unit2-sanitize/script_transport.o build-unit2-sanitize/HorizonView.o build-unit2-sanitize/extended_catalogs.o build-unit2-sanitize/session_state.o build-unit2-sanitize/SkyCatalogRenderer.o build-unit2-sanitize/sky_catalog_index.o build-unit2-sanitize/AppSmokeTests.o build-unit2-sanitize/AppPlusSmokeTests.o build-unit2-sanitize/AppScriptSmokeTests.o build-unit2-sanitize/AppFlightSmokeTests.o build-unit2-sanitize/PlaybackController.o build-unit2-sanitize/SkyView.o build-unit2-sanitize/SolarSystemView.o build-unit2-sanitize/SolarSystemNavigation.o build-unit2-sanitize/SolarSystemSmokeTests.o build-unit2-sanitize/SolarSceneRenderer.o build-unit2-sanitize/sky_model.o build-unit2-sanitize/solar_camera.o build-unit2-sanitize/planet_surface.o build-unit2-sanitize/planet_textures.o build-unit2-sanitize/local_image.o build-unit2-sanitize/sky_background.o build-unit2-sanitize/calendar_time.o build-unit2-sanitize/playback_clock.o build-unit2-sanitize/surface_navigation.o build-unit2-sanitize/interplanetary_flight.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit2-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -o "build-unit2-sanitize/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp "build-unit2-sanitize/MitakaScript" "build-unit2-sanitize/Mitaka Native.app/Contents/MacOS/MitakaScript"
+"build-unit2-sanitize/test_small_body_model"
+cp Info.plist "build-unit2-sanitize/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-unit2-sanitize/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build-unit2-sanitize/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+cp LUA_LICENSE.txt "build-unit2-sanitize/Mitaka Native.app/Contents/Resources/LUA_LICENSE.txt"
+Small-body model tests passed: 25 checks
+"build-unit2-sanitize/test_media_catalog"
+media_catalog: 45 checks passed
+"build-unit2-sanitize/test_calendar_time"
+Calendar time tests passed: 67 checks
+"build-unit2-sanitize/test_sky_background"
+sky background tests passed
+"build-unit2-sanitize/test_gui_file_io"
+GUI file I/O: 51 checks passed
+"build-unit2-sanitize/test_observer_places"
+Observer places: 16 checks passed
+"build-unit2-sanitize/test_catalog_browser_model"
+Synthetic last-record search: 1000037 galaxies, 119.428 ms
+Catalog browser model tests passed: 23 checks
+"build-unit2-sanitize/test_extended_catalogs"
+Extended catalog aggregate tests passed
+"build-unit2-sanitize/test_sky_catalog_index"
+sky catalog index tests passed
+"build-unit2-sanitize/test_session_state"
+session state: 548 checks passed
+"build-unit2-sanitize/test_sky_model"
+sky model tests passed
+"build-unit2-sanitize/test_solar_model"
+solar model tests passed
+"build-unit2-sanitize/test_planet_surface"
+planet surface tests passed
+"build-unit2-sanitize/test_planet_textures"
+planet texture tests passed
+"build-unit2-sanitize/test_playback_clock"
+playback clock: 10134 checks passed
+"build-unit2-sanitize/test_surface_navigation"
+surface navigation tests passed
+"build-unit2-sanitize/test_interplanetary_flight"
+Interplanetary flight tests passed

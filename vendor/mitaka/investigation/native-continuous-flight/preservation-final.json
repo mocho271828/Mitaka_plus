@@ -1,0 +1,41 @@
+{
+  "checked_at_utc": "2026-10-29T06:28:28.817226Z",
+  "phase": "native_continuous_flight_final",
+  "baseline": "investigation/native-core/baseline-manifest.json",
+  "baseline_sha256": "235fc9cbdf0e59d89655c7b4a4c7f3c98b6074d89b88d94cd94db243bed98183",
+  "roots": [
+    "mitaka",
+    "mitaka_plus",
+    "sources/official"
+  ],
+  "regular_file_count": 16365,
+  "regular_file_bytes": 6622642667,
+  "symlink_count": 465,
+  "added_count": 0,
+  "removed_count": 0,
+  "changed_count": 0,
+  "added": [
+
+  ],
+  "removed": [
+
+  ],
+  "changed": [
+
+  ],
+  "reference_repository": {
+    "head": "ab63d81723a9261b663c8ab1283de2e7607f1094",
+    "status_porcelain": "",
+    "matches_baseline_head": true,
+    "matches_baseline_status": true
+  },
+  "official_zip": {
+    "extracted_files_checked": 310,
+    "mismatch_count": 0,
+    "mismatches": [
+
+    ]
+  },
+  "passed": true,
+  "baseline_matches_start": true
+}

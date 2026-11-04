@@ -1,0 +1,16 @@
+# Cincinnati
+
+Name: Cincinnati
+DisplayName: Cincinnati
+No: 1373
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.411465
+e: 0.318299
+w: 99.635086
+M0: 351.283844
+i: 38.987694
+node: 297.556305
+Size: 500 500 500
+B_V: 0.75

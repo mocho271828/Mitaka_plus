@@ -1,0 +1,315 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"
+mkdir -p "build-unit5-clean-final"
+mkdir -p "build-unit5-clean-final"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build-unit5-clean-final/AppWindow.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-unit5-clean-final/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/main.mm -o "build-unit5-clean-final/main.o"
+mkdir -p "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/astronomy.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/astronomy.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/catalog.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/ephemeris.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/rotation.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/lunar.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/lunar.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/observation.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/extended_catalog.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/extended_catalog.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build-unit5-clean-final/AppObserverCommands.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/place_catalog.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/place_catalog.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/observer_places.cpp -o "build-unit5-clean-final/observer_places.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/gui_file_io.mm -o "build-unit5-clean-final/gui_file_io.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_catalog.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_catalog.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build-unit5-clean-final/AppPlusCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppDisplayCommands.mm -o "build-unit5-clean-final/AppDisplayCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build-unit5-clean-final/AppTimeCommands.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_text.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_text.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build-unit5-clean-final/AppSmallBodyCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build-unit5-clean-final/AppSmallBodySmokeTests.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_catalog.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_catalog.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/MediaController.mm -o "build-unit5-clean-final/MediaController.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_catalog_parser.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_catalog_parser.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/MediaImageView.mm -o "build-unit5-clean-final/MediaImageView.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/media_catalog.mm -o "build-unit5-clean-final/media_catalog.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_position.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_position.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SmallBodyController.mm -o "build-unit5-clean-final/SmallBodyController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/small_body_model.mm -o "build-unit5-clean-final/small_body_model.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_rotation.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_rotation.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SmallBodyRenderer.mm -o "build-unit5-clean-final/SmallBodyRenderer.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_model.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_model.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build-unit5-clean-final/SolarSmallBodies.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build-unit5-clean-final/AppSessionCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit5-clean-final/AppScripting.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/CatalogBrowserController.mm -o "build-unit5-clean-final/CatalogBrowserController.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_registration.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_registration.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/catalog_browser_model.mm -o "build-unit5-clean-final/catalog_browser_model.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/DisplayOutputController.mm -o "build-unit5-clean-final/DisplayOutputController.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_absolute.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_absolute.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ScriptController.mm -o "build-unit5-clean-final/ScriptController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/script_transport.cpp -o "build-unit5-clean-final/script_transport.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/HorizonView.mm -o "build-unit5-clean-final/HorizonView.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_trajectory.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_trajectory.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_trajectory_parser.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/extended_catalogs.cpp -o "build-unit5-clean-final/extended_catalogs.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/spacecraft_position.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/minor_planet_position.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/minor_planet_position.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_state.mm -o "build-unit5-clean-final/session_state.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit_path.cpp -o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_orbit_path.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyCatalogRenderer.mm -o "build-unit5-clean-final/SkyCatalogRenderer.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/StarRenderer.mm -o "build-unit5-clean-final/StarRenderer.o"
+xcrun ar rcs /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/astronomy.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/catalog.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/ephemeris.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/rotation.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/lunar.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/observation.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/extended_catalog.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/place_catalog.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_catalog.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_text.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_orbit.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_catalog.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_catalog_parser.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_position.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_rotation.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_model.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_registration.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/satellite_absolute.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_trajectory.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_trajectory_parser.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/spacecraft_position.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/minor_planet_position.o /private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/small_body_orbit_path.o
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/RendererQuality.mm -o "build-unit5-clean-final/RendererQuality.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/star_labels.cpp -o "build-unit5-clean-final/star_labels.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/sky_catalog_index.cpp -o "build-unit5-clean-final/sky_catalog_index.o"
+mkdir -p "build-unit5-clean-final"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit5-clean-final/AppPlusSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build-unit5-clean-final/AppSmokeTests.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit5-clean-final/AppScriptSmokeTests.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build-unit5-clean-final/AppFlightSmokeTests.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/PlaybackController.mm -o "build-unit5-clean-final/PlaybackController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SkyView.mm -o "build-unit5-clean-final/SkyView.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit5-clean-final/SolarSystemView.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build-unit5-clean-final/SolarSystemNavigation.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build-unit5-clean-final/SolarSystemSmokeTests.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSceneRenderer.mm -o "build-unit5-clean-final/SolarSceneRenderer.o"
+mkdir -p "build-unit5-clean-final"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/GridRenderer.mm -o "build-unit5-clean-final/GridRenderer.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/grid_geometry.cpp -o "build-unit5-clean-final/grid_geometry.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/distance_scales.cpp -o "build-unit5-clean-final/distance_scales.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/sky_model.cpp -o "build-unit5-clean-final/sky_model.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/solar_camera.cpp -o "build-unit5-clean-final/solar_camera.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/planet_surface.cpp -o "build-unit5-clean-final/planet_surface.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/planet_textures.mm -o "build-unit5-clean-final/planet_textures.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/local_image.mm -o "build-unit5-clean-final/local_image.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/sky_background.mm -o "build-unit5-clean-final/sky_background.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/calendar_time.cpp -o "build-unit5-clean-final/calendar_time.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/playback_clock.cpp -o "build-unit5-clean-final/playback_clock.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/surface_navigation.cpp -o "build-unit5-clean-final/surface_navigation.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/interplanetary_flight.cpp -o "build-unit5-clean-final/interplanetary_flight.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build-unit5-clean-final/AppWindowCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/WindowPresentationController.mm -o "build-unit5-clean-final/WindowPresentationController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/html_bridge_policy.mm -o "build-unit5-clean-final/html_bridge_policy.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/HtmlBrowserController.mm -o "build-unit5-clean-final/HtmlBrowserController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/satellite_browser_model.mm -o "build-unit5-clean-final/satellite_browser_model.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SatelliteController.mm -o "build-unit5-clean-final/SatelliteController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteCommands.mm -o "build-unit5-clean-final/AppSatelliteCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SatelliteRenderer.mm -o "build-unit5-clean-final/SatelliteRenderer.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSatellites.mm -o "build-unit5-clean-final/SolarSatellites.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_scene.cpp -o "build-unit5-clean-final/satellite_scene.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSatelliteSmokeTests.mm -o "build-unit5-clean-final/AppSatelliteSmokeTests.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SpacecraftController.mm -o "build-unit5-clean-final/SpacecraftController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SpacecraftRenderer.mm -o "build-unit5-clean-final/SpacecraftRenderer.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/spacecraft_browser_model.mm -o "build-unit5-clean-final/spacecraft_browser_model.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SolarSpacecraft.mm -o "build-unit5-clean-final/SolarSpacecraft.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSpacecraftCommands.mm -o "build-unit5-clean-final/AppSpacecraftCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_display.cpp -o "build-unit5-clean-final/small_body_display.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_display.cpp -o "build-unit5-clean-final/satellite_display.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/constellation_display.cpp -o "build-unit5-clean-final/constellation_display.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/horizon_segments.cpp -o "build-unit5-clean-final/horizon_segments.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppConstellationCommands.mm -o "build-unit5-clean-final/AppConstellationCommands.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/small_body_orbit_model.cpp -o "build-unit5-clean-final/small_body_orbit_model.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/SmallBodyOrbitController.mm -o "build-unit5-clean-final/SmallBodyOrbitController.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/ConstellationRenderer.mm -o "build-unit5-clean-final/ConstellationRenderer.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/satellite_orbit_geometry.cpp -o "build-unit5-clean-final/satellite_orbit_geometry.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_layers.mm -o "build-unit5-clean-final/session_layers.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/session_layers_json.mm -o "build-unit5-clean-final/session_layers_json.o"
+mkdir -p "build-unit5-clean-final"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSessionSmokeTests.mm -o "build-unit5-clean-final/AppSessionSmokeTests.o"
+bash tools/build_lua.sh "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/lua" "" ""
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_browser_model.mm build-unit5-clean-final/spacecraft_browser_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_spacecraft_browser_model"
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_spacecraft_renderer.mm build-unit5-clean-final/SpacecraftRenderer.o build-unit5-clean-final/spacecraft_browser_model.o build-unit5-clean-final/RendererQuality.o build-unit5-clean-final/solar_camera.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework AppKit -o "build-unit5-clean-final/test_spacecraft_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_small_body_display.cpp build-unit5-clean-final/small_body_display.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"   -o "build-unit5-clean-final/test_small_body_display"
+ 26  364k   26 98007    0     0  54610      0  0:00:06  0:00:01  0:00:05 54600xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0  tests/test_satellite_display.cpp build-unit5-clean-final/satellite_display.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"   -o "build-unit5-clean-final/test_satellite_display"
+100  364k  100  364k    0     0   123k      0  0:00:02  0:00:02 --:--:--  123k100  364k  100  364k    0     0   123k      0  0:00:02  0:00:02 --:--:--  123k
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_scene.mm build-unit5-clean-final/satellite_scene.o build-unit5-clean-final/satellite_browser_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_browser_model.mm build-unit5-clean-final/satellite_browser_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_grid_geometry.cpp build-unit5-clean-final/grid_geometry.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_grid_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_distance_scales.cpp build-unit5-clean-final/distance_scales.o build-unit5-clean-final/grid_geometry.o build-unit5-clean-final/solar_camera.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_distance_scales"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_grid_renderer.mm build-unit5-clean-final/GridRenderer.o build-unit5-clean-final/RendererQuality.o build-unit5-clean-final/grid_geometry.o build-unit5-clean-final/distance_scales.o build-unit5-clean-final/sky_model.o build-unit5-clean-final/solar_camera.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework AppKit -o "build-unit5-clean-final/test_grid_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_renderer_quality.mm build-unit5-clean-final/RendererQuality.o  -framework AppKit -o "build-unit5-clean-final/test_renderer_quality"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_html_bridge_policy.mm build-unit5-clean-final/html_bridge_policy.o  -framework Foundation -o "build-unit5-clean-final/test_html_bridge_policy"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_rendering.mm build-unit5-clean-final/SkyView.o build-unit5-clean-final/SkyCatalogRenderer.o build-unit5-clean-final/StarRenderer.o build-unit5-clean-final/RendererQuality.o build-unit5-clean-final/star_labels.o build-unit5-clean-final/sky_catalog_index.o build-unit5-clean-final/sky_model.o build-unit5-clean-final/sky_background.o build-unit5-clean-final/local_image.o build-unit5-clean-final/ConstellationRenderer.o build-unit5-clean-final/constellation_display.o build-unit5-clean-final/horizon_segments.o build-unit5-clean-final/GridRenderer.o build-unit5-clean-final/grid_geometry.o build-unit5-clean-final/distance_scales.o build-unit5-clean-final/solar_camera.o build-unit5-clean-final/HorizonView.o build-unit5-clean-final/SolarSceneRenderer.o build-unit5-clean-final/SatelliteRenderer.o build-unit5-clean-final/satellite_browser_model.o build-unit5-clean-final/SmallBodyRenderer.o build-unit5-clean-final/small_body_model.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/small_body_orbit_model.o build-unit5-clean-final/satellite_display.o build-unit5-clean-final/satellite_orbit_geometry.o build-unit5-clean-final/SpacecraftRenderer.o build-unit5-clean-final/spacecraft_browser_model.o build-unit5-clean-final/planet_surface.o build-unit5-clean-final/surface_navigation.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-clean-final/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_labels.cpp build-unit5-clean-final/star_labels.o  -o "build-unit5-clean-final/test_star_labels"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_model.mm build-unit5-clean-final/small_body_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_media_catalog.mm build-unit5-clean-final/media_catalog.o  -framework Foundation -o "build-unit5-clean-final/test_media_catalog"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_calendar_time.cpp build-unit5-clean-final/calendar_time.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_calendar_time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_sky_background.mm build-unit5-clean-final/sky_background.o build-unit5-clean-final/grid_geometry.o build-unit5-clean-final/local_image.o build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-clean-final/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_gui_file_io.mm build-unit5-clean-final/gui_file_io.o  -framework Foundation -o "build-unit5-clean-final/test_gui_file_io"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_observer_places.cpp build-unit5-clean-final/observer_places.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_catalog_browser_model.mm build-unit5-clean-final/catalog_browser_model.o build-unit5-clean-final/extended_catalogs.o build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_extended_catalogs.cpp build-unit5-clean-final/extended_catalogs.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_catalog_index.cpp build-unit5-clean-final/sky_catalog_index.o build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_sky_catalog_index"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_state.mm build-unit5-clean-final/session_state.o build-unit5-clean-final/solar_camera.o build-unit5-clean-final/playback_clock.o build-unit5-clean-final/calendar_time.o build-unit5-clean-final/session_layers.o build-unit5-clean-final/session_layers_json.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/satellite_display.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_session_state"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_sky_model.cpp build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_solar_model.cpp build-unit5-clean-final/sky_model.o build-unit5-clean-final/solar_camera.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_planet_surface.cpp build-unit5-clean-final/planet_surface.o build-unit5-clean-final/solar_camera.o  -o "build-unit5-clean-final/test_planet_surface"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build-unit5-clean-final/planet_textures.o build-unit5-clean-final/local_image.o  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit5-clean-final/test_planet_textures"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_playback_clock.cpp build-unit5-clean-final/playback_clock.o  -o "build-unit5-clean-final/test_playback_clock"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_surface_navigation.cpp build-unit5-clean-final/surface_navigation.o build-unit5-clean-final/solar_camera.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_surface_navigation"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_interplanetary_flight.cpp build-unit5-clean-final/interplanetary_flight.o build-unit5-clean-final/surface_navigation.o build-unit5-clean-final/solar_camera.o build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -o "build-unit5-clean-final/test_interplanetary_flight"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_display.cpp build-unit5-clean-final/constellation_display.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"   -o "build-unit5-clean-final/test_constellation_display"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_horizon_segments.cpp build-unit5-clean-final/horizon_segments.o build-unit5-clean-final/sky_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"   -o "build-unit5-clean-final/test_horizon_segments"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_satellite_orbit_geometry.mm build-unit5-clean-final/satellite_orbit_geometry.o build-unit5-clean-final/satellite_browser_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_satellite_orbit_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_session_layers.mm build-unit5-clean-final/session_layers.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/satellite_display.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_session_layers"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_model.mm build-unit5-clean-final/small_body_orbit_model.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/small_body_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_small_body_orbit_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_small_body_orbit_controller.mm build-unit5-clean-final/SmallBodyOrbitController.o build-unit5-clean-final/small_body_orbit_model.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/small_body_model.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework Foundation -o "build-unit5-clean-final/test_small_body_orbit_controller"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -I"/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/lua/include" -fobjc-arc src/ScriptWorker.mm build-unit5-clean-final/script_transport.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a" "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/lua/liblua.a"  -framework Foundation -o "build-unit5-clean-final/MitakaScript"
+"build-unit5-clean-final/test_constellation_display"
+Constellation display tests passed: 64 checks
+"build-unit5-clean-final/test_horizon_segments"
+Horizon segment tests passed: 101337 checks
+"build-unit5-clean-final/test_satellite_orbit_geometry"
+Satellite orbit geometry: 24 checks PASS
+"build-unit5-clean-final/test_session_layers"
+session layers: 31 checks passed
+"build-unit5-clean-final/test_small_body_orbit_model"
+Small-body orbit model tests passed: 47 checks
+"build-unit5-clean-final/test_small_body_orbit_controller"
+Small-body orbit controller tests passed: 59 checks
+"build-unit5-clean-final/test_spacecraft_browser_model"
+Spacecraft browser model: 34 checks PASS
+"build-unit5-clean-final/test_spacecraft_renderer"
+Spacecraft renderer: 28810 checks PASS
+"build-unit5-clean-final/test_small_body_display"
+small_body_display: 295 checks passed
+"build-unit5-clean-final/test_satellite_display"
+satellite_display: 138 checks passed
+"build-unit5-clean-final/test_satellite_scene"
+Satellite scene: 658 checks PASS
+"build-unit5-clean-final/test_satellite_browser_model"
+Satellite browser model: 21 checks PASS
+"build-unit5-clean-final/test_grid_geometry"
+grid geometry tests passed
+"build-unit5-clean-final/test_distance_scales"
+distance scale tests passed (127 checks)
+"build-unit5-clean-final/test_grid_renderer"
+grid renderer tests passed (101 checks)
+"build-unit5-clean-final/test_renderer_quality"
+renderer_quality: 64 checks passed
+"build-unit5-clean-final/test_html_bridge_policy"
+html bridge policy: 80 checks passed
+"build-unit5-clean-final/test_display_rendering"
+display rendering tests passed (103 checks)
+"build-unit5-clean-final/test_star_labels"
+star labels and markings passed
+"build-unit5-clean-final/test_small_body_model"
+Small-body model tests passed: 20135 checks
+"build-unit5-clean-final/test_media_catalog"
+media_catalog: 45 checks passed
+"build-unit5-clean-final/test_calendar_time"
+Calendar time tests passed: 333 checks
+"build-unit5-clean-final/test_sky_background"
+mkdir -p "build-unit5-clean-final/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 build-unit5-clean-final/main.o build-unit5-clean-final/AppController.o build-unit5-clean-final/AppWindow.o build-unit5-clean-final/AppObserverCommands.o build-unit5-clean-final/observer_places.o build-unit5-clean-final/gui_file_io.o build-unit5-clean-final/AppPlusCommands.o build-unit5-clean-final/AppDisplayCommands.o build-unit5-clean-final/AppTimeCommands.o build-unit5-clean-final/AppSmallBodyCommands.o build-unit5-clean-final/AppSmallBodySmokeTests.o build-unit5-clean-final/MediaController.o build-unit5-clean-final/MediaImageView.o build-unit5-clean-final/media_catalog.o build-unit5-clean-final/SmallBodyController.o build-unit5-clean-final/small_body_model.o build-unit5-clean-final/SmallBodyRenderer.o build-unit5-clean-final/SolarSmallBodies.o build-unit5-clean-final/AppSessionCommands.o build-unit5-clean-final/AppScripting.o build-unit5-clean-final/CatalogBrowserController.o build-unit5-clean-final/catalog_browser_model.o build-unit5-clean-final/DisplayOutputController.o build-unit5-clean-final/ScriptController.o build-unit5-clean-final/script_transport.o build-unit5-clean-final/HorizonView.o build-unit5-clean-final/extended_catalogs.o build-unit5-clean-final/session_state.o build-unit5-clean-final/SkyCatalogRenderer.o build-unit5-clean-final/StarRenderer.o build-unit5-clean-final/RendererQuality.o build-unit5-clean-final/star_labels.o build-unit5-clean-final/sky_catalog_index.o build-unit5-clean-final/AppSmokeTests.o build-unit5-clean-final/AppPlusSmokeTests.o build-unit5-clean-final/AppScriptSmokeTests.o build-unit5-clean-final/AppFlightSmokeTests.o build-unit5-clean-final/PlaybackController.o build-unit5-clean-final/SkyView.o build-unit5-clean-final/SolarSystemView.o build-unit5-clean-final/SolarSystemNavigation.o build-unit5-clean-final/SolarSystemSmokeTests.o build-unit5-clean-final/SolarSceneRenderer.o build-unit5-clean-final/GridRenderer.o build-unit5-clean-final/grid_geometry.o build-unit5-clean-final/distance_scales.o build-unit5-clean-final/sky_model.o build-unit5-clean-final/solar_camera.o build-unit5-clean-final/planet_surface.o build-unit5-clean-final/planet_textures.o build-unit5-clean-final/local_image.o build-unit5-clean-final/sky_background.o build-unit5-clean-final/calendar_time.o build-unit5-clean-final/playback_clock.o build-unit5-clean-final/surface_navigation.o build-unit5-clean-final/interplanetary_flight.o build-unit5-clean-final/AppWindowCommands.o build-unit5-clean-final/WindowPresentationController.o build-unit5-clean-final/html_bridge_policy.o build-unit5-clean-final/HtmlBrowserController.o build-unit5-clean-final/satellite_browser_model.o build-unit5-clean-final/SatelliteController.o build-unit5-clean-final/AppSatelliteCommands.o build-unit5-clean-final/SatelliteRenderer.o build-unit5-clean-final/SolarSatellites.o build-unit5-clean-final/satellite_scene.o build-unit5-clean-final/AppSatelliteSmokeTests.o build-unit5-clean-final/SpacecraftController.o build-unit5-clean-final/SpacecraftRenderer.o build-unit5-clean-final/spacecraft_browser_model.o build-unit5-clean-final/SolarSpacecraft.o build-unit5-clean-final/AppSpacecraftCommands.o build-unit5-clean-final/small_body_display.o build-unit5-clean-final/satellite_display.o build-unit5-clean-final/constellation_display.o build-unit5-clean-final/horizon_segments.o build-unit5-clean-final/AppConstellationCommands.o build-unit5-clean-final/small_body_orbit_model.o build-unit5-clean-final/SmallBodyOrbitController.o build-unit5-clean-final/ConstellationRenderer.o build-unit5-clean-final/satellite_orbit_geometry.o build-unit5-clean-final/session_layers.o build-unit5-clean-final/session_layers_json.o build-unit5-clean-final/AppSessionSmokeTests.o "/private/tmp/mitaka-unit5-clean-clone/native/gui/build-unit5-clean-final/core/libmitaka_core.a"  -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build-unit5-clean-final/Mitaka Native.app/Contents/MacOS/MitakaNative"
+sky background tests passed
+"build-unit5-clean-final/test_gui_file_io"
+GUI file I/O: 51 checks passed
+"build-unit5-clean-final/test_observer_places"
+Observer places: 16 checks passed
+"build-unit5-clean-final/test_catalog_browser_model"
+cp "build-unit5-clean-final/MitakaScript" "build-unit5-clean-final/Mitaka Native.app/Contents/MacOS/MitakaScript"
+Synthetic last-record search: 1000037 galaxies, 27.2496 ms
+Catalog browser model tests passed: 23 checks
+"build-unit5-clean-final/test_extended_catalogs"
+cp Info.plist "build-unit5-clean-final/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-unit5-clean-final/Mitaka Native.app/Contents/Resources"
+Extended catalog aggregate tests passed
+"build-unit5-clean-final/test_sky_catalog_index"
+cp THIRD_PARTY_NOTICES.txt "build-unit5-clean-final/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+sky catalog index tests passed
+"build-unit5-clean-final/test_session_state"
+cp LUA_LICENSE.txt "build-unit5-clean-final/Mitaka Native.app/Contents/Resources/LUA_LICENSE.txt"
+session state: 1233 checks passed
+"build-unit5-clean-final/test_sky_model"
+sky model tests passed
+"build-unit5-clean-final/test_solar_model"
+solar model tests passed
+"build-unit5-clean-final/test_planet_surface"
+planet surface tests passed
+"build-unit5-clean-final/test_planet_textures"
+planet texture tests passed
+"build-unit5-clean-final/test_playback_clock"
+playback clock: 10134 checks passed
+"build-unit5-clean-final/test_surface_navigation"
+surface navigation tests passed
+"build-unit5-clean-final/test_interplanetary_flight"
+Interplanetary flight tests passed

@@ -1,0 +1,67 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  49d670: ff ff                        	<unknown>
+  49d672: ff 8b 70 14 89 45            	dec	dword ptr [ebx + 0x45891470]
+  49d678: d4 89                        	aam	-0x77
+  49d67a: 5d                           	pop	ebp
+  49d67b: d0 8d 95 14 ff ff            	ror	byte ptr [ebp - 0xeb6b]
+  49d681: ff 3b                        	<unknown>
+  49d683: fe 0f                        	dec	byte ptr [edi]
+  49d685: 42                           	inc	edx
+  49d686: f7 3b                        	idiv	dword ptr [ebx]
+  49d688: d0 89 75 c8 0f 84            	ror	byte ptr [ecx - 0x7bf0378b]
+  49d68e: 6e                           	outsb	dx, byte ptr [esi]
+  49d68f: 02 00                        	add	al, byte ptr [eax]
+  49d691: 00 89 75 c4 83 fe            	add	byte ptr [ecx - 0x17c3b8b], cl
+  49d697: fe 76 09                     	<unknown>
+  49d69a: ff 15 d4 53 c2 00            	call	dword ptr [0xc253d4]
+  49d6a0: 8b 75 c4                     	mov	esi, dword ptr [ebp - 0x3c]
+  49d6a3: 3b b5 2c ff ff ff            	cmp	esi, dword ptr [ebp - 0xd4]
+  49d6a9: 0f 87 eb 00 00 00            	ja	0x49d79a <.text+0x9c79a>
+  49d6af: 85 f6                        	test	esi, esi
+  49d6b1: 0f 84 bb 00 00 00            	je	0x49d772 <.text+0x9c772>
+  49d6b7: 85 f6                        	test	esi, esi
+  49d6b9: 77 64                        	ja	0x49d71f <.text+0x9c71f>
+  49d6bb: c7 45 fc 09 00 00 00         	mov	dword ptr [ebp - 0x4], 0x9
+  49d6c2: f2 0f 10 05 30 d5 c2 00      	movsd	xmm0, qword ptr [0xc2d530]
+  49d6ca: 8d 85 14 ff ff ff            	lea	eax, [ebp - 0xec]
+  49d6d0: 83 c4 f4                     	add	esp, -0xc
+  49d6d3: f2 0f 11 44 24 04            	movsd	qword ptr [esp + 0x4], xmm0
+  49d6d9: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  49d6de: 89 04 24                     	mov	dword ptr [esp], eax
+  49d6e1: e8 8a 72 09 00               	call	0x534970 <.text+0x133970>
+  49d6e6: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  49d6ed: 83 bd 2c ff ff ff 10         	cmp	dword ptr [ebp - 0xd4], 0x10
+  49d6f4: 73 1b                        	jae	0x49d711 <.text+0x9c711>
+  49d6f6: c7 85 2c ff ff ff 0f 00 00 00	mov	dword ptr [ebp - 0xd4], 0xf
+  49d700: 89 9d 28 ff ff ff            	mov	dword ptr [ebp - 0xd8], ebx
+  49d706: 88 9d 18 ff ff ff            	mov	byte ptr [ebp - 0xe8], bl
+  49d70c: e9 2c fe ff ff               	jmp	0x49d53d <.text+0x9c53d>
+  49d711: ff b5 18 ff ff ff            	push	dword ptr [ebp - 0xe8]
+  49d717: e8 76 18 5f 00               	call	0xa8ef92 <.text+0x68df92>
+  49d71c: 59                           	pop	ecx
+  49d71d: eb d7                        	jmp	0x49d6f6 <.text+0x9c6f6>
+  49d71f: 8b 7d cc                     	mov	edi, dword ptr [ebp - 0x34]
+  49d722: 8b 4f 18                     	mov	ecx, dword ptr [edi + 0x18]
+  49d725: 83 f9 10                     	cmp	ecx, 0x10
+  49d728: 72 05                        	jb	0x49d72f <.text+0x9c72f>
+  49d72a: 8b 7f 04                     	mov	edi, dword ptr [edi + 0x4]
+  49d72d: eb 03                        	jmp	0x49d732 <.text+0x9c732>
+  49d72f: 83 c7 04                     	add	edi, 0x4
+  49d732: 8b 55 d4                     	mov	edx, dword ptr [ebp - 0x2c]
+  49d735: 83 7a 18 10                  	cmp	dword ptr [edx + 0x18], 0x10
+  49d739: 72 05                        	jb	0x49d740 <.text+0x9c740>
+  49d73b: 8b 52 04                     	mov	edx, dword ptr [edx + 0x4]
+  49d73e: eb 03                        	jmp	0x49d743 <.text+0x9c743>
+  49d740: 83 c2 04                     	add	edx, 0x4
+  49d743: 03 55 d0                     	add	edx, dword ptr [ebp - 0x30]
+  49d746: 8b 75 c8                     	mov	esi, dword ptr [ebp - 0x38]
+  49d749: 56                           	push	esi
+  49d74a: 52                           	push	edx
+  49d74b: 51                           	push	ecx
+  49d74c: 57                           	push	edi
+  49d74d: ff 15 00 56 c2 00            	call	dword ptr [0xc25600]

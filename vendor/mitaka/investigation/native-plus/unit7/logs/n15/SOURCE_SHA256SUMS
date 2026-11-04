@@ -1,0 +1,4 @@
+70f2b52e9d32509f7552288276cd1f85db41f2a268f086b6f1bfb56707593a51  native/core/include/mitaka/terrain.hpp
+05f498a507897590420c978b103fb843a4374279136e26b057777b06854c9a63  native/core/src/terrain.cpp
+1d9c68a56e9507ac57b3bb3375a6106515742fb9ba281de0a5fb466cb6d8fdb9  native/core/src/terrain_sampling.cpp
+a7346539e79f05a2df88ff7ae0793806fba2e086533eeb6d270aead4313da017  native/core/tests/test_terrain.cpp

@@ -1,0 +1,16 @@
+# Itokawa
+
+Name: Itokawa
+DisplayName: Itokawa
+No: 25143
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 1.323928
+e: 0.280083
+w: 162.766190
+M0: 193.307114
+i: 1.622226
+node: 69.095474
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,3 @@
+e64290a37dba21a1bf996121874c614db9a47d9a56388fd57b321ac6ec092b02  native/gui/include/sdss_spatial_model.hpp
+277f4652fd4ed33b00ea7fee59af1a8cfce1a87ad3ce8968c91d542a221d7d75  native/gui/src/sdss_spatial_model.cpp
+7c05130da6ad88ba62d474d4fad143d2677d49f8a6c498f10e6701511ae02b70  native/gui/tests/test_sdss_spatial_model.cpp

@@ -1,0 +1,3 @@
+Cover ready: frame={{251, 176}, {1152, 880}}, number=27643, visible=1, opaque=1, alpha=1
+Occlusion state: projection={{315, 240}, {1024, 752}}, backingScale=2, centerTop=27643, occlusion=8194
+DisplayOutputController test failed: test projection did not become occluded

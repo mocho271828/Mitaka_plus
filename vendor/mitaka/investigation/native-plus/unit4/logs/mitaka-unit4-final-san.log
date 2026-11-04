@@ -1,0 +1,192 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a"
+mkdir -p "build-unit3-root-san"
+mkdir -p "build-unit3-root-san"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppController.mm -o "build-unit3-root-san/AppController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppWindow.mm -o "build-unit3-root-san/AppWindow.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppObserverCommands.mm -o "build-unit3-root-san/AppObserverCommands.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/ephemeris.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_catalog.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/gui_file_io.mm -o "build-unit3-root-san/gui_file_io.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppPlusCommands.mm -o "build-unit3-root-san/AppPlusCommands.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppDisplayCommands.mm -o "build-unit3-root-san/AppDisplayCommands.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppTimeCommands.mm -o "build-unit3-root-san/AppTimeCommands.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog_parser.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_catalog_parser.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmallBodyCommands.mm -o "build-unit3-root-san/AppSmallBodyCommands.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_position.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_rotation.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_rotation.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmallBodySmokeTests.mm -o "build-unit3-root-san/AppSmallBodySmokeTests.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SmallBodyRenderer.mm -o "build-unit3-root-san/SmallBodyRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_model.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_model.o
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSmallBodies.mm -o "build-unit3-root-san/SolarSmallBodies.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSessionCommands.mm -o "build-unit3-root-san/AppSessionCommands.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit3-root-san/AppScripting.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_registration.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_registration.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/CatalogBrowserController.mm -o "build-unit3-root-san/CatalogBrowserController.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_absolute.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_absolute.o
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/catalog_browser_model.mm -o "build-unit3-root-san/catalog_browser_model.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/DisplayOutputController.mm -o "build-unit3-root-san/DisplayOutputController.o"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/spacecraft_trajectory.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/ScriptController.mm -o "build-unit3-root-san/ScriptController.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/HorizonView.mm -o "build-unit3-root-san/HorizonView.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/session_state.mm -o "build-unit3-root-san/session_state.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SkyCatalogRenderer.mm -o "build-unit3-root-san/SkyCatalogRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/StarRenderer.mm -o "build-unit3-root-san/StarRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/RendererQuality.mm -o "build-unit3-root-san/RendererQuality.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/spacecraft_trajectory_parser.o
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/sky_catalog_index.cpp -o "build-unit3-root-san/sky_catalog_index.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build-unit3-root-san/AppSmokeTests.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit3-root-san/AppPlusSmokeTests.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit3-root-san/AppScriptSmokeTests.o"
+xcrun ar rcs /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/astronomy.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/ephemeris.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/lunar.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/observation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/extended_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/place_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/small_body_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/small_body_text.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/small_body_orbit.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_catalog_parser.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_model.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_registration.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/satellite_absolute.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/spacecraft_trajectory.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/spacecraft_trajectory_parser.o
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build-unit3-root-san/AppFlightSmokeTests.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SkyView.mm -o "build-unit3-root-san/SkyView.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build-unit3-root-san/SolarSystemView.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build-unit3-root-san/SolarSystemNavigation.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build-unit3-root-san/SolarSystemSmokeTests.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSceneRenderer.mm -o "build-unit3-root-san/SolarSceneRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/GridRenderer.mm -o "build-unit3-root-san/GridRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/distance_scales.cpp -o "build-unit3-root-san/distance_scales.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/sky_model.cpp -o "build-unit3-root-san/sky_model.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/sky_background.mm -o "build-unit3-root-san/sky_background.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/surface_navigation.cpp -o "build-unit3-root-san/surface_navigation.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/interplanetary_flight.cpp -o "build-unit3-root-san/interplanetary_flight.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build-unit3-root-san/AppWindowCommands.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/WindowPresentationController.mm -o "build-unit3-root-san/WindowPresentationController.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/html_bridge_policy.mm -o "build-unit3-root-san/html_bridge_policy.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/HtmlBrowserController.mm -o "build-unit3-root-san/HtmlBrowserController.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/satellite_browser_model.mm -o "build-unit3-root-san/satellite_browser_model.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SatelliteController.mm -o "build-unit3-root-san/SatelliteController.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSatelliteCommands.mm -o "build-unit3-root-san/AppSatelliteCommands.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SatelliteRenderer.mm -o "build-unit3-root-san/SatelliteRenderer.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSatellites.mm -o "build-unit3-root-san/SolarSatellites.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_scene.cpp -o "build-unit3-root-san/satellite_scene.o"
+mkdir -p "build-unit3-root-san"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppSatelliteSmokeTests.mm -o "build-unit3-root-san/AppSatelliteSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -I"/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/lua/include" -fobjc-arc src/ScriptWorker.mm build-unit3-root-san/script_transport.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/lua/liblua.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/MitakaScript"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_satellite_scene.mm build-unit3-root-san/satellite_scene.o build-unit3-root-san/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_satellite_scene"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_satellite_browser_model.mm build-unit3-root-san/satellite_browser_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_satellite_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_grid_geometry.cpp build-unit3-root-san/grid_geometry.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_grid_geometry"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_distance_scales.cpp build-unit3-root-san/distance_scales.o build-unit3-root-san/grid_geometry.o build-unit3-root-san/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_distance_scales"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_grid_renderer.mm build-unit3-root-san/GridRenderer.o build-unit3-root-san/RendererQuality.o build-unit3-root-san/grid_geometry.o build-unit3-root-san/distance_scales.o build-unit3-root-san/sky_model.o build-unit3-root-san/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -o "build-unit3-root-san/test_grid_renderer"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_renderer_quality.mm build-unit3-root-san/RendererQuality.o -fsanitize=address,undefined -framework AppKit -o "build-unit3-root-san/test_renderer_quality"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_html_bridge_policy.mm build-unit3-root-san/html_bridge_policy.o -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_html_bridge_policy"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_display_rendering.mm build-unit3-root-san/SkyView.o build-unit3-root-san/SkyCatalogRenderer.o build-unit3-root-san/StarRenderer.o build-unit3-root-san/RendererQuality.o build-unit3-root-san/star_labels.o build-unit3-root-san/sky_catalog_index.o build-unit3-root-san/sky_model.o build-unit3-root-san/sky_background.o build-unit3-root-san/local_image.o build-unit3-root-san/GridRenderer.o build-unit3-root-san/grid_geometry.o build-unit3-root-san/distance_scales.o build-unit3-root-san/solar_camera.o build-unit3-root-san/HorizonView.o build-unit3-root-san/SolarSceneRenderer.o build-unit3-root-san/SatelliteRenderer.o build-unit3-root-san/satellite_browser_model.o build-unit3-root-san/SmallBodyRenderer.o build-unit3-root-san/small_body_model.o build-unit3-root-san/planet_surface.o build-unit3-root-san/surface_navigation.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit3-root-san/test_display_rendering"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_small_body_model.mm build-unit3-root-san/small_body_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_small_body_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_calendar_time.cpp build-unit3-root-san/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_calendar_time"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_sky_background.mm build-unit3-root-san/sky_background.o build-unit3-root-san/grid_geometry.o build-unit3-root-san/local_image.o build-unit3-root-san/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit3-root-san/test_sky_background"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_gui_file_io.mm build-unit3-root-san/gui_file_io.o -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_gui_file_io"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_observer_places.cpp build-unit3-root-san/observer_places.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_observer_places"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_catalog_browser_model.mm build-unit3-root-san/catalog_browser_model.o build-unit3-root-san/extended_catalogs.o build-unit3-root-san/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_catalog_browser_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_extended_catalogs.cpp build-unit3-root-san/extended_catalogs.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_extended_catalogs"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_catalog_index.cpp build-unit3-root-san/sky_catalog_index.o build-unit3-root-san/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_sky_catalog_index"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_session_state.mm build-unit3-root-san/session_state.o build-unit3-root-san/solar_camera.o build-unit3-root-san/playback_clock.o build-unit3-root-san/calendar_time.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework Foundation -o "build-unit3-root-san/test_session_state"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build-unit3-root-san/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build-unit3-root-san/sky_model.o build-unit3-root-san/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_surface_navigation.cpp build-unit3-root-san/surface_navigation.o build-unit3-root-san/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_surface_navigation"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_interplanetary_flight.cpp build-unit3-root-san/interplanetary_flight.o build-unit3-root-san/surface_navigation.o build-unit3-root-san/solar_camera.o build-unit3-root-san/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -o "build-unit3-root-san/test_interplanetary_flight"
+mkdir -p "build-unit3-root-san/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined build-unit3-root-san/main.o build-unit3-root-san/AppController.o build-unit3-root-san/AppWindow.o build-unit3-root-san/AppObserverCommands.o build-unit3-root-san/observer_places.o build-unit3-root-san/gui_file_io.o build-unit3-root-san/AppPlusCommands.o build-unit3-root-san/AppDisplayCommands.o build-unit3-root-san/AppTimeCommands.o build-unit3-root-san/AppSmallBodyCommands.o build-unit3-root-san/AppSmallBodySmokeTests.o build-unit3-root-san/MediaController.o build-unit3-root-san/MediaImageView.o build-unit3-root-san/media_catalog.o build-unit3-root-san/SmallBodyController.o build-unit3-root-san/small_body_model.o build-unit3-root-san/SmallBodyRenderer.o build-unit3-root-san/SolarSmallBodies.o build-unit3-root-san/AppSessionCommands.o build-unit3-root-san/AppScripting.o build-unit3-root-san/CatalogBrowserController.o build-unit3-root-san/catalog_browser_model.o build-unit3-root-san/DisplayOutputController.o build-unit3-root-san/ScriptController.o build-unit3-root-san/script_transport.o build-unit3-root-san/HorizonView.o build-unit3-root-san/extended_catalogs.o build-unit3-root-san/session_state.o build-unit3-root-san/SkyCatalogRenderer.o build-unit3-root-san/StarRenderer.o build-unit3-root-san/RendererQuality.o build-unit3-root-san/star_labels.o build-unit3-root-san/sky_catalog_index.o build-unit3-root-san/AppSmokeTests.o build-unit3-root-san/AppPlusSmokeTests.o build-unit3-root-san/AppScriptSmokeTests.o build-unit3-root-san/AppFlightSmokeTests.o build-unit3-root-san/PlaybackController.o build-unit3-root-san/SkyView.o build-unit3-root-san/SolarSystemView.o build-unit3-root-san/SolarSystemNavigation.o build-unit3-root-san/SolarSystemSmokeTests.o build-unit3-root-san/SolarSceneRenderer.o build-unit3-root-san/GridRenderer.o build-unit3-root-san/grid_geometry.o build-unit3-root-san/distance_scales.o build-unit3-root-san/sky_model.o build-unit3-root-san/solar_camera.o build-unit3-root-san/planet_surface.o build-unit3-root-san/planet_textures.o build-unit3-root-san/local_image.o build-unit3-root-san/sky_background.o build-unit3-root-san/calendar_time.o build-unit3-root-san/playback_clock.o build-unit3-root-san/surface_navigation.o build-unit3-root-san/interplanetary_flight.o build-unit3-root-san/AppWindowCommands.o build-unit3-root-san/WindowPresentationController.o build-unit3-root-san/html_bridge_policy.o build-unit3-root-san/HtmlBrowserController.o build-unit3-root-san/satellite_browser_model.o build-unit3-root-san/SatelliteController.o build-unit3-root-san/AppSatelliteCommands.o build-unit3-root-san/SatelliteRenderer.o build-unit3-root-san/SolarSatellites.o build-unit3-root-san/satellite_scene.o build-unit3-root-san/AppSatelliteSmokeTests.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-root-san/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -framework AVKit -framework AVFoundation -framework WebKit -o "build-unit3-root-san/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp "build-unit3-root-san/MitakaScript" "build-unit3-root-san/Mitaka Native.app/Contents/MacOS/MitakaScript"
+cp Info.plist "build-unit3-root-san/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build-unit3-root-san/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build-unit3-root-san/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+cp LUA_LICENSE.txt "build-unit3-root-san/Mitaka Native.app/Contents/Resources/LUA_LICENSE.txt"
+"build-unit3-root-san/test_satellite_scene"
+Satellite scene: 658 checks PASS
+"build-unit3-root-san/test_satellite_browser_model"
+Satellite browser model: 21 checks PASS
+"build-unit3-root-san/test_grid_geometry"
+grid geometry tests passed
+"build-unit3-root-san/test_distance_scales"
+distance scale tests passed (127 checks)
+"build-unit3-root-san/test_grid_renderer"
+grid renderer tests passed (101 checks)
+"build-unit3-root-san/test_renderer_quality"
+renderer_quality: 64 checks passed
+"build-unit3-root-san/test_html_bridge_policy"
+html bridge policy: 80 checks passed
+"build-unit3-root-san/test_display_rendering"
+display rendering tests passed (82 checks)
+"build-unit3-root-san/test_star_labels"
+star labels and markings passed
+"build-unit3-root-san/test_small_body_model"
+Small-body model tests passed: 25 checks
+"build-unit3-root-san/test_media_catalog"
+media_catalog: 45 checks passed
+"build-unit3-root-san/test_calendar_time"
+Calendar time tests passed: 333 checks
+"build-unit3-root-san/test_sky_background"
+sky background tests passed
+"build-unit3-root-san/test_gui_file_io"
+GUI file I/O: 51 checks passed
+"build-unit3-root-san/test_observer_places"
+Observer places: 16 checks passed
+"build-unit3-root-san/test_catalog_browser_model"
+Synthetic last-record search: 1000037 galaxies, 117.452 ms
+Catalog browser model tests passed: 23 checks
+"build-unit3-root-san/test_extended_catalogs"
+Extended catalog aggregate tests passed
+"build-unit3-root-san/test_sky_catalog_index"
+sky catalog index tests passed
+"build-unit3-root-san/test_session_state"
+session state: 964 checks passed
+"build-unit3-root-san/test_sky_model"
+sky model tests passed
+"build-unit3-root-san/test_solar_model"
+solar model tests passed
+"build-unit3-root-san/test_planet_surface"
+planet surface tests passed
+"build-unit3-root-san/test_planet_textures"
+planet texture tests passed
+"build-unit3-root-san/test_playback_clock"
+playback clock: 10134 checks passed
+"build-unit3-root-san/test_surface_navigation"
+surface navigation tests passed
+"build-unit3-root-san/test_interplanetary_flight"
+Interplanetary flight tests passed

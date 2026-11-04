@@ -1,0 +1,8 @@
++zsh:13> build-unit7-galaxy-san/test_galaxy_catalog
+galaxy catalog: 1275 checks passed
++zsh:14> build-unit7-galaxy-san/test_our_galaxy_model
+our galaxy model: 330 checks passed
++zsh:15> build-unit7-galaxy-san/test_galaxy_catalog '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data'
+galaxy catalog: 19452 checks passed
++zsh:16> build-unit7-galaxy-san/test_our_galaxy_model '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/ourgalaxy_model.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/ourgalaxy_model.dat'
+our galaxy model: 1660946 checks passed

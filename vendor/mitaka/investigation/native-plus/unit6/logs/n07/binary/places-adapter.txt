@@ -1,0 +1,138 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  5c96e0: b8 b0 00 2c 01               	mov	eax, 0x12c00b0
+  5c96e5: e9 9c 58 4c 00               	jmp	0xa8ef86 <.text+0x68df86>
+  5c96ea: 90                           	nop
+  5c96eb: 90                           	nop
+  5c96ec: 90                           	nop
+  5c96ed: 90                           	nop
+  5c96ee: 90                           	nop
+  5c96ef: 90                           	nop
+  5c96f0: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c96f4: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c96f8: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c96fc: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c9700: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c9704: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c9708: ff 74 24 1c                  	push	dword ptr [esp + 0x1c]
+  5c970c: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c9711: e8 ca f8 f5 ff               	call	0x528fe0 <.text+0x127fe0>
+  5c9716: c2 1c 00                     	ret	0x1c
+  5c9719: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  5c9720: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9724: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9728: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c972c: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9730: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9734: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9738: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c973d: e8 4e 0e f6 ff               	call	0x52a590 <.text+0x129590>
+  5c9742: c2 18 00                     	ret	0x18
+  5c9745: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c9749: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9750: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9754: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9758: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c975c: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9760: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9764: ff 74 24 18                  	push	dword ptr [esp + 0x18]
+  5c9768: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c976d: e8 ce 4a f6 ff               	call	0x52e240 <.text+0x12d240>
+  5c9772: c2 18 00                     	ret	0x18
+  5c9775: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c9779: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9780: 0f b6 44 24 04               	movzx	eax, byte ptr [esp + 0x4]
+  5c9785: 68 00 00 80 bf               	push	0xbf800000
+  5c978a: 83 c1 04                     	add	ecx, 0x4
+  5c978d: 50                           	push	eax
+  5c978e: e8 8d 9a 18 00               	call	0x753220 <.text+0x352220>
+  5c9793: c2 04 00                     	ret	0x4
+  5c9796: 8d 76 00                     	lea	esi, [esi]
+  5c9799: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c97a0: 83 c1 04                     	add	ecx, 0x4
+  5c97a3: e8 68 9b 18 00               	call	0x753310 <.text+0x352310>
+  5c97a8: c3                           	ret
+  5c97a9: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  5c97b0: 68 00 00 80 bf               	push	0xbf800000
+  5c97b5: 83 c1 04                     	add	ecx, 0x4
+  5c97b8: e8 73 99 18 00               	call	0x753130 <.text+0x352130>
+  5c97bd: c3                           	ret
+  5c97be: 8b f6                        	mov	esi, esi
+  5c97c0: 0f b6 44 24 04               	movzx	eax, byte ptr [esp + 0x4]
+  5c97c5: 50                           	push	eax
+  5c97c6: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c97cb: e8 80 9e f6 ff               	call	0x533650 <.text+0x132650>
+  5c97d0: c2 04 00                     	ret	0x4
+  5c97d3: 8d b6 00 00 00 00            	lea	esi, [esi]
+  5c97d9: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c97e0: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c97e5: e8 86 9e f6 ff               	call	0x533670 <.text+0x132670>
+  5c97ea: c3                           	ret
+  5c97eb: 90                           	nop
+  5c97ec: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c97f0: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c97f5: e8 76 9e f6 ff               	call	0x533670 <.text+0x132670>
+  5c97fa: 0f b6 c0                     	movzx	eax, al
+  5c97fd: ba 01 00 00 00               	mov	edx, 0x1
+  5c9802: 33 c9                        	xor	ecx, ecx
+  5c9804: 85 c0                        	test	eax, eax
+  5c9806: 0f 44 ca                     	cmove	ecx, edx
+  5c9809: 51                           	push	ecx
+  5c980a: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c980f: e8 3c 9e f6 ff               	call	0x533650 <.text+0x132650>
+  5c9814: c3                           	ret
+  5c9815: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c9819: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9820: ff 74 24 04                  	push	dword ptr [esp + 0x4]
+  5c9824: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c9829: e8 52 9e f6 ff               	call	0x533680 <.text+0x132680>
+  5c982e: c2 04 00                     	ret	0x4
+  5c9831: 90                           	nop
+  5c9832: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  5c9839: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9840: 83 ec 08                     	sub	esp, 0x8
+  5c9843: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c9848: e8 43 9e f6 ff               	call	0x533690 <.text+0x132690>
+  5c984d: d9 1c 24                     	fstp	dword ptr [esp]
+  5c9850: f3 0f 10 04 24               	movss	xmm0, dword ptr [esp]
+  5c9855: f3 0f 11 04 24               	movss	dword ptr [esp], xmm0
+  5c985a: d9 04 24                     	fld	dword ptr [esp]
+  5c985d: 83 c4 08                     	add	esp, 0x8
+  5c9860: c3                           	ret
+  5c9861: 90                           	nop
+  5c9862: 8d b4 26 00 00 00 00         	lea	esi, [esi + eiz]
+  5c9869: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9870: 0f b6 44 24 04               	movzx	eax, byte ptr [esp + 0x4]
+  5c9875: 50                           	push	eax
+  5c9876: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c987b: e8 10 b6 f6 ff               	call	0x534e90 <.text+0x133e90>
+  5c9880: c2 04 00                     	ret	0x4
+  5c9883: 8d b6 00 00 00 00            	lea	esi, [esi]
+  5c9889: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c9890: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c9895: e8 16 b6 f6 ff               	call	0x534eb0 <.text+0x133eb0>
+  5c989a: c3                           	ret
+  5c989b: 90                           	nop
+  5c989c: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c98a0: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c98a5: e8 06 b6 f6 ff               	call	0x534eb0 <.text+0x133eb0>
+  5c98aa: 0f b6 c0                     	movzx	eax, al
+  5c98ad: ba 01 00 00 00               	mov	edx, 0x1
+  5c98b2: 33 c9                        	xor	ecx, ecx
+  5c98b4: 85 c0                        	test	eax, eax
+  5c98b6: 0f 44 ca                     	cmove	ecx, edx
+  5c98b9: 51                           	push	ecx
+  5c98ba: b9 80 6f 10 01               	mov	ecx, 0x1106f80
+  5c98bf: e8 cc b5 f6 ff               	call	0x534e90 <.text+0x133e90>
+  5c98c4: c3                           	ret
+  5c98c5: 8d 74 26 00                  	lea	esi, [esi + eiz]
+  5c98c9: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  5c98d0: 55                           	push	ebp
+  5c98d1: 8b ec                        	mov	ebp, esp
+  5c98d3: 6a ff                        	push	-0x1
+  5c98d5: 68 a0 c6 bf 00               	push	0xbfc6a0
+  5c98da: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]

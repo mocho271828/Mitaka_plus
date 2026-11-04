@@ -1,0 +1,24 @@
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/place_catalog.cpp -o build/place_catalog.o
+xcrun ar rcs build/libmitaka_core.a build/astronomy.o build/catalog.o build/ephemeris.o build/rotation.o build/lunar.o build/observation.o build/extended_catalog.o build/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_astronomy.cpp build/libmitaka_core.a  -o build/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_catalog.cpp build/libmitaka_core.a  -o build/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_ephemeris.cpp build/libmitaka_core.a  -o build/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_rotation.cpp build/libmitaka_core.a  -o build/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_lunar.cpp build/libmitaka_core.a  -o build/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_observation.cpp build/libmitaka_core.a  -o build/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_extended_catalog.cpp build/libmitaka_core.a  -o build/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_place_catalog.cpp build/libmitaka_core.a  -o build/test_place_catalog
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_rotation_upstream.cpp build/reference_rotation.cpp build/libmitaka_core.a  -o build/test_rotation_upstream
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build/reference_lunar_pos.o build/reference_lunar_orientation.cpp build/libmitaka_core.a  -o build/test_lunar_upstream
+build/test_rotation_upstream
+rotation reference: 33129 components passed; maximum differences: J2000=4.4408920985e-16, 1700..2100=1.32350463922e-10, supported range=4.32943121631e-09
+build/test_lunar_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=9.48019440727e-13
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed

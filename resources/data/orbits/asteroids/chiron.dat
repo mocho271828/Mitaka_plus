@@ -1,0 +1,16 @@
+# Chiron
+
+Name: Chiron
+DisplayName: Chiron
+No: 2060
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 13.633182
+e: 0.380057
+w: 339.406769
+M0: 17.146772
+i: 6.938858
+node: 209.386169
+Size: 500 500 500
+B_V: 0.75

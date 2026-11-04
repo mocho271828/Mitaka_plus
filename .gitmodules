@@ -1,3 +1,0 @@
-[submodule "vendor/mitaka"]
-	path = vendor/mitaka
-	url = https://github.com/mocho271828/Mitaka.git

@@ -1,0 +1,54 @@
+mkdir -p "build-unit4-root-san"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/astronomy.cpp -o build-unit4-root-san/astronomy.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/catalog.cpp -o build-unit4-root-san/catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/ephemeris.cpp -o build-unit4-root-san/ephemeris.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/rotation.cpp -o build-unit4-root-san/rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/lunar.cpp -o build-unit4-root-san/lunar.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/observation.cpp -o build-unit4-root-san/observation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/extended_catalog.cpp -o build-unit4-root-san/extended_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/place_catalog.cpp -o build-unit4-root-san/place_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_catalog.cpp -o build-unit4-root-san/small_body_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_text.cpp -o build-unit4-root-san/small_body_text.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/small_body_orbit.cpp -o build-unit4-root-san/small_body_orbit.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog.cpp -o build-unit4-root-san/satellite_catalog.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_catalog_parser.cpp -o build-unit4-root-san/satellite_catalog_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_position.cpp -o build-unit4-root-san/satellite_position.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_rotation.cpp -o build-unit4-root-san/satellite_rotation.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_model.cpp -o build-unit4-root-san/satellite_model.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_registration.cpp -o build-unit4-root-san/satellite_registration.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/satellite_absolute.cpp -o build-unit4-root-san/satellite_absolute.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory.cpp -o build-unit4-root-san/spacecraft_trajectory.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/spacecraft_trajectory_parser.cpp -o build-unit4-root-san/spacecraft_trajectory_parser.o
+xcrun ar rcs build-unit4-root-san/libmitaka_core.a build-unit4-root-san/astronomy.o build-unit4-root-san/catalog.o build-unit4-root-san/ephemeris.o build-unit4-root-san/rotation.o build-unit4-root-san/lunar.o build-unit4-root-san/observation.o build-unit4-root-san/extended_catalog.o build-unit4-root-san/place_catalog.o build-unit4-root-san/small_body_catalog.o build-unit4-root-san/small_body_text.o build-unit4-root-san/small_body_orbit.o build-unit4-root-san/satellite_catalog.o build-unit4-root-san/satellite_catalog_parser.o build-unit4-root-san/satellite_position.o build-unit4-root-san/satellite_rotation.o build-unit4-root-san/satellite_model.o build-unit4-root-san/satellite_registration.o build-unit4-root-san/satellite_absolute.o build-unit4-root-san/spacecraft_trajectory.o build-unit4-root-san/spacecraft_trajectory_parser.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_astronomy.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_astronomy
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_catalog.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_ephemeris.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_ephemeris
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_rotation.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_lunar.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_observation.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_observation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_extended_catalog.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_extended_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_place_catalog.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_place_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_small_body_orbit.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_small_body_orbit
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_small_body_catalog.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_small_body_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_catalog.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_satellite_catalog
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_position.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_satellite_position
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_rotation.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_satellite_rotation
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_model.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_satellite_model
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_absolute.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_satellite_absolute
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_spacecraft_trajectory.cpp build-unit4-root-san/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-root-san/test_spacecraft_trajectory
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 103 checks passed
+satellite absolute: 153 checks passed
+spacecraft trajectory: 145 checks PASS

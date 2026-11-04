@@ -1,0 +1,16 @@
+# Orcus
+
+Name: Orcus
+DisplayName: Orcus
+No: 90482
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 39.343000
+e: 0.221000
+w: 72.500000
+M0: 161.600006
+i: 20.600000
+node: 268.700012
+Size: 500 500 500
+B_V: 0.68

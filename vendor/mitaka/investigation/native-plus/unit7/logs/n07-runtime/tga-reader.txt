@@ -1,0 +1,467 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  44dda0: 57                           	push	edi
+  44dda1: 56                           	push	esi
+  44dda2: 55                           	push	ebp
+  44dda3: 53                           	push	ebx
+  44dda4: 83 ec 38                     	sub	esp, 0x38
+  44dda7: 8b e9                        	mov	ebp, ecx
+  44dda9: bf 01 00 00 00               	mov	edi, 0x1
+  44ddae: 8b 74 24 4c                  	mov	esi, dword ptr [esp + 0x4c]
+  44ddb2: 8d 44 24 22                  	lea	eax, [esp + 0x22]
+  44ddb6: 56                           	push	esi
+  44ddb7: 57                           	push	edi
+  44ddb8: 57                           	push	edi
+  44ddb9: 50                           	push	eax
+  44ddba: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44ddc0: 8b d8                        	mov	ebx, eax
+  44ddc2: 8d 44 24 33                  	lea	eax, [esp + 0x33]
+  44ddc6: 56                           	push	esi
+  44ddc7: 57                           	push	edi
+  44ddc8: 57                           	push	edi
+  44ddc9: 50                           	push	eax
+  44ddca: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44ddd0: 03 d8                        	add	ebx, eax
+  44ddd2: 8d 44 24 44                  	lea	eax, [esp + 0x44]
+  44ddd6: 56                           	push	esi
+  44ddd7: 57                           	push	edi
+  44ddd8: 57                           	push	edi
+  44ddd9: 50                           	push	eax
+  44ddda: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44dde0: 83 c4 30                     	add	esp, 0x30
+  44dde3: 03 c3                        	add	eax, ebx
+  44dde5: 83 f8 03                     	cmp	eax, 0x3
+  44dde8: 0f 85 1a 01 00 00            	jne	0x44df08 <.text+0x4cf08>
+  44ddee: 0f be 44 24 24               	movsx	eax, byte ptr [esp + 0x24]
+  44ddf3: 83 f8 02                     	cmp	eax, 0x2
+  44ddf6: 74 11                        	je	0x44de09 <.text+0x4ce09>
+  44ddf8: 83 f8 0a                     	cmp	eax, 0xa
+  44ddfb: 74 0c                        	je	0x44de09 <.text+0x4ce09>
+  44ddfd: 33 c0                        	xor	eax, eax
+  44ddff: 83 c4 38                     	add	esp, 0x38
+  44de02: 5b                           	pop	ebx
+  44de03: 5d                           	pop	ebp
+  44de04: 5e                           	pop	esi
+  44de05: 5f                           	pop	edi
+  44de06: c2 04 00                     	ret	0x4
+  44de09: 0f be 44 24 23               	movsx	eax, byte ptr [esp + 0x23]
+  44de0e: 85 c0                        	test	eax, eax
+  44de10: 74 11                        	je	0x44de23 <.text+0x4ce23>
+  44de12: 83 f8 01                     	cmp	eax, 0x1
+  44de15: 74 0c                        	je	0x44de23 <.text+0x4ce23>
+  44de17: 33 c0                        	xor	eax, eax
+  44de19: 83 c4 38                     	add	esp, 0x38
+  44de1c: 5b                           	pop	ebx
+  44de1d: 5d                           	pop	ebp
+  44de1e: 5e                           	pop	esi
+  44de1f: 5f                           	pop	edi
+  44de20: c2 04 00                     	ret	0x4
+  44de23: 8d 44 24 26                  	lea	eax, [esp + 0x26]
+  44de27: 56                           	push	esi
+  44de28: 6a 01                        	push	0x1
+  44de2a: 6a 02                        	push	0x2
+  44de2c: 50                           	push	eax
+  44de2d: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44de33: 8b d8                        	mov	ebx, eax
+  44de35: 8d 44 24 38                  	lea	eax, [esp + 0x38]
+  44de39: 56                           	push	esi
+  44de3a: 6a 01                        	push	0x1
+  44de3c: 6a 02                        	push	0x2
+  44de3e: 50                           	push	eax
+  44de3f: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44de45: 03 d8                        	add	ebx, eax
+  44de47: 8d 44 24 4a                  	lea	eax, [esp + 0x4a]
+  44de4b: 56                           	push	esi
+  44de4c: 57                           	push	edi
+  44de4d: 57                           	push	edi
+  44de4e: 50                           	push	eax
+  44de4f: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44de55: 8b d0                        	mov	edx, eax
+  44de57: 8d 4c 24 5c                  	lea	ecx, [esp + 0x5c]
+  44de5b: 56                           	push	esi
+  44de5c: 6a 01                        	push	0x1
+  44de5e: 03 d3                        	add	edx, ebx
+  44de60: 6a 02                        	push	0x2
+  44de62: 51                           	push	ecx
+  44de63: 89 54 24 40                  	mov	dword ptr [esp + 0x40], edx
+  44de67: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44de6d: 8b 54 24 40                  	mov	edx, dword ptr [esp + 0x40]
+  44de71: 8b d8                        	mov	ebx, eax
+  44de73: 8d 44 24 6e                  	lea	eax, [esp + 0x6e]
+  44de77: 56                           	push	esi
+  44de78: 6a 01                        	push	0x1
+  44de7a: 03 da                        	add	ebx, edx
+  44de7c: 6a 02                        	push	0x2
+  44de7e: 50                           	push	eax
+  44de7f: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44de85: 8b d0                        	mov	edx, eax
+  44de87: 8d 8c 24 80 00 00 00         	lea	ecx, [esp + 0x80]
+  44de8e: 56                           	push	esi
+  44de8f: 6a 01                        	push	0x1
+  44de91: 03 d3                        	add	edx, ebx
+  44de93: 6a 02                        	push	0x2
+  44de95: 51                           	push	ecx
+  44de96: 89 54 24 60                  	mov	dword ptr [esp + 0x60], edx
+  44de9a: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44dea0: 8b 54 24 60                  	mov	edx, dword ptr [esp + 0x60]
+  44dea4: 8b d8                        	mov	ebx, eax
+  44dea6: 8d 84 24 92 00 00 00         	lea	eax, [esp + 0x92]
+  44dead: 56                           	push	esi
+  44deae: 6a 01                        	push	0x1
+  44deb0: 03 da                        	add	ebx, edx
+  44deb2: 6a 02                        	push	0x2
+  44deb4: 50                           	push	eax
+  44deb5: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44debb: 83 c4 70                     	add	esp, 0x70
+  44debe: 8b d0                        	mov	edx, eax
+  44dec0: 8d 4c 24 34                  	lea	ecx, [esp + 0x34]
+  44dec4: 56                           	push	esi
+  44dec5: 57                           	push	edi
+  44dec6: 03 d3                        	add	edx, ebx
+  44dec8: 57                           	push	edi
+  44dec9: 51                           	push	ecx
+  44deca: 89 54 24 10                  	mov	dword ptr [esp + 0x10], edx
+  44dece: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44ded4: 8b 54 24 10                  	mov	edx, dword ptr [esp + 0x10]
+  44ded8: 8b d8                        	mov	ebx, eax
+  44deda: 8d 44 24 45                  	lea	eax, [esp + 0x45]
+  44dede: 56                           	push	esi
+  44dedf: 57                           	push	edi
+  44dee0: 03 da                        	add	ebx, edx
+  44dee2: 57                           	push	edi
+  44dee3: 50                           	push	eax
+  44dee4: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44deea: 83 c4 20                     	add	esp, 0x20
+  44deed: 03 c3                        	add	eax, ebx
+  44deef: 83 f8 09                     	cmp	eax, 0x9
+  44def2: 75 14                        	jne	0x44df08 <.text+0x4cf08>
+  44def4: 0f be 44 24 34               	movsx	eax, byte ptr [esp + 0x34]
+  44def9: 83 f8 10                     	cmp	eax, 0x10
+  44defc: 74 16                        	je	0x44df14 <.text+0x4cf14>
+  44defe: 83 f8 18                     	cmp	eax, 0x18
+  44df01: 74 11                        	je	0x44df14 <.text+0x4cf14>
+  44df03: 83 f8 20                     	cmp	eax, 0x20
+  44df06: 74 0c                        	je	0x44df14 <.text+0x4cf14>
+  44df08: 33 c0                        	xor	eax, eax
+  44df0a: 83 c4 38                     	add	esp, 0x38
+  44df0d: 5b                           	pop	ebx
+  44df0e: 5d                           	pop	ebp
+  44df0f: 5e                           	pop	esi
+  44df10: 5f                           	pop	edi
+  44df11: c2 04 00                     	ret	0x4
+  44df14: 0f be 4c 24 22               	movsx	ecx, byte ptr [esp + 0x22]
+  44df19: 0f bf 44 24 28               	movsx	eax, word ptr [esp + 0x28]
+  44df1e: 0f be 54 24 23               	movsx	edx, byte ptr [esp + 0x23]
+  44df23: 0f af d0                     	imul	edx, eax
+  44df26: 03 ca                        	add	ecx, edx
+  44df28: 6a 01                        	push	0x1
+  44df2a: 51                           	push	ecx
+  44df2b: 56                           	push	esi
+  44df2c: ff 15 14 56 c2 00            	call	dword ptr [0xc25614]
+  44df32: 83 c4 0c                     	add	esp, 0xc
+  44df35: 0f bf 5c 24 30               	movsx	ebx, word ptr [esp + 0x30]
+  44df3a: 0f bf 4c 24 32               	movsx	ecx, word ptr [esp + 0x32]
+  44df3f: 8b 45 00                     	mov	eax, dword ptr [ebp]
+  44df42: 3b c3                        	cmp	eax, ebx
+  44df44: 75 12                        	jne	0x44df58 <.text+0x4cf58>
+  44df46: 8b 55 04                     	mov	edx, dword ptr [ebp + 0x4]
+  44df49: 3b d1                        	cmp	edx, ecx
+  44df4b: 75 0b                        	jne	0x44df58 <.text+0x4cf58>
+  44df4d: 83 7d 08 03                  	cmp	dword ptr [ebp + 0x8], 0x3
+  44df51: 75 05                        	jne	0x44df58 <.text+0x4cf58>
+  44df53: 8b 5d 0c                     	mov	ebx, dword ptr [ebp + 0xc]
+  44df56: eb 47                        	jmp	0x44df9f <.text+0x4cf9f>
+  44df58: 8b 45 0c                     	mov	eax, dword ptr [ebp + 0xc]
+  44df5b: 85 c0                        	test	eax, eax
+  44df5d: 74 11                        	je	0x44df70 <.text+0x4cf70>
+  44df5f: 50                           	push	eax
+  44df60: 89 4c 24 04                  	mov	dword ptr [esp + 0x4], ecx
+  44df64: e8 95 10 64 00               	call	0xa8effe <.text+0x68dffe>
+  44df69: 8b 4c 24 04                  	mov	ecx, dword ptr [esp + 0x4]
+  44df6d: 83 c4 04                     	add	esp, 0x4
+  44df70: c7 45 0c 00 00 00 00         	mov	dword ptr [ebp + 0xc], 0x0
+  44df77: 89 5d 00                     	mov	dword ptr [ebp], ebx
+  44df7a: 89 4d 04                     	mov	dword ptr [ebp + 0x4], ecx
+  44df7d: 8d 04 5b                     	lea	eax, [ebx + 2*ebx]
+  44df80: 0f af c1                     	imul	eax, ecx
+  44df83: 89 45 10                     	mov	dword ptr [ebp + 0x10], eax
+  44df86: c7 45 08 03 00 00 00         	mov	dword ptr [ebp + 0x8], 0x3
+  44df8d: 50                           	push	eax
+  44df8e: e8 cb 0b 64 00               	call	0xa8eb5e <.text+0x68db5e>
+  44df93: 59                           	pop	ecx
+  44df94: 8b d8                        	mov	ebx, eax
+  44df96: 8b 45 00                     	mov	eax, dword ptr [ebp]
+  44df99: 8b 55 04                     	mov	edx, dword ptr [ebp + 0x4]
+  44df9c: 89 5d 0c                     	mov	dword ptr [ebp + 0xc], ebx
+  44df9f: 0f af c2                     	imul	eax, edx
+  44dfa2: 0f be 4c 24 34               	movsx	ecx, byte ptr [esp + 0x34]
+  44dfa7: 8b d1                        	mov	edx, ecx
+  44dfa9: c1 fa 02                     	sar	edx, 0x2
+  44dfac: c1 ea 1d                     	shr	edx, 0x1d
+  44dfaf: 03 d1                        	add	edx, ecx
+  44dfb1: c1 fa 03                     	sar	edx, 0x3
+  44dfb4: 0f be 4c 24 24               	movsx	ecx, byte ptr [esp + 0x24]
+  44dfb9: 83 f9 02                     	cmp	ecx, 0x2
+  44dfbc: 0f 85 91 00 00 00            	jne	0x44e053 <.text+0x4d053>
+  44dfc2: 85 c0                        	test	eax, eax
+  44dfc4: 0f 86 7f 01 00 00            	jbe	0x44e149 <.text+0x4d149>
+  44dfca: 89 44 24 10                  	mov	dword ptr [esp + 0x10], eax
+  44dfce: 8d 4c 24 18                  	lea	ecx, [esp + 0x18]
+  44dfd2: 33 ff                        	xor	edi, edi
+  44dfd4: 8b ea                        	mov	ebp, edx
+  44dfd6: ff 74 24 4c                  	push	dword ptr [esp + 0x4c]
+  44dfda: 55                           	push	ebp
+  44dfdb: 6a 01                        	push	0x1
+  44dfdd: 8d 44 24 24                  	lea	eax, [esp + 0x24]
+  44dfe1: 50                           	push	eax
+  44dfe2: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44dfe8: 83 c4 10                     	add	esp, 0x10
+  44dfeb: 3b c5                        	cmp	eax, ebp
+  44dfed: 0f 85 65 01 00 00            	jne	0x44e158 <.text+0x4d158>
+  44dff3: 83 fd 02                     	cmp	ebp, 0x2
+  44dff6: 75 35                        	jne	0x44e02d <.text+0x4d02d>
+  44dff8: 0f b6 44 24 19               	movzx	eax, byte ptr [esp + 0x19]
+  44dffd: 0f b6 74 24 18               	movzx	esi, byte ptr [esp + 0x18]
+  44e002: c1 e0 08                     	shl	eax, 0x8
+  44e005: 03 c6                        	add	eax, esi
+  44e007: 8b c8                        	mov	ecx, eax
+  44e009: c1 e8 0a                     	shr	eax, 0xa
+  44e00c: 83 e0 1f                     	and	eax, 0x1f
+  44e00f: c1 e0 03                     	shl	eax, 0x3
+  44e012: 88 03                        	mov	byte ptr [ebx], al
+  44e014: 8b c1                        	mov	eax, ecx
+  44e016: c1 e9 05                     	shr	ecx, 0x5
+  44e019: 83 e1 1f                     	and	ecx, 0x1f
+  44e01c: c1 e1 03                     	shl	ecx, 0x3
+  44e01f: 88 4b 01                     	mov	byte ptr [ebx + 0x1], cl
+  44e022: 83 e0 1f                     	and	eax, 0x1f
+  44e025: c1 e0 03                     	shl	eax, 0x3
+  44e028: 88 43 02                     	mov	byte ptr [ebx + 0x2], al
+  44e02b: eb 17                        	jmp	0x44e044 <.text+0x4d044>
+  44e02d: 0f b6 44 24 1a               	movzx	eax, byte ptr [esp + 0x1a]
+  44e032: 0f b6 4c 24 19               	movzx	ecx, byte ptr [esp + 0x19]
+  44e037: 88 03                        	mov	byte ptr [ebx], al
+  44e039: 0f b6 44 24 18               	movzx	eax, byte ptr [esp + 0x18]
+  44e03e: 88 4b 01                     	mov	byte ptr [ebx + 0x1], cl
+  44e041: 88 43 02                     	mov	byte ptr [ebx + 0x2], al
+  44e044: 83 c3 03                     	add	ebx, 0x3
+  44e047: 47                           	inc	edi
+  44e048: 3b 7c 24 10                  	cmp	edi, dword ptr [esp + 0x10]
+  44e04c: 72 88                        	jb	0x44dfd6 <.text+0x4cfd6>
+  44e04e: e9 f6 00 00 00               	jmp	0x44e149 <.text+0x4d149>
+  44e053: 83 f9 0a                     	cmp	ecx, 0xa
+  44e056: 0f 85 ed 00 00 00            	jne	0x44e149 <.text+0x4d149>
+  44e05c: 85 c0                        	test	eax, eax
+  44e05e: 0f 86 e5 00 00 00            	jbe	0x44e149 <.text+0x4d149>
+  44e064: 8d 4c 24 20                  	lea	ecx, [esp + 0x20]
+  44e068: 89 54 24 1c                  	mov	dword ptr [esp + 0x1c], edx
+  44e06c: 89 44 24 10                  	mov	dword ptr [esp + 0x10], eax
+  44e070: 33 ed                        	xor	ebp, ebp
+  44e072: 89 5c 24 0c                  	mov	dword ptr [esp + 0xc], ebx
+  44e076: 8b 74 24 0c                  	mov	esi, dword ptr [esp + 0xc]
+  44e07a: ff 74 24 4c                  	push	dword ptr [esp + 0x4c]
+  44e07e: b8 01 00 00 00               	mov	eax, 0x1
+  44e083: 50                           	push	eax
+  44e084: 50                           	push	eax
+  44e085: 8d 54 24 2c                  	lea	edx, [esp + 0x2c]
+  44e089: 52                           	push	edx
+  44e08a: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44e090: 83 c4 10                     	add	esp, 0x10
+  44e093: 83 f8 01                     	cmp	eax, 0x1
+  44e096: 0f 85 cd 01 00 00            	jne	0x44e269 <.text+0x4d269>
+  44e09c: 0f b6 5c 24 20               	movzx	ebx, byte ptr [esp + 0x20]
+  44e0a1: f7 c3 80 00 00 00            	test	ebx, 0x80
+  44e0a7: 0f 85 d5 00 00 00            	jne	0x44e182 <.text+0x4d182>
+  44e0ad: 89 5c 24 14                  	mov	dword ptr [esp + 0x14], ebx
+  44e0b1: 8b de                        	mov	ebx, esi
+  44e0b3: 33 f6                        	xor	esi, esi
+  44e0b5: ff 74 24 4c                  	push	dword ptr [esp + 0x4c]
+  44e0b9: ff 74 24 20                  	push	dword ptr [esp + 0x20]
+  44e0bd: 6a 01                        	push	0x1
+  44e0bf: 8d 44 24 24                  	lea	eax, [esp + 0x24]
+  44e0c3: 50                           	push	eax
+  44e0c4: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44e0ca: 83 c4 10                     	add	esp, 0x10
+  44e0cd: 3b 44 24 1c                  	cmp	eax, dword ptr [esp + 0x1c]
+  44e0d1: 0f 85 96 00 00 00            	jne	0x44e16d <.text+0x4d16d>
+  44e0d7: 83 7c 24 1c 02               	cmp	dword ptr [esp + 0x1c], 0x2
+  44e0dc: 75 35                        	jne	0x44e113 <.text+0x4d113>
+  44e0de: 0f b6 44 24 19               	movzx	eax, byte ptr [esp + 0x19]
+  44e0e3: 0f b6 7c 24 18               	movzx	edi, byte ptr [esp + 0x18]
+  44e0e8: c1 e0 08                     	shl	eax, 0x8
+  44e0eb: 03 c7                        	add	eax, edi
+  44e0ed: 8b d0                        	mov	edx, eax
+  44e0ef: 8b c8                        	mov	ecx, eax
+  44e0f1: c1 e8 0a                     	shr	eax, 0xa
+  44e0f4: 83 e0 1f                     	and	eax, 0x1f
+  44e0f7: c1 e0 03                     	shl	eax, 0x3
+  44e0fa: 88 03                        	mov	byte ptr [ebx], al
+  44e0fc: c1 ea 05                     	shr	edx, 0x5
+  44e0ff: 83 e2 1f                     	and	edx, 0x1f
+  44e102: c1 e2 03                     	shl	edx, 0x3
+  44e105: 88 53 01                     	mov	byte ptr [ebx + 0x1], dl
+  44e108: 83 e1 1f                     	and	ecx, 0x1f
+  44e10b: c1 e1 03                     	shl	ecx, 0x3
+  44e10e: 88 4b 02                     	mov	byte ptr [ebx + 0x2], cl
+  44e111: eb 17                        	jmp	0x44e12a <.text+0x4d12a>
+  44e113: 0f b6 44 24 1a               	movzx	eax, byte ptr [esp + 0x1a]
+  44e118: 0f b6 54 24 19               	movzx	edx, byte ptr [esp + 0x19]
+  44e11d: 0f b6 4c 24 18               	movzx	ecx, byte ptr [esp + 0x18]
+  44e122: 88 03                        	mov	byte ptr [ebx], al
+  44e124: 88 53 01                     	mov	byte ptr [ebx + 0x1], dl
+  44e127: 88 4b 02                     	mov	byte ptr [ebx + 0x2], cl
+  44e12a: 83 c3 03                     	add	ebx, 0x3
+  44e12d: 45                           	inc	ebp
+  44e12e: 46                           	inc	esi
+  44e12f: 3b 74 24 14                  	cmp	esi, dword ptr [esp + 0x14]
+  44e133: 7e 80                        	jle	0x44e0b5 <.text+0x4d0b5>
+  44e135: 8d b6 00 00 00 00            	lea	esi, [esi]
+  44e13b: 89 5c 24 0c                  	mov	dword ptr [esp + 0xc], ebx
+  44e13f: 3b 6c 24 10                  	cmp	ebp, dword ptr [esp + 0x10]
+  44e143: 0f 82 2d ff ff ff            	jb	0x44e076 <.text+0x4d076>
+  44e149: b8 01 00 00 00               	mov	eax, 0x1
+  44e14e: 83 c4 38                     	add	esp, 0x38
+  44e151: 5b                           	pop	ebx
+  44e152: 5d                           	pop	ebp
+  44e153: 5e                           	pop	esi
+  44e154: 5f                           	pop	edi
+  44e155: c2 04 00                     	ret	0x4
+  44e158: c7 04 24 bc b0 c2 00         	mov	dword ptr [esp], 0xc2b0bc
+  44e15f: 8d 04 24                     	lea	eax, [esp]
+  44e162: 68 a0 05 d7 00               	push	0xd705a0
+  44e167: 50                           	push	eax
+  44e168: e8 a9 0e 64 00               	call	0xa8f016 <.text+0x68e016>
+  44e16d: c7 04 24 bc b0 c2 00         	mov	dword ptr [esp], 0xc2b0bc
+  44e174: 8d 04 24                     	lea	eax, [esp]
+  44e177: 68 a0 05 d7 00               	push	0xd705a0
+  44e17c: 50                           	push	eax
+  44e17d: e8 94 0e 64 00               	call	0xa8f016 <.text+0x68e016>
+  44e182: 8d 44 24 18                  	lea	eax, [esp + 0x18]
+  44e186: 83 e3 7f                     	and	ebx, 0x7f
+  44e189: 88 5c 24 20                  	mov	byte ptr [esp + 0x20], bl
+  44e18d: ff 74 24 4c                  	push	dword ptr [esp + 0x4c]
+  44e191: ff 74 24 20                  	push	dword ptr [esp + 0x20]
+  44e195: 6a 01                        	push	0x1
+  44e197: 50                           	push	eax
+  44e198: ff 15 08 56 c2 00            	call	dword ptr [0xc25608]
+  44e19e: 83 c4 10                     	add	esp, 0x10
+  44e1a1: 3b 44 24 1c                  	cmp	eax, dword ptr [esp + 0x1c]
+  44e1a5: 0f 85 a9 00 00 00            	jne	0x44e254 <.text+0x4d254>
+  44e1ab: 83 7c 24 1c 02               	cmp	dword ptr [esp + 0x1c], 0x2
+  44e1b0: 0f b6 44 24 19               	movzx	eax, byte ptr [esp + 0x19]
+  44e1b5: 0f b6 54 24 18               	movzx	edx, byte ptr [esp + 0x18]
+  44e1ba: 89 44 24 08                  	mov	dword ptr [esp + 0x8], eax
+  44e1be: 89 14 24                     	mov	dword ptr [esp], edx
+  44e1c1: 75 5e                        	jne	0x44e221 <.text+0x4d221>
+  44e1c3: 43                           	inc	ebx
+  44e1c4: 89 5c 24 14                  	mov	dword ptr [esp + 0x14], ebx
+  44e1c8: 33 ff                        	xor	edi, edi
+  44e1ca: c1 e0 08                     	shl	eax, 0x8
+  44e1cd: 03 04 24                     	add	eax, dword ptr [esp]
+  44e1d0: 89 44 24 08                  	mov	dword ptr [esp + 0x8], eax
+  44e1d4: 83 e0 1f                     	and	eax, 0x1f
+  44e1d7: 8b 54 24 08                  	mov	edx, dword ptr [esp + 0x8]
+  44e1db: c1 e0 03                     	shl	eax, 0x3
+  44e1de: c1 ea 05                     	shr	edx, 0x5
+  44e1e1: 83 e2 1f                     	and	edx, 0x1f
+  44e1e4: c1 e2 03                     	shl	edx, 0x3
+  44e1e7: 89 54 24 04                  	mov	dword ptr [esp + 0x4], edx
+  44e1eb: 8b 54 24 08                  	mov	edx, dword ptr [esp + 0x8]
+  44e1ef: c1 ea 0a                     	shr	edx, 0xa
+  44e1f2: 83 e2 1f                     	and	edx, 0x1f
+  44e1f5: c1 e2 03                     	shl	edx, 0x3
+  44e1f8: 89 54 24 08                  	mov	dword ptr [esp + 0x8], edx
+  44e1fc: 8b ca                        	mov	ecx, edx
+  44e1fe: 8b 54 24 04                  	mov	edx, dword ptr [esp + 0x4]
+  44e202: 8d 1c 7f                     	lea	ebx, [edi + 2*edi]
+  44e205: 88 0c 1e                     	mov	byte ptr [esi + ebx], cl
+  44e208: 88 54 1e 01                  	mov	byte ptr [esi + ebx + 0x1], dl
+  44e20c: 45                           	inc	ebp
+  44e20d: 88 44 1e 02                  	mov	byte ptr [esi + ebx + 0x2], al
+  44e211: 8d 5c 1e 03                  	lea	ebx, [esi + ebx + 0x3]
+  44e215: 47                           	inc	edi
+  44e216: 3b 7c 24 14                  	cmp	edi, dword ptr [esp + 0x14]
+  44e21a: 72 e6                        	jb	0x44e202 <.text+0x4d202>
+  44e21c: e9 14 ff ff ff               	jmp	0x44e135 <.text+0x4d135>
+  44e221: 43                           	inc	ebx
+  44e222: 0f b6 44 24 1a               	movzx	eax, byte ptr [esp + 0x1a]
+  44e227: 8b ca                        	mov	ecx, edx
+  44e229: 8b d0                        	mov	edx, eax
+  44e22b: 8b 44 24 08                  	mov	eax, dword ptr [esp + 0x8]
+  44e22f: 89 5c 24 14                  	mov	dword ptr [esp + 0x14], ebx
+  44e233: 33 ff                        	xor	edi, edi
+  44e235: 8d 1c 7f                     	lea	ebx, [edi + 2*edi]
+  44e238: 88 14 1e                     	mov	byte ptr [esi + ebx], dl
+  44e23b: 88 44 1e 01                  	mov	byte ptr [esi + ebx + 0x1], al
+  44e23f: 45                           	inc	ebp
+  44e240: 88 4c 1e 02                  	mov	byte ptr [esi + ebx + 0x2], cl
+  44e244: 8d 5c 1e 03                  	lea	ebx, [esi + ebx + 0x3]
+  44e248: 47                           	inc	edi
+  44e249: 3b 7c 24 14                  	cmp	edi, dword ptr [esp + 0x14]
+  44e24d: 72 e6                        	jb	0x44e235 <.text+0x4d235>
+  44e24f: e9 e1 fe ff ff               	jmp	0x44e135 <.text+0x4d135>
+  44e254: c7 04 24 bc b0 c2 00         	mov	dword ptr [esp], 0xc2b0bc
+  44e25b: 8d 04 24                     	lea	eax, [esp]
+  44e25e: 68 a0 05 d7 00               	push	0xd705a0
+  44e263: 50                           	push	eax
+  44e264: e8 ad 0d 64 00               	call	0xa8f016 <.text+0x68e016>
+  44e269: c7 04 24 bc b0 c2 00         	mov	dword ptr [esp], 0xc2b0bc
+  44e270: 8d 04 24                     	lea	eax, [esp]
+  44e273: 68 a0 05 d7 00               	push	0xd705a0
+  44e278: 50                           	push	eax
+  44e279: e8 98 0d 64 00               	call	0xa8f016 <.text+0x68e016>
+  44e27e: 8b f6                        	mov	esi, esi
+  44e280: 57                           	push	edi
+  44e281: 56                           	push	esi
+  44e282: 55                           	push	ebp
+  44e283: 53                           	push	ebx
+  44e284: 83 ec 1c                     	sub	esp, 0x1c
+  44e287: 8b f1                        	mov	esi, ecx
+  44e289: 83 7e 0c 00                  	cmp	dword ptr [esi + 0xc], 0x0
+  44e28d: 74 18                        	je	0x44e2a7 <.text+0x4d2a7>
+  44e28f: 68 20 ab c2 00               	push	0xc2ab20
+  44e294: ff 74 24 34                  	push	dword ptr [esp + 0x34]
+  44e298: ff 15 50 56 c2 00            	call	dword ptr [0xc25650]
+  44e29e: 83 c4 08                     	add	esp, 0x8
+  44e2a1: 8b e8                        	mov	ebp, eax
+  44e2a3: 85 ed                        	test	ebp, ebp
+  44e2a5: 75 0c                        	jne	0x44e2b3 <.text+0x4d2b3>
+  44e2a7: 33 c0                        	xor	eax, eax
+  44e2a9: 83 c4 1c                     	add	esp, 0x1c
+  44e2ac: 5b                           	pop	ebx
+  44e2ad: 5d                           	pop	ebp
+  44e2ae: 5e                           	pop	esi
+  44e2af: 5f                           	pop	edi
+  44e2b0: c2 04 00                     	ret	0x4
+  44e2b3: 8b 16                        	mov	edx, dword ptr [esi]
+  44e2b5: 8b 4e 04                     	mov	ecx, dword ptr [esi + 0x4]
+  44e2b8: c6 44 24 06 02               	mov	byte ptr [esp + 0x6], 0x2
+  44e2bd: 33 c0                        	xor	eax, eax
+  44e2bf: 66 89 44 24 04               	mov	word ptr [esp + 0x4], ax
+  44e2c4: 89 44 24 08                  	mov	dword ptr [esp + 0x8], eax
+  44e2c8: 88 44 24 0c                  	mov	byte ptr [esp + 0xc], al
+  44e2cc: 89 44 24 0e                  	mov	dword ptr [esp + 0xe], eax
+  44e2d0: 66 89 54 24 12               	mov	word ptr [esp + 0x12], dx
+  44e2d5: bb 18 00 00 00               	mov	ebx, 0x18
+  44e2da: 66 89 4c 24 14               	mov	word ptr [esp + 0x14], cx
+  44e2df: 66 89 5c 24 16               	mov	word ptr [esp + 0x16], bx
+  44e2e4: 8d 44 24 04                  	lea	eax, [esp + 0x4]
+  44e2e8: 55                           	push	ebp
+  44e2e9: bf 01 00 00 00               	mov	edi, 0x1
+  44e2ee: 57                           	push	edi
+  44e2ef: 57                           	push	edi
+  44e2f0: 50                           	push	eax
+  44e2f1: ff 15 68 56 c2 00            	call	dword ptr [0xc25668]
+  44e2f7: 8b f8                        	mov	edi, eax
+  44e2f9: 8d 54 24 15                  	lea	edx, [esp + 0x15]
+  44e2fd: 55                           	push	ebp
+  44e2fe: b8 01 00 00 00               	mov	eax, 0x1
+  44e303: 50                           	push	eax
+  44e304: 50                           	push	eax
+  44e305: 52                           	push	edx
+  44e306: ff 15 68 56 c2 00            	call	dword ptr [0xc25668]
+  44e30c: 8d 54 24 26                  	lea	edx, [esp + 0x26]

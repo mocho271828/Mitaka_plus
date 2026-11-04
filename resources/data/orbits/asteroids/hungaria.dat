@@ -1,0 +1,16 @@
+# Hungaria
+
+Name: Hungaria
+DisplayName: Hungaria
+No: 434
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.944114
+e: 0.073571
+w: 123.971458
+M0: 341.451813
+i: 22.505541
+node: 175.445831
+Size: 500 500 500
+B_V: 0.75

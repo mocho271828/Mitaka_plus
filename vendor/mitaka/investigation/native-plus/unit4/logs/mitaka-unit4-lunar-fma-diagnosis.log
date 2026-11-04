@@ -1,0 +1,132 @@
+UNIT4 lunar arithmetic-profile diagnosis
+Apple clang version 21.0.0 (clang-2100.3.34.2)
+Target: arm64-apple-darwin25.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+Position source: sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp
+SHA256: e6dbf3d1e14f37417943d05fce2ce7ddbb23775ac8519213b3bad46ed375e669
+No runtime source, compiler defaults, or comparison tolerances changed.
+
+Original-only dump: arm-default (/tmp/mitaka-unit4-lunar-investigate-normal-dump.log)
+JD 2415020.5
+position J2000 equatorial AU {0.00016353511842929789,-0.0022715366457242976,-0.00093358837226923503}
+RA/DEC/W degrees {273.74642433765649,66.282667552219053,-481225.0200413235}
+basis J2000 ecliptic {{-0.14621818255626562,0.98922109267599878,0.0078659325477374656},{-0.98890318779541764,-0.14637319751815603,0.025404177144160742},{0.026281709571555793,-0.0040640931600847514,0.99964631489781552}}
+JD 2451545
+position J2000 equatorial AU {-0.0019487158434038107,-0.0017826753996118328,-0.00050866105949668491}
+RA/DEC/W degrees {266.85773344495135,65.641102747845352,41.195263980745203}
+basis J2000 ecliptic {{0.7842270520919169,0.61987147459511771,0.027336527769559568},{-0.62006191525085563,0.78455064114534268,-0.0018742288740515019},{-0.022608671404182476,-0.015480518780258259,0.99962453026905651}}
+JD 2461342.5
+position J2000 equatorial AU {0.00068081714196286433,0.0020562891351227899,0.0011145543535771747}
+RA/DEC/W degrees {272.23450064678173,67.808914259329114,129131.60891814462}
+basis J2000 ecliptic {{-0.28100378937384857,-0.95937316124961902,0.02529837606349453},{0.95959366874833041,-0.28127755760201356,-0.0079326217334050562},{0.014726209819811228,0.022047064733387516,0.99964847105419252}}
+JD 2487980.5
+position J2000 equatorial AU {0.0013329808753983834,0.0020144422400323317,0.0011136831814718244}
+RA/DEC/W degrees {270.37006733985373,68.125108568822512,480125.15035722125}
+basis J2000 ecliptic {{-0.41479082038731951,-0.90954965908181784,0.025845560287275578},{0.90991361367103074,-0.4146971294847267,0.0091381865407639627},{0.002406445208279713,0.027307663050443246,0.99962417965962735}}
+
+Original-only dump: x86-default (/tmp/mitaka-unit4-lunar-investigate-x86-dump.log)
+JD 2415020.5
+position J2000 equatorial AU {0.00016353511843153116,-0.0022715366457242377,-0.00093358837226900095}
+RA/DEC/W degrees {273.74642433765649,66.282667552219053,-481225.02004132344}
+basis J2000 ecliptic {{-0.1462181825580644,0.98922109267573255,0.0078659325477836994},{-0.98890318779515163,-0.14637319751995542,0.025404177144146431},{0.026281709571555793,-0.0040640931600847696,0.99964631489781552}}
+JD 2451545
+position J2000 equatorial AU {-0.001948715843403804,-0.001782675399611827,-0.00050866105949668209}
+RA/DEC/W degrees {266.85773344495135,65.641102747845352,41.195263980745203}
+basis J2000 ecliptic {{0.78422705209191701,0.61987147459511771,0.027336527769559568},{-0.62006191525085563,0.78455064114534268,-0.0018742288740515017},{-0.022608671404182476,-0.015480518780258246,0.99962453026905651}}
+JD 2461342.5
+position J2000 equatorial AU {0.00068081714196285294,0.0020562891351227543,0.0011145543535771561}
+RA/DEC/W degrees {272.23450064678173,67.808914259329114,129131.60891814462}
+basis J2000 ecliptic {{-0.28100378937384857,-0.95937316124961902,0.025298376063494509},{0.95959366874833041,-0.28127755760201356,-0.0079326217334050684},{0.014726209819811232,0.022047064733387522,0.99964847105419241}}
+JD 2487980.5
+position J2000 equatorial AU {0.0013329808753899234,0.0020144422400365796,0.0011136831814736795}
+RA/DEC/W degrees {270.37006733985373,68.125108568822512,480125.15035722125}
+basis J2000 ecliptic {{-0.41479082038731957,-0.90954965908181784,0.025845560287275589},{0.90991361367103085,-0.41469712948472676,0.0091381865407639696},{0.0024064452082797135,0.027307663050443243,0.99962417965962747}}
+
+Original-only dump: arm-contract-off (/tmp/mitaka-unit4-lunar-investigate-arm-no-contract-dump.log)
+JD 2415020.5
+position J2000 equatorial AU {0.00016353511843153116,-0.0022715366457242377,-0.00093358837226900095}
+RA/DEC/W degrees {273.74642433765649,66.282667552219053,-481225.02004132344}
+basis J2000 ecliptic {{-0.1462181825580644,0.98922109267573255,0.0078659325477836994},{-0.98890318779515163,-0.14637319751995542,0.025404177144146431},{0.026281709571555793,-0.0040640931600847696,0.99964631489781552}}
+JD 2451545
+position J2000 equatorial AU {-0.001948715843403804,-0.001782675399611827,-0.00050866105949668209}
+RA/DEC/W degrees {266.85773344495135,65.641102747845352,41.195263980745203}
+basis J2000 ecliptic {{0.78422705209191701,0.61987147459511771,0.027336527769559568},{-0.62006191525085563,0.78455064114534268,-0.0018742288740515017},{-0.022608671404182476,-0.015480518780258246,0.99962453026905651}}
+JD 2461342.5
+position J2000 equatorial AU {0.00068081714196285294,0.0020562891351227543,0.0011145543535771561}
+RA/DEC/W degrees {272.23450064678173,67.808914259329114,129131.60891814462}
+basis J2000 ecliptic {{-0.28100378937384857,-0.95937316124961902,0.025298376063494506},{0.95959366874833041,-0.28127755760201356,-0.0079326217334050649},{0.014726209819811228,0.022047064733387522,0.99964847105419241}}
+JD 2487980.5
+position J2000 equatorial AU {0.0013329808753899236,0.0020144422400365796,0.0011136831814736795}
+RA/DEC/W degrees {270.37006733985373,68.125108568822512,480125.15035722125}
+basis J2000 ecliptic {{-0.41479082038731951,-0.90954965908181784,0.025845560287275589},{0.90991361367103085,-0.4146971294847267,0.0091381865407639679},{0.002406445208279713,0.027307663050443243,0.99962417965962747}}
+
+default ARM vs default x86
+JD=2415020.5, |dx|=2.2332667399399542e-15, |dy|=5.9847959921199845e-17, |dz|=2.3407924903962041e-16 AU
+JD=2451545, |dx|=6.7220534694101275e-18, |dy|=5.8546917314217239e-18, |dz|=2.8189256484623115e-18 AU
+JD=2461342.5, |dx|=1.1384122811097797e-17, |dy|=3.5561831257524545e-17, |dz|=1.8648277366750676e-17 AU
+JD=2487980.5, |dx|=8.4600295519043911e-15, |dy|=4.2479041117982064e-15, |dz|=1.8550699171226981e-15 AU
+Maximum component difference: 8.4600295519043911e-15 AU
+
+ARM contract-off vs default x86
+JD=2415020.5, |dx|=0, |dy|=0, |dz|=0 AU
+JD=2451545, |dx|=0, |dy|=0, |dz|=0 AU
+JD=2461342.5, |dx|=0, |dy|=0, |dz|=0 AU
+JD=2487980.5, |dx|=2.1684043449710089e-19, |dy|=0, |dz|=0 AU
+Maximum component difference: 2.1684043449710089e-19 AU
+
+Official-original assembly commands (native/core working directory):
+xcrun clang++ -Iinclude -O2 -std=c++17 -Wno-invalid-utf8 -S ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o /tmp/mitaka-unit4-lunar-original-arm.s
+arm: fmadd=119, x86 fused multiply-add mnemonic=0
+xcrun clang++ -Iinclude -O2 -std=c++17 -Wno-invalid-utf8 -ffp-contract=off -S ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o /tmp/mitaka-unit4-lunar-original-arm-off.s
+arm-off: fmadd=0, x86 fused multiply-add mnemonic=0
+xcrun clang++ -Iinclude -O2 -std=c++17 -Wno-invalid-utf8 -arch x86_64 -S ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o /tmp/mitaka-unit4-lunar-original-x86.s
+x86: fmadd=0, x86 fused multiply-add mnemonic=0
+
+Same-architecture original/native ARM comparison: /tmp/mitaka-unit4-lunar-investigate-normal.log
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types -Wno-missing-braces -c ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o build-unit4-absolute/reference_lunar_pos.o
+LC_ALL=C awk -f tests/extract_lunar_orientation.awk "../../sources/official/mitaka_source/Mitaka/mtk_satellite_orientation.cpp" > "build-unit4-absolute/reference_lunar_orientation.cpp.tmp"
+mv "build-unit4-absolute/reference_lunar_orientation.cpp.tmp" "build-unit4-absolute/reference_lunar_orientation.cpp"
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build-unit4-absolute/reference_lunar_pos.o build-unit4-absolute/reference_lunar_orientation.cpp build-unit4-absolute/libmitaka_core.a  -o build-unit4-absolute/test_lunar_upstream
+build-unit4-absolute/test_lunar_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=9.48019440727e-13
+
+Same-architecture original/native x86 comparison: /tmp/mitaka-unit4-lunar-investigate-x86.log
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types -Wno-missing-braces -c ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp -o build-unit4-absolute-x86/reference_lunar_pos.o
+LC_ALL=C awk -f tests/extract_lunar_orientation.awk "../../sources/official/mitaka_source/Mitaka/mtk_satellite_orientation.cpp" > "build-unit4-absolute-x86/reference_lunar_orientation.cpp.tmp"
+mv "build-unit4-absolute-x86/reference_lunar_orientation.cpp.tmp" "build-unit4-absolute-x86/reference_lunar_orientation.cpp"
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_lunar_upstream.cpp build-unit4-absolute-x86/reference_lunar_pos.o build-unit4-absolute-x86/reference_lunar_orientation.cpp build-unit4-absolute-x86/libmitaka_core.a -arch x86_64 -o build-unit4-absolute-x86/test_lunar_upstream
+build-unit4-absolute-x86/test_lunar_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=1.01671449038e-12
+
+Old fixture failure reproduced (expected exit 1): /tmp/mitaka-unit4-lunar-before-profile.log
+actual=0.00016353511843153116, expected=0.00016353511842929789, difference=2.2332667399399542e-15, tolerance=2.0000000000000002e-15
+original position.x: actual=0.000164, expected=0.000164
+
+Normal lunar final (exit 0): /tmp/mitaka-unit4-lunar-profile-normal.log
+lunar: 14172 checks passed
+
+ASan+UBSan lunar final (exit 0): /tmp/mitaka-unit4-lunar-profile-sanitize.log
+lunar: 14172 checks passed
+
+x86 full core final (exit 0): /tmp/mitaka-unit4-lunar-profile-x86-all.log
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_lunar.cpp build-unit4-root-x86/libmitaka_core.a -arch x86_64 -o build-unit4-root-x86/test_lunar
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -arch x86_64 tests/test_satellite_absolute.cpp build-unit4-root-x86/libmitaka_core.a -arch x86_64 -o build-unit4-root-x86/test_satellite_absolute
+astronomy: 1275 checks passed
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 103 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+
+Regeneration and contract-off build commands: native/core/LUNAR_PROVENANCE.md, ARM64 / x86_64 section.

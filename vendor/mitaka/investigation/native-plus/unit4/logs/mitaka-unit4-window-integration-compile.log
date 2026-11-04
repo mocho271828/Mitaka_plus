@@ -1,0 +1,3 @@
+make: `build-unit4-window/AppWindow.o' is up to date.
+mkdir -p "build-unit4-window"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppWindowCommands.mm -o "build-unit4-window/AppWindowCommands.o"

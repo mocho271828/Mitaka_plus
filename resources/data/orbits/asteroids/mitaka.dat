@@ -1,0 +1,16 @@
+# Mitaka
+
+Name: Mitaka
+DisplayName: Mitaka
+No: 1088
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.201237
+e: 0.195809
+w: 319.264679
+M0: 249.065048
+i: 7.651170
+node: 54.668118
+Size: 500 500 500
+B_V: 0.75

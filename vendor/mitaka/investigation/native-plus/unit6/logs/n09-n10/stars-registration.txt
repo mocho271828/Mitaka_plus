@@ -1,0 +1,41 @@
+stars-registration
+Source SHA-256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+Method: /usr/bin/objdump --disassemble --x86-asm-syntax=intel; selected VA ranges, no binary execution.
+
+VA [0x662ed5, 0x662eeb):
+  662ed5: 68 d8 96 c3 00               	push	0xc396d8
+  662eda: 57                           	push	edi
+  662edb: e8 40 d5 22 00               	call	0x890420 <.text+0x48f420>
+  662ee0: 68 d8 96 c3 00               	push	0xc396d8
+  662ee5: 57                           	push	edi
+  662ee6: e8 f5 d3 22 00               	call	0x8902e0 <.text+0x48f2e0>
+
+VA [0x6631d7, 0x663249):
+  6631d7: 68 10 23 66 00               	push	0x662310
+  6631dc: 68 8c a1 ca 00               	push	0xcaa18c
+  6631e1: 57                           	push	edi
+  6631e2: e8 e9 d3 22 00               	call	0x8905d0 <.text+0x48f5d0>
+  6631e7: 68 40 23 66 00               	push	0x662340
+  6631ec: 68 94 a1 ca 00               	push	0xcaa194
+  6631f1: 57                           	push	edi
+  6631f2: e8 d9 d3 22 00               	call	0x8905d0 <.text+0x48f5d0>
+  6631f7: 83 c4 78                     	add	esp, 0x78
+  6631fa: 68 70 23 66 00               	push	0x662370
+  6631ff: 68 a0 a1 ca 00               	push	0xcaa1a0
+  663204: 57                           	push	edi
+  663205: e8 c6 d3 22 00               	call	0x8905d0 <.text+0x48f5d0>
+  66320a: 68 e0 23 66 00               	push	0x6623e0
+  66320f: 68 b0 23 66 00               	push	0x6623b0
+  663214: 68 58 9e c3 00               	push	0xc39e58
+  663219: 57                           	push	edi
+  66321a: e8 11 d4 22 00               	call	0x890630 <.text+0x48f630>
+  66321f: 68 50 24 66 00               	push	0x662450
+  663224: 68 20 24 66 00               	push	0x662420
+  663229: 68 60 9e c3 00               	push	0xc39e60
+  66322e: 57                           	push	edi
+  66322f: e8 fc d3 22 00               	call	0x890630 <.text+0x48f630>
+  663234: 68 c0 24 66 00               	push	0x6624c0
+  663239: 68 90 24 66 00               	push	0x662490
+  66323e: 68 d4 ac c3 00               	push	0xc3acd4
+  663243: 57                           	push	edi
+  663244: e8 e7 d3 22 00               	call	0x890630 <.text+0x48f630>

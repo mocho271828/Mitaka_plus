@@ -1,0 +1,17 @@
+# Eris
+
+Name: Eris
+DisplayName: Eris
+No: 136199
+Type: TNObject
+DwarfPlanet: 1
+Epoch: 2454000.5
+a: 67.695000
+e: 0.441000
+w: 151.500000
+M0: 197.800003
+i: 44.200001
+node: 35.900002
+Size: 1200 1200 1200
+B_V: 0.71
+Visible: 1

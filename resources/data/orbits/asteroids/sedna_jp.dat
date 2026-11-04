@@ -1,0 +1,17 @@
+# Sedna
+
+Name: Sedna
+DisplayName: ƒZƒhƒi
+No: 90377
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 485.999996
+e: 0.843000
+w: 311.500000
+M0: 357.600006
+i: 11.900000
+node: 144.399994
+Size: 900 900 900
+B_V: 0.9
+Visible: 1

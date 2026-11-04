@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+cd /Users/kota/mitaka/repositories/Mitaka
+xcrun clang++ -std=c++17 -g -Wall -Wextra -Wpedantic -Werror -I native/core/include native/core/src/terrain.cpp native/core/src/terrain_sampling.cpp native/core/src/catalog.cpp native/core/tests/test_terrain.cpp -O2 -o /tmp/mitaka-unit7-terrain-normal
+/tmp/mitaka-unit7-terrain-normal
+/tmp/mitaka-unit7-terrain-normal '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/earth_topo/earth_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/moon_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mercury_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mars_topo/mars_topo.dat'
+xcrun clang++ -std=c++17 -g -Wall -Wextra -Wpedantic -Werror -I native/core/include native/core/src/terrain.cpp native/core/src/terrain_sampling.cpp native/core/src/catalog.cpp native/core/tests/test_terrain.cpp -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -o /tmp/mitaka-unit7-terrain-san
+/tmp/mitaka-unit7-terrain-san
+/tmp/mitaka-unit7-terrain-san '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/earth_topo/earth_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/moon_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mercury_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mars_topo/mars_topo.dat'
+xcrun clang++ -std=c++17 -g -Wall -Wextra -Wpedantic -Werror -I native/core/include native/core/src/terrain.cpp native/core/src/terrain_sampling.cpp native/core/src/catalog.cpp native/core/tests/test_terrain.cpp -O2 -arch x86_64 -o /tmp/mitaka-unit7-terrain-x86
+/tmp/mitaka-unit7-terrain-x86
+/tmp/mitaka-unit7-terrain-x86 '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/earth_topo/earth_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/moon_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mercury_topo.dat' '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mars_topo/mars_topo.dat'

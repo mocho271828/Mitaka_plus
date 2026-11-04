@@ -1,0 +1,16 @@
+# Eureka
+
+Name: Eureka
+DisplayName: Eureka
+No: 5261
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.523586
+e: 0.064827
+w: 95.375946
+M0: 31.009424
+i: 20.279581
+node: 245.132568
+Size: 500 500 500
+B_V: 0.75

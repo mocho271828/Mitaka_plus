@@ -1,0 +1,19 @@
+mkdir -p "build-place7-sanitized"
+mkdir -p "build-place7-sanitized"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/earth_landscapes.mm -o "build-place7-sanitized/earth_landscapes.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/landscape_selection.cpp -o "build-place7-sanitized/landscape_selection.o"
+mkdir -p "build-place7-sanitized"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/landscape_projection.cpp -o "build-place7-sanitized/landscape_projection.o"
+mkdir -p "build-place7-sanitized"
+make: `build-place7-sanitized/landscape_geometry.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/place_display_model.cpp -o "build-place7-sanitized/place_display_model.o"
+mkdir -p "build-place7-sanitized"
+make: `build-place7-sanitized/sky_model.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/observer_places.cpp -o "build-place7-sanitized/observer_places.o"
+mkdir -p "build-place7-sanitized"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/local_image.mm -o "build-place7-sanitized/local_image.o"
+mkdir -p "build-place7-sanitized"
+make: `build-place7-sanitized/RendererQuality.o' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/HorizonLandscapeRenderer.mm -o "build-place7-sanitized/HorizonLandscapeRenderer.o"
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-sanitized/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-sanitized/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-place7-sanitized/core/libmitaka_core.a' is up to date.

@@ -1,0 +1,4 @@
+mkdir -p "build-unit3-time-occlusion-x86"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -fobjc-arc -MMD -MP -c src/DisplayOutputController.mm -o "build-unit3-time-occlusion-x86/DisplayOutputController.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -arch x86_64 -fobjc-arc tests/test_display_output.mm build-unit3-time-occlusion-x86/DisplayOutputController.o -arch x86_64 -framework AppKit -o "build-unit3-time-occlusion-x86/test_display_output"
+DisplayOutputController tests passed (controlled occlusion): 46 checks

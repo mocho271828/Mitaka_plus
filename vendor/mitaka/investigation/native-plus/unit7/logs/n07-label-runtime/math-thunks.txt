@@ -1,0 +1,26 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  a8ee00: 78 7e                        	js	0xa8ee80 <.text+0x68de80>
+  a8ee02: c2 00 ff                     	ret	-0x100
+  a8ee05: 25 d0 7e c2 00               	and	eax, 0xc27ed0
+  a8ee0a: ff 25 e0 7e c2 00            	jmp	dword ptr [0xc27ee0]
+  a8ee10: ff 25 dc 7e c2 00            	jmp	dword ptr [0xc27edc]
+  a8ee16: ff 25 d8 7e c2 00            	jmp	dword ptr [0xc27ed8]
+  a8ee1c: ff 25 d4 7e c2 00            	jmp	dword ptr [0xc27ed4]
+  a8ee22: ff 25 e4 7e c2 00            	jmp	dword ptr [0xc27ee4]
+  a8ee28: ff 25 cc 7e c2 00            	jmp	dword ptr [0xc27ecc]
+  a8ee2e: ff 25 c8 7e c2 00            	jmp	dword ptr [0xc27ec8]
+  a8ee34: ff 25 c4 7e c2 00            	jmp	dword ptr [0xc27ec4]
+  a8ee3a: ff 25 c0 7e c2 00            	jmp	dword ptr [0xc27ec0]
+  a8ee40: ff 25 90 7e c2 00            	jmp	dword ptr [0xc27e90]
+  a8ee46: ff 25 8c 7e c2 00            	jmp	dword ptr [0xc27e8c]
+  a8ee4c: ff 25 88 7e c2 00            	jmp	dword ptr [0xc27e88]
+  a8ee52: ff 25 84 7e c2 00            	jmp	dword ptr [0xc27e84]
+  a8ee58: ff 25 80 7e c2 00            	jmp	dword ptr [0xc27e80]
+  a8ee5e: ff 25 7c 7e c2 00            	jmp	dword ptr [0xc27e7c]
+  a8ee64: ff 25 74 7e c2 00            	jmp	dword ptr [0xc27e74]
+  a8ee6a: ff 25 44 7e c2 00            	jmp	dword ptr [0xc27e44]

@@ -1,0 +1,16 @@
+# CAB 星座絵の根拠と対応範囲
+
+対象はローカル Mitaka_plus Windows 1.5.4 build101013 の CAB。バイナリ SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。公開通常版の `cnst_illust.dat` は別形式であり、自動変換しない。原本は読み取り専用で参照し、データ・画像・実行ファイルを配布物へ追加しない。
+
+読込 `0x4ba7d0`、quaternion helper `0x4bed00`、描画 `0x4c0ae0` の局所静的追跡を根拠とする。登録・import・通常天球行列を含む詳細と解析抜粋は [原典監査](../../investigation/native-plus/unit6/constellation-art-star-selection-contracts.md) とその logs に保存した。
+
+- little-endian の float32 5 個、uint32 点数、float32 の 2 要素点列、uint32 index 数、int32 index 列を読む。余剰 bytes は認めない。
+- header は中心方向 xyz、尺度、角度（度）。中心は正規化し、点は `(-x,y,0)` とする。
+- 原点観測者からの方向は `h + 2*s*R(+Z→h)*Rz(angle)*point`。極付近は原版 helper の閾値分岐を維持する。
+- 通常天球との基底差は X 軸回転 `23.43870583 − 23.399999618530273` 度。既存 core の別 obliquity 定数で置き換えない。
+- 任意の負 index は LINE_STRIP の区切りであり、非負 index は点列を参照する。自動閉路、spline、texture、塗りは追加しない。
+- 全原 bytes、未参照点、index、順序、負値を保持する。サイズ・個数・切断・非有限・無効な中心・index 範囲を検証してから返す。
+
+原版は float と SSE 逆平方根補正を使用する。ここでは double の幾何演算を使い、bit 単位や旧 OpenGL の画素一致は保証しない。距離を方向から消せる原点観測者の Sky/Horizon 用であり、観測者位置と図形距離を持つ 3D 描画は対象外。
+
+GUI は既存の観測座標と画面投影を使い、空間直線の弧を適応分割する。極・継ぎ目・計算上限で確定できない部分は結ばず、欠落数を返す。元データの間引きと画面上の分割予算を区別する。

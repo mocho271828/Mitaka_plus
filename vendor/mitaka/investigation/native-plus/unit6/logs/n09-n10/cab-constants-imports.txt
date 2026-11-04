@@ -1,0 +1,96 @@
+SHA256 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+0xc2dbe8 float=-3.0819790611203132e-19 double=1e-06 raw8=8dedb5a0f7c6b03e
+0xc2dcd8 float=1.0 double=32.00000756978989 raw8=0000803f00004040
+0xc2dcdc float=3.0 double=-3.0517585429379324e-05 raw8=00004040000000bf
+0xc2dce0 float=-0.5 double=0.007811876930645667 raw8=000000bf58ff7f3f
+0xc2dce4 float=0.9999899864196777 double=-0.00781187507527633 raw8=58ff7f3f58ff7fbf
+0xc2dce8 float=-0.9999899864196777 double=3.0517599896028285e-05 raw8=58ff7fbf0000003f
+0xc2dcec float=0.5 double=0.007812501833541319 raw8=0000003f0000803f
+0xc2dcf0 float=1.0 double=32.00000756978989 raw8=0000803f00004040
+0xc2dcf4 float=3.0 double=-3.0517585429379324e-05 raw8=00004040000000bf
+0xc2dcf8 float=-0.5 double=0.0075000030774390325 raw8=000000bf52b87e3f
+0xc2dc18 float=0.0 double=500000.0 raw8=0000000080841e41
+0xc2dc20 float=0.0 double=0.5 raw8=000000000000e03f
+0xc2dc28 float=0.0 double=2.0 raw8=0000000000000040
+0xc2dc30 float=0.0 double=1.0 raw8=000000000000f03f
+0xc2dd18 float=5000000000.0 double=5.2386909001541825e-11 raw8=f902954fcdcccc3d
+0xc2dd28 float=75.0 double=-456340290.5859375 raw8=000096423333bbc1
+0xc2dd30 float=2.0 double=0.007906252518296242 raw8=000000402731803f
+0xc2dd34 float=1.0015000104904175 double=0.007812501848115062 raw8=2731803f0000803f
+0xc2dd38 float=1.0 double=0.007906252503744327 raw8=0000803f2731803f
+0xc25608 MSVCR80.dll!fread
+0xc25650 MSVCR80.dll!fopen
+0xc258d0 OPENGL32.dll!glGetFloatv
+0xc258d4 OPENGL32.dll!glBegin
+0xc258d8 OPENGL32.dll!glTexCoord2f
+0xc258dc OPENGL32.dll!glNormal3fv
+0xc258e0 OPENGL32.dll!glVertex3fv
+0xc258e4 OPENGL32.dll!glEnd
+0xc258e8 OPENGL32.dll!glTexImage2D
+0xc258ec OPENGL32.dll!glReadPixels
+0xc258f0 OPENGL32.dll!glGetIntegerv
+0xc258f4 OPENGL32.dll!glGenTextures
+0xc258f8 OPENGL32.dll!glBindTexture
+0xc258fc OPENGL32.dll!glTexParameteri
+0xc25900 OPENGL32.dll!glDeleteTextures
+0xc25904 OPENGL32.dll!glPushMatrix
+0xc25908 OPENGL32.dll!glPopMatrix
+0xc2590c OPENGL32.dll!glPolygonMode
+0xc25910 OPENGL32.dll!glMaterialfv
+0xc25914 OPENGL32.dll!glMaterialf
+0xc25918 OPENGL32.dll!glDisable
+0xc2591c OPENGL32.dll!glEnable
+0xc25920 OPENGL32.dll!glTexEnvi
+0xc25924 OPENGL32.dll!glIsTexture
+0xc25928 OPENGL32.dll!glTexCoord2fv
+0xc2592c OPENGL32.dll!glOrtho
+0xc25930 OPENGL32.dll!glPushAttrib
+0xc25934 OPENGL32.dll!glPopAttrib
+0xc25938 OPENGL32.dll!wglMakeCurrent
+0xc2593c OPENGL32.dll!wglCreateContext
+0xc25940 OPENGL32.dll!glGenLists
+0xc25944 OPENGL32.dll!wglUseFontOutlinesA
+0xc25948 OPENGL32.dll!glDeleteLists
+0xc2594c OPENGL32.dll!glTranslatef
+0xc25950 OPENGL32.dll!glScalef
+0xc25954 OPENGL32.dll!glVertex3f
+0xc25958 OPENGL32.dll!glColor4fv
+0xc2595c OPENGL32.dll!glCallList
+0xc25960 OPENGL32.dll!glRotatef
+0xc25964 OPENGL32.dll!glNewList
+0xc25968 OPENGL32.dll!glEndList
+0xc2596c OPENGL32.dll!glLineWidth
+0xc25970 OPENGL32.dll!glColor4f
+0xc25974 OPENGL32.dll!glRotated
+0xc25978 OPENGL32.dll!glBlendFunc
+0xc2597c OPENGL32.dll!glFrontFace
+0xc25980 OPENGL32.dll!glLightfv
+0xc25984 OPENGL32.dll!glMultMatrixd
+0xc25988 OPENGL32.dll!glColor3f
+0xc2598c OPENGL32.dll!glScaled
+0xc25990 OPENGL32.dll!glClear
+0xc25994 OPENGL32.dll!glGetDoublev
+0xc25998 OPENGL32.dll!glLoadMatrixd
+0xc2599c OPENGL32.dll!glDepthFunc
+0xc259a0 OPENGL32.dll!wglDeleteContext
+0xc259a4 OPENGL32.dll!glClearColor
+0xc259a8 OPENGL32.dll!glClearDepth
+0xc259ac OPENGL32.dll!glPixelStorei
+0xc259b0 OPENGL32.dll!glHint
+0xc259b4 OPENGL32.dll!glReadBuffer
+0xc259b8 OPENGL32.dll!glDrawBuffer
+0xc259bc OPENGL32.dll!glShadeModel
+0xc259c0 OPENGL32.dll!glLoadMatrixf
+0xc259c4 OPENGL32.dll!glGetLightfv
+0xc259c8 OPENGL32.dll!glDepthMask
+0xc259cc OPENGL32.dll!glColor3fv
+0xc259d0 OPENGL32.dll!glVertex2f
+0xc259d4 OPENGL32.dll!glPointSize
+0xc259d8 OPENGL32.dll!glEnableClientState
+0xc259dc OPENGL32.dll!glVertexPointer
+0xc259e0 OPENGL32.dll!glColorPointer
+0xc259e4 OPENGL32.dll!glDrawArrays
+0xc259e8 OPENGL32.dll!glDisableClientState
+0xc259ec OPENGL32.dll!glTranslated
+0xc259f0 OPENGL32.dll!glMultMatrixf
+0xc259f4 OPENGL32.dll!glPolygonOffset

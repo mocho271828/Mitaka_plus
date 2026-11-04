@@ -1,0 +1,37 @@
+make: Nothing to be done for `all'.
+build-unit7-root-normal/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+build-unit7-root-normal/test_rotation_upstream
+build-unit7-root-normal/test_lunar_upstream
+rotation reference: 33129 components passed; maximum differences: J2000=4.4408920985e-16, 1700..2100=1.32350463922e-10, supported range=4.32943121631e-09
+build-unit7-root-normal/test_atmosphere_upstream
+lunar reference: 12108 components passed; maximum position difference AU=1.73472347598e-18, maximum orientation difference=9.48019440727e-13
+build-unit7-root-normal/test_eclipse_upstream
+astronomy: 1275 checks passed
+eclipse official reference: 7993 checks PASS; maximum absolute difference 1.6320278461989801e-14
+atmosphere reference: single 12606 components (12606 exact), multiple 792 components (701 exact); maximum absolute/relative differences: single 0/0, multiple 3.0517578125e-05/1.63027751399e-07; ground-inward native-zero cases 32 (maximum original magnitude 1.03013097726e-13)
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day
+Catalog tests passed
+ephemeris tests passed
+rotation: 11033 checks passed
+lunar: 14172 checks passed
+observation: 2058 checks passed
+Extended catalog tests passed
+Place catalog tests passed
+small-body orbit: 272 checks passed
+small-body catalog: 64 checks passed
+satellite catalog: 109 checks passed
+satellite position: 110 checks PASS
+satellite_rotation: 859 checks passed
+satellite model: 117 checks passed
+satellite absolute: 304 checks passed
+spacecraft trajectory: 145 checks PASS
+PTH benchmark: 100003 samples, construction 0.105166 ms, 25000 queries 3.69783 ms
+spacecraft position: 75954 checks PASS
+minor-planet position: 90730 checks passed
+small_body_orbit_path: 141 checks passed
+atmosphere: 733 checks passed
+CAB tests passed: 98 checks
+eclipse: 10192 checks PASS
+terrain: 471 checks passed
+galaxy catalog: 1275 checks passed
+our galaxy model: 330 checks passed

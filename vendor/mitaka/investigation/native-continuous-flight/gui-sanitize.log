@@ -1,0 +1,37 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build/continuous-sanitize/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a"
+mkdir -p "build/continuous-sanitize"
+mkdir -p "build/continuous-sanitize"
+mkdir -p "build/continuous-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build/continuous-sanitize/AppFlightSmokeTests.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemView.mm -o "build/continuous-sanitize/SolarSystemView.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemNavigation.mm -o "build/continuous-sanitize/SolarSystemNavigation.o"
+make[1]: `/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a' is up to date.
+mkdir -p "build/continuous-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/SolarSystemSmokeTests.mm -o "build/continuous-sanitize/SolarSystemSmokeTests.o"
+mkdir -p "build/continuous-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/interplanetary_flight.cpp -o "build/continuous-sanitize/interplanetary_flight.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build/continuous-sanitize/sky_model.o "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/continuous-sanitize/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build/continuous-sanitize/sky_model.o build/continuous-sanitize/solar_camera.o "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/continuous-sanitize/test_solar_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_surface_navigation.cpp build/continuous-sanitize/surface_navigation.o build/continuous-sanitize/solar_camera.o "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/continuous-sanitize/test_surface_navigation"
+"build/continuous-sanitize/test_playback_controller"
+mkdir -p "build/continuous-sanitize/Mitaka Native.app/Contents/MacOS"
+xcrun clang++ -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined build/continuous-sanitize/main.o build/continuous-sanitize/AppController.o build/continuous-sanitize/AppSmokeTests.o build/continuous-sanitize/AppFlightSmokeTests.o build/continuous-sanitize/PlaybackController.o build/continuous-sanitize/SkyView.o build/continuous-sanitize/SolarSystemView.o build/continuous-sanitize/SolarSystemNavigation.o build/continuous-sanitize/SolarSystemSmokeTests.o build/continuous-sanitize/SolarSceneRenderer.o build/continuous-sanitize/sky_model.o build/continuous-sanitize/solar_camera.o build/continuous-sanitize/planet_surface.o build/continuous-sanitize/planet_textures.o build/continuous-sanitize/playback_clock.o build/continuous-sanitize/surface_navigation.o build/continuous-sanitize/interplanetary_flight.o "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -framework AppKit -framework UniformTypeIdentifiers -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/continuous-sanitize/Mitaka Native.app/Contents/MacOS/MitakaNative"
+cp Info.plist "build/continuous-sanitize/Mitaka Native.app/Contents/Info.plist"
+mkdir -p "build/continuous-sanitize/Mitaka Native.app/Contents/Resources"
+cp THIRD_PARTY_NOTICES.txt "build/continuous-sanitize/Mitaka Native.app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_interplanetary_flight.cpp build/continuous-sanitize/interplanetary_flight.o build/continuous-sanitize/surface_navigation.o build/continuous-sanitize/solar_camera.o build/continuous-sanitize/sky_model.o "/Users/kota/mitaka/native/gui/build/continuous-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/continuous-sanitize/test_interplanetary_flight"
+"build/continuous-sanitize/test_sky_model"
+sky model tests passed
+"build/continuous-sanitize/test_solar_model"
+solar model tests passed
+"build/continuous-sanitize/test_planet_surface"
+planet surface tests passed
+"build/continuous-sanitize/test_planet_textures"
+PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, disabled/end, failure, interrupt, invalidate
+planet texture tests passed
+"build/continuous-sanitize/test_playback_clock"
+playback clock: 10098 checks passed
+"build/continuous-sanitize/test_surface_navigation"
+surface navigation tests passed
+"build/continuous-sanitize/test_interplanetary_flight"
+Interplanetary flight tests passed

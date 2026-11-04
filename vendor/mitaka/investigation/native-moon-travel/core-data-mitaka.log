@@ -1,0 +1,26 @@
+build/test_data "${DATA_ROOT:?Set DATA_ROOT to an existing Mitaka application data root}"
+Hipparcos records=117956
+Constellation catalog absent (optional)
+CF96 planets=9 samples-per-planet=3
+Trajectory data/Pluto_BC.ppi segments=134 midpoint=evaluated
+Trajectory data/Ryugu.ppi segments=663 midpoint=evaluated
+Trajectory data/Saturn.ppi segments=10964 midpoint=evaluated
+Trajectory data/Sun.ppi segments=3554 midpoint=evaluated
+Trajectory spacecraft/Akatsuki.ppi segments=1948 midpoint=evaluated
+Trajectory spacecraft/Cassini.ppi segments=8373 midpoint=evaluated
+Trajectory spacecraft/Gaia.ppi segments=331 midpoint=evaluated
+Trajectory spacecraft/Galileo.ppi segments=1875 midpoint=evaluated
+Trajectory spacecraft/Hayabusa2.ppi segments=213 midpoint=evaluated
+Trajectory spacecraft/Juno.ppi segments=1368 midpoint=evaluated
+Trajectory spacecraft/Kepler.ppi segments=695 midpoint=evaluated
+Trajectory spacecraft/NewHorizons.ppi segments=135 midpoint=evaluated
+Trajectory spacecraft/Pioneer10.ppi segments=186 midpoint=evaluated
+Trajectory spacecraft/Pioneer11.ppi segments=270 midpoint=evaluated
+Trajectory spacecraft/TESS.ppi segments=738 midpoint=evaluated
+Trajectory spacecraft/Voyager_I.ppi segments=202 midpoint=evaluated
+Trajectory spacecraft/Voyager_II.ppi segments=272 midpoint=evaluated
+Trajectories files=17 segments=31921 midpoint-gaps=0
+Read-only data integration tests passed
+xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_upstream.cpp build/reference_cf96.o build/libmitaka_core.a  -o build/test_upstream
+build/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
+upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day

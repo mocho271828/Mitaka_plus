@@ -1,0 +1,8 @@
+mkdir -p "build-unit6-earth"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/earth_layers.cpp -o "build-unit6-earth/earth_layers.o"
+mkdir -p "build-unit6-earth"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/planet_surface.cpp -o "build-unit6-earth/planet_surface.o"
+mkdir -p "build-unit6-earth"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/solar_camera.cpp -o "build-unit6-earth/solar_camera.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_earth_layers.cpp build-unit6-earth/earth_layers.o build-unit6-earth/planet_surface.o build-unit6-earth/solar_camera.o  -o "build-unit6-earth/test_earth_layers"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_planet_surface.cpp build-unit6-earth/planet_surface.o build-unit6-earth/solar_camera.o build-unit6-earth/earth_layers.o  -o "build-unit6-earth/test_planet_surface"

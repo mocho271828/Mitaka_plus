@@ -1,0 +1,16 @@
+# Rhadamanthus
+
+Name: Rhadamanthus
+DisplayName: Rhadamanthus
+No: 38083
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 39.175000
+e: 0.152000
+w: 82.000000
+M0: 83.800003
+i: 12.700000
+node: 10.000000
+Size: 500 500 500
+B_V: 0.75

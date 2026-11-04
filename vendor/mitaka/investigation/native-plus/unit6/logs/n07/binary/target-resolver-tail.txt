@@ -1,0 +1,31 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  591230: fe ff                        	<unknown>
+  591232: ff 89 85 dc fe ff            	dec	dword ptr [ecx - 0x1237b]
+  591238: ff e8                        	<unknown>
+  59123a: 54                           	push	esp
+  59123b: dd 4f 00                     	fisttp	qword ptr [edi]
+  59123e: 8b 85 dc fe ff ff            	mov	eax, dword ptr [ebp - 0x124]
+  591244: 8b 8d d8 fe ff ff            	mov	ecx, dword ptr [ebp - 0x128]
+  59124a: 83 c4 04                     	add	esp, 0x4
+  59124d: e9 35 fa ff ff               	jmp	0x590c87 <.text+0x18fc87>
+  591252: 83 bd 7c fe ff ff 00         	cmp	dword ptr [ebp - 0x184], 0x0
+  591259: 0f 84 76 f9 ff ff            	je	0x590bd5 <.text+0x18fbd5>
+  59125f: 8d 85 68 fe ff ff            	lea	eax, [ebp - 0x198]
+  591265: 50                           	push	eax
+  591266: 8d 8d d0 fd ff ff            	lea	ecx, [ebp - 0x230]
+  59126c: e8 ff 00 00 00               	call	0x591370 <.text+0x190370>
+  591271: e9 5f f9 ff ff               	jmp	0x590bd5 <.text+0x18fbd5>
+  591276: 81 c7 a0 00 00 00            	add	edi, 0xa0
+  59127c: 8b cf                        	mov	ecx, edi
+  59127e: e8 7d 00 00 00               	call	0x591300 <.text+0x190300>
+  591283: 85 c0                        	test	eax, eax
+  591285: 0f 86 3b f9 ff ff            	jbe	0x590bc6 <.text+0x18fbc6>
+  59128b: c7 85 90 fb ff ff 00 00 00 00	mov	dword ptr [ebp - 0x470], 0x0
+  591295: ff b5 90 fb ff ff            	push	dword ptr [ebp - 0x470]
+  59129b: 8b cf                        	mov	ecx, edi
+  59129d: e8 8e 00 00 00               	call	0x591330 <.text+0x190330>

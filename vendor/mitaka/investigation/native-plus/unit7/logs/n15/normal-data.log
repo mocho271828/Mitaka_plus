@@ -1,0 +1,5 @@
+terrain source="/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/earth_topo/earth_topo.dat" bytes=81822538 patches=16200 grids=58914 index_bytes=4335984 max_payload=118098 dimensions=1x1,2x2,4x4,8x8,15x15,30x30,60x60,120x120,240x240,
+terrain source="/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/moon_topo.dat" bytes=761562016 patches=16200 grids=129600 index_bytes=8294400 max_payload=34322 dimensions=1x1,2x2,4x4,8x8,16x16,32x32,64x64,128x128,
+terrain source="/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mercury_topo.dat" bytes=59713216 patches=16200 grids=97200 index_bytes=6480000 max_payload=2450 dimensions=1x1,2x2,4x4,8x8,16x16,32x32,
+terrain source="/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/mars_topo/mars_topo.dat" bytes=213945124 patches=16200 grids=113502 index_bytes=7392912 max_payload=134162 dimensions=1x1,2x2,4x4,8x8,16x16,32x32,64x64,128x128,256x256,
+terrain: 798906 checks passed

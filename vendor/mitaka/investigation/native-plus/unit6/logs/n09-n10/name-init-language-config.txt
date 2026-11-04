@@ -1,0 +1,71 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  4f6f80: 00 00                        	add	byte ptr [eax], al
+  4f6f82: a2 64 17 08 01               	mov	byte ptr [0x1081764], al
+  4f6f87: 8d 44 24 10                  	lea	eax, [esp + 0x10]
+  4f6f8b: 50                           	push	eax
+  4f6f8c: 68 00 01 00 00               	push	0x100
+  4f6f91: 53                           	push	ebx
+  4f6f92: 68 98 91 c2 00               	push	0xc29198
+  4f6f97: 68 8c 91 c2 00               	push	0xc2918c
+  4f6f9c: 68 84 91 c2 00               	push	0xc29184
+  4f6fa1: ff 15 98 51 c2 00            	call	dword ptr [0xc25198]
+  4f6fa7: 68 bc 91 c2 00               	push	0xc291bc
+  4f6fac: 53                           	push	ebx
+  4f6fad: ff 15 6c 57 c2 00            	call	dword ptr [0xc2576c]
+  4f6fb3: 83 c4 08                     	add	esp, 0x8
+  4f6fb6: 85 c0                        	test	eax, eax
+  4f6fb8: 75 0a                        	jne	0x4f6fc4 <.text+0xf5fc4>
+  4f6fba: b8 01 00 00 00               	mov	eax, 0x1
+  4f6fbf: e9 81 00 00 00               	jmp	0x4f7045 <.text+0xf6045>
+  4f6fc4: 68 ac 91 c2 00               	push	0xc291ac
+  4f6fc9: 53                           	push	ebx
+  4f6fca: ff 15 6c 57 c2 00            	call	dword ptr [0xc2576c]
+  4f6fd0: 83 c4 08                     	add	esp, 0x8
+  4f6fd3: 85 c0                        	test	eax, eax
+  4f6fd5: 75 04                        	jne	0x4f6fdb <.text+0xf5fdb>
+  4f6fd7: 33 c0                        	xor	eax, eax
+  4f6fd9: eb 6a                        	jmp	0x4f7045 <.text+0xf6045>
+  4f6fdb: 68 c8 91 c2 00               	push	0xc291c8
+  4f6fe0: 53                           	push	ebx
+  4f6fe1: ff 15 6c 57 c2 00            	call	dword ptr [0xc2576c]
+  4f6fe7: 83 c4 08                     	add	esp, 0x8
+  4f6fea: 85 c0                        	test	eax, eax
+  4f6fec: 75 07                        	jne	0x4f6ff5 <.text+0xf5ff5>
+  4f6fee: b8 02 00 00 00               	mov	eax, 0x2
+  4f6ff3: eb 50                        	jmp	0x4f7045 <.text+0xf6045>
+  4f6ff5: 8d bc 24 21 08 00 00         	lea	edi, [esp + 0x821]
+  4f6ffc: 6a 05                        	push	0x5
+  4f6ffe: 57                           	push	edi
+  4f6fff: 6a 01                        	push	0x1
+  4f7001: 68 00 04 00 00               	push	0x400
+  4f7006: ff 15 80 51 c2 00            	call	dword ptr [0xc25180]
+  4f700c: be b0 f4 c2 00               	mov	esi, 0xc2f4b0
+  4f7011: 8a 17                        	mov	dl, byte ptr [edi]
+  4f7013: 3a 16                        	cmp	dl, byte ptr [esi]
+  4f7015: 75 1a                        	jne	0x4f7031 <.text+0xf6031>
+  4f7017: 84 d2                        	test	dl, dl
+  4f7019: 74 12                        	je	0x4f702d <.text+0xf602d>
+  4f701b: 8a 57 01                     	mov	dl, byte ptr [edi + 0x1]
+  4f701e: 3a 56 01                     	cmp	dl, byte ptr [esi + 0x1]
+  4f7021: 75 0e                        	jne	0x4f7031 <.text+0xf6031>
+  4f7023: 83 c7 02                     	add	edi, 0x2
+  4f7026: 83 c6 02                     	add	esi, 0x2
+  4f7029: 84 d2                        	test	dl, dl
+  4f702b: 75 e4                        	jne	0x4f7011 <.text+0xf6011>
+  4f702d: 33 c0                        	xor	eax, eax
+  4f702f: eb 05                        	jmp	0x4f7036 <.text+0xf6036>
+  4f7031: 1b c0                        	sbb	eax, eax
+  4f7033: 83 c8 01                     	or	eax, 0x1
+  4f7036: ba 01 00 00 00               	mov	edx, 0x1
+  4f703b: 85 c0                        	test	eax, eax
+  4f703d: b8 02 00 00 00               	mov	eax, 0x2
+  4f7042: 0f 44 c2                     	cmove	eax, edx
+  4f7045: 50                           	push	eax
+  4f7046: e8 c5 52 0a 00               	call	0x59c310 <.text+0x19b310>
+  4f704b: 59                           	pop	ecx
+  4f704c: 8d 44 24 10                  	lea	eax, [esp + 0x10]

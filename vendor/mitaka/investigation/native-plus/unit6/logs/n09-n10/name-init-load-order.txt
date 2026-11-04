@@ -1,0 +1,104 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  48bafb: 68 a0 c4 c2 00               	push	0xc2c4a0
+  48bb00: 8d 8d 10 fd ff ff            	lea	ecx, [ebp - 0x2f0]
+  48bb06: e8 e5 3d f9 ff               	call	0x41f8f0 <.text+0x1e8f0>
+  48bb0b: 50                           	push	eax
+  48bb0c: b9 40 79 10 01               	mov	ecx, 0x1107940
+  48bb11: e8 7a 20 0f 00               	call	0x57db90 <.text+0x17cb90>
+  48bb16: 56                           	push	esi
+  48bb17: 56                           	push	esi
+  48bb18: 68 a8 c4 c2 00               	push	0xc2c4a8
+  48bb1d: 68 80 c4 c2 00               	push	0xc2c480
+  48bb22: 57                           	push	edi
+  48bb23: ff 15 b8 60 c2 00            	call	dword ptr [0xc260b8]
+  48bb29: 83 c4 14                     	add	esp, 0x14
+  48bb2c: c7 45 fc 32 00 00 00         	mov	dword ptr [ebp - 0x4], 0x32
+  48bb33: 8d 45 d4                     	lea	eax, [ebp - 0x2c]
+  48bb36: 50                           	push	eax
+  48bb37: 8b cf                        	mov	ecx, edi
+  48bb39: ff 15 3c 61 c2 00            	call	dword ptr [0xc2613c]
+  48bb3f: c7 45 fc 33 00 00 00         	mov	dword ptr [ebp - 0x4], 0x33
+  48bb46: 8b 45 d4                     	mov	eax, dword ptr [ebp - 0x2c]
+  48bb49: 8b 50 0c                     	mov	edx, dword ptr [eax + 0xc]
+  48bb4c: 50                           	push	eax
+  48bb4d: 89 14 24                     	mov	dword ptr [esp], edx
+  48bb50: e8 6b bb 16 00               	call	0x5f76c0 <.text+0x1f66c0>
+  48bb55: 59                           	pop	ecx
+  48bb56: c7 45 fc 32 00 00 00         	mov	dword ptr [ebp - 0x4], 0x32
+  48bb5d: 8d 4d d4                     	lea	ecx, [ebp - 0x2c]
+  48bb60: ff 15 38 61 c2 00            	call	dword ptr [0xc26138]
+  48bb66: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  48bb6d: 8b cf                        	mov	ecx, edi
+  48bb6f: ff 15 8c 61 c2 00            	call	dword ptr [0xc2618c]
+  48bb75: 68 c4 c4 c2 00               	push	0xc2c4c4
+  48bb7a: 8d 8d 10 fd ff ff            	lea	ecx, [ebp - 0x2f0]
+  48bb80: e8 6b 3d f9 ff               	call	0x41f8f0 <.text+0x1e8f0>
+  48bb85: 50                           	push	eax
+  48bb86: 8d 8d 6c ff ff ff            	lea	ecx, [ebp - 0x94]
+  48bb8c: ff 15 b8 53 c2 00            	call	dword ptr [0xc253b8]
+  48bb92: c7 45 fc 30 00 00 00         	mov	dword ptr [ebp - 0x4], 0x30
+  48bb99: 8d 85 34 ff ff ff            	lea	eax, [ebp - 0xcc]
+  48bb9f: 8d 95 6c ff ff ff            	lea	edx, [ebp - 0x94]
+  48bba5: 83 c4 f8                     	add	esp, -0x8
+  48bba8: 89 04 24                     	mov	dword ptr [esp], eax
+  48bbab: 89 54 24 04                  	mov	dword ptr [esp + 0x4], edx
+  48bbaf: e8 1c 05 f9 ff               	call	0x41c0d0 <.text+0x1b0d0>
+  48bbb4: 83 c4 08                     	add	esp, 0x8
+  48bbb7: c7 45 fc 31 00 00 00         	mov	dword ptr [ebp - 0x4], 0x31
+  48bbbe: 8d 8d 34 ff ff ff            	lea	ecx, [ebp - 0xcc]
+  48bbc4: ff 15 c4 53 c2 00            	call	dword ptr [0xc253c4]
+  48bbca: 50                           	push	eax
+  48bbcb: b9 40 79 10 01               	mov	ecx, 0x1107940
+  48bbd0: e8 1b 44 0f 00               	call	0x57fff0 <.text+0x17eff0>
+  48bbd5: c7 45 fc 30 00 00 00         	mov	dword ptr [ebp - 0x4], 0x30
+  48bbdc: 8d 8d 34 ff ff ff            	lea	ecx, [ebp - 0xcc]
+  48bbe2: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  48bbe8: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  48bbef: 8d 8d 6c ff ff ff            	lea	ecx, [ebp - 0x94]
+  48bbf5: ff 15 bc 53 c2 00            	call	dword ptr [0xc253bc]
+  48bbfb: e8 30 86 15 00               	call	0x5e4230 <.text+0x1e3230>
+  48bc00: 8b c8                        	mov	ecx, eax
+  48bc02: e8 09 a9 15 00               	call	0x5e6510 <.text+0x1e5510>
+  48bc07: 50                           	push	eax
+  48bc08: b9 40 79 10 01               	mov	ecx, 0x1107940
+  48bc0d: e8 3e d6 0f 00               	call	0x589250 <.text+0x188250>
+  48bc12: 56                           	push	esi
+  48bc13: 56                           	push	esi
+  48bc14: 68 d4 c4 c2 00               	push	0xc2c4d4
+  48bc19: 68 80 c4 c2 00               	push	0xc2c480
+  48bc1e: 57                           	push	edi
+  48bc1f: ff 15 b8 60 c2 00            	call	dword ptr [0xc260b8]
+  48bc25: 83 c4 14                     	add	esp, 0x14
+  48bc28: c7 45 fc 2e 00 00 00         	mov	dword ptr [ebp - 0x4], 0x2e
+  48bc2f: 8d 45 d4                     	lea	eax, [ebp - 0x2c]
+  48bc32: 50                           	push	eax
+  48bc33: 8b cf                        	mov	ecx, edi
+  48bc35: ff 15 3c 61 c2 00            	call	dword ptr [0xc2613c]
+  48bc3b: c7 45 fc 2f 00 00 00         	mov	dword ptr [ebp - 0x4], 0x2f
+  48bc42: 8b 45 d4                     	mov	eax, dword ptr [ebp - 0x2c]
+  48bc45: 8b 50 0c                     	mov	edx, dword ptr [eax + 0xc]
+  48bc48: 50                           	push	eax
+  48bc49: 89 14 24                     	mov	dword ptr [esp], edx
+  48bc4c: e8 6f ba 16 00               	call	0x5f76c0 <.text+0x1f66c0>
+  48bc51: 59                           	pop	ecx
+  48bc52: c7 45 fc 2e 00 00 00         	mov	dword ptr [ebp - 0x4], 0x2e
+  48bc59: 8d 4d d4                     	lea	ecx, [ebp - 0x2c]
+  48bc5c: ff 15 38 61 c2 00            	call	dword ptr [0xc26138]
+  48bc62: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  48bc69: 8b cf                        	mov	ecx, edi
+  48bc6b: ff 15 8c 61 c2 00            	call	dword ptr [0xc2618c]
+  48bc71: 68 f0 c4 c2 00               	push	0xc2c4f0
+  48bc76: 8d 8d 10 fd ff ff            	lea	ecx, [ebp - 0x2f0]
+  48bc7c: e8 6f 3c f9 ff               	call	0x41f8f0 <.text+0x1e8f0>
+  48bc81: 50                           	push	eax
+  48bc82: b9 40 79 10 01               	mov	ecx, 0x1107940
+  48bc87: e8 64 38 0f 00               	call	0x57f4f0 <.text+0x17e4f0>
+  48bc8c: 56                           	push	esi
+  48bc8d: 56                           	push	esi
+  48bc8e: 68 04 c5 c2 00               	push	0xc2c504
+  48bc93: 68 80 c4 c2 00               	push	0xc2c480

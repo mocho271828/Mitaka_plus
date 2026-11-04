@@ -1,0 +1,3 @@
+satellite absolute source=ssystem.dat retained=340 positions=165
+satellite absolute source=ssystem_jp.dat retained=340 positions=165
+satellite absolute: 1599 checks passed

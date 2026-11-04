@@ -1,0 +1,16 @@
+# Juno
+
+Name: Juno
+DisplayName: Juno
+No: 3
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.669314
+e: 0.257868
+w: 247.975540
+M0: 117.248878
+i: 12.967648
+node: 170.181961
+Size: 500 500 500
+B_V: 0.75

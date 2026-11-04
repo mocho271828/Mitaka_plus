@@ -1,0 +1,61 @@
+Recorded UTC: 2026-10-29T15:53:17.035816+00:00
+Method: native-shell static inspection; not REA output; original executable was not run.
+REA deep providers were unavailable; no provider installation or machine configuration change.
+Apple LLVM version 21.0.0
+  Optimized build.
+
+
+  Registered Targets:
+    aarch64    - AArch64 (little endian)
+    aarch64_32 - AArch64 (little endian ILP32)
+    aarch64_be - AArch64 (big endian)
+    arm        - ARM
+    arm64      - ARM64 (little endian)
+    arm64_32   - ARM64 (little endian ILP32)
+    armeb      - ARM (big endian)
+    thumb      - Thumb
+    thumbeb    - Thumb (big endian)
+    wasm32     - WebAssembly 32-bit
+    wasm64     - WebAssembly 64-bit
+    x86        - 32-bit X86: Pentium-Pro and above
+    x86-64     - 64-bit X86: EM64T and AMD64
+Executable: /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
+SHA256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+ImageBase: 0x400000
+PE sections (name,RVA,virtual size,file offset,raw size):
+('.text', 4096, 8321530, 4096, 8323072)
+('.text1', 8327168, 208912, 8327168, 212992)
+('.rdata', 8540160, 1352134, 8540160, 1355776)
+('.data', 9895936, 4937276, 9895936, 143360)
+('.data1', 14835712, 2232512, 10039296, 2236416)
+('.rsrc', 17072128, 10256, 12275712, 12288)
+constant VA=0xc2f150 file_offset=0x82f150 little-endian double=0.017453292519943295
+constant VA=0xc2ea68 file_offset=0x82ea68 little-endian double=0.00014544410433286079
+constant VA=0xc2ea70 file_offset=0x82ea70 little-endian double=0.017453292519943295
+string VA=0xc2f288 file_offset=0x82f288 bytes=b'globular_cluster.dat'
+string VA=0xc2eea8 file_offset=0x82eea8 bytes=b'NBG.dat'
+string VA=0xc2eeb0 file_offset=0x82eeb0 bytes=b'nearby_galaxy_names.dat'
+string VA=0xc31b80 file_offset=0x831b80 bytes=b'ourgalaxy_model.dat'
+/usr/bin/objdump -d --start-address=0x4f2a10 --stop-address=0x4f2ca0 '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe' > plus-gc-loader.txt
+/usr/bin/objdump -d --start-address=0x4da680 --stop-address=0x4da740 '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe' > plus-nbg-open.txt
+/usr/bin/objdump -d --start-address=0x4dab40 --stop-address=0x4dac10 '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe' > plus-nbg-dispatch.txt
+/usr/bin/objdump -d --start-address=0x4db868 --stop-address=0x4dba50 '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe' > plus-nbg-record.txt
+/usr/bin/objdump -d --start-address=0x51ef10 --stop-address=0x51f200 '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe' > plus-ourgalaxy-loader.txt
+Input and official-reference SHA256 (read-only):
+2666bd37ce185b966bd7bab6cb1279d7adc049c6b0140e569d933f9eb742b87a  3321184 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/ourgalaxy_model.dat
+14562e2c9efa487aa329a302c8ea05732e2fd1c6949f1301e4a72d9d6b97cdec  4170 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/gc.dat
+d0d35773f7fcc55f78513665c56a2925041285453ab37f40085d7ea99ccc816d  5560 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/globular_cluster.dat
+6db1e9c30796c7ed5fa9f3c5d7ac3f5d39ea40fc7c8e4a82dda93e461ef122a9  64017 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/NBG.dat
+43edbb9d9b609e9c04df5bab59ffe6d4409adc031c05a2ed9839d5895c742e6d  59275 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/NBG2.dat
+ef970c472f93ae83a86a4011fb6294a328ac77645c0381c7df4134b0155dce8b  2163 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/nearby_galaxies_name.dat
+aaf1383894565e0ea612ed601c2a85246adbf0d09b23e7ed434381a3fcdff62c  1320 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/nearby_galaxy_names.dat
+5b53a776f327b1d3876e1c48fa0adef58f55b8a6f7d1407469fc3a4e9b66eea1  2038 bytes  /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/nearby_galaxy_names_jp.dat
+2666bd37ce185b966bd7bab6cb1279d7adc049c6b0140e569d933f9eb742b87a  3321184 bytes  /Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/ourgalaxy_model.dat
+70d5f67156b50ecb63f25d2bb778c7d656af73bbb47ebe8f1f0048682ca265d0  12794 bytes  /Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/globular_clusters.dat
+4b1928bf0ed139ab27cba5a00231dfe5223128e9a435301c0ce7ac8adfd4d859  210699 bytes  /Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data/NBG.dat
+13e06ed8be380b5fdbedff4de284b1cffedfaf8cbab0ae2b6df45e06fed12088  27855 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/Mitaka/mtk_our_galaxy_rt.cpp
+a06354e05590c6fff2f1be10a5352f3f2b822c1077097731395cb5d11b5edf2b  3219 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/Mitaka/mtk_our_galaxy.h
+4a9d4ed9313866e4c23bfcdfbcf0654fa6478dd249018afa10e03ada9ab5d789  6144 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/Mitaka/mtk_our_galaxy.cpp
+6e53ba99828738f7ad1fe395d26d439b3827dd474dbb08cda078850e156f0506  10157 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/Mitaka/mtk_globular_clusters.cpp
+a20b97fca30645a7c214a224379ffa82293adbd21ad9e289fcc6824eae26c6d5  16427 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/Mitaka/mtk_nearby_galaxies.cpp
+560b8610978daa16bcd7a88cbc076f1e640970447eefc830d6b7f14e4662b772  5479 bytes  /Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source/common/astro/astrometry.cpp

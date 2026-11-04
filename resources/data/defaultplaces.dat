@@ -1,0 +1,88 @@
+Places:addLabelGroup("Default", 0.0, 0.8, 0.7, 0.7, 0.7, 1.0);
+Places:addLabelGroup("Large", 0.1, 1.0, 0.8, 0.8, 0.8, 1.0);
+Places:addLabelGroup("Mid", 0.0, 0.8, 0.7, 0.7, 0.7, 1.0);
+Places:addLabelGroup("Small", 0.0, 0.6, 0.7, 0.8, 0.9, 0.8);
+
+Places:addLandscape("Planet.Mercury", "Default", "textures/mercury.png", 0.25, -0.10, 0);
+Places:addLandscape("Planet.Venus", "Default", "textures/venus.png", 0.3, -0.10, 0);
+Places:addLandscape("Planet.Earth", "Default", "textures/jsf.png", 0.25, 0, 0);
+Places:addLandscape("Planet.Earth", "Shinjuku", "textures/shinjuku.png", 0.5, 0.34, -150.0);
+Places:addLandscape("Planet.Earth", "City1", "textures/tsukuba.png", 0.25, 0.03, 0);
+Places:addLandscape("Planet.Earth", "City2", "textures/seki.png", 0.25, 0.05, 0);
+Places:addLandscape("Planet.Earth", "City3", "textures/seki2.png", 0.25, -0.11, 0);
+Places:addLandscape("Planet.Earth", "City4", "textures/ginowan.png", 0.25, -0.06, 0);
+Places:addLandscape("Planet.Earth", "Greenwich", "textures/greenwich.png", 0.25, 0.06, -180.0);
+Places:addLandscape("Planet.Earth", "ALMA", "textures/alma.png", 0.25, -0.08, 0);
+Places:addLandscape("Planet.Earth", "NorthPole", "textures/northpole.png", 0.25, -0.46, 0);
+Places:addLandscape("Planet.Earth", "SouthPole", "textures/southpole.png", 0.25, -0.34, 0);
+Places:addLandscape("Satellite.Moon", "Default", "textures/moon.png", 0.25, -0.2, 0);
+Places:addLandscape("Planet.Mars", "Default", "textures/mars_spirit.png", 0.25, -0.45, 0);
+Places:addLandscape("Planet.Mars", "Opportunity", "textures/mars_opportunity.png", 0.25, -0.43, 0);
+Places:addLandscape("Planet.Jupiter", "Default", "textures/jupiter.png", 0.25, -0.47, 0);
+Places:addLandscape("Planet.Saturn", "Default", "textures/saturn.png", 0.25, -0.47, 0);
+Places:addLandscape("Planet.Uranus", "Default", "textures/uranus.png", 0.25, -0.47, 0);
+Places:addLandscape("Planet.Neptune", "Default", "textures/neptune.png", 0.25, -0.47, 0);
+Places:addLandscape("Planet.Pluto", "Default", "textures/pluto.png", 0.25, -0.19, 0);
+Places:addLandscape("Satellite", "Default", "textures/comet.png", 0.25, -0.19, 0);
+
+Places:addPlace("Planet.Mercury.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Mercury.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Venus.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Venus.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Earth.Japan", "Japan", 135.0, 35.0, "Large", "");
+Places:addPlace("Planet.Earth.Shinjuku", "Shinjuku", 139.55, 35.67, "Mid", "Shinjuku");
+Places:addPlace("Planet.Earth.NAOJ", "NAOJ", 139.55, 35.67, "Mid", "");
+Places:addPlace("Planet.Earth.ALMA", "ALMA Site", -67.75, -23.02, "Mid", "ALMA");
+Places:addPlace("Planet.Earth.Greenwich", "Royal Observatory Greenwich", 0.0, 51.48, "Mid", "Greenwich");
+Places:addPlace("Planet.Earth.NorthPole", "North Pole", 0, 90, "Large", "NorthPole");
+Places:addPlace("Planet.Earth.SouthPole", "South Pole", 0, -90, "Large", "SouthPole");
+
+Places:addPlace("Satellite.Moon.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Satellite.Moon.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Mars.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Mars.SouthPole", "South Pole", 0, -90, "Large", "");
+Places:addPlace("Planet.Mars.OlympusMons", "Olympus Mons", 226, 18.6, "Large", "");
+Places:addPlace("Planet.Mars.TharsisMontes", "Tharsis Montes", 247.5, 1.2, "Large", "");
+Places:addPlace("Planet.Mars.ElysiumMons", "Elysium Mons", 146.9, 25, "Large", "");
+Places:addPlace("Planet.Mars.VallesMarineris", "Valles Marineris", 300.8, -13.9, "Large", "");
+Places:addPlace("Planet.Mars.SyrtisMajor", "Syrtis Major", 69.5, 8.5, "Large", "");
+Places:addPlace("Planet.Mars.MeridianiPlanum", "Meridiani Planum", 357.5, 0.2, "Large", "");
+Places:addPlace("Planet.Mars.HellasPlanitia", "Hellas Planitia", 70, -43, "Large", "");
+Places:addPlace("Planet.Mars.ElysiumPlanitia", "Elysium Planitia", 155, 2, "Large", "");
+Places:addPlace("Planet.Mars.ArgyrePlanitia", "Argyre Planitia", 316, -50, "Large", "");
+Places:addPlace("Planet.Mars.AcidaliaPlanitia", "Acidalia Planitia", 338, 47, "Large", "");
+Places:addPlace("Planet.Mars.IsidisPlanitia", "Isidis Planitia", 87, 13, "Large", "");
+Places:addPlace("Planet.Mars.ChrysePlanitia", "Chryse Planitia", 320, 27, "Large", "");
+Places:addPlace("Planet.Mars.ArcadiaPlanitia", "Arcadia Planitia", 192, 47, "Large", "");
+Places:addPlace("Planet.Mars.UtopiaPlanitia", "Utopia Planitia", 118, 50, "Large", "");
+Places:addPlace("Planet.Mars.AmazonisPlanitia", "Amazonis Planitia", 196, 25, "Large", "");
+Places:addPlace("Planet.Mars.GusevCrater", "Gusev Crater", 175.4, -14.7, "Large", "");
+Places:addPlace("Planet.Mars.HuygensCrater", "Huygens Crater", 55.4, -14.3, "Large", "");
+Places:addPlace("Planet.Mars.AlbaPatera", "Alba Patera", 250.4, 40.8, "Large", "");
+Places:addPlace("Planet.Mars.TharsisTholus", "Tharsis Tholus", 269.2, 13.5, "Large", "");
+Places:addPlace("Planet.Mars.Cydonia", "Cydonia", 350.4, 40.8, "Large", "");
+Places:addPlace("Planet.Mars.NoctisLabyrinthus", "Noctis Labyrinthus", 102.2, -7, "Large", "");
+Places:addPlace("Planet.Mars.CerberusFossae", "Cerberus Fossae", 155, 15, "Large", "");
+Places:addPlace("Planet.Mars.Spirit", "Spirit", 175, -14.64, "Mid", "");
+Places:addPlace("Planet.Mars.Oppotunity", "Oppotunity", 354, -2.06, "Mid", "Opportunity");
+Places:addPlace("Planet.Mars.MarsPathfinder", "Mars Pathfinder", 326.45, 19.33, "Mid", "");
+Places:addPlace("Planet.Mars.Viking1", "Viking1", 312, 22, "Mid", "");
+Places:addPlace("Planet.Mars.Viking2", "Viking2", 134, 48, "Mid", "");
+
+Places:addPlace("Planet.Jupiter.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Jupiter.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Saturn.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Saturn.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Uranus.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Uranus.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Neptune.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Neptune.SouthPole", "South Pole", 0, -90, "Large", "");
+
+Places:addPlace("Planet.Pluto.NorthPole", "North Pole", 0, 90, "Large", "");
+Places:addPlace("Planet.Pluto.SouthPole", "South Pole", 0, -90, "Large", "");

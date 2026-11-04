@@ -1,0 +1,1 @@
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_satellite_absolute.cpp build-unit4-absolute-sanitize/libmitaka_core.a -fsanitize=address,undefined -o build-unit4-absolute-sanitize/test_satellite_absolute

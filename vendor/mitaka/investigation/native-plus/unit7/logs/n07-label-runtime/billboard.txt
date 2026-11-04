@@ -1,0 +1,444 @@
+
+/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe:	file format coff-i386
+
+Disassembly of section .text:
+
+00401000 <.text>:
+  5279c0: 53                           	push	ebx
+  5279c1: 8b dc                        	mov	ebx, esp
+  5279c3: 83 e4 f8                     	and	esp, -0x8
+  5279c6: 55                           	push	ebp
+  5279c7: 55                           	push	ebp
+  5279c8: 8b 6b 04                     	mov	ebp, dword ptr [ebx + 0x4]
+  5279cb: 89 6c 24 04                  	mov	dword ptr [esp + 0x4], ebp
+  5279cf: 8b ec                        	mov	ebp, esp
+  5279d1: 6a ff                        	push	-0x1
+  5279d3: 68 d0 7d 52 00               	push	0x527dd0
+  5279d8: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]
+  5279de: 50                           	push	eax
+  5279df: 64 89 25 00 00 00 00         	mov	dword ptr fs:[0x0], esp
+  5279e6: 81 ec ec 00 00 00            	sub	esp, 0xec
+  5279ec: 89 5d ec                     	mov	dword ptr [ebp - 0x14], ebx
+  5279ef: 89 7d e0                     	mov	dword ptr [ebp - 0x20], edi
+  5279f2: 89 75 e4                     	mov	dword ptr [ebp - 0x1c], esi
+  5279f5: 8b 7b 0c                     	mov	edi, dword ptr [ebx + 0xc]
+  5279f8: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  5279ff: 8d b5 20 ff ff ff            	lea	esi, [ebp - 0xe0]
+  527a05: f2 0f 10 47 60               	movsd	xmm0, qword ptr [edi + 0x60]
+  527a0a: f2 0f 10 4f 68               	movsd	xmm1, qword ptr [edi + 0x68]
+  527a0f: f2 0f 10 57 70               	movsd	xmm2, qword ptr [edi + 0x70]
+  527a14: f2 0f 11 85 08 ff ff ff      	movsd	qword ptr [ebp - 0xf8], xmm0
+  527a1c: f2 0f 11 8d 10 ff ff ff      	movsd	qword ptr [ebp - 0xf0], xmm1
+  527a24: f2 0f 11 95 18 ff ff ff      	movsd	qword ptr [ebp - 0xe8], xmm2
+  527a2c: 50                           	push	eax
+  527a2d: 89 34 24                     	mov	dword ptr [esp], esi
+  527a30: e8 3b 2d f7 ff               	call	0x49a770 <.text+0x99770>
+  527a35: 59                           	pop	ecx
+  527a36: 8b 43 08                     	mov	eax, dword ptr [ebx + 0x8]
+  527a39: f2 0f 10 a5 08 ff ff ff      	movsd	xmm4, qword ptr [ebp - 0xf8]
+  527a41: f2 0f 5c a5 20 ff ff ff      	subsd	xmm4, qword ptr [ebp - 0xe0]
+  527a49: 0f 28 d4                     	movaps	xmm2, xmm4
+  527a4c: f2 0f 59 d4                  	mulsd	xmm2, xmm4
+  527a50: f2 0f 5c 20                  	subsd	xmm4, qword ptr [eax]
+  527a54: f2 0f 10 ad 10 ff ff ff      	movsd	xmm5, qword ptr [ebp - 0xf0]
+  527a5c: f2 0f 5c ad 28 ff ff ff      	subsd	xmm5, qword ptr [ebp - 0xd8]
+  527a64: f2 0f 10 b5 18 ff ff ff      	movsd	xmm6, qword ptr [ebp - 0xe8]
+  527a6c: f2 0f 5c b5 30 ff ff ff      	subsd	xmm6, qword ptr [ebp - 0xd0]
+  527a74: f2 0f 11 a5 08 ff ff ff      	movsd	qword ptr [ebp - 0xf8], xmm4
+  527a7c: 0f 28 c5                     	movaps	xmm0, xmm5
+  527a7f: 0f 28 ce                     	movaps	xmm1, xmm6
+  527a82: f2 0f 59 c5                  	mulsd	xmm0, xmm5
+  527a86: f2 0f 59 ce                  	mulsd	xmm1, xmm6
+  527a8a: f2 0f 5c 68 08               	subsd	xmm5, qword ptr [eax + 0x8]
+  527a8f: f2 0f 5c 70 10               	subsd	xmm6, qword ptr [eax + 0x10]
+  527a94: f2 0f 11 ad 10 ff ff ff      	movsd	qword ptr [ebp - 0xf0], xmm5
+  527a9c: f2 0f 11 b5 18 ff ff ff      	movsd	qword ptr [ebp - 0xe8], xmm6
+  527aa4: f2 0f 58 d0                  	addsd	xmm2, xmm0
+  527aa8: f2 0f 58 d1                  	addsd	xmm2, xmm1
+  527aac: f2 0f 51 da                  	sqrtsd	xmm3, xmm2
+  527ab0: f2 0f 11 5d c8               	movsd	qword ptr [ebp - 0x38], xmm3
+  527ab5: 50                           	push	eax
+  527ab6: 89 34 24                     	mov	dword ptr [esp], esi
+  527ab9: e8 82 2c f7 ff               	call	0x49a740 <.text+0x99740>
+  527abe: 59                           	pop	ecx
+  527abf: 8b 85 20 ff ff ff            	mov	eax, dword ptr [ebp - 0xe0]
+  527ac5: 8b 95 24 ff ff ff            	mov	edx, dword ptr [ebp - 0xdc]
+  527acb: 8b 8d 28 ff ff ff            	mov	ecx, dword ptr [ebp - 0xd8]
+  527ad1: 8b b5 2c ff ff ff            	mov	esi, dword ptr [ebp - 0xd4]
+  527ad7: f2 0f 10 ad 08 ff ff ff      	movsd	xmm5, qword ptr [ebp - 0xf8]
+  527adf: f2 0f 10 9d 10 ff ff ff      	movsd	xmm3, qword ptr [ebp - 0xf0]
+  527ae7: f2 0f 10 95 18 ff ff ff      	movsd	xmm2, qword ptr [ebp - 0xe8]
+  527aef: f2 0f 10 25 90 1d c3 00      	movsd	xmm4, qword ptr [0xc31d90]
+  527af7: 0f 28 f5                     	movaps	xmm6, xmm5
+  527afa: 0f 28 cb                     	movaps	xmm1, xmm3
+  527afd: 0f 28 fa                     	movaps	xmm7, xmm2
+  527b00: f2 0f 59 f5                  	mulsd	xmm6, xmm5
+  527b04: f2 0f 59 cb                  	mulsd	xmm1, xmm3
+  527b08: f2 0f 59 fa                  	mulsd	xmm7, xmm2
+  527b0c: 89 85 38 ff ff ff            	mov	dword ptr [ebp - 0xc8], eax
+  527b12: 8b 85 30 ff ff ff            	mov	eax, dword ptr [ebp - 0xd0]
+  527b18: 89 95 3c ff ff ff            	mov	dword ptr [ebp - 0xc4], edx
+  527b1e: 8b 95 34 ff ff ff            	mov	edx, dword ptr [ebp - 0xcc]
+  527b24: 89 8d 40 ff ff ff            	mov	dword ptr [ebp - 0xc0], ecx
+  527b2a: f2 0f 58 f1                  	addsd	xmm6, xmm1
+  527b2e: f2 0f 58 f7                  	addsd	xmm6, xmm7
+  527b32: 89 b5 44 ff ff ff            	mov	dword ptr [ebp - 0xbc], esi
+  527b38: 89 85 48 ff ff ff            	mov	dword ptr [ebp - 0xb8], eax
+  527b3e: 89 95 4c ff ff ff            	mov	dword ptr [ebp - 0xb4], edx
+  527b44: f2 0f 51 fe                  	sqrtsd	xmm7, xmm6
+  527b48: f2 0f 5e e7                  	divsd	xmm4, xmm7
+  527b4c: f2 0f 59 ec                  	mulsd	xmm5, xmm4
+  527b50: f2 0f 11 ad 50 ff ff ff      	movsd	qword ptr [ebp - 0xb0], xmm5
+  527b58: f2 0f 59 dc                  	mulsd	xmm3, xmm4
+  527b5c: f2 0f 10 ad 40 ff ff ff      	movsd	xmm5, qword ptr [ebp - 0xc0]
+  527b64: 8b 8d 50 ff ff ff            	mov	ecx, dword ptr [ebp - 0xb0]
+  527b6a: 8b b5 54 ff ff ff            	mov	esi, dword ptr [ebp - 0xac]
+  527b70: f2 0f 11 9d 58 ff ff ff      	movsd	qword ptr [ebp - 0xa8], xmm3
+  527b78: 8b 85 58 ff ff ff            	mov	eax, dword ptr [ebp - 0xa8]
+  527b7e: 8b 95 5c ff ff ff            	mov	edx, dword ptr [ebp - 0xa4]
+  527b84: f2 0f 59 e2                  	mulsd	xmm4, xmm2
+  527b88: f2 0f 11 a5 60 ff ff ff      	movsd	qword ptr [ebp - 0xa0], xmm4
+  527b90: f2 0f 10 a5 48 ff ff ff      	movsd	xmm4, qword ptr [ebp - 0xb8]
+  527b98: 0f 28 dd                     	movaps	xmm3, xmm5
+  527b9b: 0f 28 f4                     	movaps	xmm6, xmm4
+  527b9e: 89 8d 68 ff ff ff            	mov	dword ptr [ebp - 0x98], ecx
+  527ba4: 8b 8d 60 ff ff ff            	mov	ecx, dword ptr [ebp - 0xa0]
+  527baa: 89 b5 6c ff ff ff            	mov	dword ptr [ebp - 0x94], esi
+  527bb0: 8b b5 64 ff ff ff            	mov	esi, dword ptr [ebp - 0x9c]
+  527bb6: 89 85 70 ff ff ff            	mov	dword ptr [ebp - 0x90], eax
+  527bbc: 57                           	push	edi
+  527bbd: 89 95 74 ff ff ff            	mov	dword ptr [ebp - 0x8c], edx
+  527bc3: 89 8d 78 ff ff ff            	mov	dword ptr [ebp - 0x88], ecx
+  527bc9: 89 b5 7c ff ff ff            	mov	dword ptr [ebp - 0x84], esi
+  527bcf: 66 0f ef c9                  	pxor	xmm1, xmm1
+  527bd3: f2 0f 5c 8d 68 ff ff ff      	subsd	xmm1, qword ptr [ebp - 0x98]
+  527bdb: f2 0f 11 4d d0               	movsd	qword ptr [ebp - 0x30], xmm1
+  527be0: f2 0f 59 e1                  	mulsd	xmm4, xmm1
+  527be4: f2 0f 59 e9                  	mulsd	xmm5, xmm1
+  527be8: 66 0f ef ff                  	pxor	xmm7, xmm7
+  527bec: f2 0f 5c bd 70 ff ff ff      	subsd	xmm7, qword ptr [ebp - 0x90]
+  527bf4: f2 0f 11 7f 48               	movsd	qword ptr [edi + 0x48], xmm7
+  527bf9: f2 0f 59 f7                  	mulsd	xmm6, xmm7
+  527bfd: 66 0f ef c0                  	pxor	xmm0, xmm0
+  527c01: f2 0f 5c 85 78 ff ff ff      	subsd	xmm0, qword ptr [ebp - 0x88]
+  527c09: f2 0f 11 45 d8               	movsd	qword ptr [ebp - 0x28], xmm0
+  527c0e: f2 0f 59 d8                  	mulsd	xmm3, xmm0
+  527c12: f2 0f 5c de                  	subsd	xmm3, xmm6
+  527c16: f2 0f 10 b5 38 ff ff ff      	movsd	xmm6, qword ptr [ebp - 0xc8]
+  527c1e: 0f 28 d6                     	movaps	xmm2, xmm6
+  527c21: f2 0f 59 f7                  	mulsd	xmm6, xmm7
+  527c25: f2 0f 59 d0                  	mulsd	xmm2, xmm0
+  527c29: f2 0f 5c f5                  	subsd	xmm6, xmm5
+  527c2d: f2 0f 5c e2                  	subsd	xmm4, xmm2
+  527c31: 0f 28 d3                     	movaps	xmm2, xmm3
+  527c34: 0f 28 ec                     	movaps	xmm5, xmm4
+  527c37: f2 0f 59 d3                  	mulsd	xmm2, xmm3
+  527c3b: f2 0f 59 ec                  	mulsd	xmm5, xmm4
+  527c3f: f2 0f 58 d5                  	addsd	xmm2, xmm5
+  527c43: 0f 28 ee                     	movaps	xmm5, xmm6
+  527c46: f2 0f 59 ee                  	mulsd	xmm5, xmm6
+  527c4a: f2 0f 58 d5                  	addsd	xmm2, xmm5
+  527c4e: f2 0f 10 2d 90 1d c3 00      	movsd	xmm5, qword ptr [0xc31d90]
+  527c56: f2 0f 51 d2                  	sqrtsd	xmm2, xmm2
+  527c5a: f2 0f 5e ea                  	divsd	xmm5, xmm2
+  527c5e: f2 0f 59 dd                  	mulsd	xmm3, xmm5
+  527c62: f2 0f 11 9d 50 ff ff ff      	movsd	qword ptr [ebp - 0xb0], xmm3
+  527c6a: f2 0f 59 e5                  	mulsd	xmm4, xmm5
+  527c6e: 8b 85 50 ff ff ff            	mov	eax, dword ptr [ebp - 0xb0]
+  527c74: 8b 95 54 ff ff ff            	mov	edx, dword ptr [ebp - 0xac]
+  527c7a: f2 0f 11 a5 58 ff ff ff      	movsd	qword ptr [ebp - 0xa8], xmm4
+  527c82: 8b 8d 58 ff ff ff            	mov	ecx, dword ptr [ebp - 0xa8]
+  527c88: 8b b5 5c ff ff ff            	mov	esi, dword ptr [ebp - 0xa4]
+  527c8e: f2 0f 59 ee                  	mulsd	xmm5, xmm6
+  527c92: f2 0f 11 ad 60 ff ff ff      	movsd	qword ptr [ebp - 0xa0], xmm5
+  527c9a: 89 45 98                     	mov	dword ptr [ebp - 0x68], eax
+  527c9d: 8b 85 60 ff ff ff            	mov	eax, dword ptr [ebp - 0xa0]
+  527ca3: 89 55 9c                     	mov	dword ptr [ebp - 0x64], edx
+  527ca6: 8b 95 64 ff ff ff            	mov	edx, dword ptr [ebp - 0x9c]
+  527cac: f2 0f 10 65 98               	movsd	xmm4, qword ptr [ebp - 0x68]
+  527cb1: f2 0f 11 27                  	movsd	qword ptr [edi], xmm4
+  527cb5: 89 4d a0                     	mov	dword ptr [ebp - 0x60], ecx
+  527cb8: 89 75 a4                     	mov	dword ptr [ebp - 0x5c], esi
+  527cbb: f2 0f 10 6d a0               	movsd	xmm5, qword ptr [ebp - 0x60]
+  527cc0: f2 0f 11 6f 08               	movsd	qword ptr [edi + 0x8], xmm5
+  527cc5: 0f 28 dd                     	movaps	xmm3, xmm5
+  527cc8: f2 0f 59 d8                  	mulsd	xmm3, xmm0
+  527ccc: 89 45 a8                     	mov	dword ptr [ebp - 0x58], eax
+  527ccf: 89 55 ac                     	mov	dword ptr [ebp - 0x54], edx
+  527cd2: f2 0f 10 75 a8               	movsd	xmm6, qword ptr [ebp - 0x58]
+  527cd7: f2 0f 11 77 10               	movsd	qword ptr [edi + 0x10], xmm6
+  527cdc: 0f 28 d6                     	movaps	xmm2, xmm6
+  527cdf: f2 0f 59 d7                  	mulsd	xmm2, xmm7
+  527ce3: f2 0f 5c d3                  	subsd	xmm2, xmm3
+  527ce7: f2 0f 11 55 80               	movsd	qword ptr [ebp - 0x80], xmm2
+  527cec: 0f 28 dc                     	movaps	xmm3, xmm4
+  527cef: f2 0f 59 d8                  	mulsd	xmm3, xmm0
+  527cf3: 0f 28 c6                     	movaps	xmm0, xmm6
+  527cf6: f2 0f 59 c1                  	mulsd	xmm0, xmm1
+  527cfa: 8b 4d 80                     	mov	ecx, dword ptr [ebp - 0x80]
+  527cfd: 8b 75 84                     	mov	esi, dword ptr [ebp - 0x7c]
+  527d00: f2 0f 10 75 d8               	movsd	xmm6, qword ptr [ebp - 0x28]
+  527d05: f2 0f 11 77 50               	movsd	qword ptr [edi + 0x50], xmm6
+  527d0a: 89 4d b0                     	mov	dword ptr [ebp - 0x50], ecx
+  527d0d: f2 0f 5c d8                  	subsd	xmm3, xmm0
+  527d11: f2 0f 11 5d 88               	movsd	qword ptr [ebp - 0x78], xmm3
+  527d16: 8b 45 88                     	mov	eax, dword ptr [ebp - 0x78]
+  527d19: 8b 55 8c                     	mov	edx, dword ptr [ebp - 0x74]
+  527d1c: 0f 28 c5                     	movaps	xmm0, xmm5
+  527d1f: f2 0f 10 6d d0               	movsd	xmm5, qword ptr [ebp - 0x30]
+  527d24: f2 0f 11 6f 40               	movsd	qword ptr [edi + 0x40], xmm5
+  527d29: f2 0f 59 c1                  	mulsd	xmm0, xmm1
+  527d2d: 0f 28 cc                     	movaps	xmm1, xmm4
+  527d30: f2 0f 59 cf                  	mulsd	xmm1, xmm7
+  527d34: 89 75 b4                     	mov	dword ptr [ebp - 0x4c], esi
+  527d37: 89 45 b8                     	mov	dword ptr [ebp - 0x48], eax
+  527d3a: 89 55 bc                     	mov	dword ptr [ebp - 0x44], edx
+  527d3d: f2 0f 5c c1                  	subsd	xmm0, xmm1
+  527d41: f2 0f 10 4d b0               	movsd	xmm1, qword ptr [ebp - 0x50]
+  527d46: f2 0f 10 55 b8               	movsd	xmm2, qword ptr [ebp - 0x48]
+  527d4b: f2 0f 11 45 90               	movsd	qword ptr [ebp - 0x70], xmm0
+  527d50: 8b 4d 90                     	mov	ecx, dword ptr [ebp - 0x70]
+  527d53: 8b 75 94                     	mov	esi, dword ptr [ebp - 0x6c]
+  527d56: f2 0f 11 4f 20               	movsd	qword ptr [edi + 0x20], xmm1
+  527d5b: f2 0f 11 57 28               	movsd	qword ptr [edi + 0x28], xmm2
+  527d60: 89 4d c0                     	mov	dword ptr [ebp - 0x40], ecx
+  527d63: 89 75 c4                     	mov	dword ptr [ebp - 0x3c], esi
+  527d66: f2 0f 10 5d c0               	movsd	xmm3, qword ptr [ebp - 0x40]
+  527d6b: f2 0f 11 5f 30               	movsd	qword ptr [edi + 0x30], xmm3
+  527d70: 66 0f ef c0                  	pxor	xmm0, xmm0
+  527d74: f2 0f 11 47 18               	movsd	qword ptr [edi + 0x18], xmm0
+  527d79: 66 0f ef e4                  	pxor	xmm4, xmm4
+  527d7d: f2 0f 11 67 38               	movsd	qword ptr [edi + 0x38], xmm4
+  527d82: 66 0f ef ff                  	pxor	xmm7, xmm7
+  527d86: f2 0f 11 7f 58               	movsd	qword ptr [edi + 0x58], xmm7
+  527d8b: ff 15 98 59 c2 00            	call	dword ptr [0xc25998]
+  527d91: c7 45 fc ff ff ff ff         	mov	dword ptr [ebp - 0x4], 0xffffffff
+  527d98: f2 0f 5a 45 c8               	cvtsd2ss	xmm0, qword ptr [ebp - 0x38]
+  527d9d: 8b 7d e0                     	mov	edi, dword ptr [ebp - 0x20]
+  527da0: 8b 75 e4                     	mov	esi, dword ptr [ebp - 0x1c]
+  527da3: f3 0f 11 85 08 ff ff ff      	movss	dword ptr [ebp - 0xf8], xmm0
+  527dab: d9 85 08 ff ff ff            	fld	dword ptr [ebp - 0xf8]
+  527db1: 8b 4d f4                     	mov	ecx, dword ptr [ebp - 0xc]
+  527db4: 64 89 0d 00 00 00 00         	mov	dword ptr fs:[0x0], ecx
+  527dbb: 8b e5                        	mov	esp, ebp
+  527dbd: 5d                           	pop	ebp
+  527dbe: 8b e3                        	mov	esp, ebx
+  527dc0: 5b                           	pop	ebx
+  527dc1: c3                           	ret
+  527dc2: 8b 5d ec                     	mov	ebx, dword ptr [ebp - 0x14]
+  527dc5: c3                           	ret
+  527dc6: 8d 76 00                     	lea	esi, [esi]
+  527dc9: 8d bc 27 00 00 00 00         	lea	edi, [edi + eiz]
+  527dd0: b8 90 57 28 01               	mov	eax, 0x1285790
+  527dd5: e9 ac 71 56 00               	jmp	0xa8ef86 <.text+0x68df86>
+  527dda: 90                           	nop
+  527ddb: 90                           	nop
+  527ddc: 90                           	nop
+  527ddd: 90                           	nop
+  527dde: 90                           	nop
+  527ddf: 90                           	nop
+  527de0: 53                           	push	ebx
+  527de1: 8b dc                        	mov	ebx, esp
+  527de3: 83 e4 c0                     	and	esp, -0x40
+  527de6: 55                           	push	ebp
+  527de7: 55                           	push	ebp
+  527de8: 8b 6b 04                     	mov	ebp, dword ptr [ebx + 0x4]
+  527deb: 89 6c 24 04                  	mov	dword ptr [esp + 0x4], ebp
+  527def: 8b ec                        	mov	ebp, esp
+  527df1: 6a ff                        	push	-0x1
+  527df3: 68 30 7c bf 00               	push	0xbf7c30
+  527df8: 64 a1 00 00 00 00            	mov	eax, dword ptr fs:[0x0]
+  527dfe: 50                           	push	eax
+  527dff: 64 89 25 00 00 00 00         	mov	dword ptr fs:[0x0], esp
+  527e06: 81 ec 2c 02 00 00            	sub	esp, 0x22c
+  527e0c: 89 5d ec                     	mov	dword ptr [ebp - 0x14], ebx
+  527e0f: 89 7d c8                     	mov	dword ptr [ebp - 0x38], edi
+  527e12: 89 75 cc                     	mov	dword ptr [ebp - 0x34], esi
+  527e15: a1 10 53 d8 00               	mov	eax, dword ptr [0xd85310]
+  527e1a: 89 45 d0                     	mov	dword ptr [ebp - 0x30], eax
+  527e1d: f3 0f 10 05 44 1e c3 00      	movss	xmm0, dword ptr [0xc31e44]
+  527e25: e8 22 70 56 00               	call	0xa8ee4c <.text+0x68de4c>
+  527e2a: f3 0f 59 c0                  	mulss	xmm0, xmm0
+  527e2e: f3 0f 11 85 cc fd ff ff      	movss	dword ptr [ebp - 0x234], xmm0
+  527e36: 8d 45 88                     	lea	eax, [ebp - 0x78]
+  527e39: 50                           	push	eax
+  527e3a: 68 a6 0b 00 00               	push	0xba6
+  527e3f: ff 15 d0 58 c2 00            	call	dword ptr [0xc258d0]
+  527e45: f3 0f 10 75 b8               	movss	xmm6, dword ptr [ebp - 0x48]
+  527e4a: f3 0f 59 f6                  	mulss	xmm6, xmm6
+  527e4e: f3 0f 10 45 bc               	movss	xmm0, dword ptr [ebp - 0x44]
+  527e53: f3 0f 59 c0                  	mulss	xmm0, xmm0
+  527e57: f3 0f 58 f0                  	addss	xmm6, xmm0
+  527e5b: 66 0f ef e4                  	pxor	xmm4, xmm4
+  527e5f: f3 0f 10 4d c0               	movss	xmm1, dword ptr [ebp - 0x40]
+  527e64: f3 0f 59 c9                  	mulss	xmm1, xmm1
+  527e68: f3 0f 10 45 88               	movss	xmm0, dword ptr [ebp - 0x78]
+  527e6d: f3 0f 59 c0                  	mulss	xmm0, xmm0
+  527e71: f3 0f 58 f1                  	addss	xmm6, xmm1
+  527e75: 0f 28 ee                     	movaps	xmm5, xmm6
+  527e78: f3 0f 10 55 8c               	movss	xmm2, dword ptr [ebp - 0x74]
+  527e7d: f3 0f 59 d2                  	mulss	xmm2, xmm2
+  527e81: f3 0f 10 5d 90               	movss	xmm3, dword ptr [ebp - 0x70]
+  527e86: f3 0f 59 db                  	mulss	xmm3, xmm3
+  527e8a: f3 0f 58 c2                  	addss	xmm0, xmm2
+  527e8e: f3 0f 58 c3                  	addss	xmm0, xmm3
+  527e92: f3 0f 5c e8                  	subss	xmm5, xmm0
+  527e96: 0f 2f e5                     	comiss	xmm4, xmm5
+  527e99: 0f 83 db 0a 00 00            	jae	0x52897a <.text+0x12797a>
+  527e9f: f3 0f 5e c6                  	divss	xmm0, xmm6
+  527ea3: f3 0f 10 8d cc fd ff ff      	movss	xmm1, dword ptr [ebp - 0x234]
+  527eab: 0f 2f c8                     	comiss	xmm1, xmm0
+  527eae: 76 19                        	jbe	0x527ec9 <.text+0x126ec9>
+  527eb0: 8b 4d d0                     	mov	ecx, dword ptr [ebp - 0x30]
+  527eb3: e8 08 70 56 00               	call	0xa8eec0 <.text+0x68dec0>
+  527eb8: 8b 4d f4                     	mov	ecx, dword ptr [ebp - 0xc]
+  527ebb: 64 89 0d 00 00 00 00         	mov	dword ptr fs:[0x0], ecx
+  527ec2: 8b e5                        	mov	esp, ebp
+  527ec4: 5d                           	pop	ebp
+  527ec5: 8b e3                        	mov	esp, ebx
+  527ec7: 5b                           	pop	ebx
+  527ec8: c3                           	ret
+  527ec9: f3 0f 11 85 c8 fd ff ff      	movss	dword ptr [ebp - 0x238], xmm0
+  527ed1: ff 15 04 59 c2 00            	call	dword ptr [0xc25904]
+  527ed7: f3 0f 10 85 c8 fd ff ff      	movss	xmm0, dword ptr [ebp - 0x238]
+  527edf: f3 0f 5e 85 cc fd ff ff      	divss	xmm0, dword ptr [ebp - 0x234]
+  527ee7: f3 0f 10 0d 5c 1e c3 00      	movss	xmm1, dword ptr [0xc31e5c]
+  527eef: f3 0f 5c c1                  	subss	xmm0, xmm1
+  527ef3: f3 0f 5d c8                  	minss	xmm1, xmm0
+  527ef7: f3 0f 11 8d 28 fe ff ff      	movss	dword ptr [ebp - 0x1d8], xmm1
+  527eff: e8 ec 15 0a 00               	call	0x5c94f0 <.text+0x1c84f0>
+  527f04: 83 c0 04                     	add	eax, 0x4
+  527f07: 8b c8                        	mov	ecx, eax
+  527f09: e8 52 b4 22 00               	call	0x753360 <.text+0x352360>
+  527f0e: d9 9d c8 fd ff ff            	fstp	dword ptr [ebp - 0x238]
+  527f14: f3 0f 10 85 c8 fd ff ff      	movss	xmm0, dword ptr [ebp - 0x238]
+  527f1c: f3 0f 5a 6b 18               	cvtss2sd	xmm5, dword ptr [ebx + 0x18]
+  527f21: f3 0f 5a 73 14               	cvtss2sd	xmm6, dword ptr [ebx + 0x14]
+  527f26: f2 0f 59 35 98 1d c3 00      	mulsd	xmm6, qword ptr [0xc31d98]
+  527f2e: f3 0f 10 8d 28 fe ff ff      	movss	xmm1, dword ptr [ebp - 0x1d8]
+  527f36: f3 0f 10 55 b8               	movss	xmm2, dword ptr [ebp - 0x48]
+  527f3b: f3 0f 10 5d bc               	movss	xmm3, dword ptr [ebp - 0x44]
+  527f40: f3 0f 10 65 c0               	movss	xmm4, dword ptr [ebp - 0x40]
+  527f45: f3 0f 11 95 e0 fd ff ff      	movss	dword ptr [ebp - 0x220], xmm2
+  527f4d: f3 0f 11 9d e4 fd ff ff      	movss	dword ptr [ebp - 0x21c], xmm3
+  527f55: f3 0f 11 a5 e8 fd ff ff      	movss	dword ptr [ebp - 0x218], xmm4
+  527f5d: f2 0f 11 b5 c8 fd ff ff      	movsd	qword ptr [ebp - 0x238], xmm6
+  527f65: f3 0f 59 c8                  	mulss	xmm1, xmm0
+  527f69: f2 0f 10 05 a0 1d c3 00      	movsd	xmm0, qword ptr [0xc31da0]
+  527f71: f3 0f 11 8d 28 fe ff ff      	movss	dword ptr [ebp - 0x1d8], xmm1
+  527f79: f2 0f 5c c5                  	subsd	xmm0, xmm5
+  527f7d: f2 0f 59 05 98 1d c3 00      	mulsd	xmm0, qword ptr [0xc31d98]
+  527f85: e8 86 6e 56 00               	call	0xa8ee10 <.text+0x68de10>
+  527f8a: f2 0f 11 85 d8 fd ff ff      	movsd	qword ptr [ebp - 0x228], xmm0
+  527f92: f2 0f 10 85 c8 fd ff ff      	movsd	xmm0, qword ptr [ebp - 0x238]
+  527f9a: f2 0f 11 8d d0 fd ff ff      	movsd	qword ptr [ebp - 0x230], xmm1
+  527fa2: e8 69 6e 56 00               	call	0xa8ee10 <.text+0x68de10>
+  527fa7: f2 0f 5a b5 d0 fd ff ff      	cvtsd2ss	xmm6, qword ptr [ebp - 0x230]
+  527faf: f2 0f 10 9d d8 fd ff ff      	movsd	xmm3, qword ptr [ebp - 0x228]
+  527fb7: f2 0f 59 cb                  	mulsd	xmm1, xmm3
+  527fbb: f2 0f 5a d1                  	cvtsd2ss	xmm2, xmm1
+  527fbf: f2 0f 59 d8                  	mulsd	xmm3, xmm0
+  527fc3: f2 0f 5a e3                  	cvtsd2ss	xmm4, xmm3
+  527fc7: f3 0f 10 2d 48 1e c3 00      	movss	xmm5, dword ptr [0xc31e48]
+  527fcf: f3 0f 59 d5                  	mulss	xmm2, xmm5
+  527fd3: f3 0f 59 e5                  	mulss	xmm4, xmm5
+  527fd7: f3 0f 59 f5                  	mulss	xmm6, xmm5
+  527fdb: 83 c4 f4                     	add	esp, -0xc
+  527fde: f3 0f 11 14 24               	movss	dword ptr [esp], xmm2
+  527fe3: f3 0f 11 64 24 04            	movss	dword ptr [esp + 0x4], xmm4
+  527fe9: f3 0f 11 74 24 08            	movss	dword ptr [esp + 0x8], xmm6
+  527fef: ff 15 4c 59 c2 00            	call	dword ptr [0xc2594c]
+  527ff5: 68 00 20 00 00               	push	0x2000
+  527ffa: ff 15 30 59 c2 00            	call	dword ptr [0xc25930]
+  528000: 68 71 0b 00 00               	push	0xb71
+  528005: ff 15 18 59 c2 00            	call	dword ptr [0xc25918]
+  52800b: f3 0f 5a 43 1c               	cvtss2sd	xmm0, dword ptr [ebx + 0x1c]
+  528010: f3 0f 5a 95 e0 fd ff ff      	cvtss2sd	xmm2, dword ptr [ebp - 0x220]
+  528018: f3 0f 5a 9d e4 fd ff ff      	cvtss2sd	xmm3, dword ptr [ebp - 0x21c]
+  528020: f3 0f 5a a5 e8 fd ff ff      	cvtss2sd	xmm4, dword ptr [ebp - 0x218]
+  528028: f2 0f 59 05 a8 1d c3 00      	mulsd	xmm0, qword ptr [0xc31da8]
+  528030: f2 0f 5e 05 b0 1d c3 00      	divsd	xmm0, qword ptr [0xc31db0]
+  528038: f2 0f 5a c8                  	cvtsd2ss	xmm1, xmm0
+  52803c: f2 0f 11 95 c8 fd ff ff      	movsd	qword ptr [ebp - 0x238], xmm2
+  528044: f2 0f 11 9d d0 fd ff ff      	movsd	qword ptr [ebp - 0x230], xmm3
+  52804c: f3 0f 11 8d 2c fe ff ff      	movss	dword ptr [ebp - 0x1d4], xmm1
+  528054: f2 0f 11 a5 d8 fd ff ff      	movsd	qword ptr [ebp - 0x228], xmm4
+  52805c: 8d b5 f0 fe ff ff            	lea	esi, [ebp - 0x110]
+  528062: 56                           	push	esi
+  528063: 68 a6 0b 00 00               	push	0xba6
+  528068: ff 15 94 59 c2 00            	call	dword ptr [0xc25994]
+  52806e: c7 45 fc 00 00 00 00         	mov	dword ptr [ebp - 0x4], 0x0
+  528075: f2 0f 10 85 50 ff ff ff      	movsd	xmm0, qword ptr [ebp - 0xb0]
+  52807d: f2 0f 10 8d 58 ff ff ff      	movsd	xmm1, qword ptr [ebp - 0xa8]
+  528085: f2 0f 10 95 60 ff ff ff      	movsd	xmm2, qword ptr [ebp - 0xa0]
+  52808d: f2 0f 11 85 68 fe ff ff      	movsd	qword ptr [ebp - 0x198], xmm0
+  528095: f2 0f 11 8d 70 fe ff ff      	movsd	qword ptr [ebp - 0x190], xmm1
+  52809d: f2 0f 11 95 78 fe ff ff      	movsd	qword ptr [ebp - 0x188], xmm2
+  5280a5: 8d bd 70 ff ff ff            	lea	edi, [ebp - 0x90]
+  5280ab: 50                           	push	eax
+  5280ac: 89 3c 24                     	mov	dword ptr [esp], edi
+  5280af: e8 bc 26 f7 ff               	call	0x49a770 <.text+0x99770>
+  5280b4: 59                           	pop	ecx
+  5280b5: f2 0f 10 a5 68 fe ff ff      	movsd	xmm4, qword ptr [ebp - 0x198]
+  5280bd: f2 0f 5c a5 70 ff ff ff      	subsd	xmm4, qword ptr [ebp - 0x90]
+  5280c5: 0f 28 d4                     	movaps	xmm2, xmm4
+  5280c8: f2 0f 59 d4                  	mulsd	xmm2, xmm4
+  5280cc: f2 0f 5c a5 c8 fd ff ff      	subsd	xmm4, qword ptr [ebp - 0x238]
+  5280d4: f2 0f 10 ad 70 fe ff ff      	movsd	xmm5, qword ptr [ebp - 0x190]
+  5280dc: f2 0f 5c ad 78 ff ff ff      	subsd	xmm5, qword ptr [ebp - 0x88]
+  5280e4: f2 0f 10 b5 78 fe ff ff      	movsd	xmm6, qword ptr [ebp - 0x188]
+  5280ec: f2 0f 5c 75 80               	subsd	xmm6, qword ptr [ebp - 0x80]
+  5280f1: f2 0f 11 a5 68 fe ff ff      	movsd	qword ptr [ebp - 0x198], xmm4
+  5280f9: 0f 28 c5                     	movaps	xmm0, xmm5
+  5280fc: 0f 28 ce                     	movaps	xmm1, xmm6
+  5280ff: f2 0f 59 c5                  	mulsd	xmm0, xmm5
+  528103: f2 0f 59 ce                  	mulsd	xmm1, xmm6
+  528107: f2 0f 5c ad d0 fd ff ff      	subsd	xmm5, qword ptr [ebp - 0x230]
+  52810f: f2 0f 5c b5 d8 fd ff ff      	subsd	xmm6, qword ptr [ebp - 0x228]
+  528117: f2 0f 11 ad 70 fe ff ff      	movsd	qword ptr [ebp - 0x190], xmm5
+  52811f: f2 0f 11 b5 78 fe ff ff      	movsd	qword ptr [ebp - 0x188], xmm6
+  528127: f2 0f 58 d0                  	addsd	xmm2, xmm0
+  52812b: f2 0f 58 d1                  	addsd	xmm2, xmm1
+  52812f: 50                           	push	eax
+  528130: f2 0f 51 da                  	sqrtsd	xmm3, xmm2
+  528134: f2 0f 11 9d 60 fe ff ff      	movsd	qword ptr [ebp - 0x1a0], xmm3
+  52813c: 89 3c 24                     	mov	dword ptr [esp], edi
+  52813f: e8 fc 25 f7 ff               	call	0x49a740 <.text+0x99740>
+  528144: 59                           	pop	ecx
+  528145: 8b 85 70 ff ff ff            	mov	eax, dword ptr [ebp - 0x90]
+  52814b: 8b 95 74 ff ff ff            	mov	edx, dword ptr [ebp - 0x8c]
+  528151: 8b 8d 78 ff ff ff            	mov	ecx, dword ptr [ebp - 0x88]
+  528157: 8b bd 7c ff ff ff            	mov	edi, dword ptr [ebp - 0x84]
+  52815d: f2 0f 10 ad 68 fe ff ff      	movsd	xmm5, qword ptr [ebp - 0x198]
+  528165: f2 0f 10 9d 70 fe ff ff      	movsd	xmm3, qword ptr [ebp - 0x190]
+  52816d: f2 0f 10 a5 78 fe ff ff      	movsd	xmm4, qword ptr [ebp - 0x188]
+  528175: f2 0f 10 15 b8 1d c3 00      	movsd	xmm2, qword ptr [0xc31db8]
+  52817d: 0f 28 f5                     	movaps	xmm6, xmm5
+  528180: 0f 28 cb                     	movaps	xmm1, xmm3
+  528183: 0f 28 fc                     	movaps	xmm7, xmm4
+  528186: f2 0f 59 f5                  	mulsd	xmm6, xmm5
+  52818a: f2 0f 59 cb                  	mulsd	xmm1, xmm3
+  52818e: f2 0f 59 fc                  	mulsd	xmm7, xmm4
+  528192: 89 85 c8 fd ff ff            	mov	dword ptr [ebp - 0x238], eax
+  528198: 8b 45 80                     	mov	eax, dword ptr [ebp - 0x80]
+  52819b: 89 95 cc fd ff ff            	mov	dword ptr [ebp - 0x234], edx
+  5281a1: 8b 55 84                     	mov	edx, dword ptr [ebp - 0x7c]
+  5281a4: 89 8d d0 fd ff ff            	mov	dword ptr [ebp - 0x230], ecx
+  5281aa: f2 0f 58 f1                  	addsd	xmm6, xmm1
+  5281ae: f2 0f 58 f7                  	addsd	xmm6, xmm7
+  5281b2: 89 bd d4 fd ff ff            	mov	dword ptr [ebp - 0x22c], edi
+  5281b8: 89 85 d8 fd ff ff            	mov	dword ptr [ebp - 0x228], eax
+  5281be: 89 95 dc fd ff ff            	mov	dword ptr [ebp - 0x224], edx
+  5281c4: f2 0f 51 fe                  	sqrtsd	xmm7, xmm6
+  5281c8: f2 0f 5e d7                  	divsd	xmm2, xmm7
+  5281cc: f2 0f 59 ea                  	mulsd	xmm5, xmm2
+  5281d0: f2 0f 11 ad e0 fd ff ff      	movsd	qword ptr [ebp - 0x220], xmm5
+  5281d8: f2 0f 59 da                  	mulsd	xmm3, xmm2
+  5281dc: f2 0f 10 ad d0 fd ff ff      	movsd	xmm5, qword ptr [ebp - 0x230]
+  5281e4: 8b 8d e0 fd ff ff            	mov	ecx, dword ptr [ebp - 0x220]
+  5281ea: 8b bd e4 fd ff ff            	mov	edi, dword ptr [ebp - 0x21c]
+  5281f0: f2 0f 11 9d e8 fd ff ff      	movsd	qword ptr [ebp - 0x218], xmm3
+  5281f8: 8b 85 e8 fd ff ff            	mov	eax, dword ptr [ebp - 0x218]
+  5281fe: 8b 95 ec fd ff ff            	mov	edx, dword ptr [ebp - 0x214]
+  528204: f2 0f 59 e2                  	mulsd	xmm4, xmm2
+  528208: f2 0f 11 a5 f0 fd ff ff      	movsd	qword ptr [ebp - 0x210], xmm4

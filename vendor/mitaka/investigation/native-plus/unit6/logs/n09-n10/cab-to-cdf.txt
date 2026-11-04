@@ -1,0 +1,19 @@
+cab-to-cdf
+Source SHA-256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+Method: /usr/bin/objdump --disassemble --x86-asm-syntax=intel; selected VA ranges, no binary execution.
+
+VA [0x4bae16, 0x4bae44):
+  4bae16: 8b bd 14 fd ff ff            	mov	edi, dword ptr [ebp - 0x2ec]
+  4bae1c: 8d 9d 14 fb ff ff            	lea	ebx, [ebp - 0x4ec]
+  4bae22: 8b f3                        	mov	esi, ebx
+  4bae24: 8a 17                        	mov	dl, byte ptr [edi]
+  4bae26: 47                           	inc	edi
+  4bae27: 88 16                        	mov	byte ptr [esi], dl
+  4bae29: 46                           	inc	esi
+  4bae2a: 84 d2                        	test	dl, dl
+  4bae2c: 75 f6                        	jne	0x4bae24 <.text+0xb9e24>
+  4bae2e: 68 10 de c2 00               	push	0xc2de10
+  4bae33: 53                           	push	ebx
+  4bae34: ff 15 ac 56 c2 00            	call	dword ptr [0xc256ac]
+  4bae3a: c6 40 04 00                  	mov	byte ptr [eax + 0x4], 0x0
+  4bae3e: c7 00 2e 63 64 66            	mov	dword ptr [eax], 0x6664632e

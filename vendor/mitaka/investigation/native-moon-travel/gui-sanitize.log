@@ -1,0 +1,25 @@
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core" ARCH="" SANITIZE="address,undefined" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined" "/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core/libmitaka_core.a"
+make[1]: `/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core/libmitaka_core.a' is up to date.
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_sky_model.cpp build/moon-travel-sanitize/sky_model.o "/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/moon-travel-sanitize/test_sky_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_solar_model.cpp build/moon-travel-sanitize/sky_model.o build/moon-travel-sanitize/solar_camera.o "/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/moon-travel-sanitize/test_solar_model"
+mkdir -p "build/moon-travel-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -MMD -MP -c src/planet_surface.cpp -o "build/moon-travel-sanitize/planet_surface.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_planet_surface.cpp build/moon-travel-sanitize/planet_surface.o build/moon-travel-sanitize/solar_camera.o -fsanitize=address,undefined -o "build/moon-travel-sanitize/test_planet_surface"
+mkdir -p "build/moon-travel-sanitize"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/planet_textures.mm -o "build/moon-travel-sanitize/planet_textures.o"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_planet_textures.mm build/moon-travel-sanitize/planet_textures.o -fsanitize=address,undefined -framework Foundation -framework ImageIO -framework CoreGraphics -o "build/moon-travel-sanitize/test_planet_textures"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined tests/test_surface_navigation.cpp build/moon-travel-sanitize/surface_navigation.o build/moon-travel-sanitize/solar_camera.o "/Users/kota/mitaka/native/gui/build/moon-travel-sanitize/core/libmitaka_core.a" -fsanitize=address,undefined -o "build/moon-travel-sanitize/test_surface_navigation"
+"build/moon-travel-sanitize/test_sky_model"
+sky model tests passed
+"build/moon-travel-sanitize/test_solar_model"
+solar model tests passed
+"build/moon-travel-sanitize/test_planet_surface"
+planet surface tests passed
+"build/moon-travel-sanitize/test_planet_textures"
+planet texture tests passed
+"build/moon-travel-sanitize/test_playback_clock"
+playback clock: 10098 checks passed
+"build/moon-travel-sanitize/test_surface_navigation"
+surface navigation tests passed
+"build/moon-travel-sanitize/test_playback_controller"
+PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, disabled/end, failure, interrupt, invalidate

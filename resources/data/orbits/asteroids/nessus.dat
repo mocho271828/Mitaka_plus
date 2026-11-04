@@ -1,0 +1,16 @@
+# Nessus
+
+Name: Nessus
+DisplayName: Nessus
+No: 7066
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 24.544849
+e: 0.518399
+w: 170.539825
+M0: 19.000877
+i: 15.656903
+node: 31.398874
+Size: 500 500 500
+B_V: 0.75

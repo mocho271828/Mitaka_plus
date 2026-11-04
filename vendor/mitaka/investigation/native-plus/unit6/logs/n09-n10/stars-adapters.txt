@@ -1,0 +1,25 @@
+stars-adapters
+Source SHA-256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
+Method: /usr/bin/objdump --disassemble --x86-asm-syntax=intel; selected VA ranges, no binary execution.
+
+VA [0x5e6480, 0x5e64d1):
+  5e6480: ff 74 24 04                  	push	dword ptr [esp + 0x4]
+  5e6484: b9 40 79 10 01               	mov	ecx, 0x1107940
+  5e6489: e8 e2 39 fa ff               	call	0x589e70 <.text+0x188e70>
+  5e648e: e8 dd 1f ff ff               	call	0x5d8470 <.text+0x1d7470>
+  5e6493: 8b c8                        	mov	ecx, eax
+  5e6495: e8 46 27 ff ff               	call	0x5d8be0 <.text+0x1d7be0>
+  5e649a: c2 04 00                     	ret	0x4
+  5e649d: 8d 76 00                     	lea	esi, [esi]
+  5e64a0: ff 74 24 04                  	push	dword ptr [esp + 0x4]
+  5e64a4: b9 40 79 10 01               	mov	ecx, 0x1107940
+  5e64a9: e8 22 43 fa ff               	call	0x58a7d0 <.text+0x1897d0>
+  5e64ae: e8 bd 1f ff ff               	call	0x5d8470 <.text+0x1d7470>
+  5e64b3: 8b c8                        	mov	ecx, eax
+  5e64b5: e8 26 27 ff ff               	call	0x5d8be0 <.text+0x1d7be0>
+  5e64ba: c2 04 00                     	ret	0x4
+  5e64bd: 8d 76 00                     	lea	esi, [esi]
+  5e64c0: ff 74 24 04                  	push	dword ptr [esp + 0x4]
+  5e64c4: b9 40 79 10 01               	mov	ecx, 0x1107940
+  5e64c9: e8 62 4c fa ff               	call	0x58b130 <.text+0x18a130>
+  5e64ce: c2 04 00                     	ret	0x4

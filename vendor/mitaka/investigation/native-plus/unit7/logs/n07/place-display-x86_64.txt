@@ -1,0 +1,3 @@
+Local place display: sources=4, places=4, groups=1, landscapes=2
+Local place display: sources=1, places=0, groups=0, landscapes=0
+Place display model checks passed: 34

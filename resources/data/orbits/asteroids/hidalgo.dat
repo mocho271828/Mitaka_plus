@@ -1,0 +1,16 @@
+# Hidalgo
+
+Name: Hidalgo
+DisplayName: Hidalgo
+No: 944
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 5.759999
+e: 0.659040
+w: 56.328808
+M0: 189.377014
+i: 42.560650
+node: 21.691616
+Size: 500 500 500
+B_V: 0.75

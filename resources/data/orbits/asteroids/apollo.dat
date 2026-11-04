@@ -1,0 +1,16 @@
+# Apollo
+
+Name: Apollo
+DisplayName: Apollo
+No: 1862
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.471169
+e: 0.560049
+w: 285.675140
+M0: 347.152588
+i: 6.356377
+node: 35.906105
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,16 @@
+# Hygiea
+
+Name: Hygiea
+DisplayName: Hygiea
+No: 10
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.136872
+e: 0.119662
+w: 314.615997
+M0: 242.419403
+i: 3.843920
+node: 283.688477
+Size: 500 500 500
+B_V: 0.75

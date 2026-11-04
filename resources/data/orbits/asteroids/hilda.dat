@@ -1,0 +1,16 @@
+# Hilda
+
+Name: Hilda
+DisplayName: Hilda
+No: 153
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 3.978061
+e: 0.143339
+w: 42.989876
+M0: 306.202545
+i: 7.834928
+node: 228.428848
+Size: 500 500 500
+B_V: 0.75

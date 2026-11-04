@@ -1,0 +1,122 @@
+//=====  Solar System  =====
+SUN:			1
+
+PLN_MERCURY:	1
+PLN_VENUS:		1
+PLN_EARTH:		1
+PLN_MARS:		1
+PLN_JUPITER:	1
+PLN_SATURN:		1
+PLN_URANUS:		1
+PLN_NEPTUNE:	1
+PLN_PLUTO:		1
+
+
+
+//=====  Satellites  =====
+//---  Earth  ---
+SAT_E1:			1   // Moon
+//---  Mars  ---
+SAT_M1:			1   // Phobos
+SAT_M2:			1   // Deimos
+//---  Jupiter  ---
+SAT_J1:			1   // Io
+SAT_J2:			1   // Europa
+SAT_J3:			1   // Ganymede
+SAT_J4:			1   // Callisto
+SAT_J5:			1   // Amalthea
+SAT_J6:			1   // Himalia
+//---  Saturn  ---
+SAT_S1:			1   // Mimas
+SAT_S2:			1   // Enceladus
+SAT_S3:			1   // Tethys
+SAT_S4:			1   // Dione
+SAT_S5:			1   // Rhea
+SAT_S6:			1   // Titan
+//---  Uranus  ---
+SAT_U1:			1   // Ariel
+SAT_U2:			1   // Umbriel
+SAT_U3:			1   // Titania
+SAT_U4:			1   // Oberon
+SAT_U5:			1   // Miranda
+//---  Neptune  ---
+SAT_N1:			1   // Triton
+SAT_N2:			1   // Nereid
+//---  Pluto  ---
+SAT_P1:			1   // Charon
+
+
+
+//=====  Solar system small bodies  =====
+//---  Minor Planets  ---
+MP_1:			1   // Ceres
+//---  Centaurs and Scattered-Disk Objects  ---
+MP_136199:		1   // Eris
+MP_90377:		1   // Sedna
+//---  Transneptunian Objects  ---
+MP_136472:		1   // Makemake
+MP_136108:		1   // Haumea
+
+
+
+//=====  Stars  =====
+HIP_7588:		1   // Achernar
+HIP_95947:		1	// Albireo
+HIP_17702:		1   // Alcyone/Pleiades
+HIP_21421:		1   // Aldebaran
+HIP_97649:		1   // Altair
+HIP_80763:		1   // Antares
+HIP_69673:		1   // Arcturus
+HIP_27989:		1   // Betelgeuse
+HIP_30438:		1   // Canopus
+HIP_24608:		1   // Capella
+HIP_36850:		1   // Castor
+HIP_102098:		1   // Deneb
+HIP_57632:		1   // Denebola
+HIP_113368:		1   // Fomalhaut
+HIP_11767:		1   // Polaris
+HIP_37826:		1   // Pollux
+HIP_37279:		1   // Procyon
+HIP_49669:		1   // Regulus
+HIP_24436:		1   // Rigel
+HIP_71683:		1   // Alpha Centauri
+HIP_32349:		1   // Sirius
+HIP_65474:		1   // Spica
+HIP_91262:		1   // Vega
+HIP_20894:		1   // (Hyades)
+
+
+
+//=====  Globular Clusters  =====
+GC_26:			1	// Omega Cen
+GC_52:			1	// M13
+
+
+
+//=====  Nearby Galaxies  =====
+//---  Local group  ---
+LGG_6:			1	// Andromeda Galaxy
+LGG_10:			1	// Triangulum Galaxy
+LGG_7:			1	// SMC
+LGG_12:			1	// LMC
+LGG_15:			1	// Leo A
+LGG_21:			1	// Pegasus Dwarf
+LGG_8:			1	// Sculptor Dwarf      
+LGG_11:			1	// Fornax Dwarf        
+LGG_16:			1	// Leo I
+LGG_17:			1	// Leo II
+LGG_18:			1	// Ursa Minor Dwarf    
+LGG_19:			1	// Draco Dwarf
+LGG_13:			1	// Carina Dwarf        
+LGG_14:			1	// Canis Major Dwarf   
+//---  Messier  ---
+NBG_1722:		1	// M51
+NBG_1404:		1	// M87
+
+
+
+//=====  Constellations  =====
+CNST_Cen:		1
+CNST_Ori:		1
+CNST_UMa:		1
+CNST_Cru:		1

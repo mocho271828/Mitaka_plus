@@ -1,0 +1,38 @@
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -MMD -MP -c src/place_catalog.cpp -o build-unit6-time/place_catalog.o
+xcrun ar rcs build-unit6-time/libmitaka_core.a build-unit6-time/astronomy.o build-unit6-time/catalog.o build-unit6-time/ephemeris.o build-unit6-time/rotation.o build-unit6-time/lunar.o build-unit6-time/observation.o build-unit6-time/extended_catalog.o build-unit6-time/place_catalog.o build-unit6-time/small_body_catalog.o build-unit6-time/small_body_text.o build-unit6-time/small_body_orbit.o build-unit6-time/satellite_catalog.o build-unit6-time/satellite_catalog_parser.o build-unit6-time/satellite_position.o build-unit6-time/satellite_rotation.o build-unit6-time/satellite_model.o build-unit6-time/satellite_registration.o build-unit6-time/satellite_absolute.o build-unit6-time/spacecraft_trajectory.o build-unit6-time/spacecraft_trajectory_parser.o build-unit6-time/spacecraft_position.o build-unit6-time/minor_planet_position.o build-unit6-time/small_body_orbit_path.o build-unit6-time/atmosphere.o build-unit6-time/atmosphere_multiple.o build-unit6-time/atmosphere_emission_map.o build-unit6-time/constellation_art.o
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror tests/test_constellation_art.cpp build-unit6-time/libmitaka_core.a  -o build-unit6-time/test_constellation_art
+/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/libmitaka_core.a"
+xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -MMD -MP -c src/place_catalog.cpp -o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/place_catalog.o
+xcrun ar rcs /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/libmitaka_core.a /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/astronomy.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/ephemeris.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/lunar.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/observation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/extended_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/place_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/small_body_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/small_body_text.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/small_body_orbit.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_catalog.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_catalog_parser.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_rotation.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_model.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_registration.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/satellite_absolute.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/spacecraft_trajectory.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/spacecraft_trajectory_parser.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/spacecraft_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/minor_planet_position.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/small_body_orbit_path.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/atmosphere.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/atmosphere_multiple.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/atmosphere_emission_map.o /Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/constellation_art.o
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_constellation_art_model.cpp build-unit6-time/constellation_art_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/libmitaka_core.a"  -o "build-unit6-time/test_constellation_art_model"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 tests/test_star_name_selection.cpp build-unit6-time/star_name_selection.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/libmitaka_core.a"  -o "build-unit6-time/test_star_name_selection"
+xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_constellation_art_renderer.mm build-unit6-time/ConstellationArtRenderer.o build-unit6-time/constellation_art_model.o build-unit6-time/constellation_art_projection.o build-unit6-time/RendererQuality.o build-unit6-time/StarRenderer.o build-unit6-time/star_labels.o build-unit6-time/star_brightness.o build-unit6-time/sky_model.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit6-time/core/libmitaka_core.a"  -framework AppKit -o "build-unit6-time/test_constellation_art_renderer"
+edition=mitaka_plus
+Local CAB files: 89
+CAB tests passed: 75705 checks
+exit=0
+Star name selection tests passed: 191 checks
+exit=0
+Constellation art model tests passed: 99 checks
+exit=0
+CAB projection tests passed: 120699 checks
+exit=0
+Constellation display tests passed: 112 checks
+exit=0
+Art/selected-name renderer tests passed: 537658 checks
+exit=0
+edition=mitaka
+Local CAB files: 0
+CAB tests passed: 99 checks
+exit=0
+Optional star name catalog absent
+Star name selection tests passed: 16 checks
+exit=0
+Constellation art model tests passed: 10 checks
+exit=0
+CAB projection tests passed: 120699 checks
+exit=0
+Constellation display tests passed: 112 checks
+exit=0
+Art/selected-name renderer tests passed: 537644 checks
+exit=0

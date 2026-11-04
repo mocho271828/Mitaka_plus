@@ -1,0 +1,16 @@
+# Phocaea
+
+Name: Phocaea
+DisplayName: Phocaea
+No: 25
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 2.400136
+e: 0.255534
+w: 90.472298
+M0: 317.708710
+i: 21.573324
+node: 214.312698
+Size: 500 500 500
+B_V: 0.75

@@ -1,0 +1,16 @@
+# Deucalion
+
+Name: Deucalion
+DisplayName: Deucalion
+No: 53311
+Type: TNObject
+DwarfPlanet: 0
+Epoch: 2454000.5
+a: 44.374000
+e: 0.064000
+w: 236.000000
+M0: 293.000000
+i: 0.400000
+node: 51.500000
+Size: 500 500 500
+B_V: 0.75

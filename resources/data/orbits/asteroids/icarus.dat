@@ -1,0 +1,16 @@
+# Icarus
+
+Name: Icarus
+DisplayName: Icarus
+No: 1566
+Type: Asteroid
+DwarfPlanet: 0
+Epoch: 2451000.5
+a: 1.077870
+e: 0.826783
+w: 31.268818
+M0: 346.875092
+i: 22.861942
+node: 88.110138
+Size: 500 500 500
+B_V: 0.75
