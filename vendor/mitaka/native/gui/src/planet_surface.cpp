@@ -91,10 +91,8 @@ Vec3 sun_direction(Vec3 body, bool emissive) {
     return {scaled.x / length, scaled.y / length, scaled.z / length};
 }
 
-std::array<double, 3> sample(const TextureImage& texture, Vec3 normal, double longitude_offset) {
-    const double longitude = std::atan2(normal.y, normal.x) / (2 * pi) + longitude_offset;
+std::array<double, 3> sample_uv(const TextureImage& texture, double longitude, double v) {
     const double u = longitude - std::floor(longitude);
-    const double v = std::acos(std::clamp(normal.z, -1.0, 1.0)) / pi;
     // texel中心に合わせ、経度の継ぎ目では最終列と先頭列を補間する。
     const double x = u * texture.width - 0.5;
     const double y = std::clamp(v * texture.height - 0.5, 0.0, double(texture.height - 1));
@@ -113,6 +111,11 @@ std::array<double, 3> sample(const TextureImage& texture, Vec3 normal, double lo
         color[channel] = top * (1 - ty) + bottom * ty;
     }
     return color;
+}
+
+std::array<double, 3> sample(const TextureImage& texture, Vec3 normal, double longitude_offset) {
+    return sample_uv(texture,std::atan2(normal.y,normal.x)/(2*pi)+longitude_offset,
+                     std::acos(std::clamp(normal.z,-1.0,1.0))/pi);
 }
 
 struct PreparedEarthLayers {
@@ -172,21 +175,31 @@ void add_pixel(TextureImage& image, std::size_t offset, const TextureImage& text
     image.rgba[offset + 3] = 255;
 }
 
-void shade_pixel(TextureImage& image, std::size_t offset, const TextureImage& texture,
-                 Vec3 normal, Vec3 light, const BodyOrientation& orientation,
-                 double longitude_offset, bool emissive, const PreparedEarthLayers& layers) {
+void shade_uv(TextureImage& image, std::size_t offset, const TextureImage& texture,
+    Vec3 normal, Vec3 light, double u, double v, bool emissive, const PreparedEarthLayers& layers) {
     const double brightness = emissive ? 1 : 0.3 + 0.7 * std::max(0.0, dot(normal, light));
-    // 正規直交基底の転置で天体固定系へ戻す。照明の法線は回転させない。
-    const Vec3 body_normal{dot(normal, orientation.x_axis), dot(normal, orientation.y_axis),
-                           dot(normal, orientation.north_axis)};
-    const auto color = sample(texture, body_normal, longitude_offset);
+    const auto color = sample_uv(texture,u,v);
     for (std::size_t channel = 0; channel < color.size(); ++channel)
         image.rgba[offset + channel] = std::uint8_t(std::clamp(
             std::lround(color[channel] * brightness), 0L, 255L));
     image.rgba[offset + 3] = 255;
-    if (layers.binding && layers.binding->assets.night_lights)
-        add_pixel(image, offset, *layers.binding->assets.night_lights, normal, orientation,
-            longitude_offset, earth_night_brightness(normal, light, layers.night_gain));
+    if (layers.binding && layers.binding->assets.night_lights) {
+        auto night = sample_uv(*layers.binding->assets.night_lights,u,v);
+        const double gain = earth_night_brightness(normal,light,layers.night_gain);
+        for (auto& channel:night) channel *= gain;
+        const auto added=earth_add_rgb({double(image.rgba[offset]),double(image.rgba[offset+1]),
+                                       double(image.rgba[offset+2])},night);
+        for (std::size_t channel=0;channel<3;++channel)
+            image.rgba[offset+channel]=static_cast<std::uint8_t>(std::lround(added[channel]));
+    }
+}
+
+void shade_pixel(TextureImage& image, std::size_t offset, const TextureImage& texture,
+                 Vec3 normal, Vec3 light, const BodyOrientation& orientation,
+                 double longitude_offset, bool emissive, const PreparedEarthLayers& layers) {
+    const auto local=texture_normal(normal,orientation);
+    shade_uv(image,offset,texture,normal,light,std::atan2(local.y,local.x)/(2*pi)+longitude_offset,
+             std::acos(std::clamp(local.z,-1.0,1.0))/pi,emissive,layers);
 }
 
 void validate_eclipse(const EclipseSurfaceBinding* binding, Vec3 center,
@@ -301,7 +314,7 @@ TextureImage render_surface_view(const TextureImage& texture, const SolarCamera&
 TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
                                   const SolarCamera& camera,
                                   std::size_t width, std::size_t height,
-                                  TextureImage* additive_output) {
+                                  TextureImage* additive_output, SurfaceDepthFrame* depth_output) {
     if (width == 0 || width > 1024 || height == 0 || height > 1024)
         throw std::invalid_argument("surface viewport dimensions must be in [1, 1024]");
     const auto axes = solar_camera_basis(camera);
@@ -327,16 +340,46 @@ TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
     for (const auto& sphere : spheres) {
         validate_texture(sphere.texture);
         validate_orientation(sphere.orientation);
+        validate_surface_terrain(sphere.terrain,width,height);
         if (!std::isfinite(sphere.longitude_offset_turns))
             throw std::invalid_argument("surface longitude offset must be finite");
         const auto light = sun_direction(sphere.center, sphere.emissive);
-        const auto view = sphere_view(camera, axes, sphere.center, sphere.radius_au);
+        if (!std::isfinite(sphere.radius_au) || sphere.radius_au<=0)
+            throw std::invalid_argument("surface radius must be finite and positive");
         validate_eclipse(sphere.eclipse, sphere.center, sphere.emissive, sphere.radius_au);
         earth_layers.push_back(prepare_earth_layers(sphere.earth_layers, camera, axes, sphere.center,
             light, sphere.emissive, sphere.radius_au, additive_output));
         const auto& layers = earth_layers.back();
-        const auto bounds = sphere_bounds(view, axes, width, height, double(height) / (2 * up_scale));
         const double longitude_offset = std::remainder(sphere.longitude_offset_turns, 1);
+        if (sphere.terrain && sphere.terrain->mode!=TerrainSurfaceMode::sphere) {
+            // 負標高を基準球で覆わない。局所法線は照明、保存UVはtextureへ独立して渡す。
+            if (sphere.terrain->mode==TerrainSurfaceMode::none) continue;
+            for (std::size_t offset=0;offset<depth.size();++offset) {
+                const auto& hit=sphere.terrain->samples[offset];
+                if (hit.distance_au>=depth[offset]) continue;
+                const auto& local=hit.normal_local;
+                const auto& o=sphere.orientation;
+                const Vec3 normal{o.x_axis.x*local.x+o.y_axis.x*local.y+o.north_axis.x*local.z,
+                                  o.x_axis.y*local.x+o.y_axis.y*local.y+o.north_axis.y*local.z,
+                                  o.x_axis.z*local.x+o.y_axis.z*local.y+o.north_axis.z*local.z};
+                depth[offset]=hit.distance_au;
+                shade_uv(result,offset*4,sphere.texture,normal,light,
+                         std::remainder(hit.u,1)+longitude_offset,hit.v,sphere.emissive,layers);
+                if (sphere.eclipse) {
+                    const auto ray=ray_at(offset%width,offset/width);
+                    const Vec3 point{camera.target.x+axes.outward.x*camera.distance_au+ray.x*hit.distance_au,
+                                     camera.target.y+axes.outward.y*camera.distance_au+ray.y*hit.distance_au,
+                                     camera.target.z+axes.outward.z*camera.distance_au+ray.z*hit.distance_au};
+                    const auto effect=sphere.eclipse->effect_at(point,normal,hit.distance_au*2*up_scale/height);
+                    for (std::size_t c=0;c<3;++c)
+                        result.rgba[offset*4+c]=static_cast<std::uint8_t>(std::lround(effect.border_rgb ?
+                            (*effect.border_rgb)[c]*255 : result.rgba[offset*4+c]*effect.multiplier[c]));
+                }
+            }
+            continue;
+        }
+        const auto view = sphere_view(camera, axes, sphere.center, sphere.radius_au);
+        const auto bounds = sphere_bounds(view, axes, width, height, double(height) / (2 * up_scale));
         for (std::size_t y = bounds.top; y < bounds.bottom; ++y) {
             for (std::size_t x = bounds.left; x < bounds.right; ++x) {
                 const auto ray = ray_at(x, y);
@@ -374,7 +417,11 @@ TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
             }
         }
     }
+    // 出力の検証/確保を済ませてからまとめて公開する。
+    std::optional<SurfaceDepthFrame> final_depth;
+    if (depth_output) final_depth=make_surface_depth_frame(spheres,camera,width,height,std::move(depth));
     if (additive_output) *additive_output = std::move(additive);
+    if (depth_output) *depth_output = std::move(*final_depth);
     return result;
 }
 

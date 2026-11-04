@@ -34,10 +34,11 @@ struct Context {
     std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
 };
 struct Reply {
-    enum Type { empty, number, boolean, text, calendar, function } type = empty;
+    enum Type { empty, number, boolean, text, calendar, radius_scale, function, original_argument } type = empty;
     double values[6]{};
     bool flag = false;
     int method = 0;
+    int stack_index = 0;
     char string[4096]{};
 };
 enum Object { timeObject = 1, cameraObject, constellationObject, starsObject, galaxiesObject, guiObject,
@@ -45,7 +46,26 @@ enum Object { timeObject = 1, cameraObject, constellationObject, starsObject, ga
 enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTime,
               previousStep, nextStep, printText, waitSeconds, saveImageDialog, toggleFullScreen, aboutDialog,
               brightenStars, darkenStars, defaultStarBrightness, animateStarBrightness,
-              selectStarNames, deselectStarNames, isStarNameSelected, toggleAtmosphere, toggleFlagBase = 100 };
+              selectStarNames, deselectStarNames, isStarNameSelected, toggleAtmosphere,
+              setTimeString, getTimeString, setLocalTime, getLocalTime, setTimeTo, setLocalTimeTo, setJDTo,
+              getLocalComponentBase = 40, setLocalComponentBase = 50,
+              setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, toggleFlagBase = 100 };
+struct LocalTimeBinding {
+    const char *property;
+    const char *getter;
+    const char *setter;
+    PlusTimeComponent component;
+};
+constexpr LocalTimeBinding localTimeBindings[] = {
+    {"localYear", "getLocalYear", "setLocalYear", PlusTimeComponent::year},
+    {"localMonth", "getLocalMonth", "setLocalMonth", PlusTimeComponent::month},
+    {"localDay", "getLocalDay", "setLocalDay", PlusTimeComponent::day},
+    {"localHour", "getLocalHour", "setLocalHour", PlusTimeComponent::hour},
+    {"localMin", "getLocalMin", "setLocalMin", PlusTimeComponent::minute},
+    {"localMinute", "getLocalMinute", "setLocalMinute", PlusTimeComponent::minute},
+    {"localSec", "getLocalSec", "setLocalSec", PlusTimeComponent::second},
+    {"localSecond", "getLocalSecond", "setLocalSecond", PlusTimeComponent::second}
+};
 struct BooleanBinding {
     Object object;
     const char *property;
@@ -135,13 +155,14 @@ NSDictionary *request(NSDictionary *message) {
     return value;
 }
 void apply(ScriptActionKind kind, double number = 0, bool flag = false, const char *text = "", double duration = 0,
-           const std::vector<std::int32_t>& hips = {}) {
+           const std::vector<std::int32_t>& hips = {}, NSArray<NSNumber *> *radiusScale = @[]) {
     NSString *value = [NSString stringWithUTF8String:text];
     if (!value) throw std::invalid_argument("Host names must be UTF-8");
     NSMutableArray<NSNumber *> *identifiers = [NSMutableArray arrayWithCapacity:hips.size()];
     for (const auto hip : hips) [identifiers addObject:@(hip)];
     request(@{@"op":@"apply", @"kind":@(static_cast<int>(kind)), @"number":@(number),
-        @"enabled":@(flag), @"text":value, @"duration":@(duration), @"hips":identifiers});
+        @"enabled":@(flag), @"text":value, @"duration":@(duration), @"hips":identifiers,
+        @"radiusScale":radiusScale});
 }
 NSDictionary *snapshot() { return request(@{@"op":@"snapshot"}); }
 Context& context(lua_State *state) { return **static_cast<Context **>(lua_getextraspace(state)); }
@@ -213,6 +234,46 @@ mitaka::GregorianDateTime calendar(double jd) {
     date.second = withinDay % 60;
     return date;
 }
+Reply calendarReply(const mitaka::GregorianDateTime& date) {
+    Reply result; result.type = Reply::calendar;
+    result.values[0] = date.year; result.values[1] = date.month; result.values[2] = date.day;
+    result.values[3] = date.hour; result.values[4] = date.minute; result.values[5] = date.second;
+    return result;
+}
+PlusTimeZone timeZone(NSDictionary *current) {
+    id value = current[@"plusTimeZoneWestSeconds"];
+    if (value == NSNull.null) throw std::invalid_argument("Local Time requires an explicit CRT time zone");
+    if (![value isKindOfClass:NSNumber.class] || CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID())
+        throw std::runtime_error("Invalid host CRT time zone");
+    const double seconds = [value doubleValue];
+    if (!std::isfinite(seconds) || seconds != std::trunc(seconds) ||
+        seconds < std::numeric_limits<std::int32_t>::min() || seconds > std::numeric_limits<std::int32_t>::max())
+        throw std::runtime_error("Invalid host CRT time zone");
+    return PlusTimeZone(static_cast<std::int32_t>(seconds));
+}
+double localComponent(NSDictionary *current, PlusTimeComponent component) {
+    const auto date = plus_local_time([current[@"jd"] doubleValue], timeZone(current));
+    switch (component) {
+        case PlusTimeComponent::year: return date.year;
+        case PlusTimeComponent::month: return date.month;
+        case PlusTimeComponent::day: return date.day;
+        case PlusTimeComponent::hour: return date.hour;
+        case PlusTimeComponent::minute: return date.minute;
+        case PlusTimeComponent::second: return date.second;
+    }
+    throw std::logic_error("Unknown local Time component");
+}
+void setLocalComponent(PlusTimeComponent component, std::int32_t value) {
+    NSDictionary *current = snapshot();
+    const auto jd = plus_local_component_julian_date([current[@"jd"] doubleValue], timeZone(current), component, value);
+    // 同じ成分の指定は補間や実時計追従を取り消さない。
+    if (jd) apply(ScriptActionKind::set_date, *jd);
+}
+mitaka::GregorianDateTime calendarArguments(lua_State *state, int offset) {
+    return {timeIntegerAt(state, offset+1), timeIntegerAt(state, offset+2),
+        timeIntegerAt(state, offset+3), timeIntegerAt(state, offset+4),
+        timeIntegerAt(state, offset+5), static_cast<double>(timeIntegerAt(state, offset+6))};
+}
 int objectAt(lua_State *state) {
     const auto *object = static_cast<int *>(luaL_testudata(state, 1, hostMetatable));
     if (!object || lua_rawlen(state, 1) != sizeof(int)) throw std::invalid_argument("Expected a Mitaka host object");
@@ -223,6 +284,12 @@ Reply readProperty(int object, const std::string& key) {
     if (object == milkyWayObject && key == "type") return textReply(snapshot()[@"milkyWay"]);
     if (object == starsObject && key == "markingType") return textReply(snapshot()[@"starMarking"]);
     if (object == planetsObject && key == "atmosphere") return numeric([snapshot()[@"atmosphereMode"] intValue]);
+    if (object == planetsObject && key == "topoAmplification") return numeric([snapshot()[@"topoAmplification"] intValue]);
+    if (object == planetsObject && key == "scaleMode") return numeric([snapshot()[@"radiusScaleMode"] intValue]);
+    if (object == planetsObject && key == "setScale") return method(setRadiusScale);
+    if (object == planetsObject && key == "getScale") return method(getRadiusScale);
+    if (object == planetsObject && key == "setScaleMode") return method(setRadiusScaleMode);
+    if (object == planetsObject && key == "getScaleMode") return method(getRadiusScaleMode);
     if (object == planetsObject && key == "toggleAtmosphere") return method(toggleAtmosphere);
     if (object == starsObject) {
         if (key == "brightness") return numeric([snapshot()[@"starBrightness"] doubleValue]);
@@ -249,6 +316,19 @@ Reply readProperty(int object, const std::string& key) {
         if (key == "setCurrent") return method(currentTime);
         if (key == "prevStep") return method(previousStep);
         if (key == "nextStep") return method(nextStep);
+        if (key == "setTimeString") return method(setTimeString);
+        if (key == "getTimeString") return method(getTimeString);
+        if (key == "setLocalTime") return method(setLocalTime);
+        if (key == "getLocalTime") return method(getLocalTime);
+        if (key == "setTimeTo") return method(setTimeTo);
+        if (key == "setLocalTimeTo") return method(setLocalTimeTo);
+        if (key == "setJDTo") return method(setJDTo);
+        for (std::size_t i = 0; i < std::size(localTimeBindings); ++i) {
+            const auto& binding = localTimeBindings[i];
+            if (key == binding.getter) return method(getLocalComponentBase + static_cast<int>(i));
+            if (key == binding.setter) return method(setLocalComponentBase + static_cast<int>(i));
+            if (key == binding.property) return numeric(localComponent(snapshot(), binding.component));
+        }
         NSDictionary *current = snapshot();
         if (key == "step") return numeric([current[@"timeStep"] intValue]);
         if (key == "stepValue") return numeric([current[@"timeStepValue"] doubleValue]);
@@ -275,6 +355,15 @@ Reply readProperty(int object, const std::string& key) {
     throw std::invalid_argument("Unsupported host property: " + key);
 }
 void writeProperty(lua_State *state, int object, const std::string& key) {
+    if (object == planetsObject && key == "scaleMode") {
+        const double value = numberAt(state, 3);
+        if (value != 0 && value != 1) throw std::invalid_argument("Invalid Planets.scaleMode");
+        apply(ScriptActionKind::set_radius_scale_mode, value); return;
+    }
+    if (object == planetsObject && key == "topoAmplification") {
+        const auto value = terrain_amplification_from_lua(numberAt(state, 3));
+        apply(ScriptActionKind::set_terrain_amplification, static_cast<int>(value)); return;
+    }
     if (object == planetsObject && key == "atmosphere") {
         const double value = numberAt(state, 3, true);
         if (value < 0 || value > 2) throw std::invalid_argument("Unsupported Planets.atmosphere mode");
@@ -315,6 +404,11 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         if (key == "stepValue") {
             apply(ScriptActionKind::set_time_step_value, numberAt(state, 3)); return;
         }
+        for (const auto& binding : localTimeBindings) {
+            if (key == binding.property) {
+                setLocalComponent(binding.component, timeIntegerAt(state, 3)); return;
+            }
+        }
         auto date = calendar([snapshot()[@"jd"] doubleValue]);
         const int value = timeIntegerAt(state, 3);
         if (key == "year") date.year = value;
@@ -337,14 +431,95 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
     }
     throw std::invalid_argument("Unsupported host property: " + key);
 }
+Reply invokeExtendedTime(lua_State *state, int operation, int offset) {
+    if (offset && objectAt(state) != timeObject) throw std::invalid_argument("Expected Time receiver");
+    const int count = lua_gettop(state) - offset;
+    const bool componentGetter = operation >= getLocalComponentBase &&
+        operation < getLocalComponentBase + static_cast<int>(std::size(localTimeBindings));
+    const bool componentSetter = operation >= setLocalComponentBase &&
+        operation < setLocalComponentBase + static_cast<int>(std::size(localTimeBindings));
+    if (componentGetter || componentSetter) {
+        if (count != (componentSetter ? 1 : 0)) throw std::invalid_argument("Invalid local Time component argument count");
+        const auto component = localTimeBindings[operation - (componentSetter ? setLocalComponentBase : getLocalComponentBase)].component;
+        if (componentGetter) return numeric(localComponent(snapshot(), component));
+        setLocalComponent(component, timeIntegerAt(state, offset + 1));
+    } else if (operation == setTimeString) {
+        if (count != 1 || lua_type(state, offset + 1) != LUA_TSTRING)
+            throw std::invalid_argument("Time:setTimeString requires one string");
+        std::size_t length = 0;
+        const char *text = lua_tolstring(state, offset + 1, &length);
+        apply(ScriptActionKind::set_date, plus_julian_date_from_string({text, length}));
+        // Lua stack の元値を返し、長い接尾辞や元の表記を固定長 reply へ切り詰めない。
+        Reply result; result.type = Reply::original_argument; result.stack_index = offset + 1; return result;
+    } else if (operation == getTimeString || operation == getLocalTime) {
+        if (count != 0) throw std::invalid_argument("Time getter requires no arguments");
+        NSDictionary *current = snapshot();
+        const double jd = [current[@"jd"] doubleValue];
+        if (operation == getLocalTime) return calendarReply(plus_local_time(jd, timeZone(current)));
+        return textReply([NSString stringWithUTF8String:plus_time_string(jd).c_str()]);
+    } else if (operation == setLocalTime) {
+        if (count != 6) throw std::invalid_argument("Time:setLocalTime requires six integers");
+        const auto date = calendarArguments(state, offset);
+        apply(ScriptActionKind::set_date, plus_local_julian_date(date, timeZone(snapshot())));
+    } else {
+        const bool numericTarget = operation == setJDTo;
+        const int required = numericTarget ? 2 : 7;
+        if (count != required && count != required + 1)
+            throw std::invalid_argument("Time animation requires a target, duration and optional boolean curve");
+        const double duration = numberAt(state, offset + required);
+        const bool halfCosine = count == required ? true : booleanAt(state, offset + required + 1);
+        double target;
+        if (numericTarget) {
+            target = numberAt(state, offset + 1);
+            (void)mitaka::gregorian_date_time(target);
+        } else {
+            const auto date = calendarArguments(state, offset);
+            target = operation == setLocalTimeTo ? plus_local_julian_date(date, timeZone(snapshot())) : plus_julian_date(date);
+        }
+        apply(numericTarget ? ScriptActionKind::set_time_animation_jd : ScriptActionKind::set_time_animation_calendar,
+            target, halfCosine, "", duration);
+    }
+    return {};
+}
 Reply invoke(lua_State *state, int operation) {
     const int offset = lua_type(state, 1) == LUA_TUSERDATA ? 1 : 0;
+    if ((operation >= setTimeString && operation <= setJDTo) ||
+        (operation >= getLocalComponentBase && operation < getLocalComponentBase + static_cast<int>(std::size(localTimeBindings))) ||
+        (operation >= setLocalComponentBase && operation < setLocalComponentBase + static_cast<int>(std::size(localTimeBindings))))
+        return invokeExtendedTime(state, operation, offset);
     if (operation >= setTime && operation <= nextStep) {
         if (offset && objectAt(state) != timeObject) throw std::invalid_argument("Expected Time receiver");
         if (operation != setTime && lua_gettop(state) != offset)
             throw std::invalid_argument("Time method requires no arguments");
     }
-    if (operation >= toggleFlagBase && operation < toggleFlagBase + static_cast<int>(std::size(booleanBindings))) {
+    if (operation == setRadiusScale || operation == getRadiusScale ||
+        operation == setRadiusScaleMode || operation == getRadiusScaleMode) {
+        if (offset && objectAt(state) != planetsObject) throw std::invalid_argument("Expected Planets receiver");
+        const int count = lua_gettop(state) - offset;
+        if (operation == setRadiusScale) {
+            if (count != 4) throw std::invalid_argument("Planets:setScale requires four numbers");
+            const auto options = checked_radius_display_options(numberAt(state, offset + 1), numberAt(state, offset + 2),
+                numberAt(state, offset + 3), numberAt(state, offset + 4));
+            apply(ScriptActionKind::set_radius_scale, 0, false, "", 0, {},
+                @[@(options.space_planet), @(options.space_sun), @(options.planetarium_planet), @(options.planetarium_sun_moon)]);
+        } else if (operation == getRadiusScale) {
+            if (count != 0) throw std::invalid_argument("Planets:getScale requires no arguments");
+            NSArray *scales = snapshot()[@"radiusScale"];
+            if (![scales isKindOfClass:NSArray.class] || scales.count != 4)
+                throw std::runtime_error("Invalid host radius scale");
+            Reply result; result.type = Reply::radius_scale;
+            for (NSUInteger i = 0; i < 4; ++i) result.values[i] = [scales[i] doubleValue];
+            return result;
+        } else if (operation == setRadiusScaleMode) {
+            if (count != 1) throw std::invalid_argument("Planets:setScaleMode requires one number");
+            const double value = numberAt(state, offset + 1);
+            if (value != 0 && value != 1) throw std::invalid_argument("Invalid Planets.scaleMode");
+            apply(ScriptActionKind::set_radius_scale_mode, value);
+        } else {
+            if (count != 0) throw std::invalid_argument("Planets:getScaleMode requires no arguments");
+            return numeric([snapshot()[@"radiusScaleMode"] intValue]);
+        }
+    } else if (operation >= toggleFlagBase && operation < toggleFlagBase + static_cast<int>(std::size(booleanBindings))) {
         if (lua_gettop(state) != offset) throw std::invalid_argument("toggle requires no arguments");
         const auto& binding = booleanBindings[operation - toggleFlagBase];
         if (offset && objectAt(state) != binding.object) throw std::invalid_argument("Unexpected toggle receiver");
@@ -386,17 +561,9 @@ Reply invoke(lua_State *state, int operation) {
         apply(ScriptActionKind::set_atmosphere_mode, ([snapshot()[@"atmosphereMode"] intValue] + 1) % 3);
     } else if (operation == setTime) {
         if (lua_gettop(state) != offset + 6) throw std::invalid_argument("Time:setTime requires six integers");
-        const mitaka::GregorianDateTime date{timeIntegerAt(state, offset+1),
-            timeIntegerAt(state, offset+2), timeIntegerAt(state, offset+3),
-            timeIntegerAt(state, offset+4), timeIntegerAt(state, offset+5),
-            static_cast<double>(timeIntegerAt(state, offset+6))};
-        apply(ScriptActionKind::set_date, plus_julian_date(date));
+        apply(ScriptActionKind::set_date, plus_julian_date(calendarArguments(state, offset)));
     } else if (operation == getTime) {
-        const auto date = calendar([snapshot()[@"jd"] doubleValue]);
-        Reply result; result.type = Reply::calendar;
-        result.values[0] = date.year; result.values[1] = date.month; result.values[2] = date.day;
-        result.values[3] = date.hour; result.values[4] = date.minute; result.values[5] = date.second;
-        return result;
+        return calendarReply(calendar([snapshot()[@"jd"] doubleValue]));
     } else if (operation == stopTime) apply(ScriptActionKind::stop);
     else if (operation == stepForward || operation == stepRewind)
         apply(operation == stepForward ? ScriptActionKind::step_time_forward : ScriptActionKind::step_time_rewind);
@@ -437,7 +604,9 @@ int pushReply(lua_State *state, const Reply& result) {
         case Reply::boolean: lua_pushboolean(state, result.flag); return 1;
         case Reply::text: lua_pushstring(state, result.string); return 1;
         case Reply::calendar: for (double value : result.values) lua_pushinteger(state, static_cast<lua_Integer>(value)); return 6;
+        case Reply::radius_scale: for (int i = 0; i < 4; ++i) lua_pushnumber(state, result.values[i]); return 4;
         case Reply::function: lua_pushinteger(state, result.method); lua_pushcclosure(state, callMethod, 1); return 1;
+        case Reply::original_argument: lua_pushvalue(state, result.stack_index); return 1;
     }
     return 0;
 }
@@ -512,6 +681,8 @@ void install(lua_State *state) {
     for (std::size_t i = 0; i < atmosphereNames.size(); ++i) {
         lua_pushinteger(state, i); lua_setfield(state, -2, atmosphereNames[i]);
     }
+    lua_pushinteger(state, 0); lua_setfield(state, -2, "KEEP_RADIUS");
+    lua_pushinteger(state, 1); lua_setfield(state, -2, "KEEP_ORBIT");
     lua_setglobal(state, "mtk");
     lua_sethook(state, instructionHook, LUA_MASKCOUNT, 1000);
 }

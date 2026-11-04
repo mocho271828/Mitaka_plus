@@ -13,6 +13,8 @@
 #import "MediaController.h"
 #import "WindowPresentationController.h"
 #import "StarBrightnessController.h"
+#import "GalaxyController.h"
+#import "RadiusDisplayController.h"
 #include "session_state.hpp"
 #include "extended_catalogs.hpp"
 #include "observer_places.hpp"
@@ -26,6 +28,7 @@
 #include "mitaka/small_body_orbit_path.hpp"
 #include <cmath>
 #include <memory>
+#include <atomic>
 
 @class HtmlBrowserController;
 @class SmallBodyOrbitController;
@@ -63,13 +66,28 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
     NSArray<NSButton *> *_timeButtons;
     NSMutableArray<NSButton *> *_bodyButtons;
     CatalogBrowserController *_browser;
+    GalaxyController *_galaxyBrowser;
+    std::shared_ptr<const GalaxySpatialModel> _galaxyModel;
+    std::shared_ptr<std::atomic_bool> _galaxyCancellation;
+    NSString *_galaxyDiagnostics;
+    NSUInteger _galaxyGeneration;
+    BOOL _galaxyLoading;
+    BOOL _galaxyUsesPlusCatalogs;
     DisplayOutputController *_displayOutput;
     ScriptController *_scripts;
     StarBrightnessController *_starBrightness;
+    RadiusDisplayController *_radiusDisplayController;
+    RadiusDisplayOptions _radiusDisplayOptions;
+    RadiusScaleMode _radiusScaleMode;
+    BOOL _terminating;
+    BOOL _displayPreferencesLoadFailed;
     NSWindow *_scriptWindow;
     HtmlBrowserController *_htmlBrowser;
     NSTextView *_scriptLog;
     NSWindow *_calendarWindow;
+    NSWindow *_plusTimeZoneWindow;
+    NSButton *_plusTimeZoneEnabledButton;
+    NSTextField *_plusTimeZoneField;
     NSArray<NSTextField *> *_calendarFields;
     NSTextField *_calendarMonthLabel;
     NSArray<NSButton *> *_calendarDayButtons;
@@ -130,6 +148,10 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)refreshOrbits;
 - (void)selectBody:(NSButton *)sender;
 - (void)focusSelection:(id)sender;
+- (BOOL)readRadiusDisplayOptions:(RadiusDisplayOptions *)options mode:(RadiusScaleMode *)mode error:(NSString **)error;
+- (BOOL)validateRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode error:(NSString **)error;
+- (BOOL)applyRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode error:(NSString **)error;
+- (void)restoreRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode;
 @end
 
 @interface AppController (Window)
@@ -156,6 +178,16 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)chooseBrowserEntry:(CatalogBrowserEntry *)entry center:(BOOL)center;
 - (void)selectMilkyWay:(NSMenuItem *)sender;
 - (void)toggleDisplay:(NSMenuItem *)sender;
+- (void)showRadiusDisplay:(id)sender;
+@end
+
+@interface AppController (GalaxyCommands)
+- (void)prepareGalaxyForDataRoot:(NSString *)path;
+- (void)showGalaxyBrowser:(id)sender;
+- (void)loadPlusGalaxyCatalogs:(id)sender;
+- (void)loadGalaxyIncludingPlus:(BOOL)includePlus;
+- (void)cancelGalaxyLoading;
+- (void)invalidateGalaxy;
 @end
 
 @interface AppController (SmallBodyCommands)
@@ -186,6 +218,10 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)moveCalendarMonth:(NSButton *)sender;
 - (void)addTimeMenu:(NSMenu *)menu;
 - (void)showCalendar:(id)sender;
+- (void)showPlusTimeZone:(id)sender;
+- (void)changePlusTimeZoneEnabled:(id)sender;
+- (void)applyPlusTimeZone:(id)sender;
+- (BOOL)applyPlusTimeZoneText:(NSString *)text enabled:(BOOL)enabled error:(NSString **)error;
 - (void)applyCalendar:(id)sender;
 - (void)setCurrentTime:(id)sender;
 - (void)stepTime:(NSMenuItem *)sender;
@@ -196,9 +232,12 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 @end
 
 @interface AppController (DisplayCommands)
+- (void)reloadTerrain:(id)sender;
 - (void)setMilkyWayMode:(MilkyWayMode)mode;
 - (PlanetDisplayOptions)planetDisplayOptions;
 - (void)setPlanetDisplayOptions:(const PlanetDisplayOptions&)options;
+- (TerrainAmplification)terrainAmplification;
+- (void)setTerrainAmplification:(TerrainAmplification)value;
 - (EarthLayerOptions)earthLayerOptions;
 - (void)setEarthLayerOptions:(const EarthLayerOptions&)options;
 - (AtmosphereDisplayOptions)atmosphereDisplayOptions;
@@ -214,6 +253,7 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)setRendererDisplayOptions:(const RendererDisplayOptions&)options;
 - (void)addDisplayMenus:(NSMenu *)menu;
 - (void)togglePlanetDisplay:(NSMenuItem *)sender;
+- (void)selectTerrainAmplification:(NSMenuItem *)sender;
 - (void)toggleEarthLayer:(NSMenuItem *)sender;
 - (void)toggleLandscapeImage:(NSMenuItem *)sender;
 - (void)selectAtmosphereMode:(NSMenuItem *)sender;
@@ -277,6 +317,11 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (BOOL)applyScriptAction:(const mitaka::gui::ScriptAction&)action error:(NSString **)error;
 @end
 
+@interface AppController (ScriptingTime)
+- (void)fillScriptTimeSnapshot:(ScriptSnapshot&)state;
+- (BOOL)applyScriptTimeAction:(const ScriptAction&)action error:(NSString **)error;
+@end
+
 @interface AppController (SatelliteCommands)
 - (void)showSatelliteBrowser:(id)sender;
 - (void)chooseSatellite:(NSUInteger)index center:(BOOL)center;
@@ -313,6 +358,10 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)runSceneSmokeTest;
 - (void)runPlaybackSmokeTest;
 - (void)runTravelSmokeTest;
+@end
+
+@interface AppController (GalaxySmokeTests)
+- (void)runGalaxySmokeTestWithCompletion:(void (^)(void))completion;
 @end
 
 @interface AppController (ScriptSmokeTests)

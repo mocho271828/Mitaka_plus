@@ -7,6 +7,7 @@
 #import "GridRenderer.h"
 #import "SkyView.h"
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
@@ -63,6 +64,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     HorizonLandscapeRenderer *_landscapeRenderer;
     ConstellationDisplayOptions _constellationDisplayOptions;
     PlanetDisplayOptions _planetDisplayOptions;
+    RadiusDisplayOptions _radiusDisplayOptions;
     RendererDisplayOptions _rendererDisplayOptions;
     GridDisplayOptions _gridDisplayOptions;
     GridGeometryCache _gridCache;
@@ -106,6 +108,13 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (void)setConstellationDisplayOptions:(ConstellationDisplayOptions)options {
     // App が現在のカタログとの対応を検証する。読込前の設定も保持する。
     _constellationDisplayOptions = std::move(options);
+    self.needsDisplay = YES;
+}
+- (RadiusDisplayOptions)radiusDisplayOptions { return _radiusDisplayOptions; }
+- (void)setRadiusDisplayOptions:(RadiusDisplayOptions)options {
+    validate_radius_display_options(options);
+    moon_orbit_display_factor(options);
+    _radiusDisplayOptions = options;
     self.needsDisplay = YES;
 }
 - (PlanetDisplayOptions)planetDisplayOptions { return _planetDisplayOptions; }
@@ -318,6 +327,19 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     }
     for (std::size_t index = 0; _planetDisplayOptions.visible && index < _bodies.size(); ++index)
         consider(_bodies[index].coordinates, {ObjectKind::body, index});
+    double nearestBody = std::numeric_limits<double>::infinity();
+    const bool hadNearestSelection = _selection.has_value();
+    for (std::size_t index = 0; !hadNearestSelection && _planetDisplayOptions.visible && index < _bodies.size(); ++index) {
+        const auto projected = projectHorizontal(_frame->to_horizontal(_bodies[index].coordinates), _viewport, map.size);
+        if (!projected) continue;
+        const double distance = std::hypot(point.x - map.origin.x - projected->x, point.y - map.origin.y - projected->y);
+        const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+            RadiusDisplayContext::planetarium, _bodies[index].id), 1.0, 120.0);
+        if (distance <= radius && distance < nearestBody) {
+            nearestBody = distance;
+            _selection = Selection{ObjectKind::body, index};
+        }
+    }
     [self notifySelection];
     self.needsDisplay = YES;
     if (event.clickCount == 2) [self focusSelection];
@@ -425,8 +447,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         NSColor *color = bodyColor(body.id, horizontal.altitude_deg < 0);
         RendererQualityScope points(context, _rendererDisplayOptions, RendererPrimitive::point);
         [color setFill];
-        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - 4, center.y - 4, 8, 8)] fill];
-        if (_planetDisplayOptions.labels) drawText(bodyName(body.id), NSMakePoint(center.x + 8, center.y - 16), color, 12, _rendererDisplayOptions);
+        const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+            RadiusDisplayContext::planetarium, body.id), 1.0, 120.0);
+        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - radius, center.y - radius, 2 * radius, 2 * radius)] fill];
+        if (_planetDisplayOptions.labels) drawText(bodyName(body.id), NSMakePoint(center.x + radius + 4, center.y - 16), color, 12, _rendererDisplayOptions);
     }
     if (_selection && (_selection->kind == ObjectKind::star
         ? _starDisplayOptions.visible : _planetDisplayOptions.visible)) {
@@ -434,8 +458,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         if (point) {
             RendererQualityScope lines(context, _rendererDisplayOptions, RendererPrimitive::line);
             [NSColor.whiteColor setStroke];
-            NSBezierPath *ring = [NSBezierPath bezierPathWithOvalInRect:NSMakeRect(map.origin.x + point->x - 9,
-                map.origin.y + point->y - 9, 18, 18)];
+            const double radius = _selection->kind == ObjectKind::body
+                ? std::max(9.0, 4 + std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+                    RadiusDisplayContext::planetarium, _bodies[_selection->index].id), 1.0, 120.0)) : 9.0;
+            NSBezierPath *ring = [NSBezierPath bezierPathWithOvalInRect:NSMakeRect(map.origin.x + point->x - radius,
+                map.origin.y + point->y - radius, 2 * radius, 2 * radius)];
             ring.lineWidth = 1;
             [ring stroke];
         }

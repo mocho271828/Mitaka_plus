@@ -8,15 +8,19 @@
 #include "small_body_display.hpp"
 #include "satellite_display.hpp"
 #include "display_options.hpp"
+#include "radius_display.hpp"
 #include "renderer_options.hpp"
 #include "atmosphere_renderer.hpp"
 #include "eclipse_display.hpp"
+#include "terrain_amplification.hpp"
 #include "mitaka/observation.hpp"
 #include <memory>
 namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; }
 
 @interface SolarSystemView : NSView
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
+@property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
+@property(nonatomic) mitaka::gui::TerrainAmplification terrainAmplification;
 @property(nonatomic) mitaka::gui::RendererDisplayOptions rendererDisplayOptions;
 @property(nonatomic) mitaka::gui::GridDisplayOptions gridDisplayOptions;
 @property(nonatomic) mitaka::gui::EarthLayerOptions earthLayerOptions;
@@ -102,4 +106,10 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)runCameraSmokeTest;
 - (BOOL)runTextureSmokeTest;
 - (BOOL)runRotationSmokeTest:(const mitaka::BodyOrientation&)laterEarthOrientation;
+@end
+
+@interface SolarSystemView (Terrain)
+- (void)setTerrainDataDirectory:(NSString *)directory;
+- (void)cancelTerrain;
+- (void)reloadTerrain;
 @end

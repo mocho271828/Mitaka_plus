@@ -54,6 +54,47 @@ void test_roundtrip() {
         }
     }
 }
+void test_radius_display() {
+    for (const auto mode : {RadiusScaleMode::keep_radius, RadiusScaleMode::keep_orbit}) {
+        SessionState state;
+        state.radius_display = {std::numeric_limits<float>::min(), 2.5f,
+                                std::numeric_limits<float>::denorm_min(),
+                                std::numeric_limits<float>::max()};
+        state.radius_scale_mode = mode;
+        const auto restored = decode_session_state(encode_session_state(state));
+        check(restored.radius_display.space_planet == state.radius_display.space_planet &&
+              restored.radius_display.space_sun == state.radius_display.space_sun &&
+              restored.radius_display.planetarium_planet == state.radius_display.planetarium_planet &&
+              restored.radius_display.planetarium_sun_moon == state.radius_display.planetarium_sun_moon &&
+              restored.radius_scale_mode == mode, "radius settings did not roundtrip");
+    }
+    for (NSString *field in @[@"space_planet", @"space_sun", @"planetarium_planet", @"planetarium_sun_moon"]) {
+        for (id value in @[NSNull.null, @YES, @"1", @[], @{}, @0, @(-1), @1e-100, @1e100]) {
+            auto object = state_object();
+            object[@"radius_display"][field] = value;
+            rejects([&] { decode_session_state(json_bytes(object)); });
+        }
+        auto object = state_object();
+        [object[@"radius_display"] removeObjectForKey:field];
+        rejects([&] { decode_session_state(json_bytes(object)); });
+    }
+    for (id value in @[NSNull.null, @YES, @"0", @[], @{}, @(-1), @2, @0.5]) {
+        auto object = state_object();
+        object[@"radius_display"][@"mode"] = value;
+        rejects([&] { decode_session_state(json_bytes(object)); });
+    }
+    SessionState invalid;
+    invalid.radius_display.space_planet = 0;
+    rejects([&] { encode_session_state(invalid); });
+    invalid.radius_display.space_planet = std::numeric_limits<float>::denorm_min();
+    rejects([&] { encode_session_state(invalid); });
+    auto underflow = state_object();
+    underflow[@"radius_display"][@"space_planet"] = @(static_cast<double>(std::numeric_limits<float>::denorm_min()));
+    rejects([&] { decode_session_state(json_bytes(underflow)); });
+    invalid.radius_display.space_planet = 1;
+    invalid.radius_scale_mode = static_cast<RadiusScaleMode>(2);
+    rejects([&] { encode_session_state(invalid); });
+}
 void test_invalid_fields() {
     for (NSString* field in @[@"step", @"value_days", @"speed"]) {
         for (id value in @[NSNull.null, @YES, @"1", @[], @{}]) {
@@ -102,6 +143,7 @@ int main() {
         try {
             test_roundtrip();
             test_invalid_fields();
+            test_radius_display();
             std::cout << "session Plus state tests: " << checks << " checks passed\n";
             return 0;
         } catch (const std::exception& error) {

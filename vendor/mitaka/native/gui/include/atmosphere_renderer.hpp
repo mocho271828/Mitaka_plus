@@ -26,13 +26,17 @@ struct AtmosphereLayer {
 AtmosphereParameters earth_atmosphere_parameters();
 AtmosphereParameters mars_atmosphere_parameters(double ground_radius_m);
 
-// 透視投影の同一視線で最も手前の不透明球まで積分する。模式的な最小マーカー
+// 透視投影の同一視線で最も手前の不透明面まで積分する。地形は基準球を置換する。
+// opaque_depthがあればcamera/geometry一致を検査して再利用する。省略時は同じ
+// 球/地形交点から求める。frame所有者は呼出し終了まで維持する。模式的な最小マーカー
 // には適用しない。位置/表示半径は AU、core へは単一散乱の地表半径を基準に m
-// へ変換する。視点がいずれかの不透明球上/内部なら全画素ゼロ。
+// へ変換する。sphere fallbackの不透明球上/内部なら全画素ゼロ。地形の有無と
+// 独立に、基準地表より下の視点では当該大気layerだけを除外する。
 // width/height は 1..1024。出力は左上原点で、RGB を PlusLighter により加算する。
 // 非ゼロ画素の alpha=255 は RGB の二重減衰を防ぐためで、透過率ではない。
 TextureImage render_atmosphere_scene(const std::vector<SurfaceSphere>& spheres,
     const std::vector<AtmosphereLayer>& layers, const SolarCamera& camera,
-    std::size_t width, std::size_t height, AtmosphereDisplayOptions options = {});
+    std::size_t width, std::size_t height, AtmosphereDisplayOptions options = {},
+    const SurfaceDepthFrame* opaque_depth = nullptr);
 
 } // namespace mitaka::gui

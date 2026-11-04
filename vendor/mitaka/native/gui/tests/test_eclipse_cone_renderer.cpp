@@ -1,4 +1,5 @@
 #include "eclipse_cone_renderer.hpp"
+#include "planet_surface.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -91,5 +92,43 @@ void raster(){
     for(auto dimension:{0u,1025u})reject([&]{render_eclipse_cones(g,options(),{},c,dimension,1);},"invalid viewport accepted");
     c.distance_au=std::numeric_limits<double>::quiet_NaN();reject([&]{render_eclipse_cones(g,options(),{},c,1,1);},"invalid camera accepted");
 }
+void terrain_depth(){
+    const auto g=geometry();const SolarCamera camera{{12,0,0},90,0,20};
+    const TextureImage white{1,1,{255,255,255,255}};
+    TerrainSurfaceFrame terrain;terrain.width=1;terrain.height=1;terrain.mode=TerrainSurfaceMode::terrain;
+    terrain.samples.push_back({30,{0,1,0},.5,.5});
+    const SurfaceSphere surface{white,{12,10,0},{},5,false,0,nullptr,nullptr,&terrain};
+    const std::vector<EclipseSphere> opaque{{surface.center,surface.radius_au}};
+    auto depth=make_surface_depth_frame({surface},camera,1,1,{30});
+    const auto fallback=render_eclipse_cones(g,options(),opaque,camera,1,1);
+    const auto distant=render_eclipse_cones(g,options(),opaque,camera,1,1,&depth);
+    check(pixels(fallback)==0&&pixels(distant)==1,"terrain depth did not replace nearer datum occlusion");
+    check(distant.rgba==render_eclipse_cones(g,options(),{},camera,1,1).rgba,"distant terrain changed visible cone");
+    depth.distances_au[0]=1;
+    check(pixels(render_eclipse_cones(g,options(),opaque,camera,1,1,&depth))==0,"near terrain did not occlude cone");
+    depth.distances_au[0]=std::numeric_limits<double>::infinity();
+    check(render_eclipse_cones(g,options(),opaque,camera,1,1,&depth).rgba==distant.rgba,"terrain hole refilled by datum sphere");
+    terrain.mode=TerrainSurfaceMode::none;terrain.samples.clear();
+    auto interior=surface;interior.center={12,20,0};
+    const std::vector<EclipseSphere> interior_opaque{{interior.center,interior.radius_au}};
+    auto missing=make_surface_depth_frame({interior},camera,1,1,{std::numeric_limits<double>::infinity()});
+    check(render_eclipse_cones(g,options(),interior_opaque,camera,1,1,&missing).rgba==distant.rgba,
+          "non-opaque terrain datum around camera erased cone");
+    terrain.mode=TerrainSurfaceMode::sphere;
+    check(pixels(render_eclipse_cones(g,options(),interior_opaque,camera,1,1,&missing))==0,
+          "fallback sphere interior contract lost");
+    auto changed=camera;changed.yaw_deg+=1;
+    reject([&]{render_eclipse_cones(g,options(),opaque,changed,1,1,&depth);},"stale camera accepted");
+    reject([&]{render_eclipse_cones(g,options(),opaque,camera,2,1,&depth);},"stale viewport accepted");
+    reject([&]{render_eclipse_cones(g,options(),{},camera,1,1,&depth);},"wrong opaque count accepted");
+    auto wrong=opaque;wrong[0].center_au.x+=1;
+    reject([&]{render_eclipse_cones(g,options(),wrong,camera,1,1,&depth);},"wrong opaque center accepted");
+    wrong=opaque;wrong[0].radius_au+=1;
+    reject([&]{render_eclipse_cones(g,options(),wrong,camera,1,1,&depth);},"wrong opaque radius accepted");
+    for(double value:{0.0,-1.0,-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::quiet_NaN()}) {
+        depth.distances_au[0]=value;
+        reject([&]{render_eclipse_cones(g,options(),opaque,camera,1,1,&depth);},"invalid shared depth accepted");
+    }
 }
-int main(){try{contract();clipping();raster();std::cout<<"eclipse cone renderer: "<<checks<<" checks PASS\n";return 0;}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}
+}
+int main(){try{contract();clipping();raster();terrain_depth();std::cout<<"eclipse cone renderer: "<<checks<<" checks PASS\n";return 0;}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}

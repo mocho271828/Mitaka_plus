@@ -6,8 +6,11 @@
 #include "planet_textures.hpp"
 #include "small_body_model.hpp"
 #include "display_options.hpp"
+#include "radius_display.hpp"
 #include "renderer_options.hpp"
 #include "atmosphere_renderer.hpp"
+#include "terrain_snapshot.hpp"
+#include "terrain_amplification.hpp"
 #import "SpacecraftRenderer.h"
 namespace mitaka::gui { class GridGeometryCache; struct SatelliteSnapshot; }
 namespace mitaka::gui { class SmallBodyDisplayModel; struct SmallBodyOrbitSnapshot; class SatelliteDisplayModel; struct SatelliteOrbitGeometry; }
@@ -47,6 +50,9 @@ struct SolarScene {
     double julian_date = 2451545.0;
     // 衛星マーカーの非表示でも物理的な遮蔽は維持する。
     const mitaka::gui::SatelliteSnapshot* eclipse_satellites = nullptr;
+    const std::array<std::shared_ptr<const mitaka::gui::TerrainSurfaceSnapshot>, 11>* terrain = nullptr;
+    mitaka::gui::TerrainAmplification terrain_amplification = mitaka::gui::TerrainAmplification::x1;
+    mitaka::gui::RadiusDisplayOptions radius_display{};
 };
 struct VisibleSolarBody { std::size_t index; mitaka::gui::SolarProjection point; };
 
@@ -59,3 +65,9 @@ std::vector<std::string> draw_solar_scene(CGContextRef context, const SolarScene
 
 void draw_solar_grid(CGContextRef context, const SolarScene& scene);
 std::optional<std::array<mitaka::Vec3, 2>> solar_axis_segment(const SolarScene& scene, std::size_t index);
+
+// 描画画像と非同期地形の寸法・物理幾何を一つの要求へ揃える。
+std::array<std::size_t, 2> solar_surface_raster_size(NSSize size);
+std::optional<mitaka::gui::TerrainSurfaceRequest> solar_terrain_request(
+    const SolarScene& scene, std::size_t index, const std::filesystem::path& data_directory);
+const mitaka::gui::TerrainSurfaceFrame* solar_terrain_frame(const SolarScene& scene, std::size_t index);

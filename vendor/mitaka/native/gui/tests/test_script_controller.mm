@@ -52,6 +52,8 @@ int main(int argc, const char *argv[]) {
             __block bool rejectNameSelection = false;
             __block bool rejectEarthLayers = false, rejectTime = false;
             __block bool rejectEclipseLandscape = false;
+            __block bool rejectTerrain = false;
+            __block bool rejectRadius = false;
             __block double brightnessTarget = 0, brightnessDuration = 0;
             controller.snapshot = ^{ check(NSThread.isMainThread, "snapshot thread"); return state; };
             controller.applyAction = ^BOOL(const ScriptAction& action, NSString **error) {
@@ -82,6 +84,15 @@ int main(int argc, const char *argv[]) {
                     *error = @"Time update unavailable"; return NO;
                 }
                 switch (action.kind) {
+                    case ScriptActionKind::set_radius_scale:
+                        if (rejectRadius) { *error = @"Radius unavailable"; return NO; }
+                        state.radius_display = action.radius_display; break;
+                    case ScriptActionKind::set_radius_scale_mode:
+                        if (rejectRadius) { *error = @"Radius unavailable"; return NO; }
+                        state.radius_scale_mode = action.radius_scale_mode; break;
+                    case ScriptActionKind::set_terrain_amplification:
+                        if (rejectTerrain) { *error = @"Terrain amplification unavailable"; return NO; }
+                        state.terrain_amplification = action.terrain_amplification; break;
                     case ScriptActionKind::set_shadows:
                     case ScriptActionKind::set_shadow_borders:
                     case ScriptActionKind::set_shadow_umbra:
@@ -154,6 +165,8 @@ int main(int argc, const char *argv[]) {
                         state.julian_date = state.plus_time.step.stepped_julian_date(state.julian_date,
                             action.kind == ScriptActionKind::step_time_forward ? 1 : -1);
                         state.playing = false; state.plus_time.speed = 0; break;
+                    case ScriptActionKind::set_time_animation_jd:
+                    case ScriptActionKind::set_time_animation_calendar:
                     case ScriptActionKind::set_date:
                         state.julian_date = action.number; state.playing = false; state.plus_time.speed = 0; break;
                     case ScriptActionKind::set_rate: state.rate_seconds_per_second = action.number; state.playing = true; break;
@@ -258,6 +271,76 @@ int main(int argc, const char *argv[]) {
             check([[NSString stringWithContentsOfURL:[directory URLByAppendingPathComponent:@"local-output.txt"] encoding:NSUTF8StringEncoding error:nil] isEqualToString:@"trusted"], "trusted local I/O");
             check([[NSString stringWithContentsOfURL:[directory URLByAppendingPathComponent:@"flushed-output.txt"] encoding:NSUTF8StringEncoding error:nil] isEqualToString:@"flushed"], "Lua close must flush files before completion");
             check(imageDialogs == 1, "image dialog dispatch");
+            outcome = run(controller, file, @R"lua(
+                assert(Planets.topoAmplification==1)
+                for n=1,5 do
+                    Planets.topoAmplification=n
+                    assert(Planets.topoAmplification==n)
+                end
+                for _,v in ipairs({0,6,-1,1.5,math.huge,-math.huge,0/0,'1',true}) do
+                    local previous=Planets.topoAmplification
+                    local ok=pcall(function() Planets.topoAmplification=v end)
+                    assert(not ok and Planets.topoAmplification==previous)
+                end
+            )lua");
+            check(outcome.succeeded, outcome.message.c_str());
+            check(state.terrain_amplification == TerrainAmplification::x20, "terrain action must carry typed value");
+            state.terrain_amplification = TerrainAmplification::x2;
+            outcome = run(controller, file, @"assert(Planets.topoAmplification==2)");
+            check(outcome.succeeded, outcome.message.c_str());
+            rejectTerrain = true;
+            outcome = run(controller, file, @R"lua(
+                local ok,err=pcall(function() Planets.topoAmplification=3 end)
+                assert(not ok and string.find(err,'Terrain amplification unavailable',1,true))
+                assert(Planets.topoAmplification==2)
+            )lua");
+            check(outcome.succeeded, outcome.message.c_str());
+            rejectTerrain = false;
+            outcome = run(controller, file, @R"lua(
+                assert(Planets.scaleMode==mtk.KEEP_ORBIT)
+                local a,b,c,d=Planets:getScale()
+                assert(a==1 and b==1 and c==1 and d==1)
+                assert(select('#',Planets:getScale())==4)
+                Planets:setScale(500,2,20,5)
+                a,b,c,d=Planets:getScale()
+                assert(a==500 and b==2 and c==20 and d==5)
+                Planets.scaleMode=mtk.KEEP_RADIUS; assert(Planets.scaleMode==mtk.KEEP_RADIUS)
+                assert(Planets:getScaleMode()==mtk.KEEP_RADIUS)
+                Planets:setScaleMode(mtk.KEEP_ORBIT); assert(Planets.scaleMode==mtk.KEEP_ORBIT)
+                Planets:setScaleMode(mtk.KEEP_RADIUS)
+                for _,v in ipairs({0,-1,math.huge,-math.huge,0/0,'1',true,1e100,1e-100}) do
+                    for i=1,4 do
+                        local args={2,3,4,5}; args[i]=v
+                        assert(not pcall(function() Planets:setScale(table.unpack(args)) end))
+                        a,b,c,d=Planets:getScale(); assert(a==500 and b==2 and c==20 and d==5)
+                    end
+                end
+                for _,v in ipairs({-1,2,0.5,'1',true,math.huge}) do
+                    assert(not pcall(function() Planets.scaleMode=v end))
+                    assert(Planets.scaleMode==mtk.KEEP_RADIUS)
+                end
+                assert(not pcall(function() Planets:setScale(1,2,3) end))
+                assert(not pcall(function() Planets:getScale(1) end))
+                assert(not pcall(function() Planets.setScale(Stars,1,2,3,4) end))
+            )lua");
+            check(outcome.succeeded, outcome.message.c_str());
+            check(state.radius_display.space_planet == 500 && state.radius_display.space_sun == 2 &&
+                state.radius_display.planetarium_planet == 20 && state.radius_display.planetarium_sun_moon == 5 &&
+                state.radius_scale_mode == RadiusScaleMode::keep_radius, "radius action preserves order and mode");
+            state.radius_display = checked_radius_display_options(7, 8, 9, 10);
+            outcome = run(controller, file, @"local a,b,c,d=Planets:getScale(); assert(a==7 and b==8 and c==9 and d==10)");
+            check(outcome.succeeded, outcome.message.c_str());
+            rejectRadius = true;
+            outcome = run(controller, file, @R"lua(
+                local ok,err=pcall(function() Planets:setScale(1,1,1,1) end)
+                assert(not ok and string.find(err,'Radius unavailable',1,true))
+                ok,err=pcall(function() Planets.scaleMode=mtk.KEEP_ORBIT end)
+                assert(not ok and string.find(err,'Radius unavailable',1,true))
+                local a,b,c,d=Planets:getScale()
+                assert(a==7 and b==8 and c==9 and d==10 and Planets.scaleMode==mtk.KEEP_RADIUS)
+            )lua");
+            check(outcome.succeeded, outcome.message.c_str());
+            rejectRadius = false;
             outcome = run(controller, file, @R"lua(
                 local constants={STEP_SEC,STEP_10SEC,STEP_MIN,STEP_10MIN,STEP_HOUR,STEP_DAY,
                     STEP_WEEK,STEP_MONTH,STEP_YEAR,STEP_10YEAR,STEP_100YEAR,STEP_VALUE}
@@ -466,6 +549,8 @@ int main(int argc, const char *argv[]) {
                     state.selected_star_names == std::set<std::int32_t>({2}), "selection host rejection reaches Lua without mutation");
             }
             rejectNameSelection = false;
+            outcome = run(controller,file,@"assert(mtk.KEEP_RADIUS==0 and mtk.KEEP_ORBIT==1)");
+            check(outcome.succeeded, "legacy radius scale mode constants are available to Lua");
             outcome = run(controller,file,@R"lua(
                 assert(mtk.ATMOS_NONE==0 and mtk.ATMOS_SINGLE==1 and mtk.ATMOS_MULTIPLE==2)
                 Planets.clouds=false; Planets.cityLights=true

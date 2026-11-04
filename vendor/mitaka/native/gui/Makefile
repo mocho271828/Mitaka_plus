@@ -1,4 +1,5 @@
 CXX = xcrun clang++
+export DATA_ROOT ?= $(abspath ../../../../resources/data)
 BUILD_DIR ?= build
 CXXFLAGS ?= -O2 -g
 CPPFLAGS += -Iinclude -I../core/include
@@ -19,7 +20,7 @@ OBJECTS += $(BUILD_DIR)/AppSatelliteSmokeTests.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,SpacecraftController.o SpacecraftRenderer.o spacecraft_browser_model.o SolarSpacecraft.o AppSpacecraftCommands.o small_body_display.o satellite_display.o constellation_display.o horizon_segments.o AppConstellationCommands.o small_body_orbit_model.o SmallBodyOrbitController.o)
 OBJECTS += $(BUILD_DIR)/ConstellationRenderer.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,satellite_orbit_geometry.o session_layers.o session_layers_json.o)
-OBJECTS += $(BUILD_DIR)/AppSessionSmokeTests.o
+OBJECTS += $(BUILD_DIR)/AppSessionSmokeTests.o $(BUILD_DIR)/AppGalaxySmokeTests.o
 OBJECTS += $(BUILD_DIR)/AppStarCommands.o
 OBJECTS += $(BUILD_DIR)/earth_layers.o $(BUILD_DIR)/atmosphere_renderer.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,star_brightness.o StarBrightnessController.o AppStarNameCommands.o star_name_selection.o constellation_art_model.o constellation_art_projection.o ConstellationArtRenderer.o)
@@ -28,6 +29,10 @@ LANDSCAPE_OBJECTS = $(addprefix $(BUILD_DIR)/,landscape_selection.o earth_landsc
 OBJECTS += $(LANDSCAPE_OBJECTS)
 ECLIPSE_OBJECTS = $(addprefix $(BUILD_DIR)/,eclipse_surface.o eclipse_display.o eclipse_cone_renderer.o)
 OBJECTS += $(ECLIPSE_OBJECTS)
+GALAXY_OBJECTS = $(addprefix $(BUILD_DIR)/,galaxy_camera.o galaxy_spatial_scene.o galaxy_spatial_load.o GalaxyRenderer.o GalaxyView.o GalaxyController.o)
+TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o terrain_snapshot.o terrain_source_lease.o)
+OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS)
+OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
 
 ifneq ($(ARCH),)
 CXXFLAGS += -arch $(ARCH)
@@ -51,8 +56,8 @@ all: core $(OBJECTS) $(SCRIPT_HELPER)
 $(LUA_LIBRARY): tools/build_lua.sh vendor/lua-5.4.9.tar.gz
 	bash tools/build_lua.sh "$(LUA_BUILD)" "$(ARCH)" "$(SANITIZE)"
 
-$(SCRIPT_HELPER): src/ScriptWorker.mm $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(LUA_LIBRARY) core
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I"$(LUA_BUILD)/include" -fobjc-arc $< $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o "$(CORE_LIBRARY)" "$(LUA_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+$(SCRIPT_HELPER): src/ScriptWorker.mm $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o $(LUA_LIBRARY) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I"$(LUA_BUILD)/include" -fobjc-arc $< $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o "$(CORE_LIBRARY)" "$(LUA_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
 $(BUILD_DIR)/test_script_controller: tests/test_script_controller.mm $(BUILD_DIR)/ScriptController.o $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
@@ -155,7 +160,7 @@ $(BUILD_DIR)/test_sky_catalog_index: tests/test_sky_catalog_index.cpp $(BUILD_DI
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/sky_catalog_index.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
 SESSION_TEST_OBJECTS = $(BUILD_DIR)/session_state.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/playback_clock.o $(BUILD_DIR)/calendar_time.o $(BUILD_DIR)/session_layers.o $(BUILD_DIR)/session_layers_json.o $(BUILD_DIR)/small_body_display.o $(BUILD_DIR)/satellite_display.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/atmosphere_renderer.o $(BUILD_DIR)/planet_surface.o $(BUILD_DIR)/earth_layers.o
-SESSION_TEST_OBJECTS += $(BUILD_DIR)/eclipse_surface.o
+SESSION_TEST_OBJECTS += $(BUILD_DIR)/eclipse_surface.o $(BUILD_DIR)/surface_depth.o $(BUILD_DIR)/radius_display.o
 
 $(BUILD_DIR)/test_session_state: tests/test_session_state.mm $(SESSION_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
@@ -180,7 +185,7 @@ $(BUILD_DIR)/test_catalog_browser_model: tests/test_catalog_browser_model.mm $(B
 $(BUILD_DIR)/test_display_output: tests/test_display_output.mm $(BUILD_DIR)/DisplayOutputController.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
 
-SKY_VIEW_OBJECTS = $(addprefix $(BUILD_DIR)/,SkyView.o SkyCatalogRenderer.o StarRenderer.o RendererQuality.o star_labels.o sky_catalog_index.o sky_model.o sky_background.o local_image.o ConstellationRenderer.o constellation_display.o horizon_segments.o GridRenderer.o grid_geometry.o distance_scales.o solar_camera.o)
+SKY_VIEW_OBJECTS = $(addprefix $(BUILD_DIR)/,SkyView.o SkyCatalogRenderer.o StarRenderer.o RendererQuality.o star_labels.o sky_catalog_index.o sky_model.o sky_background.o local_image.o ConstellationRenderer.o constellation_display.o horizon_segments.o GridRenderer.o grid_geometry.o distance_scales.o solar_camera.o radius_display.o)
 SKY_VIEW_OBJECTS += $(addprefix $(BUILD_DIR)/,star_brightness.o constellation_art_model.o constellation_art_projection.o ConstellationArtRenderer.o)
 $(BUILD_DIR)/test_sky_view: tests/test_sky_view.mm $(SKY_VIEW_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(SKY_VIEW_OBJECTS) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
@@ -188,7 +193,7 @@ $(BUILD_DIR)/test_sky_view: tests/test_sky_view.mm $(SKY_VIEW_OBJECTS) core
 DISPLAY_TEST_OBJECTS = $(SKY_VIEW_OBJECTS) $(addprefix $(BUILD_DIR)/,HorizonView.o SolarSceneRenderer.o SatelliteRenderer.o satellite_browser_model.o SmallBodyRenderer.o small_body_model.o small_body_display.o small_body_orbit_model.o satellite_display.o satellite_orbit_geometry.o SpacecraftRenderer.o spacecraft_browser_model.o planet_surface.o surface_navigation.o)
 HORIZON_LANDSCAPE_TEST_OBJECTS = $(LANDSCAPE_OBJECTS) $(addprefix $(BUILD_DIR)/,observer_places.o place_display_model.o landscape_geometry.o)
 DISPLAY_TEST_OBJECTS += $(BUILD_DIR)/earth_layers.o $(BUILD_DIR)/atmosphere_renderer.o $(HORIZON_LANDSCAPE_TEST_OBJECTS)
-DISPLAY_TEST_OBJECTS += $(ECLIPSE_OBJECTS) $(BUILD_DIR)/satellite_scene.o
+DISPLAY_TEST_OBJECTS += $(ECLIPSE_OBJECTS) $(BUILD_DIR)/satellite_scene.o $(BUILD_DIR)/surface_depth.o $(TERRAIN_OBJECTS)
 $(BUILD_DIR)/test_display_rendering: tests/test_display_rendering.mm $(DISPLAY_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(DISPLAY_TEST_OBJECTS) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
 
@@ -453,3 +458,58 @@ eclipse-renderer-test: $(BUILD_DIR)/test_eclipse_surface $(BUILD_DIR)/test_eclip
 	"$(BUILD_DIR)/test_eclipse_cone_renderer"
 	"$(BUILD_DIR)/test_eclipse_scene"
 test: eclipse-renderer-test
+
+# UNIT8: 原版の純計算と画面接続を別々に検証する。
+$(BUILD_DIR)/test_script_controller $(BUILD_DIR)/test_html_browser: $(BUILD_DIR)/plus_time_calendar.o
+$(BUILD_DIR)/test_script_controller $(BUILD_DIR)/test_html_browser $(BUILD_DIR)/test_script_time: $(BUILD_DIR)/radius_display.o
+$(BUILD_DIR)/test_playback_controller: $(BUILD_DIR)/plus_time_animation.o $(BUILD_DIR)/plus_time_calendar.o
+$(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_earth_layers $(BUILD_DIR)/test_atmosphere_renderer $(BUILD_DIR)/test_eclipse_surface $(BUILD_DIR)/test_eclipse_cone_renderer: $(BUILD_DIR)/surface_depth.o
+
+$(BUILD_DIR)/test_galaxy_camera: tests/test_galaxy_camera.cpp $(BUILD_DIR)/galaxy_camera.o $(BUILD_DIR)/solar_camera.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_galaxy_spatial_scene: tests/test_galaxy_spatial_scene.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_galaxy_spatial_load: tests/test_galaxy_spatial_load.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_load.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_galaxy_renderer: tests/test_galaxy_renderer.mm $(addprefix $(BUILD_DIR)/,GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_galaxy_controller: tests/test_galaxy_controller.mm $(GALAXY_OBJECTS) $(addprefix $(BUILD_DIR)/,solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+
+$(BUILD_DIR)/test_terrain_surface: tests/test_terrain_surface.cpp $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o solar_camera.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_terrain_snapshot: tests/test_terrain_snapshot.cpp $(TERRAIN_OBJECTS) $(BUILD_DIR)/solar_camera.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_terrain_surface_controller: tests/test_terrain_surface_controller.mm $(TERRAIN_OBJECTS) $(addprefix $(BUILD_DIR)/,TerrainSurfaceController.o solar_camera.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+$(BUILD_DIR)/test_terrain_compositing: tests/test_terrain_compositing.cpp $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o surface_depth.o planet_surface.o atmosphere_renderer.o earth_layers.o solar_camera.o eclipse_surface.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+
+$(BUILD_DIR)/test_plus_time_calendar: tests/test_plus_time_calendar.cpp $(addprefix $(BUILD_DIR)/,plus_time_calendar.o plus_time_step.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_plus_time_animation: tests/test_plus_time_animation.cpp $(BUILD_DIR)/plus_time_animation.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_time_animation_controller: tests/test_time_animation_controller.mm $(addprefix $(BUILD_DIR)/,PlaybackController.o playback_clock.o plus_time_step.o plus_time_playback.o plus_time_calendar.o plus_time_animation.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_script_time: tests/test_script_time.mm $(addprefix $(BUILD_DIR)/,ScriptController.o script_transport.o star_brightness.o plus_time_step.o plus_time_playback.o plus_time_calendar.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+$(BUILD_DIR)/test_radius_display: tests/test_radius_display.cpp $(BUILD_DIR)/radius_display.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controller.mm $(addprefix $(BUILD_DIR)/,RadiusDisplayController.o radius_display.o)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
+
+.PHONY: unit8-test galaxy-controller-test script-time-test
+unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
+	@for binary in $^; do "$$binary" || exit $$?; done
+test: unit8-test
+galaxy-controller-test: $(BUILD_DIR)/test_galaxy_controller
+	"$(BUILD_DIR)/test_galaxy_controller"
+script-time-test: $(BUILD_DIR)/test_script_time $(SCRIPT_HELPER)
+	"$(BUILD_DIR)/test_script_time" "$(abspath $(SCRIPT_HELPER))"
+
+$(BUILD_DIR)/test_solar_terrain: tests/test_solar_terrain.mm $(DISPLAY_TEST_OBJECTS) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(DISPLAY_TEST_OBJECTS) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
+.PHONY: solar-terrain-test
+solar-terrain-test: $(BUILD_DIR)/test_solar_terrain
+	"$(BUILD_DIR)/test_solar_terrain"
+test: solar-terrain-test

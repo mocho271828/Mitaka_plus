@@ -53,6 +53,9 @@ bool isNumber(id value) {
 }
 NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     (void)plus_time_rate(state.plus_time);
+    validate_terrain_amplification(state.terrain_amplification);
+    validate_radius_display_options(state.radius_display);
+    validate_radius_scale_mode(state.radius_scale_mode);
     if (!std::isfinite(state.julian_date) || !std::isfinite(state.rate_seconds_per_second) ||
         !std::isfinite(state.camera_distance_au) || !std::isfinite(state.camera_azimuth_deg) ||
         state.atmosphere_mode < 0 || state.atmosphere_mode > 2)
@@ -72,6 +75,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         @"playing":@(state.playing), @"realtime":@(state.clock_tracking), @"timeInfo":@(state.time_info),
         @"timeStep":@(static_cast<int>(state.plus_time.step.step())),
         @"timeStepValue":@(state.plus_time.step.value_days()), @"timeSpeed":@(state.plus_time.speed),
+        @"plusTimeZoneWestSeconds":state.plus_time_zone ? @(state.plus_time_zone->seconds_west_of_utc) : NSNull.null,
         @"target":target, @"distance":@(state.camera_distance_au),
         @"lines":@(state.constellation_lines), @"bounds":@(state.constellation_boundaries),
         @"labels":@(state.constellation_labels), @"starLabels":@(state.stars.proper_names),
@@ -84,6 +88,10 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         @"planetOrbits":@(state.planets.orbits), @"planetAxes":@(state.planets.axes),
         @"earthClouds":@(state.earth_clouds), @"earthCityLights":@(state.earth_city_lights),
         @"atmosphereMode":@(state.atmosphere_mode),
+        @"topoAmplification":@(static_cast<int>(state.terrain_amplification)),
+        @"radiusScale":@[@(state.radius_display.space_planet), @(state.radius_display.space_sun),
+            @(state.radius_display.planetarium_planet), @(state.radius_display.planetarium_sun_moon)],
+        @"radiusScaleMode":@(static_cast<int>(state.radius_scale_mode)),
         @"shadows":@(state.eclipse.shadows), @"shadowBorders":@(state.eclipse.shadow_borders),
         @"shadowUmbra":@(state.eclipse.shadow_umbra), @"shadowPenumbra":@(state.eclipse.shadow_penumbra),
         @"landscape":@(state.landscape),
@@ -267,7 +275,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             ![message[@"enabled"] isKindOfClass:NSNumber.class] || ![message[@"text"] isKindOfClass:NSString.class])
             throw std::runtime_error("Invalid script action");
         const double kind = [message[@"kind"] doubleValue];
-        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_landscape))
+        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_radius_scale_mode))
             throw std::runtime_error("Unknown script action");
         if (![message[@"hips"] isKindOfClass:NSArray.class] || [message[@"hips"] count] > 2048)
             throw std::runtime_error("Invalid star identifier list");
@@ -282,10 +290,39 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         }
         if ((static_cast<ScriptActionKind>(static_cast<int>(kind)) == ScriptActionKind::set_star_name_membership) != !hips.empty())
             throw std::runtime_error("Unexpected star identifier list");
-        const ScriptAction action{static_cast<ScriptActionKind>(static_cast<int>(kind)),
+        ScriptAction action{static_cast<ScriptActionKind>(static_cast<int>(kind)),
             [message[@"number"] doubleValue], static_cast<bool>([message[@"enabled"] boolValue]),
-            std::string([message[@"text"] UTF8String]), [message[@"duration"] doubleValue], std::move(hips)};
-        if (action.duration_seconds < 0) throw std::runtime_error("Invalid script duration");
+            std::string([message[@"text"] UTF8String]), [message[@"duration"] doubleValue], std::move(hips),
+            TerrainAmplification::x1, {}, RadiusScaleMode::keep_orbit};
+        NSArray *radiusScale = message[@"radiusScale"];
+        if (![radiusScale isKindOfClass:NSArray.class] ||
+            radiusScale.count != (action.kind == ScriptActionKind::set_radius_scale ? 4u : 0u))
+            throw std::runtime_error("Invalid radius scale payload");
+        if (action.kind == ScriptActionKind::set_radius_scale) {
+            for (id value in radiusScale)
+                if (!isNumber(value) || CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID())
+                    throw std::runtime_error("Invalid radius scale value");
+            action.radius_display = checked_radius_display_options([radiusScale[0] doubleValue],
+                [radiusScale[1] doubleValue], [radiusScale[2] doubleValue], [radiusScale[3] doubleValue]);
+        }
+        if (action.kind == ScriptActionKind::set_radius_scale_mode) {
+            if (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID() ||
+                (action.number != 0 && action.number != 1))
+                throw std::runtime_error("Invalid radius scale mode");
+            action.radius_scale_mode = static_cast<RadiusScaleMode>(static_cast<int>(action.number));
+        }
+        if (action.kind == ScriptActionKind::set_terrain_amplification) {
+            if (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID())
+                throw std::runtime_error("Invalid terrain amplification");
+            action.terrain_amplification = terrain_amplification_from_lua(action.number);
+        }
+        const bool timeAnimation = action.kind == ScriptActionKind::set_time_animation_jd ||
+            action.kind == ScriptActionKind::set_time_animation_calendar;
+        if (action.duration_seconds < 0 && !timeAnimation) throw std::runtime_error("Invalid script duration");
+        if (timeAnimation && (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID() ||
+            CFGetTypeID((__bridge CFTypeRef)message[@"duration"]) == CFBooleanGetTypeID() ||
+            CFGetTypeID((__bridge CFTypeRef)message[@"enabled"]) != CFBooleanGetTypeID()))
+            throw std::runtime_error("Invalid Time animation parameters");
         if (action.kind >= ScriptActionKind::set_time_step && action.kind <= ScriptActionKind::step_time_rewind) {
             if (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID())
                 throw std::runtime_error("Invalid Time numeric value");

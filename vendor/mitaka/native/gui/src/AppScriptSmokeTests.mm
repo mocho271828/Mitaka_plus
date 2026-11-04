@@ -95,6 +95,18 @@
          "Stars:darken(); assert(math.abs(Stars.brightness - 0.5) < 1e-6)\n"
          "Stars:defaultBrightness(); assert(Stars.brightness == 1)\n"
          "Stars:setBrightnessTo(0.375, 0); assert(Stars.brightness == 0.375)\n"
+         "local rs1,rs2,rs3,rs4=Planets:getScale(); local rsm=Planets:getScaleMode()\n"
+         "Planets.scaleMode=mtk.KEEP_ORBIT; Planets:setScale(2,3,4,5)\n"
+         "local a,b,c,d=Planets:getScale(); assert(a==2 and b==3 and c==4 and d==5)\n"
+         "assert(Planets:getScaleMode()==mtk.KEEP_ORBIT)\n"
+         "print('__smoke_radius')\n"
+         "Planets.scaleMode=mtk.KEEP_RADIUS\n"
+         "local ok,err=pcall(function() Planets:setScale(6,3,4,5) end)\n"
+         "assert(not ok and type(err)=='string' and #err>0)\n"
+         "a,b,c,d=Planets:getScale(); assert(a==2 and b==3 and c==4 and d==5)\n"
+         "assert(Planets.scaleMode==mtk.KEEP_RADIUS)\n"
+         "Planets.scaleMode=mtk.KEEP_ORBIT\n"
+         "Planets:setScale(rs1,rs2,rs3,rs4); Planets:setScaleMode(rsm)\n"
          "for _, mode in ipairs({mtk.ATMOS_NONE, mtk.ATMOS_SINGLE, mtk.ATMOS_MULTIPLE}) do\n"
          " Planets.atmosphere = mode; assert(Planets.atmosphere == mode)\n"
          "end\n"
@@ -214,7 +226,7 @@
         else [controller->_scriptWindow orderOut:nil];
         if (failure) { [controller showError:failure]; return; }
         if (![controller applySessionState:original]) return;
-        std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
+        std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,radius,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
             asteroidBudgetExceeded ? "rejection-tested" : "no-local-over-budget-asteroids");
         completion();
     };
@@ -227,6 +239,15 @@
                 controller->_horizon.showsTimeInfo || controller->_solar.showsTimeInfo ||
                 !controller->_playback.clockTracking)
                 interactionFailure = @"smoke: Time.timeInfo did not update displays independently of clock tracking";
+        } else if ([text isEqualToString:@"__smoke_radius"]) {
+            mitaka::gui::RadiusDisplayOptions options;
+            mitaka::gui::RadiusScaleMode mode;
+            NSString *error = nil;
+            if (![controller readRadiusDisplayOptions:&options mode:&mode error:&error] ||
+                options.space_planet != 2 || options.space_sun != 3 ||
+                options.planetarium_planet != 4 || options.planetarium_sun_moon != 5 ||
+                mode != mitaka::gui::RadiusScaleMode::keep_orbit)
+                interactionFailure = @"smoke: Lua radius options did not reach shared display state";
         } else if ([text isEqualToString:@"__smoke_small_satellite"]) {
             for (const auto kind : {mitaka::SmallBodyKind::asteroid, mitaka::SmallBodyKind::trans_neptunian, mitaka::SmallBodyKind::comet}) {
                 const auto options = [controller smallBodyDisplayOptionsForKind:kind];
@@ -275,9 +296,23 @@
             controller->_loading = YES;
             NSString *failure = nil;
             const bool fullScreen = [controller fullScreen];
-            if (![controller applyScriptAction:{ScriptActionKind::set_full_screen, 0, fullScreen, {}} error:&failure] ||
-                controller->_scripts.snapshot().full_screen != fullScreen)
+            ScriptAction fullScreenAction{};
+            fullScreenAction.kind = ScriptActionKind::set_full_screen;
+            fullScreenAction.enabled = fullScreen;
+            const ScriptSnapshot loadingState = controller->_scripts.snapshot();
+            if (![controller applyScriptAction:fullScreenAction error:&failure] ||
+                loadingState.full_screen != fullScreen ||
+                loadingState.radius_display.space_planet != controller->_radiusDisplayOptions.space_planet ||
+                loadingState.radius_scale_mode != controller->_radiusScaleMode)
                 interactionFailure = @"smoke: fullscreen state was model-dependent or did not read the actual window";
+            ScriptAction radiusAction{};
+            radiusAction.kind = ScriptActionKind::set_radius_scale;
+            radiusAction.radius_display = loadingState.radius_display;
+            radiusAction.radius_display.space_planet = 2;
+            failure = nil;
+            if ([controller applyScriptAction:radiusAction error:&failure] || !failure ||
+                controller->_radiusDisplayOptions.space_planet != loadingState.radius_display.space_planet)
+                interactionFailure = @"smoke: radius mutation was accepted while loading";
             controller->_loading = loading;
         } else if ([text isEqualToString:@"__smoke_display_options"]) {
             auto stars = [controller starDisplayOptions];
@@ -345,46 +380,85 @@
         const auto state = controller->_scripts.snapshot();
         const auto camera = [controller->_solar cameraState];
         const auto moon = mitaka::j2000_equatorial_to_ecliptic(controller->_solarBodies[10].position_au);
-        if (controller->_scripts.running || state.playing || state.plus_time.speed != 0 ||
-            state.plus_time.step.step() != PlusTimeStep::minute || state.plus_time.step.value_days() != 1.0 / 1440 ||
-            std::abs(controller->_jd - expectedJD) > 1e-9 || state.target != "Satellite.Moon" ||
-            controller->_solar.selectedBodyIndex != 10 || controller->_mode.selectedSegment != 1 ||
-            std::abs(camera.distance_au - 2) > 1e-12 ||
-            std::hypot(camera.target.x - moon.x, camera.target.y - moon.y, camera.target.z - moon.z) > 1e-10 ||
-            !state.constellation_lines || !state.constellation_boundaries || !state.constellation_labels ||
-            !state.constellation_illustrations || state.stars.selected_proper_names_only || state.stars.brightness != 0.75f ||
-            state.earth_clouds || state.earth_city_lights || state.atmosphere_mode != 2 ||
-            state.eclipse.shadows || !state.eclipse.shadow_borders || state.eclipse.shadow_umbra ||
-            !state.eclipse.shadow_penumbra || state.landscape ||
-            !state.stars.proper_names || !state.nebulae || !state.distant_galaxies || !state.quasars ||
-            state.clock_tracking || !state.time_info || state.stars.hip_labels || state.planets.axes ||
-            state.renderer.antialias || state.renderer.point_smoothing ||
-            !state.renderer.line_smoothing || !state.renderer.text_smoothing ||
-            state.grids.galactic || state.stars.marking != StarMarking::binary || state.milky_way_type != "Normal" ||
-            state.target_browser || state.time_setting || state.place_setting || state.script_output || state.dual_screen ||
-            !imagePanelOpened || controller->_window.attachedSheet ||
-            ![controller->_scriptLog.string isEqualToString:@"native-script-first\nnative-script-second\n\n"]) {
-            finish(@"smoke: script action or line output did not reach the actual GUI");
+        NSMutableArray<NSString *> *mismatches = [NSMutableArray array];
+        const auto check = [mismatches](bool condition, NSString *name) {
+            if (!condition) [mismatches addObject:name];
+        };
+        check(!controller->_scripts.running, @"script running");
+        check(!state.playing && state.plus_time.speed == 0 && state.plus_time.step.step() == PlusTimeStep::minute &&
+            state.plus_time.step.value_days() == 1.0 / 1440, @"time controls");
+        check(std::abs(controller->_jd - expectedJD) <= 1e-9, @"date");
+        check(state.target == "Satellite.Moon" && controller->_solar.selectedBodyIndex == 10 &&
+            controller->_mode.selectedSegment == 1, @"target and mode");
+        check(std::abs(camera.distance_au - 2) <= 1e-12, @"camera distance");
+        check(std::hypot(camera.target.x - moon.x, camera.target.y - moon.y, camera.target.z - moon.z) <= 1e-10,
+            @"camera target");
+        check(state.constellation_lines && state.constellation_boundaries && state.constellation_labels &&
+            state.constellation_illustrations, @"constellations");
+        check(!state.stars.selected_proper_names_only && state.stars.brightness == 0.75f &&
+            state.stars.proper_names && !state.stars.hip_labels && state.stars.marking == StarMarking::binary,
+            @"stars");
+        check(!state.earth_clouds && !state.earth_city_lights && state.atmosphere_mode == 2, @"Earth layers");
+        check(!state.eclipse.shadows && state.eclipse.shadow_borders && !state.eclipse.shadow_umbra &&
+            state.eclipse.shadow_penumbra && !state.landscape, @"eclipse and landscape");
+        check(state.nebulae && state.distant_galaxies && state.quasars, @"galaxies");
+        check(!state.clock_tracking && state.time_info, @"time display");
+        check(!state.planets.axes && !state.grids.galactic && state.milky_way_type == "Normal", @"display options");
+        check(!state.renderer.antialias && !state.renderer.point_smoothing && state.renderer.line_smoothing &&
+            state.renderer.text_smoothing, @"renderer");
+        check(!state.target_browser && !state.time_setting && !state.place_setting && !state.script_output &&
+            !state.dual_screen, @"windows");
+        check(imagePanelOpened, @"image panel");
+        check([controller->_scriptLog.string isEqualToString:@"native-script-first\nnative-script-second\n\n"], @"script output");
+        if (mismatches.count) {
+            finish([@"smoke: script GUI state mismatch: " stringByAppendingString:
+                [mismatches componentsJoinedByString:@", "]]);
             return;
         }
-        [controller showScriptConsole:nil];
-        controller->_scripts.completion = ^(BOOL accepted, NSString *failure) {
-            if (finished) return;
+        void (^continueAfterSheet)(void) = ^{
             AppController *active = weakSelf;
             if (!active) { finish(@"smoke: script host was released"); return; }
-            active->_scripts.output(failure);
-            if (accepted || active->_scripts.running || ![failure containsString:@"Unsupported"] ||
-                ![failure containsString:@"nativeSmokeUnsupported"] || ![failure containsString:@"unsupported.lua"] ||
-                !active->_scriptWindow.visible ||
-                ![active->_scriptLog.string containsString:failure]) {
-                finish(@"smoke: unsupported script API did not produce a visible error");
-                return;
-            }
-            finish(nil);
+            [active showScriptConsole:nil];
+            active->_scripts.completion = ^(BOOL accepted, NSString *failure) {
+                if (finished) return;
+                AppController *current = weakSelf;
+                if (!current) { finish(@"smoke: script host was released"); return; }
+                current->_scripts.output(failure);
+                if (accepted || current->_scripts.running || ![failure containsString:@"Unsupported"] ||
+                    ![failure containsString:@"nativeSmokeUnsupported"] || ![failure containsString:@"unsupported.lua"] ||
+                    !current->_scriptWindow.visible ||
+                    ![current->_scriptLog.string containsString:failure]) {
+                    finish(@"smoke: unsupported script API did not produce a visible error");
+                    return;
+                }
+                finish(nil);
+            };
+            NSError *runError = nil;
+            if (![active->_scripts runFile:unsupportedFile error:&runError])
+                finish([NSString stringWithFormat:@"smoke: script restart failed: %@", runError.localizedDescription]);
         };
-        NSError *runError = nil;
-        if (![controller->_scripts runFile:unsupportedFile error:&runError])
-            finish([NSString stringWithFormat:@"smoke: script restart failed: %@", runError.localizedDescription]);
+        if (!controller->_window.attachedSheet) {
+            continueAfterSheet();
+            return;
+        }
+        // cancel: はシートの終了を同期的には保証しない。実際に外れるまで待ち、
+        // 終了しない場合は失敗にする。他の状態は待機前にすべて検証済み。
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+        NSTimer *timer = [NSTimer timerWithTimeInterval:0.01 repeats:YES block:^(NSTimer *timer) {
+            if (finished) { [timer invalidate]; return; }
+            AppController *active = weakSelf;
+            if (!active) {
+                [timer invalidate];
+                finish(@"smoke: script host was released");
+            } else if (!active->_window.attachedSheet) {
+                [timer invalidate];
+                continueAfterSheet();
+            } else if (deadline.timeIntervalSinceNow <= 0) {
+                [timer invalidate];
+                finish(@"smoke: cancelled image panel did not close within 5 seconds");
+            }
+        }];
+        [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
     };
     // API の真偽値試験では空の表示集合を使い、原本全行への軌道要求を意図せず作らない。
     // 超過拒否は上の Lua で別途検査し、終了時には保存済み session の集合へ戻す。

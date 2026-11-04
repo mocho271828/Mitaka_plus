@@ -1,6 +1,7 @@
 #include "session_state.hpp"
 #include "session_layers_json.h"
 #include "playback_clock.hpp"
+#include "radius_display_validation.hpp"
 #include "star_brightness.hpp"
 
 #import <Foundation/Foundation.h>
@@ -78,7 +79,7 @@ void validate_viewport(double horizontal, double vertical, double zoom, NSString
 }
 
 void validate(const SessionState& state) {
-    if (state.version != 7) invalid(@"version");
+    if (state.version != 9) invalid(@"version");
     if (!std::isfinite(state.julian_date)) invalid(@"julian_date");
     PlaybackClock rate_validation;
     rate_validation.set_rate(state.simulation_rate);
@@ -87,6 +88,8 @@ void validate(const SessionState& state) {
     validate_time_settings(state.time_settings);
     (void)plus_time_rate(state.plus_time);
     validate_star_display(state.stars);
+    validate_terrain_amplification(state.terrain_amplification);
+    validate_radius_display_state(state.radius_display, state.radius_scale_mode);
     for (const auto hip : state.selected_star_name_hips)
         if (hip <= 0) invalid(@"selected_star_name_hips");
     validate_atmosphere_display(state.atmosphere);
@@ -121,7 +124,7 @@ SessionState decode_session_state(std::string_view json) {
         if (!root || error) invalid(@"JSON");
         NSDictionary *object = dictionary(root, @"root object");
         SessionState state;
-        state.version = static_cast<std::uint32_t>(integer_field(object, @"version", 7, 7));
+        state.version = static_cast<std::uint32_t>(integer_field(object, @"version", 9, 9));
         state.julian_date = numeric_field(object, @"julian_date");
         state.simulation_rate = numeric_field(object, @"simulation_rate");
         state.mode = integer_field(object, @"mode", 0, 2);
@@ -150,6 +153,13 @@ SessionState decode_session_state(std::string_view json) {
         NSDictionary *planets = dictionary(required(object, @"planets"), @"planets");
         state.planets = {boolean_field(planets, @"visible"), boolean_field(planets, @"labels"),
             boolean_field(planets, @"orbits"), boolean_field(planets, @"axes")};
+        NSDictionary *radius = dictionary(required(object, @"radius_display"), @"radius_display");
+        state.radius_display = checked_radius_display_options(numeric_field(radius, @"space_planet"),
+            numeric_field(radius, @"space_sun"), numeric_field(radius, @"planetarium_planet"),
+            numeric_field(radius, @"planetarium_sun_moon"));
+        state.radius_scale_mode = static_cast<RadiusScaleMode>(integer_field(radius, @"mode", 0, 1));
+        state.terrain_amplification = static_cast<TerrainAmplification>(
+            integer_field(object, @"terrain_amplification", 1, 5));
         NSDictionary *stars = dictionary(required(object, @"stars"), @"stars");
         state.stars = {boolean_field(stars, @"visible"), boolean_field(stars, @"proper_names"),
             boolean_field(stars, @"bayer_labels"), boolean_field(stars, @"flamsteed_labels"),
@@ -192,6 +202,12 @@ SessionState decode_session_state(std::string_view json) {
             numeric_field(plus_time, @"value_days"));
         state.plus_time.speed = integer_field(plus_time, @"speed", std::numeric_limits<std::int32_t>::min(),
             std::numeric_limits<std::int32_t>::max());
+        id zone = required(object, @"plus_time_zone");
+        if (zone != NSNull.null) {
+            NSDictionary *fields = dictionary(zone, @"plus_time_zone");
+            state.plus_time_zone = PlusTimeZone(integer_field(fields, @"seconds_west_utc",
+                std::numeric_limits<std::int32_t>::min(), std::numeric_limits<std::int32_t>::max()));
+        }
         state.show_landscape_image = boolean_field(object, @"show_landscape_image");
         id identifier = required(object, @"observer_place_identifier_base64");
         if (![identifier isKindOfClass:NSString.class]) invalid(@"observer_place_identifier_base64");
@@ -234,6 +250,12 @@ std::string encode_session_state(const SessionState& state) {
             @"horizon_selected_body": state.horizon_selected_body ? @(static_cast<int>(*state.horizon_selected_body)) : NSNull.null,
             @"planets": @{@"visible": @(state.planets.visible), @"labels": @(state.planets.labels),
                 @"orbits": @(state.planets.orbits), @"axes": @(state.planets.axes)},
+            @"radius_display": @{@"space_planet": @(state.radius_display.space_planet),
+                @"space_sun": @(state.radius_display.space_sun),
+                @"planetarium_planet": @(state.radius_display.planetarium_planet),
+                @"planetarium_sun_moon": @(state.radius_display.planetarium_sun_moon),
+                @"mode": @(static_cast<int>(state.radius_scale_mode))},
+            @"terrain_amplification": @(static_cast<int>(state.terrain_amplification)),
             @"stars": @{@"visible": @(state.stars.visible), @"proper_names": @(state.stars.proper_names),
                 @"bayer_labels": @(state.stars.bayer_labels), @"flamsteed_labels": @(state.stars.flamsteed_labels),
                 @"hip_labels": @(state.stars.hip_labels), @"marking": @(static_cast<int>(state.stars.marking)),
@@ -260,6 +282,8 @@ std::string encode_session_state(const SessionState& state) {
                 @"utc_offset_minutes": @(state.time_settings.utc_offset_minutes)},
             @"plus_time": @{@"step": @(static_cast<int>(state.plus_time.step.step())),
                 @"value_days": @(state.plus_time.step.value_days()), @"speed": @(state.plus_time.speed)},
+            @"plus_time_zone": state.plus_time_zone ?
+                @{@"seconds_west_utc": @(state.plus_time_zone->seconds_west_of_utc)} : NSNull.null,
             @"show_landscape_image": @(state.show_landscape_image),
             @"observer_place_identifier_base64": [[NSData dataWithBytes:state.observer_place_identifier.data()
                 length:state.observer_place_identifier.size()] base64EncodedStringWithOptions:0],

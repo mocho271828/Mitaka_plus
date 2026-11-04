@@ -214,6 +214,10 @@ TerrainFile TerrainFile::open(const std::filesystem::path& path, TerrainLoadLimi
     // NONBLOCKはFIFO等の明示pathで停止するのを防ぎ、直後にregular fileだけを許可する。
     impl->descriptor = ::open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
     if (impl->descriptor < 0) impl->fail(0, "cannot open terrain source");
+    // /dev/fd経由の複製でも、open flagの扱いに依存せず子processへの継承を防ぐ。
+    const int descriptor_flags = ::fcntl(impl->descriptor, F_GETFD);
+    if (descriptor_flags < 0 || ::fcntl(impl->descriptor, F_SETFD, descriptor_flags | FD_CLOEXEC) < 0)
+        impl->fail(0, "cannot set terrain source close-on-exec");
     impl->identity = impl->current_identity();
     if (impl->identity.file_bytes > limits.max_file_bytes ||
         impl->identity.file_bytes > static_cast<std::uint64_t>(std::numeric_limits<off_t>::max()))

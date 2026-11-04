@@ -11,6 +11,10 @@
 | `Time.JD` | GUI と同じユリウス日を取得・設定。UTC 入力扱い、ΔT・TT/TDB 補正なし |
 | `Time:setTime(y,m,d,h,min,sec)` / `Time:getTime()` | UTC 相当の先発グレゴリオ暦、6 個の整数。月・日・時分秒の超過を繰り越す。対応年は core の -4712..9999、閏秒なし |
 | `Time.year/month/day/hour/minute/second` | 個別の日時要素を取得・設定。`min` / `sec` も利用可 |
+| `Time:setLocalTime(y,m,d,h,min,sec)` / `Time:getLocalTime()` | 明示した旧 Plus 地方時差を用い、地方時の 6 成分を設定・取得。未設定時はエラー |
+| `Time.localYear/localMonth/localDay/localHour/localMinute/localSecond` | 地方時の成分を取得・設定。`localMin` / `localSec` と対応する get/set メソッドも利用可 |
+| `Time:setTimeString(text)` / `Time:getTimeString()` | UTC 相当の日時文字列を設定・取得。設定は元の引数文字列を返す |
+| `Time:setJDTo(jd,seconds[,curve])` / `Time:setTimeTo(y,m,d,h,min,sec,seconds[,curve])` / `Time:setLocalTimeTo(y,m,d,h,min,sec,seconds[,curve])` | 指定秒数の日時補間を要求。`curve` は boolean、省略または true は半余弦、false は線形 |
 | `Time.step` | `mtk.STEP_SEC`、`STEP_10SEC`、`STEP_MIN`、`STEP_10MIN`、`STEP_HOUR`、`STEP_DAY`、`STEP_WEEK`、`STEP_MONTH`、`STEP_YEAR`、`STEP_10YEAR`、`STEP_100YEAR`、`STEP_VALUE`。列挙値は順に 0..11 |
 | `Time.stepValue` | **日単位**の有限数。負・0・小数も保持し、代入すると `STEP_VALUE` へ切り替わる |
 | `Time.speed` | 実時間 1 秒あたりのステップ数。代入値を 0 方向に切り捨てた int32。0 は停止、連続再生の日数は `stepValue × speed` |
@@ -31,6 +35,9 @@
 | `Stars.brightness` / `brighten()` / `darken()` / `defaultBrightness()` | 正の有限 float の `L_ref`。標準 1、小さいほど明るい。増減はそれぞれ `10^-0.2` / `10^+0.2` 倍 |
 | `Stars:setBrightnessTo(target, seconds)` | 半余弦で現在値から target へ非同期に変更する。2 数値、秒数は有限かつ 0 以上、戻り値なし |
 | `Planets.visible/labels/orbits/axes` | 太陽・惑星・月の表示／名称、惑星・月の軌道／自転軸。太陽の自転軸はモデル未提供。`toggle()` / `toggleLabels()` / `toggleOrbits()` / `toggleAxes()` も利用可 |
+| `Planets:setScale(a,b,c,d)` / `Planets:getScale()` | 宇宙惑星・宇宙太陽・天球惑星・天球太陽/月の順に正の有限 float の4値を設定・取得する |
+| `Planets.scaleMode` / `Planets:setScaleMode(value)` / `Planets:getScaleMode()` | `mtk.KEEP_RADIUS`（0）または `mtk.KEEP_ORBIT`（1）。ホストが拒否した設定は Lua エラーになる |
+| `Planets.topoAmplification` | 地形高さ倍率の取得・設定。Lua 値 1〜5 が実倍率 1・2・5・10・20 に対応 |
 | `Planets.clouds/cityLights` | 地球の雲・夜景設定の真偽値。`toggleClouds()` / `toggleCityLights()` も利用可 |
 | `Planets.shadows/shadowBorders/shadowUmbra/shadowPenumbra` | 表面の食、境界、本影円錐、半影円錐の独立した真偽値。各 `toggleShadows()` / `toggleShadowBorders()` / `toggleShadowUmbra()` / `toggleShadowPenumbra()` も利用可 |
 | `Places.landscape` / `Places:toggleLandscape()` | 地平図の風景画像の表示。採用したローカル地点定義・画像を使い、定義がないときは黒い下半球を表示する |
@@ -56,6 +63,8 @@
 `step` の直接代入は `stepValue` も原版の日数表へ設定する。月・年・10 年・100 年はそれぞれ 31・365・3650・36500 日、`STEP_VALUE` は 0 日になる。連続再生にはこの固定日数を使い、単発の `forward/rewind` は暦を使う。例えば 2001 年 1 月 31 日から月を 1 ステップ進めると 3 月 3 日になる。native 日時設定画面の秒単位 custom・月末 clamp とは異なる契約である。`prevStep/nextStep` は日数を再計算しないため、列挙値と日数表が一致するとは限らない。
 
 同梱説明書の `stepValue` の「秒」と `backward()` は、対象の Plus 1.5.4 build101013 の実装・登録と異なる。native は確認できた日単位・`rewind()` を公開する。日時入力の月・日・時・分は signed byte の -128..127、秒は int32 の整数に限定し、暗黙の wrap は再現しない。非有限値、積の overflow、core の暦範囲外、読み込み済み暦表の範囲外は適用前に拒否する。根拠と未確定範囲は [N23 時刻契約監査](../../investigation/native-plus/unit7/n23-time-contract-audit.md) を参照する。
+
+地方時差は GUI の「旧 Plus 地方時の時差…」で UTC より西を正とする整数秒を明示設定する。未設定と UTC の 0 秒を区別し、OS 設定や GUI の表示時差から推定しない。日本標準時は −32400 秒。地方時 API と日時補間の全体統合・原版との一致は未検証。
 
 日時は既存 core の簡略モデルへそのまま渡す。UTC と天体暦の時系を厳密に変換する機能はなく、高精度の日食時刻などを保証するものではない。
 
@@ -89,9 +98,11 @@ print("year", Time.year)
 
 ## 互換範囲
 
+`KEEP_RADIUS` で宇宙惑星・太陽倍率を変更する要求はカメラ補正が未対応のため拒否する。倍率の時間補間 `setScaleTo` は未対応。惑星 response は暫定 1 であり、天球図の円は模式表示で物理角直径ではない。
+
 旧 Plus の `doc/script_jp/` と同梱 GUI スクリプトの単位・操作を基に接続した。API ごとの資料と差異は [接続調査](../../investigation/native-plus/local-lua-audit.md) と [単位6の表示 API](../../investigation/native-plus/unit6/lua-display-contracts.md) に記録している。旧 Lua 5.1 用のすべてのスクリプトを実行できるものではない。実行系は Lua **5.4.9** であり、5.1 専用の `setfenv`、`getfenv`、`module`、グローバル `unpack` 等を補完しない。言語・ライブラリの差は [Lua 5.4 公式マニュアルの非互換一覧](https://www.lua.org/manual/5.4/manual.html#8) を参照する。
 
-`Time:setLocalTime()` / `getLocalTime()` と local 成分、日時文字列、時間の `*To` アニメーションは未対応。原版の local 処理は CRT の固定 `__timezone` を参照するが、その初期化契約が未確定のため native 日時画面の固定 UTC オフセットを転用しない。旧カメラの四元数・Euler 角・遷移アニメーション、星座ごとの show/hide、3D 空間の星座絵、`Grids.surfacePointer`、旧独自 GUI も未対応。`Milkyway:toggleType()` / `Stars:toggleMarkingType()` は巡回順が未確認のため公開しない。対応表にない API はエラーとなる。表示フラグの接続は旧3D描画の再現を意味しない。
+原版の local 処理は CRT の固定 `__timezone` を参照するが、その初期化契約は未確定であり native は明示設定を用いる。旧カメラの四元数・Euler 角・遷移アニメーション、星座ごとの show/hide、3D 空間の星座絵、`Grids.surfacePointer`、旧独自 GUI も未対応。`Milkyway:toggleType()` / `Stars:toggleMarkingType()` は巡回順が未確認のため公開しない。対応表にない API はエラーとなる。表示フラグの接続は旧3D描画の再現を意味しない。
 
 `Camera.altitude` / `look()` / `fov` は未対応。現行の地平図は等距離円筒図で、中心高度が拡大率に応じて制限されるため、旧カメラの任意方向・視野角へそのまま対応できない。`State` は旧 Lua 文字列形式と native の JSON 形式が異なり未接続。`GUI.projection` / `dualWindow`、`Scene.Fader` / `Desktop.Fader` は詳細契約未確認のため alias として補完しない。
 
@@ -131,7 +142,7 @@ print("year", Time.year)
 
 標準 C++ / macOS framework には Lua 実行系がないため、公式 Lua を使用する。独自のスクリプト言語や Lua 互換インタプリタは実装しない。GUI helper のみに静的リンクし、core には依存を追加しない。
 
-`tools/build_lua.sh OUTPUT_DIR [ARCH] [SANITIZE]` は同梱の `vendor/lua-5.4.9.tar.gz` の SHA256 `2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6` を検証して展開する。展開ソース・オブジェクトは build 配下に置く。AppleClang でアプリと同じ macOS 13.0 以上・`arm64` または `x86_64` 向けにビルドし、2 回目以降はキャッシュを使う。初回を含めネットワーク接続は不要。
+`tools/build_lua.sh OUTPUT_DIR [ARCH] [SANITIZE]` は [公式 Lua 配布](https://www.lua.org/ftp/) の原本を収録した `vendor/lua-5.4.9.tar.gz` の SHA256 `2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6` を検証する。展開ソース・オブジェクトは build 配下に生成する。AppleClang でアプリと同じ macOS 13.0 以上・`arm64` または `x86_64` 向けにビルドし、2 回目以降はキャッシュを使う。初回を含めネットワーク接続は不要。
 
 Homebrew 版 Lua 5.4.8 の静的ライブラリは手元では macOS 15.0 向けだったため採用しない。Homebrew、Lua の別途インストール、外部 Lua dylib は完成したアプリの実行要件に含まれない。配布物には [Lua の MIT ライセンス](LUA_LICENSE.txt) を同梱する。
 

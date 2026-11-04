@@ -59,19 +59,23 @@ AtmosphereParameters mars_atmosphere_parameters(double radius) {
 
 TextureImage render_atmosphere_scene(const std::vector<SurfaceSphere>& spheres,
     const std::vector<AtmosphereLayer>& layers, const SolarCamera& camera,
-    std::size_t width, std::size_t height, AtmosphereDisplayOptions options) {
+    std::size_t width, std::size_t height, AtmosphereDisplayOptions options,
+    const SurfaceDepthFrame* opaque_depth) {
     validate_atmosphere_display(options);
     if (width==0 || height==0 || width>1024 || height>1024)
         throw std::invalid_argument("atmosphere viewport dimensions must be in 1..1024");
     const auto axes=solar_camera_basis(camera);
+    if (opaque_depth) validate_surface_depth_frame(*opaque_depth,spheres,camera,width,height);
     bool inside_opaque=false;
     for (const auto& sphere:spheres) {
+        validate_surface_terrain(sphere.terrain,width,height);
         if (!finite(sphere.center) || !std::isfinite(sphere.radius_au) || sphere.radius_au<=0)
             throw std::invalid_argument("invalid atmosphere occluder geometry");
         const auto eye=relative_eye(camera,axes,sphere.center);
         const double distance=std::hypot(eye.x,eye.y,eye.z);
         if (!std::isfinite(distance)) throw std::invalid_argument("non-finite atmosphere viewpoint");
-        inside_opaque=inside_opaque || distance<=sphere.radius_au;
+        const bool datum_surface=!sphere.terrain || sphere.terrain->mode==TerrainSurfaceMode::sphere;
+        inside_opaque=inside_opaque || (datum_surface && distance<=sphere.radius_au);
     }
     std::vector<bool> used(spheres.size(),false);
     std::vector<PreparedLayer> prepared;
@@ -89,6 +93,9 @@ TextureImage render_atmosphere_scene(const std::vector<SurfaceSphere>& spheres,
         const double scale=parameters.ground_radius_m/sphere.radius_au;
         const auto eye=scaled(relative_eye(camera,axes,sphere.center),scale);
         if (!std::isfinite(scale) || !finite(eye)) throw std::out_of_range("atmosphere metre conversion exceeds numerical range");
+        // 地形はdatumを代替するが、core大気は基準地表以上の視点だけを定義する。
+        // このlayerだけを除外し、別天体の大気まで非表示にしない。
+        if (std::hypot(eye.x,eye.y,eye.z)<parameters.ground_radius_m) continue;
         const auto* map=options.mode==AtmosphereMode::multiple ? layer.multiple : nullptr;
         prepared.push_back({parameters,map,eye,sun_direction(sphere.center),scale,
             std::max(parameters.outer_radius_m,map ? map->grid().outer_radius_m : 0)});
@@ -99,8 +106,11 @@ TextureImage render_atmosphere_scene(const std::vector<SurfaceSphere>& spheres,
         const auto direction=solar_camera_ray(camera,x+.5,y+.5,width,height);
         if (std::none_of(prepared.begin(),prepared.end(),[&](const auto& layer){return reaches_shell(layer,direction);})) continue;
         std::optional<double> opaque_distance;
-        for (const auto& sphere:spheres) {
-            const auto hit=sphere_hit_distance(camera,sphere.center,sphere.radius_au,x+.5,y+.5,width,height);
+        if (opaque_depth) {
+            const double value=opaque_depth->distances_au[y*width+x];
+            if (std::isfinite(value)) opaque_distance=value;
+        } else for (const auto& sphere:spheres) {
+            const auto hit=surface_opaque_distance(sphere,camera,x,y,width,height);
             if (hit && (!opaque_distance || *hit<*opaque_distance)) opaque_distance=hit;
         }
         std::array<double,3> rgb{};

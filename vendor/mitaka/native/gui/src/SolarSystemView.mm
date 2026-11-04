@@ -23,6 +23,7 @@ using CameraChange = void (^)(SolarCamera&);
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
         _smallBodiesVisible = YES;
+        _terrainAmplification = TerrainAmplification::x1;
         _spacecraftVisible = YES;
         _showsTimeInfo = YES;
         _julianDate = 2451545.0;
@@ -38,7 +39,29 @@ using CameraChange = void (^)(SolarCamera&);
     _rendererDisplayOptions = options;
     self.needsDisplay = YES;
 }
+- (RadiusDisplayOptions)radiusDisplayOptions { return _radiusDisplayOptions; }
+- (void)setRadiusDisplayOptions:(RadiusDisplayOptions)options {
+    validate_radius_display_options(options);
+    moon_orbit_display_factor(options);
+    const BOOL lunarPositionChanged = _radiusDisplayOptions.space_planet != options.space_planet &&
+        _hasData && _selection && *_selection == 10 &&
+        !_journeyActive && !_surfaceActive && !_surfacePreview && !_earthMoonMode;
+    _radiusDisplayOptions = options;
+    if (lunarPositionChanged) {
+        if (_following) { [self updateTrackedCamera]; [self notifyCamera]; }
+        [self notifySelection];
+    }
+    self.needsDisplay = YES;
+}
 - (PlanetDisplayOptions)planetDisplayOptions { return _planetDisplayOptions; }
+- (TerrainAmplification)terrainAmplification { return _terrainAmplification; }
+- (void)setTerrainAmplification:(TerrainAmplification)value {
+    validate_terrain_amplification(value);
+    if (_terrainAmplification == value) return;
+    _terrainAmplification = value;
+    [self cancelTerrain];
+    self.needsDisplay = YES;
+}
 - (void)setPlanetDisplayOptions:(PlanetDisplayOptions)options {
     _planetDisplayOptions = options;
     self.needsDisplay = YES;
@@ -69,7 +92,7 @@ using CameraChange = void (^)(SolarCamera&);
     _julianDate = julianDate;
     self.needsDisplay = YES;
 }
-- (void)dealloc { [_flightTimer invalidate]; }
+- (void)dealloc { [_flightTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
 - (BOOL)journeyActive { return _journeyActive; }
 - (BOOL)flightAnimating { return _navigation.flying() || (_journeyActive && _journey.flying()); }
@@ -81,7 +104,7 @@ using CameraChange = void (^)(SolarCamera&);
 - (BOOL)acceptsFirstResponder { return YES; }
 - (NSRect)mapRect { return NSInsetRect(self.bounds, 18, 40); }
 - (Vec3)displayPosition:(NSUInteger)index {
-    return j2000_equatorial_to_ecliptic(_bodies[index].position_au);
+    return solar_display_position([self scene], index);
 }
 - (void)setTextures:(std::shared_ptr<const PlanetTextures>)textures {
     _textures = std::move(textures);
@@ -101,7 +124,7 @@ using CameraChange = void (^)(SolarCamera&);
         !_selection ? _spacecraftSelection : std::nullopt, _spacecraftDisplayOptions,
         _smallBodyDisplay.get(), _smallBodyOrbits.get(), _satelliteDisplay.get(), _satelliteOrbits.get(),
         _earthLayerOptions, _atmosphereDisplayOptions, _eclipseDisplayOptions, _julianDate,
-        _satelliteSnapshot.get()};
+        _satelliteSnapshot.get(), &_terrainSnapshots, _terrainAmplification, _radiusDisplayOptions};
 }
 - (CGFloat)radiusForBody:(NSUInteger)index depth:(double)depth {
     return solar_scene_radius([self scene], index, depth);
@@ -352,15 +375,18 @@ using CameraChange = void (^)(SolarCamera&);
     // 地表では地面の向こうの天体を選ばないよう、一覧による選択に限定する。
     if (!_hasData || _surfaceActive || _journeyActive || !NSPointInRect(click, [self mapRect])) return;
     try {
-        const auto picked = pick_solar_body([self scene], click);
+        const auto scene = [self scene];
+        const auto picked = pick_solar_body(scene, click);
         if (picked) [self selectBody:*picked];
         else {
-            const auto small = [self smallBodiesSceneVisible] ? pick_small_body(*_smallBodySnapshot, *_smallBodyDisplay, _camera, [self mapRect], click) : std::nullopt;
+            const auto small = scene.small_bodies && scene.small_body_display
+                ? pick_small_body(*scene.small_bodies, *scene.small_body_display, scene.camera, scene.map, click) : std::nullopt;
             if (small) { [self selectSmallBody:*small]; return; }
-            const auto satellite = [self satellitesSceneVisible] ? pick_satellite(*_satelliteSnapshot, _camera, [self mapRect], click, _satelliteDisplay.get()) : std::nullopt;
+            const auto satellite = scene.satellites
+                ? pick_satellite(*scene.satellites, scene.camera, scene.map, click, scene.satellite_display) : std::nullopt;
             if (satellite) { [self selectSatellite:*satellite]; return; }
-            const auto spacecraft = [self spacecraftSceneVisible]
-                ? pick_spacecraft(*_spacecraftSnapshot, _camera, [self mapRect], click, _spacecraftDisplayOptions) : std::nullopt;
+            const auto spacecraft = scene.spacecraft
+                ? pick_spacecraft(*scene.spacecraft, scene.camera, scene.map, click, scene.spacecraft_display) : std::nullopt;
             if (spacecraft) { [self selectSpacecraft:*spacecraft]; return; }
             _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
             _following = NO; _surfacePreview = NO;
@@ -381,8 +407,8 @@ using CameraChange = void (^)(SolarCamera&);
     if (map.size.width < 160 || map.size.height < 100) return;
     RendererQualityScope text(context, _rendererDisplayOptions, RendererPrimitive::text);
     NSString *title = @"太陽中心 · J2000 黄道座標 · 透視投影 · 天体サイズは模式表示";
-    if (_journeyActive) title = @"連続飛行 · 距離と半径は実比率 · 実時間の演出経路 · 地形なし";
-    else if (_surfaceActive) title = @"実半径の球面 · 地形なし · 木土天海は基準球面 · 周囲の微小天体は記号";
+    if (_journeyActive) title = @"連続飛行 · 距離と半径は実比率 · 実時間の演出経路 · 地形は選択データから計算";
+    else if (_surfaceActive) title = @"実半径とローカル地形 · 木土天海は基準球面 · 周囲の微小天体は記号";
     else if (_surfacePreview) title = @"選択天体の表面観察 · 模式半径 · ドラッグで観察方向を変更";
     else if (_earthMoonMode) title = @"地球と月 · 距離と半径は実比率 · 1.5 pt 未満は位置の記号 · 月軌道は地心相対";
     [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
@@ -393,17 +419,23 @@ using CameraChange = void (^)(SolarCamera&);
         return;
     }
     try {
-        const auto diagnostics = draw_solar_scene(context, [self scene]);
+        [self refreshTerrain];
+        auto diagnostics = draw_solar_scene(context, [self scene]);
+        const auto terrain = [self terrainDiagnostics];
+        diagnostics.insert(diagnostics.end(), terrain.begin(), terrain.end());
         NSMutableArray<NSString *> *messages = [NSMutableArray arrayWithCapacity:diagnostics.size()];
-        for (const auto& diagnostic : diagnostics)
-            [messages addObject:[NSString stringWithUTF8String:diagnostic.c_str()]];
+        for (const auto& diagnostic : diagnostics) {
+            NSString *message = [[NSString alloc] initWithBytes:diagnostic.data() length:diagnostic.size()
+                encoding:NSUTF8StringEncoding];
+            [messages addObject:message ? message : @"診断の文字コードを表示できません。"];
+        }
         self.toolTip = messages.count ? [messages componentsJoinedByString:@"\n"] : nil;
         if (messages.count) {
             NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
             paragraph.lineBreakMode = NSLineBreakByTruncatingTail;
             NSMutableDictionary *style = [textStyle(NSColor.systemOrangeColor, 11) mutableCopy];
             style[NSParagraphStyleAttributeName] = paragraph;
-            [[NSString stringWithFormat:@"食と影の診断 %lu 件（詳細はポインタを置いて表示）: %@",
+            [[NSString stringWithFormat:@"描画の診断 %lu 件（詳細はポインタを置いて表示）: %@",
                 messages.count, messages.firstObject]
                 drawInRect:NSMakeRect(map.origin.x + 8, map.origin.y + 8, map.size.width - 16, 18)
                 withAttributes:style];

@@ -11,6 +11,14 @@ struct PreparedDisplayLayers {
     std::shared_ptr<const SatelliteDisplayModel> satellites;
 };
 
+void validate_radius_for_restore(AppController *controller, const SessionState& state) {
+    NSString *failure = nil;
+    if (![controller validateRadiusDisplayOptions:state.radius_display mode:state.radius_scale_mode error:&failure]) {
+        const char *message = failure.UTF8String;
+        throw std::invalid_argument(message ? message : "session state: invalid radius display settings");
+    }
+}
+
 PreparedDisplayLayers prepare_display_layers(const SessionState& state, const SkyModel& sky,
     const SmallBodyModel& small_model, const SmallBodyDisplayModel& small_display,
     const SatelliteDisplayModel& satellite_display, const StarNameSelection& star_names) {
@@ -31,6 +39,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     state.julian_date = _jd;
     state.simulation_rate = _playback.simulationRate;
     state.plus_time = [_playback plusTimeState];
+    state.plus_time_zone = [_playback plusTimeZone];
     state.observer_place_identifier = [_horizon observerPlaceIdentifier];
     state.mode = (int)_mode.selectedSegment;
     state.magnitude_limit = _sky.magnitudeLimit;
@@ -54,6 +63,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         if (!_smallBodyModel || !_smallBodyDisplay || !_satelliteDisplay || !_starNameSelection)
             throw std::invalid_argument("session state: display catalogs are unavailable");
         (void)prepare_display_layers(state, *_model, *_smallBodyModel, *_smallBodyDisplay, *_satelliteDisplay, *_starNameSelection);
+        validate_radius_for_restore(self, state);
         if (!state.observer_place_identifier.empty()) {
             if (!_observerPlaces || std::none_of(_observerPlaces->places.begin(), _observerPlaces->places.end(),
                 [&](const auto& place) {
@@ -72,6 +82,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
             const char *message = time_error.UTF8String;
             throw std::logic_error(message != nullptr ? message : "validated Plus time could not be restored");
         }
+        [_playback setPlusTimeZone:state.plus_time_zone];
         [_solar setCameraState:state.solar_camera];
         for (NSUInteger i = 0; i < _solarBodies.size(); ++i)
             if (_solarBodies[i].id == state.selected_body) [_solar selectBody:i];
@@ -153,13 +164,13 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     if (!_model || _loading) return;
     try {
         const auto json = encode_session_state([self sessionState]);
-        [NSUserDefaults.standardUserDefaults setObject:[NSData dataWithBytes:json.data() length:json.size()] forKey:@"MitakaRememberedViewV7"];
+        [NSUserDefaults.standardUserDefaults setObject:[NSData dataWithBytes:json.data() length:json.size()] forKey:@"MitakaRememberedViewV9"];
         _status.stringValue = @"現在の表示状態を記憶しました。「表示状態を呼び出す」で復元できます。";
     } catch (const std::exception& failure) { [self showError:[NSString stringWithUTF8String:failure.what()]]; }
 }
 - (void)restoreSession:(id)sender {
     (void)sender;
-    NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:@"MitakaRememberedViewV7"];
+    NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:@"MitakaRememberedViewV9"];
     if (!data) { [self showError:@"記憶した表示状態はありません。"]; return; }
     try { [self applySessionState:decode_session_state({static_cast<const char *>(data.bytes), data.length})]; }
     catch (const std::exception& failure) { [self showError:[NSString stringWithUTF8String:failure.what()]]; }
@@ -168,6 +179,10 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     SessionState state;
     state.constellations = [self constellationDisplayOptions];
     state.planets = [self planetDisplayOptions];
+    // 終了処理中も保存するため UI 操作向けの受付条件を通さず live 状態を読む。
+    state.radius_display = _radiusDisplayOptions;
+    state.radius_scale_mode = _radiusScaleMode;
+    state.terrain_amplification = [self terrainAmplification];
     state.stars = [self starDisplayOptions];
     state.selected_star_name_hips = [self selectedStarNameHIPs];
     state.earth_layers = [self earthLayerOptions];
@@ -194,6 +209,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     if (!_model || !_smallBodyModel || !_smallBodyDisplay || !_satelliteDisplay || !_starNameSelection)
         throw std::invalid_argument("session state: display catalogs are unavailable");
     const auto prepared = prepare_display_layers(state, *_model, *_smallBodyModel, *_smallBodyDisplay, *_satelliteDisplay, *_starNameSelection);
+    validate_radius_for_restore(self, state);
     // 新しい表示集合と標本区間を一組で検証済み。旧設定との中間組合せは適用しない。
     [self invalidateSmallBodyOrbits];
     [_starBrightness cancel];
@@ -207,6 +223,8 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     [_satelliteBrowser setDisplayModel:_satelliteDisplay];
     [self setConstellationDisplayOptions:state.constellations];
     [self setPlanetDisplayOptions:state.planets];
+    [self restoreRadiusDisplayOptions:state.radius_display mode:state.radius_scale_mode];
+    [self setTerrainAmplification:state.terrain_amplification];
     [self setStarDisplayOptions:state.stars];
     [self setSelectedStarNameHIPs:state.selected_star_name_hips];
     [self setEarthLayerOptions:state.earth_layers];
@@ -228,18 +246,18 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     [self updateEnabled];
 }
 - (void)savePreferences {
-    if (_smokeTest || !_model || _pendingDisplayPreferences) return;
+    if (_smokeTest || !_model || _pendingDisplayPreferences || _displayPreferencesLoadFailed) return;
     try {
         const auto json = encode_session_state([self displayPreferences]);
         [NSUserDefaults.standardUserDefaults setObject:[NSData dataWithBytes:json.data() length:json.size()]
-            forKey:@"MitakaDisplayPreferencesV7"];
+            forKey:@"MitakaDisplayPreferencesV9"];
     } catch (const std::exception& error) {
         [self showError:[NSString stringWithFormat:@"表示設定を保存できません: %s", error.what()]];
     }
 }
 - (void)restorePreferences {
     if (_smokeTest) return;
-    NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:@"MitakaDisplayPreferencesV7"];
+    NSData *data = [NSUserDefaults.standardUserDefaults dataForKey:@"MitakaDisplayPreferencesV9"];
     if (!data) return;
     try {
         // 状態ファイルと共通の境界検証を使い、設定だけを適用する。
@@ -247,6 +265,8 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         _pendingDisplayPreferences = state;
         [self applyPendingDisplayPreferences];
     } catch (const std::exception& error) {
+        // 読み取れない元の設定を終了時に既定値で上書きしない。
+        _displayPreferencesLoadFailed = YES;
         [self showError:[NSString stringWithFormat:@"保存された表示設定が不正です: %s", error.what()]];
     }
 }

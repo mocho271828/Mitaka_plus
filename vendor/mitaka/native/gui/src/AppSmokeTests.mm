@@ -8,7 +8,9 @@
 @implementation AppController (SmokeTests)
 - (void)runSmokeTest {
     [self runScriptSmokeTestWithCompletion:^{
-        [self runSmallBodySmokeTestWithCompletion:^{ [self runSceneSmokeTest]; }];
+        [self runSmallBodySmokeTestWithCompletion:^{
+            [self runGalaxySmokeTestWithCompletion:^{ [self runSceneSmokeTest]; }];
+        }];
     }];
 }
 - (void)runSceneSmokeTest {
@@ -188,11 +190,34 @@
     }
     [_solar takeOffFromEarthAtLatitude:35.68 longitude:139.76];
     const double startDistance = [_solar cameraState].distance_au;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        if (!self->_solar.surfaceNavigationActive || !self->_solar.flightAnimating ||
-            [self->_solar cameraState].distance_au == startDistance) {
-            [self showError:@"smoke: real flight timer did not move the camera"]; return;
+    if (!_solar.surfaceNavigationActive || !_solar.flightAnimating) {
+        [self showError:[NSString stringWithFormat:@"smoke: flight did not start (surface=%d, flying=%d)",
+            _solar.surfaceNavigationActive, _solar.flightAnimating]];
+        return;
+    }
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:2];
+    // dispatch_after と NSTimer の処理順序には保証がないため、実タイマーの
+    // 更新を待つ。停止や期限超過は別々に失敗させ、完了と誤認しない。
+    NSTimer *progress = [NSTimer timerWithTimeInterval:0.02 repeats:YES block:^(NSTimer *timer) {
+        const BOOL surface = self->_solar.surfaceNavigationActive;
+        const BOOL flying = self->_solar.flightAnimating;
+        const double distance = [self->_solar cameraState].distance_au;
+        if (!surface || !flying) {
+            [timer invalidate];
+            [self showError:[NSString stringWithFormat:
+                @"smoke: flight stopped before camera progress (surface=%d, flying=%d, start=%.17g, current=%.17g)",
+                surface, flying, startDistance, distance]];
+            return;
         }
+        if (deadline.timeIntervalSinceNow <= 0) {
+            [timer invalidate];
+            [self showError:@"smoke: real flight timer progress was not observed within 2 seconds"];
+            return;
+        }
+        if (distance == startDistance) {
+            return;
+        }
+        [timer invalidate];
         [self->_solar interruptFlight];
         const auto paused = [self->_solar cameraState];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
@@ -213,6 +238,7 @@
                 [self runContinuousFlightSmokeTest];
             });
         });
-    });
+    }];
+    [NSRunLoop.mainRunLoop addTimer:progress forMode:NSRunLoopCommonModes];
 }
 @end

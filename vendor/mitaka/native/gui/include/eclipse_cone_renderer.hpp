@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace mitaka::gui {
+struct SurfaceDepthFrame;
 // 下流半影は母線が受光球の内側を通ると太陽距離の平面で終端を置き換える。
 // 厳密な球交点による切断ではなく、負の切断距離も原式のまま保持する。
 struct EclipseConeReceiverClip {
@@ -29,9 +30,11 @@ double eclipse_cone_end_axial(const EclipseDisplayCone& cone, Vec3 radial_unit);
 std::vector<EclipseDisplayCone> eclipse_display_cones(const EclipseGeometry& geometry,
     EclipseDisplayOptions options);
 // 同じ物理 AU / カメラの最近不透明交点までを描く straight RGBA。
-// points の模式拡大半径は使わない。全 opaque 球の外側の視点が必要で、
-// 球内視点では透明画像になる。寸法 1..1024、非有限入力は拒否する。
+// points の模式拡大半径は使わない。opaque_depth は同じ順の中心/半径、
+// camera/寸法と一致し、借用地形が存続する完成済みframeに限る。
+// 地形はdatum球を代替する。球fallbackの内側では透明画像になる。
+// 寸法 1..1024、非有限入力は拒否する。
 TextureImage render_eclipse_cones(const EclipseGeometry& geometry, EclipseDisplayOptions options,
     const std::vector<EclipseSphere>& opaque, const SolarCamera& camera,
-    std::size_t width, std::size_t height);
+    std::size_t width, std::size_t height, const SurfaceDepthFrame* opaque_depth = nullptr);
 } // namespace mitaka::gui

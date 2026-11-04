@@ -127,17 +127,33 @@ std::vector<EclipseDisplayCone> eclipse_display_cones(const EclipseGeometry& g,E
     return result;
 }
 TextureImage render_eclipse_cones(const EclipseGeometry& geometry,EclipseDisplayOptions options,
-    const std::vector<EclipseSphere>& opaque,const SolarCamera& camera,std::size_t width,std::size_t height) {
+    const std::vector<EclipseSphere>& opaque,const SolarCamera& camera,std::size_t width,std::size_t height,
+    const SurfaceDepthFrame* opaque_depth) {
     if(width==0||height==0||width>1024||height>1024)
         throw std::invalid_argument("eclipse viewport dimensions must be in 1..1024");
     const auto axes=solar_camera_basis(camera);
     const auto cones=eclipse_display_cones(geometry,options);
+    if(opaque_depth) {
+        validate_surface_depth_frame(*opaque_depth,camera,width,height);
+        if(opaque_depth->geometry.size()!=opaque.size())
+            throw std::invalid_argument("eclipse opaque depth geometry count mismatch");
+    }
     bool inside=false;
-    for(const auto& sphere:opaque) {
+    for(std::size_t i=0;i<opaque.size();++i) {
+        const auto& sphere=opaque[i];
         validate_sphere(sphere);
+        const TerrainSurfaceFrame* terrain=nullptr;
+        if(opaque_depth) {
+            const auto& key=opaque_depth->geometry[i];
+            if(key.center.x!=sphere.center_au.x||key.center.y!=sphere.center_au.y||
+               key.center.z!=sphere.center_au.z||key.radius_au!=sphere.radius_au)
+                throw std::invalid_argument("eclipse opaque depth geometry mismatch");
+            terrain=key.terrain;
+        }
         const double distance=length(relative_eye(camera,axes,sphere.center_au));
         if(!std::isfinite(distance)) throw std::out_of_range("eclipse viewpoint exceeds numerical range");
-        inside=inside||distance<=sphere.radius_au;
+        const bool datum_surface=!terrain||terrain->mode==TerrainSurfaceMode::sphere;
+        inside=inside||(datum_surface&&distance<=sphere.radius_au);
     }
     TextureImage image{width,height,std::vector<std::uint8_t>(width*height*4,0)};
     if(inside||cones.empty()) return image;
@@ -151,9 +167,12 @@ TextureImage render_eclipse_cones(const EclipseGeometry& geometry,EclipseDisplay
         for(std::size_t i=0;i<cones.size();++i) for(double distance:intersections(cones[i],eyes[i],ray)) {
             if(!std::isfinite(distance)) continue;
             if(!depth_checked) {
-                for(const auto& sphere:opaque) {
-                    const auto hit=sphere_hit_distance(camera,sphere.center_au,sphere.radius_au,x+.5,y+.5,width,height);
-                    if(hit&&(!opaque_distance||*hit<*opaque_distance)) opaque_distance=hit;
+                if(opaque_depth) opaque_distance=opaque_depth->distances_au[y*width+x];
+                else {
+                    for(const auto& sphere:opaque) {
+                        const auto hit=sphere_hit_distance(camera,sphere.center_au,sphere.radius_au,x+.5,y+.5,width,height);
+                        if(hit&&(!opaque_distance||*hit<*opaque_distance)) opaque_distance=hit;
+                    }
                 }
                 depth_checked=true;
             }

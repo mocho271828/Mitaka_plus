@@ -1,4 +1,6 @@
 CXX = xcrun clang++
+export DATA_ROOT ?= $(abspath ../../../../resources)
+export CF96_DATA ?= $(abspath ../../../../resources/data/cf96.dat)
 AR = xcrun ar
 BUILD_DIR ?= build
 CXXFLAGS ?= -O2 -g

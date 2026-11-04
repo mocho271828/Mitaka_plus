@@ -1,6 +1,7 @@
 #import <AppKit/AppKit.h>
 #include "sky_model.hpp"
 #include "display_options.hpp"
+#include "radius_display.hpp"
 #include "constellation_display.hpp"
 #include "renderer_options.hpp"
 #include "horizon_viewport.hpp"
@@ -15,6 +16,7 @@
 @interface HorizonView : NSView
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
+@property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
 @property(nonatomic) mitaka::gui::RendererDisplayOptions rendererDisplayOptions;
 @property(nonatomic) mitaka::gui::GridDisplayOptions gridDisplayOptions;
 @property(nonatomic) mitaka::gui::MilkyWayMode milkyWayMode;

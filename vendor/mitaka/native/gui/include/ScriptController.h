@@ -5,11 +5,15 @@
 #include "small_body_display.hpp"
 #include "satellite_display.hpp"
 #include "plus_time_playback.hpp"
+#include "plus_time_calendar.hpp"
 #include "eclipse_display.hpp"
+#include "terrain_amplification.hpp"
+#include "radius_display.hpp"
 #include <string>
 #include <cstdint>
 #include <set>
 #include <vector>
+#include <optional>
 
 namespace mitaka::gui {
 
@@ -20,6 +24,7 @@ struct ScriptSnapshot {
     bool clock_tracking = false;
     bool time_info = true;
     PlusTimeState plus_time;
+    std::optional<PlusTimeZone> plus_time_zone;
     std::string target = "Sun";
     double camera_distance_au = 100;
     bool constellation_lines = false;
@@ -28,6 +33,9 @@ struct ScriptSnapshot {
     bool constellation_illustrations = false;
     std::set<std::int32_t> selected_star_names;
     PlanetDisplayOptions planets;
+    TerrainAmplification terrain_amplification = TerrainAmplification::x1;
+    RadiusDisplayOptions radius_display;
+    RadiusScaleMode radius_scale_mode = RadiusScaleMode::keep_orbit;
     EclipseDisplayOptions eclipse;
     bool landscape = true;
     bool earth_clouds = true;
@@ -74,7 +82,9 @@ enum class ScriptActionKind {
     set_earth_clouds, set_earth_city_lights, set_atmosphere_mode,
     set_time_step, set_time_step_value, set_time_speed,
     previous_time_step, next_time_step, step_time_forward, step_time_rewind,
-    set_shadows, set_shadow_borders, set_shadow_umbra, set_shadow_penumbra, set_landscape
+    set_shadows, set_shadow_borders, set_shadow_umbra, set_shadow_penumbra, set_landscape,
+    set_time_animation_jd, set_time_animation_calendar, set_terrain_amplification,
+    set_radius_scale, set_radius_scale_mode
 };
 struct ScriptAction {
     ScriptActionKind kind;
@@ -83,6 +93,9 @@ struct ScriptAction {
     std::string text;
     double duration_seconds = 0;
     std::vector<std::int32_t> hips{};
+    TerrainAmplification terrain_amplification = TerrainAmplification::x1;
+    RadiusDisplayOptions radius_display;
+    RadiusScaleMode radius_scale_mode = RadiusScaleMode::keep_orbit;
 };
 
 } // namespace mitaka::gui

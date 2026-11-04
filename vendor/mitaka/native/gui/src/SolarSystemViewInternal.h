@@ -2,12 +2,15 @@
 #import "SolarSystemView.h"
 #import "SolarSceneRenderer.h"
 #import "GridRenderer.h"
+#import "TerrainSurfaceController.h"
 #include "surface_navigation.hpp"
 #include "interplanetary_flight.hpp"
 
 @interface SolarSystemView () {
     mitaka::gui::SolarBodies _bodies;
     mitaka::gui::PlanetDisplayOptions _planetDisplayOptions;
+    mitaka::gui::RadiusDisplayOptions _radiusDisplayOptions;
+    mitaka::gui::TerrainAmplification _terrainAmplification;
     mitaka::gui::RendererDisplayOptions _rendererDisplayOptions;
     mitaka::gui::GridDisplayOptions _gridDisplayOptions;
     mitaka::gui::EarthLayerOptions _earthLayerOptions;
@@ -47,6 +50,11 @@
     std::shared_ptr<const mitaka::gui::SatelliteOrbitGeometry> _satelliteOrbits;
     BOOL _showsTimeInfo;
     BOOL _hasData;
+    NSString *_terrainDataDirectory;
+    NSArray<TerrainSurfaceController *> *_terrainControllers;
+    std::array<std::optional<mitaka::gui::TerrainSurfaceRequest>, 11> _terrainRequests;
+    std::array<std::shared_ptr<const mitaka::gui::TerrainSurfaceSnapshot>, 11> _terrainSnapshots;
+    std::array<std::string, 11> _terrainErrors;
     BOOL _following;
     BOOL _dragged;
     NSPoint _lastDrag;
@@ -55,6 +63,8 @@
 @end
 
 @interface SolarSystemView (Internal)
+- (void)refreshTerrain;
+- (std::vector<std::string>)terrainDiagnostics;
 - (NSRect)mapRect;
 - (mitaka::Vec3)displayPosition:(NSUInteger)index;
 - (SolarScene)scene;

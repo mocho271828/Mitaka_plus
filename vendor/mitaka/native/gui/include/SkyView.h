@@ -1,6 +1,7 @@
 #import <AppKit/AppKit.h>
 #include "sky_model.hpp"
 #include "display_options.hpp"
+#include "radius_display.hpp"
 #include "constellation_display.hpp"
 #include "renderer_options.hpp"
 #include "mitaka/observation.hpp"
@@ -16,6 +17,7 @@ NSString *bodyName(mitaka::gui::Body body);
 @interface SkyView : NSView
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
+@property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
 @property(nonatomic) mitaka::gui::RendererDisplayOptions rendererDisplayOptions;
 @property(nonatomic) mitaka::gui::GridDisplayOptions gridDisplayOptions;
 - (void)setObservationSite:(mitaka::ObserverSite)site julianDate:(double)julianDate;

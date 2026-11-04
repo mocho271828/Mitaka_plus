@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #include "satellite_scene.hpp"
+#include "radius_display_validation.hpp"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <algorithm>
 #include <cmath>
@@ -18,6 +19,7 @@ using namespace mitaka::gui;
         _smokeTest = smokeTest;
         _jd = 2451545.0;
         _timeInfoVisible = YES;
+        _radiusScaleMode = RadiusScaleMode::keep_orbit;
         _observerLatitude = 35.68;
         _observerLongitude = 139.76;
     }
@@ -47,6 +49,8 @@ using namespace mitaka::gui;
 - (void)dealloc {
     [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
     [self invalidateSmallBodyOrbits];
+    [self invalidateGalaxy];
+    [_solar cancelTerrain];
     [_playback invalidate];
     [_scripts invalidate];
     [_starBrightness invalidate];
@@ -56,7 +60,10 @@ using namespace mitaka::gui;
 - (void)applicationWillTerminate:(NSNotification *)notification {
     (void)notification;
     [self savePreferences];
+    _terminating = YES;
     [self invalidateSmallBodyOrbits];
+    [self invalidateGalaxy];
+    [_solar cancelTerrain];
     [_solar interruptFlight];
     [_playback invalidate];
     [_scripts invalidate];
@@ -75,13 +82,59 @@ using namespace mitaka::gui;
 }
 - (void)windowWillClose:(NSNotification *)notification {
     (void)notification;
+    _terminating = YES;
     [self invalidateSmallBodyOrbits];
+    [self invalidateGalaxy];
+    [_solar cancelTerrain];
     [_solar interruptFlight];
     [_playback invalidate];
     [_scripts invalidate];
     [_starBrightness invalidate];
     [_displayOutput invalidate];
     [_mediaBrowser invalidate];
+}
+
+- (BOOL)readRadiusDisplayOptions:(RadiusDisplayOptions *)options mode:(RadiusScaleMode *)mode error:(NSString **)error {
+    if (![NSThread isMainThread] || !_model || _loading || _terminating || !options || !mode) {
+        if (error) *error = @"天文データの読込完了後に表示半径を操作してください。";
+        return NO;
+    }
+    *options = _radiusDisplayOptions;
+    *mode = _radiusScaleMode;
+    return YES;
+}
+
+- (BOOL)validateRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode error:(NSString **)error {
+    try {
+        validate_radius_display_state(options, mode);
+        return YES;
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
+}
+
+- (void)restoreRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode {
+    _solar.radiusDisplayOptions = options;
+    _sky.radiusDisplayOptions = options;
+    _horizon.radiusDisplayOptions = options;
+    _radiusDisplayOptions = options;
+    _radiusScaleMode = mode;
+}
+
+- (BOOL)applyRadiusDisplayOptions:(RadiusDisplayOptions)options mode:(RadiusScaleMode)mode error:(NSString **)error {
+    RadiusDisplayOptions previous;
+    RadiusScaleMode previousMode;
+    if (![self readRadiusDisplayOptions:&previous mode:&previousMode error:error] ||
+        ![self validateRadiusDisplayOptions:options mode:mode error:error]) return NO;
+    // 旧版の距離補正と native の追従・地表・航行の対応は未確定。
+    if (mode == RadiusScaleMode::keep_radius &&
+        (options.space_planet != previous.space_planet || options.space_sun != previous.space_sun)) {
+        if (error) *error = @"半径維持モードでの宇宙空間の倍率変更は、カメラ距離の補正が未対応です。軌道維持モードを選んでください。";
+        return NO;
+    }
+    [self restoreRadiusDisplayOptions:options mode:mode];
+    return YES;
 }
 - (void)systemWillSleep:(NSNotification *)notification {
     (void)notification;
@@ -97,7 +150,7 @@ using namespace mitaka::gui;
 
 - (void)updateEnabled {
     const BOOL enabled = _model && !_loading;
-    _jdField.enabled = enabled && !_playback.playing && !_playback.clockTracking;
+    _jdField.enabled = enabled && !_playback.playing && !_playback.clockTracking && !_playback.timeAnimating;
     _magnitudeSlider.enabled = enabled && _mode.selectedSegment != 1;
     _mode.enabled = !_loading;
     for (NSButton *item in _cameraButtons) item.enabled = enabled;
@@ -167,7 +220,10 @@ using namespace mitaka::gui;
 }
 
 - (void)loadData:(NSString *)path {
+    const BOOL reloadPlusGalaxy = _galaxyUsesPlusCatalogs && [_activePath isEqualToString:path];
     [self invalidateSmallBodyOrbits];
+    [self cancelGalaxyLoading];
+    [_solar cancelTerrain];
     [_scripts cancel];
     [_starBrightness cancel];
     [_solar interruptFlight];
@@ -216,6 +272,7 @@ using namespace mitaka::gui;
                 [self configurePlayback];
                 [self updateEnabled];
                 [self refreshSmallBodyOrbits];
+                if (self->_galaxyBrowser && !self->_galaxyModel) [self loadGalaxyIncludingPlus:NO];
                 [self showError:[NSString stringWithFormat:@"読み込み失敗（%@）: %@%@", path, failure,
                     self->_model ? @"\n直前に読み込めたデータの表示を継続しています。" : @""]];
                 return;
@@ -251,7 +308,9 @@ using namespace mitaka::gui;
                 self->_solarBodies = solarBodies;
                 self->_jd = initialJD;
                 [self resetSmallBodyDisplayForCurrentModel];
+                [self prepareGalaxyForDataRoot:path];
                 self->_activePath = [path copy];
+                if (self->_galaxyBrowser) [self loadGalaxyIncludingPlus:reloadPlusGalaxy];
                 [self->_mediaBrowser loadDataDirectory:[NSURL fileURLWithPath:path isDirectory:YES]];
                 self->_pathLabel.stringValue = path;
                 self->_pathLabel.toolTip = path;
@@ -269,6 +328,7 @@ using namespace mitaka::gui;
                 [self rebuildBrowser];
                 [self rebuildObserverPlaces];
                 [self->_solar setTextures:textures];
+                [self->_solar setTerrainDataDirectory:path];
                 [self->_solar setBodies:solarBodies orbits:orbits];
                 [self->_solar setLunarOrbit:lunarOrbit];
                 [self->_smallBodyBrowser setModel:smallBodies snapshot:smallBodySnapshot];

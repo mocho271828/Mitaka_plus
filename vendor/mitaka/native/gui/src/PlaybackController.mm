@@ -22,6 +22,8 @@ double monotonicSeconds() {
 - (void)finishWithMessage:(NSString *)message;
 - (BOOL)sampleAtTime:(double)now;
 - (BOOL)sampleSystemClock;
+- (BOOL)sampleAnimationAtTime:(double)now;
+- (double)monotonicTime;
 - (void)startTimer;
 - (void)suspendClockTracking;
 - (void)resumeClockTracking;
@@ -36,6 +38,9 @@ double monotonicSeconds() {
     NSTimer *_timer;
     PlaybackClock _clock;
     mitaka::gui::PlusTimeState _plusTimeState;
+    std::optional<mitaka::gui::PlusTimeZone> _plusTimeZone;
+    mitaka::gui::PlusTimeAnimation _timeAnimation;
+    double _animationLastSeconds;
     double _nativeRate;
     BOOL _plusPlayback;
     std::pair<double, double> _range;
@@ -92,15 +97,47 @@ double monotonicSeconds() {
 - (NSView *)view { return _view; }
 - (BOOL)playing { return _playing; }
 - (BOOL)clockTracking { return _clockTracking; }
+- (BOOL)timeAnimating { return _timeAnimation.active(); }
+- (double)monotonicTime { return monotonicSeconds(); }
+- (std::optional<mitaka::gui::PlusTimeZone>)plusTimeZone { return _plusTimeZone; }
+- (void)setPlusTimeZone:(std::optional<mitaka::gui::PlusTimeZone>)zone { _plusTimeZone = zone; }
 - (double)julianDate { return _jd; }
 - (double)simulationRate { return _nativeRate; }
 - (mitaka::gui::PlusTimeState)plusTimeState { return _plusTimeState; }
+
+- (BOOL)setPlusTimeStep:(const mitaka::gui::PlusTimeStepState&)step error:(NSString **)error {
+    try {
+        if (_invalidated || _sampling) throw std::logic_error("Plus time: controller is not available");
+        auto state = _plusTimeState;
+        state.step = step;
+        const double rate = mitaka::gui::plus_time_rate(state);
+        if (_plusPlayback && _playing) {
+            const double now = [self monotonicTime];
+            PlaybackClock candidate;
+            candidate.set_plus_rate(rate);
+            candidate.start(_jd, _range, now);
+            if (!_timeAnimation.active()) {
+                if (![self sampleAtTime:now]) throw std::runtime_error("Plus time: playback stopped during update");
+                candidate.stop();
+                candidate.start(_jd, _range, now);
+            }
+            _clock = candidate;
+        }
+        _plusTimeState = state;
+        ++_stateRevision;
+        if (self.stateChanged) self.stateChanged();
+        return YES;
+    } catch (const std::exception& failure) {
+        if (error) *error = [NSString stringWithUTF8String:failure.what()];
+        return NO;
+    }
+}
 
 - (BOOL)setPlusTimeState:(const mitaka::gui::PlusTimeState&)state error:(NSString **)error {
     try {
         const double rate = mitaka::gui::plus_time_rate(state);
         if (_invalidated || _sampling) throw std::logic_error("Plus time: controller is not available");
-        const double now = monotonicSeconds();
+        const double now = [self monotonicTime];
         PlaybackClock candidate;
         candidate.set_plus_rate(rate);
         if (state.speed != 0) {
@@ -109,11 +146,24 @@ double monotonicSeconds() {
         }
         // 入力と開始条件を検証し終えるまで、現在の再生・時計追従には触れない。
         if (state.speed == 0) {
-            [self pause];
+            const BOOL animating = _timeAnimation.active();
+            if (animating) {
+                _clock.stop();
+                _clock.set_rate(_nativeRate);
+                _playing = NO;
+                _plusPlayback = NO;
+                _clockTracking = NO;
+                _stateLabel.stringValue = @"日時を補間中";
+            } else [self pause];
             _plusTimeState = state;
+            [self updateControls];
+            if (animating) {
+                ++_stateRevision;
+                if (self.stateChanged) self.stateChanged();
+            }
             return YES;
         }
-        if (_playing) {
+        if (_playing && !_timeAnimation.active()) {
             if (![self sampleAtTime:now]) throw std::runtime_error("Plus time: playback stopped during update");
             candidate.stop();
             candidate.start(_jd, _range, now);
@@ -136,12 +186,94 @@ double monotonicSeconds() {
     }
 }
 
+- (BOOL)animateToJulianDate:(double)jd duration:(double)duration
+    curve:(mitaka::gui::PlusTimeAnimationCurve)curve
+    sameTargetPolicy:(mitaka::gui::PlusTimeAnimationSameTarget)policy error:(NSString **)error {
+    try {
+        if (_invalidated || _sampling || !_enabled || _sleeping || _hidden)
+            throw std::logic_error("Plus time animation: controller is unavailable");
+        if (!std::isfinite(_range.first) || !std::isfinite(_range.second) || _range.first >= _range.second ||
+            !std::isfinite(jd) || jd < _range.first || jd > _range.second ||
+            !std::isfinite(_jd) || _jd < _range.first || _jd > _range.second)
+            throw std::out_of_range("Plus time animation: date is outside the available range");
+        const double now = [self monotonicTime];
+        auto candidate = _timeAnimation;
+        if (!candidate.start(_jd, jd, duration, now, curve, policy)) return YES;
+        _timeAnimation = candidate;
+        _animationLastSeconds = now;
+        if (policy == mitaka::gui::PlusTimeAnimationSameTarget::replace) _clockTracking = NO;
+        ++_stateRevision;
+        _stateLabel.stringValue = @"日時を補間中";
+        [self startTimer];
+        [self updateControls];
+        if (self.stateChanged) self.stateChanged();
+        return YES;
+    } catch (const std::exception& failure) {
+        if (error) *error = [NSString stringWithUTF8String:failure.what()];
+        return NO;
+    }
+}
+
+- (BOOL)sampleAnimationAtTime:(double)now {
+    if (!_timeAnimation.active() || _sampling) return NO;
+    _sampling = YES;
+    NSString *stopMessage = nil;
+    BOOL stateChanged = NO;
+    try {
+        // 原版の補間式とは別に、既存 native 再生と同じ中断境界を適用する。
+        if (!std::isfinite(now) || now < _animationLastSeconds || now - _animationLastSeconds > 1.0) {
+            stopMessage = @"更新が中断したため一時停止";
+        } else {
+            const auto sample = _timeAnimation.sample(now);
+            const BOOL changed = sample->julian_date != _jd;
+            if (changed && (!self.applyDate || !self.applyDate(sample->julian_date))) {
+                stopMessage = @"表示の更新に失敗して停止";
+            } else {
+                _jd = sample->julian_date;
+                _animationLastSeconds = now;
+                if (changed && _clockTracking) { _clockTracking = NO; stateChanged = YES; }
+                // 補間中も Lua speed は保持する。1 tick の描画は一度だけにし、
+                // 通常時計は受理した JD から再開できる位置へ移す。
+                if (_playing) {
+                    _clock.stop();
+                    if ((_clock.rate() > 0 && _jd == _range.second) ||
+                        (_clock.rate() < 0 && _jd == _range.first)) {
+                        stopMessage = @"暦表の端点に到達して停止";
+                    } else _clock.start(_jd, _range, now);
+                }
+                if (sample->remove_after_dispatch) {
+                    _timeAnimation.cancel();
+                    stateChanged = YES;
+                }
+            }
+        }
+    } catch (const std::exception& failure) {
+        NSLog(@"日時補間の更新に失敗: %s", failure.what());
+        stopMessage = @"表示の更新に失敗して停止";
+    }
+    _sampling = NO;
+    if (_pendingStopMessage && !stopMessage) stopMessage = _pendingStopMessage;
+    if (stopMessage) { [self finishWithMessage:stopMessage]; return NO; }
+    if (stateChanged) {
+        const NSUInteger revision = ++_stateRevision;
+        if (!_timeAnimation.active()) {
+            _stateLabel.stringValue = _playing ? @"再生中" : _clockTracking ? @"時計追従中（現在 UTC）" : @"一時停止";
+            [self startTimer];
+        }
+        [self updateControls];
+        if (self.stateChanged) self.stateChanged();
+        if (_stateRevision == revision && !_playing && !_clockTracking && !_timeAnimation.active() && self.didStop)
+            self.didStop();
+    }
+    return _timeAnimation.active() || _playing || _clockTracking;
+}
+
 - (void)updateControls {
     const BOOL valid = _enabled && !_invalidated && std::isfinite(_jd)
         && std::isfinite(_range.first) && std::isfinite(_range.second)
         && _range.first < _range.second && _jd >= _range.first && _jd <= _range.second;
     const BOOL canAdvance = _clock.rate() > 0 ? _jd < _range.second : _jd > _range.first;
-    const BOOL active = _playing || _clockTracking;
+    const BOOL active = _playing || _clockTracking || _timeAnimation.active();
     _playButton.enabled = active || (valid && canAdvance && !_sleeping && !_hidden);
     _playButton.title = active ? @"一時停止" : @"再生";
     _rateButton.enabled = valid;
@@ -167,7 +299,7 @@ double monotonicSeconds() {
 
 - (void)configureWithJulianDate:(double)jd range:(std::pair<double, double>)range enabled:(BOOL)enabled {
     if (_sampling || _invalidated) return;
-    if (_playing || _clockTracking) [self interruptWithMessage:@"一時停止"];
+    if (_playing || _clockTracking || _timeAnimation.active()) [self interruptWithMessage:@"一時停止"];
     _jd = jd;
     _range = range;
     _enabled = enabled;
@@ -182,7 +314,7 @@ double monotonicSeconds() {
 }
 
 - (void)play {
-    if (_clockTracking && !_sampling) [self finishWithMessage:@"時計追従を解除"];
+    if ((_clockTracking || _timeAnimation.active()) && !_sampling) [self finishWithMessage:@"再生へ切り替え"];
     if (_playing || _sampling || !_enabled || _invalidated || _sleeping || _hidden) return;
     if (std::isfinite(_jd) && ((_clock.rate() > 0 && _jd == _range.second) ||
                               (_clock.rate() < 0 && _jd == _range.first))) {
@@ -191,7 +323,7 @@ double monotonicSeconds() {
         return;
     }
     try {
-        _clock.start(_jd, _range, monotonicSeconds());
+        _clock.start(_jd, _range, [self monotonicTime]);
     } catch (const std::exception& error) {
         NSLog(@"再生を開始できません: %s", error.what());
         _stateLabel.stringValue = @"再生可能な日時の範囲外です";
@@ -209,13 +341,14 @@ double monotonicSeconds() {
 - (void)startTimer {
     [_timer invalidate];
     _timer = nil;
-    if (_invalidated || _sleeping || _hidden || (!_playing && !_clockTracking)) return;
+    if (_invalidated || _sleeping || _hidden || (!_playing && !_clockTracking && !_timeAnimation.active())) return;
     __weak PlaybackController *weakSelf = self;
     _timer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
         (void)timer;
         PlaybackController *controller = weakSelf;
-        if (controller.clockTracking) [controller sampleSystemClock];
-        else if (controller) [controller sampleAtTime:monotonicSeconds()];
+        if (controller.timeAnimating) [controller sampleAnimationAtTime:[controller monotonicTime]];
+        else if (controller.clockTracking) [controller sampleSystemClock];
+        else if (controller) [controller sampleAtTime:[controller monotonicTime]];
     }];
     _timer.tolerance = 1.0 / 300.0;
     [NSRunLoop.mainRunLoop addTimer:_timer forMode:NSRunLoopCommonModes];
@@ -237,7 +370,8 @@ double monotonicSeconds() {
 }
 
 - (void)finishWithMessage:(NSString *)message {
-    const BOOL wasActive = _playing || _clockTracking;
+    const BOOL wasActive = _playing || _clockTracking || _timeAnimation.active();
+    _timeAnimation.cancel();
     _clock.stop();
     _clock.set_rate(_nativeRate);
     _plusTimeState.speed = 0;
@@ -253,10 +387,11 @@ double monotonicSeconds() {
     if (!wasActive) return;
     if (self.stateChanged) self.stateChanged();
     // stateChangedで再生条件が変わった場合、古い停止の通知を重ねない。
-    if (_stateRevision == revision && !_playing && !_clockTracking && self.didStop) self.didStop();
+    if (_stateRevision == revision && !_playing && !_clockTracking && !_timeAnimation.active() && self.didStop) self.didStop();
 }
 
 - (BOOL)sampleAtTime:(double)now {
+    if (_timeAnimation.active()) return [self sampleAnimationAtTime:now];
     if (!_playing || _sampling) return NO;
     _sampling = YES;
     NSString *stopMessage = nil;
@@ -285,10 +420,10 @@ double monotonicSeconds() {
 - (BOOL)setClockTracking:(BOOL)enabled {
     if (_invalidated || _sampling) return NO;
     if (!enabled) { if (_clockTracking) [self pause]; return YES; }
-    if (_clockTracking) return YES;
+    if (_clockTracking && !_timeAnimation.active()) return YES;
     if (!_enabled || !std::isfinite(_range.first) || !std::isfinite(_range.second) ||
         _range.first >= _range.second) return NO;
-    if (_playing) [self finishWithMessage:@"時計追従へ切り替え"];
+    if (_playing || _timeAnimation.active()) [self finishWithMessage:@"時計追従へ切り替え"];
     if (_invalidated || !_enabled) return NO;
     _clockTracking = YES;
     ++_stateRevision;
@@ -326,7 +461,9 @@ double monotonicSeconds() {
 }
 
 - (void)suspendClockTracking {
-    if (_clockTracking) {
+    if (_timeAnimation.active()) {
+        [self interruptWithMessage:@"ウィンドウ非表示・スリープのため一時停止"];
+    } else if (_clockTracking) {
         [_timer invalidate];
         _timer = nil;
         _stateLabel.stringValue = @"時計追従（復帰待ち）";
@@ -350,13 +487,17 @@ double monotonicSeconds() {
 - (void)resumeAfterHiddenWindow { _hidden = NO; [self resumeClockTracking]; }
 
 - (void)pause {
-    if (_clockTracking) { [self interruptWithMessage:@"時計追従を解除"]; return; }
-    if (!_playing) return;
     if (_sampling) {
         _pendingStopMessage = @"一時停止";
         return;
     }
-    if ([self sampleAtTime:monotonicSeconds()]) [self finishWithMessage:@"一時停止"];
+    if (_timeAnimation.active()) {
+        [self sampleAnimationAtTime:[self monotonicTime]];
+        if (_timeAnimation.active() || _playing || _clockTracking) [self finishWithMessage:@"一時停止"];
+        return;
+    }
+    if (_clockTracking) { [self interruptWithMessage:@"時計追従を解除"]; return; }
+    if (_playing && [self sampleAtTime:[self monotonicTime]]) [self finishWithMessage:@"一時停止"];
 }
 
 - (void)interruptWithMessage:(NSString *)message {
@@ -373,9 +514,9 @@ double monotonicSeconds() {
     try {
         PlaybackClock validation;
         validation.set_rate(rate);
-        if (_clockTracking) [self finishWithMessage:@"時計追従を解除"];
+        if (_clockTracking || _timeAnimation.active()) [self finishWithMessage:@"速度設定へ切り替え"];
         if (!_plusPlayback && _nativeRate == rate) return;
-        const double now = monotonicSeconds();
+        const double now = [self monotonicTime];
         const BOOL resume = _playing && [self sampleAtTime:now];
         if (_playing && !resume) return;
         _clock.stop();
@@ -398,7 +539,7 @@ double monotonicSeconds() {
 
 - (void)togglePlayback:(id)sender {
     (void)sender;
-    if (_playing || _clockTracking) [self pause]; else [self play];
+    if (_playing || _clockTracking || _timeAnimation.active()) [self pause]; else [self play];
 }
 
 - (void)changeRate:(NSPopUpButton *)sender {

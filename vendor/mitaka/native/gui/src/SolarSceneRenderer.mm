@@ -82,7 +82,8 @@ std::optional<EarthLayerBinding> earthBinding(const SolarScene& scene, std::size
         {{(scene.camera.target.x-center.x) + axes.outward.x*scene.camera.distance_au,
           (scene.camera.target.y-center.y) + axes.outward.y*scene.camera.distance_au,
           (scene.camera.target.z-center.z) + axes.outward.z*scene.camera.distance_au},
-         {-center.x/distance, -center.y/distance, -center.z/distance}, physicalRadius(index), 1}};
+         {-center.x/distance, -center.y/distance, -center.z/distance}, physicalRadius(index),
+         terrain_amplification_factor(scene.terrain_amplification)}};
 }
 NSDictionary<NSAttributedStringKey, id> *textStyle(NSColor *color) {
     return @{NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular],
@@ -93,6 +94,10 @@ void lineFrom(CGContextRef context, const SolarScene& scene, Vec3 a, Vec3 b) {
     if (!line) return;
     CGContextMoveToPoint(context, scene.map.origin.x + (*line)[0].x, scene.map.origin.y + (*line)[0].y);
     CGContextAddLineToPoint(context, scene.map.origin.x + (*line)[1].x, scene.map.origin.y + (*line)[1].y);
+}
+double lunarDisplayFactor(const SolarScene& scene) {
+    return scene.earth_moon || scene.physical_navigation || scene.surface_body || scene.preview_body
+        ? 1 : moon_orbit_display_factor(scene.radius_display);
 }
 void drawOrbits(CGContextRef context, const SolarScene& scene) {
     if (!scene.planet_display.orbits || scene.surface_body || scene.preview_body) return;
@@ -110,13 +115,14 @@ void drawOrbits(CGContextRef context, const SolarScene& scene) {
     }
     // 地心相対の標本へ現在の地球中心を足し、日時変更で軌道全体が取り残されないようにする。
     const Vec3 earth = solar_display_position(scene, 3);
+    const double lunarFactor = lunarDisplayFactor(scene);
     CGContextSetRGBStrokeColor(context, 0.72, 0.76, 0.87, 0.65);
     CGContextSetLineWidth(context, 0.8);
     for (std::size_t point = 1; point < scene.lunar_orbit.size(); ++point) {
         const Vec3 a = j2000_equatorial_to_ecliptic(scene.lunar_orbit[point - 1]);
         const Vec3 b = j2000_equatorial_to_ecliptic(scene.lunar_orbit[point]);
-        lineFrom(context, scene, {earth.x + a.x, earth.y + a.y, earth.z + a.z},
-                 {earth.x + b.x, earth.y + b.y, earth.z + b.z});
+        lineFrom(context, scene, {earth.x + lunarFactor * a.x, earth.y + lunarFactor * a.y, earth.z + lunarFactor * a.z},
+                 {earth.x + lunarFactor * b.x, earth.y + lunarFactor * b.y, earth.z + lunarFactor * b.z});
     }
     CGContextStrokePath(context);
 }
@@ -127,7 +133,8 @@ TextureImage fallbackTexture(Body body) {
                   static_cast<std::uint8_t>(color.blueComponent * 255), 255}};
 }
 void drawAtmosphere(const SolarScene& scene, const std::vector<SurfaceSphere>& spheres,
-                    const std::vector<Body>& bodies, std::size_t width, std::size_t height) {
+                    const std::vector<Body>& bodies, std::size_t width, std::size_t height,
+                    const SurfaceDepthFrame& depth) {
     if (scene.atmosphere.mode == AtmosphereMode::none) return;
     std::vector<AtmosphereLayer> layers;
     for (std::size_t index = 0; index < bodies.size(); ++index) {
@@ -140,31 +147,26 @@ void drawAtmosphere(const SolarScene& scene, const std::vector<SurfaceSphere>& s
         }
     }
     if (!layers.empty()) drawImage(surfaceImage(render_atmosphere_scene(
-        spheres, layers, scene.camera, width, height, scene.atmosphere)), scene.map, NSCompositingOperationPlusLighter);
+        spheres, layers, scene.camera, width, height, scene.atmosphere, &depth)), scene.map, NSCompositingOperationPlusLighter);
 }
-void drawPhysicalSphere(const SolarScene& scene, std::size_t index, const EclipseDisplayFrame& eclipse) {
+SurfaceDepthFrame drawPhysicalSphere(const SolarScene& scene, std::size_t index, const EclipseDisplayFrame& eclipse) {
     const TextureImage fallback = fallbackTexture(scene.bodies[index].id);
     const TextureImage& texture = scene.textures && scene.textures->images[index]
         ? *scene.textures->images[index] : fallback;
-    // 地平線の透視描画は長辺800pxを上限とし、Retina倍率でCPU負荷を増やさない。
-    const double scale = std::min(1.0, 800.0 / std::max(scene.map.size.width, scene.map.size.height));
-    const auto width = static_cast<std::size_t>(std::max(1.0, std::round(scene.map.size.width * scale)));
-    const auto height = static_cast<std::size_t>(std::max(1.0, std::round(scene.map.size.height * scale)));
+    const auto [width, height] = solar_surface_raster_size(scene.map.size);
     const auto layers = earthBinding(scene, index);
-    TextureImage clouds;
-    const auto image = render_surface_view(texture, scene.camera, solar_display_position(scene, index),
-        scene.bodies[index].orientation, surface_body_info(index).radius_km / astronomical_unit_km,
-        width, height, scene.bodies[index].id == Body::mars ? 0.0 : 0.5,
-        layers ? &*layers : nullptr, &clouds,
-        eclipse.surfaces[index] ? &*eclipse.surfaces[index] : nullptr);
-    drawImage(surfaceImage(image), scene.map);
     const std::vector<SurfaceSphere> spheres{{texture, solar_display_position(scene, index),
         scene.bodies[index].orientation, physicalRadius(index), false,
-        scene.bodies[index].id == Body::mars ? 0.0 : 0.5, layers ? &*layers : nullptr}};
-    drawAtmosphere(scene, spheres, {scene.bodies[index].id}, width, height);
+        scene.bodies[index].id == Body::mars ? 0.0 : 0.5, layers ? &*layers : nullptr,
+        eclipse.surfaces[index] ? &*eclipse.surfaces[index] : nullptr, solar_terrain_frame(scene, index)}};
+    TextureImage clouds;
+    SurfaceDepthFrame depth;
+    drawImage(surfaceImage(render_surface_scene(spheres, scene.camera, width, height, &clouds, &depth)), scene.map);
+    drawAtmosphere(scene, spheres, {scene.bodies[index].id}, width, height, depth);
     drawImage(surfaceImage(clouds), scene.map, NSCompositingOperationPlusLighter);
+    return depth;
 }
-void drawPhysicalSystem(const SolarScene& scene, const EclipseDisplayFrame& eclipse, bool earthMoonOnly = false) {
+SurfaceDepthFrame drawPhysicalSystem(const SolarScene& scene, const EclipseDisplayFrame& eclipse, bool earthMoonOnly = false) {
     std::array<TextureImage, 11> fallbacks;
     std::array<std::optional<EarthLayerBinding>, 11> layers;
     std::vector<SurfaceSphere> spheres;
@@ -180,17 +182,17 @@ void drawPhysicalSystem(const SolarScene& scene, const EclipseDisplayFrame& ecli
         spheres.push_back({texture, solar_display_position(scene, index), scene.bodies[index].orientation,
             physicalRadius(index), id == Body::sun, (id == Body::mars || id == Body::sun) ? 0.0 : 0.5,
             layers[index] ? &*layers[index] : nullptr,
-            eclipse.surfaces[index] ? &*eclipse.surfaces[index] : nullptr});
+            eclipse.surfaces[index] ? &*eclipse.surfaces[index] : nullptr, solar_terrain_frame(scene, index)});
         bodies.push_back(id);
     }
     // 全天体を1枚へ深度合成する。投影範囲外を走査せず、地平線から遠景まで同じ球を使う。
-    const double scale = std::min(1.0, 800.0 / std::max(scene.map.size.width, scene.map.size.height));
-    const auto width = static_cast<std::size_t>(std::max(1.0, std::round(scene.map.size.width * scale)));
-    const auto height = static_cast<std::size_t>(std::max(1.0, std::round(scene.map.size.height * scale)));
+    const auto [width, height] = solar_surface_raster_size(scene.map.size);
     TextureImage clouds;
-    drawImage(surfaceImage(render_surface_scene(spheres, scene.camera, width, height, &clouds)), scene.map);
-    drawAtmosphere(scene, spheres, bodies, width, height);
+    SurfaceDepthFrame depth;
+    drawImage(surfaceImage(render_surface_scene(spheres, scene.camera, width, height, &clouds, &depth)), scene.map);
+    drawAtmosphere(scene, spheres, bodies, width, height, depth);
     drawImage(surfaceImage(clouds), scene.map, NSCompositingOperationPlusLighter);
+    return depth;
 }
 void drawBody(const SolarScene& scene, const VisibleSolarBody& body, const EclipseDisplayFrame& eclipse) {
     const CGFloat radius = solar_scene_radius(scene, body.index, body.point.depth);
@@ -202,7 +204,9 @@ void drawBody(const SolarScene& scene, const VisibleSolarBody& body, const Eclip
         const auto layers = earthBinding(scene, body.index);
         TextureImage clouds;
         NSRect imageRect = rect;
-        const auto* shadow = eclipse.surfaces[body.index] && eclipse.surfaces[body.index]->active()
+        // 月の模式位置を動かしたとき、物理位置の食受光体を別の中心に適用しない。
+        const bool movedMoon = body.index == 10 && lunarDisplayFactor(scene) != 1;
+        const auto* shadow = !movedMoon && eclipse.surfaces[body.index] && eclipse.surfaces[body.index]->active()
             ? &*eclipse.surfaces[body.index] : nullptr;
         if ((scene.textures && scene.textures->images[body.index]) || layers || shadow) {
             const double extent = layers ? earth_layer_extent(*layers) : 1;
@@ -277,6 +281,49 @@ void drawLabels(const SolarScene& scene, std::vector<VisibleSolarBody> visible) 
 }
 } // namespace
 
+std::array<std::size_t, 2> solar_surface_raster_size(NSSize size) {
+    if (!std::isfinite(size.width) || !std::isfinite(size.height) || size.width <= 0 || size.height <= 0)
+        throw std::invalid_argument("Invalid solar surface viewport");
+    const double scale = std::min(1.0, 800.0 / std::max(size.width, size.height));
+    return {static_cast<std::size_t>(std::max(1.0, std::round(size.width * scale))),
+            static_cast<std::size_t>(std::max(1.0, std::round(size.height * scale)))};
+}
+std::optional<TerrainSurfaceRequest> solar_terrain_request(const SolarScene& scene, std::size_t index,
+                                                         const std::filesystem::path& dataDirectory) {
+    if (index >= scene.bodies.size()) throw std::out_of_range("Invalid solar terrain body");
+    if (!scene.planet_display.visible) return std::nullopt;
+    if (!scene.physical_navigation && !(scene.earth_moon && (index == 3 || index == 10)) &&
+        scene.surface_body != index) return std::nullopt;
+    TerrainSurfaceRequest request;
+    switch (index) {
+        case 1: request.body = TerrainBody::mercury; break;
+        case 3: request.body = TerrainBody::earth; break;
+        case 4: request.body = TerrainBody::mars; break;
+        case 10: request.body = TerrainBody::moon; break;
+        default: return std::nullopt;
+    }
+    const auto [width, height] = solar_surface_raster_size(scene.map.size);
+    request.data_directory = dataDirectory;
+    request.julian_date = scene.julian_date;
+    request.center_au = solar_display_position(scene, index);
+    request.orientation = scene.bodies[index].orientation;
+    request.display_radius_au = physicalRadius(index);
+    request.elevation_factor = terrain_amplification_factor(scene.terrain_amplification);
+    request.camera = scene.camera;
+    request.width = static_cast<int>(width);
+    request.height = static_cast<int>(height);
+    validate_terrain_surface_request(request);
+    return request;
+}
+const TerrainSurfaceFrame* solar_terrain_frame(const SolarScene& scene, std::size_t index) {
+    if (!scene.terrain || index >= scene.terrain->size()) return nullptr;
+    const auto& snapshot = (*scene.terrain)[index];
+    if (!snapshot || snapshot->status != TerrainSnapshotStatus::ready) return nullptr;
+    const auto request = solar_terrain_request(scene, index, snapshot->request.data_directory);
+    if (!request || !terrain_surface_request_matches(*request, snapshot->request)) return nullptr;
+    return &snapshot->frame;
+}
+
 std::optional<std::array<Vec3, 2>> solar_axis_segment(const SolarScene& scene, std::size_t index) {
     if (!scene.planet_display.visible || !scene.planet_display.axes || index == 0 || index >= scene.bodies.size())
         return std::nullopt;
@@ -293,7 +340,13 @@ std::optional<std::array<Vec3, 2>> solar_axis_segment(const SolarScene& scene, s
 }
 
 Vec3 solar_display_position(const SolarScene& scene, std::size_t index) {
-    return j2000_equatorial_to_ecliptic(scene.bodies[index].position_au);
+    const Vec3 position = j2000_equatorial_to_ecliptic(scene.bodies[index].position_au);
+    if (index != 10) return position;
+    const double factor = lunarDisplayFactor(scene);
+    if (factor == 1) return position;
+    const Vec3 earth = j2000_equatorial_to_ecliptic(scene.bodies[3].position_au);
+    return {earth.x + factor * (position.x-earth.x), earth.y + factor * (position.y-earth.y),
+        earth.z + factor * (position.z-earth.z)};
 }
 double solar_marker_radius(Body body) {
     if (body == Body::sun) return 8;
@@ -307,7 +360,9 @@ double solar_scene_radius(const SolarScene& scene, std::size_t index, double dep
     if ((scene.earth_moon || scene.surface_body) && index != 0)
         return std::max(1.5, surface_body_info(index).radius_km / astronomical_unit_km * focal / depth);
     const double base = solar_marker_radius(scene.bodies[index].id);
-    return std::clamp(base * 0.0015 * focal / depth, base, 120.0);
+    const double marker = std::clamp(base * 0.0015 * focal / depth, base, 120.0);
+    return std::clamp(marker * body_marker_display_factor(scene.radius_display,
+        RadiusDisplayContext::space, scene.bodies[index].id), 1.5, 120.0);
 }
 std::vector<VisibleSolarBody> visible_solar_bodies(const SolarScene& scene) {
     std::vector<VisibleSolarBody> result;
@@ -384,25 +439,29 @@ std::vector<std::string> draw_solar_scene(CGContextRef context, const SolarScene
         }
         CGContextStrokePath(context);
     }
+    std::optional<SurfaceDepthFrame> depth;
     if (scene.planet_display.visible && scene.earth_moon && !scene.physical_navigation) {
         // 地球と月を同じ深度で評価し、雲殻越しの重なりも配列順に依存させない。
-        drawPhysicalSystem(scene, eclipse, true);
+        depth = drawPhysicalSystem(scene, eclipse, true);
     }
     for (const auto& body : visible) drawBody(scene, body, eclipse);
     if (scene.planet_display.labels) drawLabels(scene, visible);
-    if (scene.planet_display.visible && scene.physical_navigation) drawPhysicalSystem(scene, eclipse);
+    if (scene.planet_display.visible && scene.physical_navigation) depth = drawPhysicalSystem(scene, eclipse);
     // 地表の不透明な交点を最後に合成し、地平線の向こうの天体・ラベルを隠す。
-    else if (scene.planet_display.visible && scene.surface_body) drawPhysicalSphere(scene, *scene.surface_body, eclipse);
+    else if (scene.planet_display.visible && scene.surface_body) depth = drawPhysicalSphere(scene, *scene.surface_body, eclipse);
     if (scene.planet_display.visible && eclipse.earth_moon_space) {
         std::vector<EclipseSphere> opaque;
-        for (std::size_t i=0;i<scene.bodies.size();++i)
-            opaque.push_back({solar_display_position(scene,i),physicalRadius(i)});
-        const double scale=std::min(1.0,800.0/std::max(scene.map.size.width,scene.map.size.height));
-        const auto width=static_cast<std::size_t>(std::max(1.0,std::round(scene.map.size.width*scale)));
-        const auto height=static_cast<std::size_t>(std::max(1.0,std::round(scene.map.size.height*scale)));
+        if (depth) {
+            for (const auto& geometry : depth->geometry)
+                opaque.push_back({geometry.center, geometry.radius_au});
+        } else {
+            for (std::size_t i=0;i<scene.bodies.size();++i)
+                opaque.push_back({j2000_equatorial_to_ecliptic(scene.bodies[i].position_au),physicalRadius(i)});
+        }
+        const auto [width, height] = solar_surface_raster_size(scene.map.size);
         try {
             drawImage(surfaceImage(render_eclipse_cones(*eclipse.earth_moon_space,scene.eclipse_options,
-                opaque,scene.camera,width,height)),scene.map);
+                opaque,scene.camera,width,height,depth ? &*depth : nullptr)),scene.map);
         } catch (const std::invalid_argument& error) {
             eclipse.diagnostics.push_back(std::string("Eclipse cone: ")+error.what());
         } catch (const std::out_of_range& error) {

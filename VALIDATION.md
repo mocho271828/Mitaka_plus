@@ -1,5 +1,13 @@
 # 検証記録
 
+## 2026-11-05: UNIT8 表示半径の採用
+
+Mitaka `73d3457969f8bcce88937492b66889a90b22d4bd` の表示半径と依存する UNIT8 の native 実装を `vendor/mitaka/` に取り込んだ。Plus 用のデータパスと同梱 Lua のオフラインビルドを維持した。表示半径の UI・Lua・描画・JSON v9 への接続に加え、依存する地形・銀河・時刻コードを含む。宇宙倍率変更の `KEEP_RADIUS`、`setScaleTo`、旧版との画素一致は未対応または未確認。
+
+独立したビルドディレクトリでのクリーンビルドと、Plus データを使う `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` が成功。表示半径 controller 150 checks、session state 1,770 checks、Plus state 988 checks、実データ表示 192 checks が通過し、smoke は Lua の radius と session v9 を含む。元リポジトリの過去の sanitizer・x86 検証は今回の Plus 環境での再実行と区別する。
+
+`resources/` と `vendor/mitaka/sources/` の開始時ファイル 885 件は作業後の SHA-256 が一致した。新規依存なし。`/simplifier-lai` は利用できず、LobbyAI 専用の類似 skill は対象外。方針と gate を更新し、[今回の gate 検証](temp_gates/2026-11-05-00-56-52/VALIDATION.md)を記録した。
+
 ## 2026-10-30: 風景・食と影・時間操作とローカルデータ基盤の採用
 
 共通実装を `b901489c9b08a85742ff2d5a0ce1d9db522fe246` に固定した。fetch済みorigin/mainに存在し、submodule内はclean。風景、食の4設定と物理半径による影、旧Plusの時間step・連続再生、原地点ID、JSON v7、地形・銀河の読込と数値モデルを採用した。地形・銀河3D描画はこの単位に含めない。

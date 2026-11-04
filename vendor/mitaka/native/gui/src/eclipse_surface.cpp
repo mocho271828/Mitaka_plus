@@ -25,19 +25,29 @@ EclipseSurfaceBinding::EclipseSurfaceBinding(EclipseSphere sun, EclipseSphere re
     if (occluders.empty()) throw std::invalid_argument("eclipse surface binding requires an occluder");
     for (const auto& occluder : occluders) {
         const auto cones=eclipse_shadow_cones({sun,occluder,receiver});
-        if (cones && (options.shadows||options.shadow_borders)) casters_.push_back({occluder,*cones});
+        if (options.shadows||options.shadow_borders) {
+            point_casters_.push_back({occluder,eclipse_occluder_cones(sun,occluder)});
+            if (cones) casters_.push_back({occluder,*cones});
+        }
     }
 }
 
 EclipseSurfaceBinding::Effect EclipseSurfaceBinding::effect(Vec3 normal, double footprint) const {
     if (!finite(normal)||std::abs(dot(normal,normal)-1)>1e-8 || !std::isfinite(footprint)||footprint<0)
         throw std::invalid_argument("eclipse surface requires a unit normal and nonnegative footprint");
-    Effect result;
     const Vec3 point{receiver_.center_au.x+receiver_.radius_au*normal.x,
                      receiver_.center_au.y+receiver_.radius_au*normal.y,
                      receiver_.center_au.z+receiver_.radius_au*normal.z};
+    return active() ? effect_at(point,normal,footprint) : Effect{};
+}
+
+EclipseSurfaceBinding::Effect EclipseSurfaceBinding::effect_at(Vec3 point, Vec3 normal, double footprint) const {
+    if (!finite(point)||!finite(normal)||std::abs(dot(normal,normal)-1)>1e-8 ||
+        !std::isfinite(footprint)||footprint<0)
+        throw std::invalid_argument("eclipse surface requires a finite point, unit normal and nonnegative footprint");
+    Effect result;
     if (dot(normal,subtract(sun_.center_au,point))<=0) return result;
-    for (const auto& caster : casters_) {
+    for (const auto& caster : point_casters_) {
         if (options_.shadows) {
             const auto factor=eclipse_shadow_multiplier(
                 eclipse_surface_sample(sun_,caster.sphere,point).obscured_fraction,shadow_rgb_);

@@ -33,6 +33,8 @@ public:
     // 法線は慣性系の単位ベクトル。footprint は境界線半幅の物理 AU。
     // 線幅は native raster 用で、原版 GL 線分のピクセル一致を主張しない。
     Effect effect(Vec3 normal_unit, double footprint_au) const;
+    // 地形の実交点用。基準球との円錐交差だけでは高い地形を除外しない。
+    Effect effect_at(Vec3 point_au, Vec3 normal_unit, double footprint_au) const;
     bool active() const noexcept { return !casters_.empty(); }
 private:
     struct Caster { EclipseSphere sphere; EclipseShadowCones cones; };
@@ -40,6 +42,7 @@ private:
     EclipseDisplayOptions options_;
     std::array<double,3> shadow_rgb_;
     std::vector<Caster> casters_;
+    std::vector<Caster> point_casters_;
 };
 
 struct EclipseDisplayFrame {

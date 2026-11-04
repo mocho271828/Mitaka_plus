@@ -57,6 +57,57 @@ void solar_tests() {
     check(pick_solar_body(scene, click).has_value(), "visible body cannot be picked");
     const auto draw = [&] { return render([&](CGContextRef context) { draw_solar_scene(context, scene); }); };
     const auto disks = draw();
+    const auto original_bodies = bodies;
+    for (auto& body : bodies) body.position_au = {10000, 10000, 10000};
+    bodies[0].position_au = {0, 0, 0};
+    const auto isolated = visible_solar_bodies(scene);
+    check(isolated.size() == 1 && isolated[0].index == 0, "isolated Sun fixture is not visible");
+    const auto original_radius = solar_scene_radius(scene, 0, isolated[0].point.depth);
+    const auto unscaled_pixels = draw();
+    scene.radius_display = checked_radius_display_options(2, 4, 3, 5);
+    const auto enlarged_radius = solar_scene_radius(scene, 0, isolated[0].point.depth);
+    check(enlarged_radius == original_radius * 4, "space Sun scale did not change marker radius");
+    check(draw() != unscaled_pixels, "space scale did not change rendered pixels");
+    const NSPoint disk_edge = NSMakePoint(isolated[0].point.x + enlarged_radius - 1, isolated[0].point.y);
+    check(pick_solar_body(scene, disk_edge) == std::optional<std::size_t>(0),
+          "enlarged solar disk cannot be picked at its edge");
+    bodies = original_bodies;
+    const Vec3 earth = solar_display_position(scene, 3);
+    const Vec3 displayed_moon = solar_display_position(scene, 10);
+    const Vec3 physical_moon = j2000_equatorial_to_ecliptic(bodies[10].position_au);
+    check(std::abs(displayed_moon.x - earth.x - double(2.0f / 20.0f) * (physical_moon.x - earth.x)) < 1e-12,
+          "overview lunar position did not use the scaled Earth-relative orbit");
+    scene.physical_navigation = true;
+    const Vec3 navigation_moon = solar_display_position(scene, 10);
+    check(navigation_moon.x == physical_moon.x && navigation_moon.y == physical_moon.y &&
+          navigation_moon.z == physical_moon.z, "physical navigation must retain the physical lunar position");
+    scene.physical_navigation = false;
+    for (bool preview : {false, true}) {
+        if (preview) scene.preview_body = 10;
+        else scene.surface_body = 10;
+        const Vec3 moon = solar_display_position(scene, 10);
+        check(std::abs(moon.x - physical_moon.x) < 1e-15 &&
+              std::abs(moon.y - physical_moon.y) < 1e-15 &&
+              std::abs(moon.z - physical_moon.z) < 1e-15, "surface and preview retain physical lunar position");
+        scene.planet_display.orbits = false;
+        const auto withoutOrbit = draw();
+        scene.planet_display.orbits = true;
+        check(draw() == withoutOrbit, "surface and preview hide lunar and planetary orbits");
+        scene.surface_body.reset();
+        scene.preview_body.reset();
+    }
+    scene.planet_display.orbits = false;
+    bodies[0].position_au = {0, 0, 0};
+    bodies[3].position_au = {1, 0, 0};
+    bodies[10].position_au = {1.00257, 0, 0};
+    scene.eclipse_options = {true, false, false, false};
+    const auto eclipse = make_eclipse_display_frame(bodies, scene.julian_date, nullptr, scene.eclipse_options);
+    check(eclipse.surfaces[10] && eclipse.surfaces[10]->active(), "fixture must have a lunar eclipse");
+    draw(); // 拡大位置と物理の食受光体を混用して例外を起こさない。
+    bodies = original_bodies;
+    scene.eclipse_options = {false, false, false, false};
+    scene.radius_display = {};
+    check(draw() == disks, "default radius options did not restore the original frame");
     scene.renderer_display.point_smoothing = false;
     const auto hard_disks = draw();
     check(hard_disks != disks, "solar fallback disk ignored point quality");
@@ -319,12 +370,36 @@ void star_tests(const char* directory) {
     check(draw_catalog({true, false, true, false}) == smooth_catalog, "nebula outline received point or text quality");
 
     const auto bodies = model->bodies(2451545);
-    SkyView *sky = [[SkyView alloc] initWithFrame:NSMakeRect(0, 0, 800, 480)];
+    SkyView *sky = [[SkyView alloc] initWithFrame:NSMakeRect(0, 0, 400, 300)];
     HorizonView *horizon = [[HorizonView alloc] initWithFrame:sky.frame];
     [sky setModel:model bodies:bodies];
     [horizon setModel:model bodies:bodies];
     for (id view in @[sky, horizon]) {
+        [view setStarDisplayOptions:StarDisplayOptions{false}];
+        [view setPlanetDisplayOptions:PlanetDisplayOptions{true, false, false, false}];
+        [view selectBody:0];
+        [view focusSelection];
+        [view clearSelection];
+        const auto renderView = [&] { return render([&](CGContextRef) { [view drawRect:[view bounds]]; }); };
+        const auto initialPixels = renderView();
+        [view setRadiusDisplayOptions:RadiusDisplayOptions{2, 3, 4, 5}];
+        check(renderView() != initialPixels, "sky or horizon scale did not change rendered pixels");
+        NSEvent *click = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:NSMakePoint(215, 150)
+            modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:1 pressure:0];
+        [view mouseUp:click];
+        check([view selectedBodyIndex] == 0, "enlarged sky or horizon disk cannot be picked at its edge");
+        [view setStarDisplayOptions:StarDisplayOptions{}];
         [view setHidden:YES];
+        [view setRadiusDisplayOptions:RadiusDisplayOptions{2, 3, 4, 5}];
+        check([view radiusDisplayOptions].planetarium_planet == 4 &&
+              [view radiusDisplayOptions].planetarium_sun_moon == 5,
+              "sky or horizon did not retain radius display options");
+        bool radius_rejected = false;
+        try { [view setRadiusDisplayOptions:RadiusDisplayOptions{0, 1, 1, 1}]; }
+        catch (const std::invalid_argument&) { radius_rejected = true; }
+        check(radius_rejected && [view radiusDisplayOptions].planetarium_planet == 4,
+              "invalid radius options did not preserve view state");
+        [view setRadiusDisplayOptions:RadiusDisplayOptions{}];
         [view selectBody:0];
         [view setRendererDisplayOptions:RendererDisplayOptions{false, true, false, true}];
         const auto restored = [view rendererDisplayOptions];

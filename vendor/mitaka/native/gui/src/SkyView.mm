@@ -6,6 +6,7 @@
 #import "GridRenderer.h"
 #import "SkyCatalogRenderer.h"
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
@@ -59,6 +60,7 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     SkyBodies _bodies;
     ConstellationDisplayOptions _constellationDisplayOptions;
     PlanetDisplayOptions _planetDisplayOptions;
+    RadiusDisplayOptions _radiusDisplayOptions;
     RendererDisplayOptions _rendererDisplayOptions;
     GridDisplayOptions _gridDisplayOptions;
     GridGeometryCache _gridCache;
@@ -104,6 +106,13 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
 - (void)setConstellationDisplayOptions:(ConstellationDisplayOptions)options {
     // App が現在のカタログとの対応を検証する。読込前の設定も保持する。
     _constellationDisplayOptions = std::move(options);
+    self.needsDisplay = YES;
+}
+- (RadiusDisplayOptions)radiusDisplayOptions { return _radiusDisplayOptions; }
+- (void)setRadiusDisplayOptions:(RadiusDisplayOptions)options {
+    validate_radius_display_options(options);
+    moon_orbit_display_factor(options);
+    _radiusDisplayOptions = options;
     self.needsDisplay = YES;
 }
 - (PlanetDisplayOptions)planetDisplayOptions { return _planetDisplayOptions; }
@@ -336,6 +345,20 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     _selection = pick_object(*_model, _bodies, _viewport, map.size.width, map.size.height,
                             point.x - map.origin.x, point.y - map.origin.y, _magnitudeLimit, 8,
                             _starDisplayOptions.visible, _planetDisplayOptions.visible);
+    // 模式円の内側も、その円を描いた天体として選択する。
+    double nearestBody = std::numeric_limits<double>::infinity();
+    const bool hadNearestSelection = _selection.has_value();
+    for (std::size_t index = 0; !hadNearestSelection && _planetDisplayOptions.visible && index < _bodies.size(); ++index) {
+        const auto projected = project_sky(_bodies[index].coordinates, _viewport, map.size.width, map.size.height);
+        if (!projected) continue;
+        const double distance = std::hypot(point.x - map.origin.x - projected->x, point.y - map.origin.y - projected->y);
+        const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+            RadiusDisplayContext::planetarium, _bodies[index].id), 1.0, 120.0);
+        if (distance <= radius && distance < nearestBody) {
+            nearestBody = distance;
+            _selection = Selection{ObjectKind::body, index};
+        }
+    }
     _catalogSelection.reset();
     [self notifySelection];
     self.needsDisplay = YES;
@@ -437,9 +460,11 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
         NSColor *color = bodyColor(body.id);
         RendererQualityScope points(context, _rendererDisplayOptions, RendererPrimitive::point);
         [color setFill];
-        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - 4, center.y - 4, 8, 8)] fill];
+        const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+            RadiusDisplayContext::planetarium, body.id), 1.0, 120.0);
+        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - radius, center.y - radius, 2 * radius, 2 * radius)] fill];
         if (!_planetDisplayOptions.labels) continue;
-        NSRect label = NSMakeRect(std::clamp(center.x + 8, map.origin.x, NSMaxX(map) - 50), center.y - 17, 48, 17);
+        NSRect label = NSMakeRect(std::clamp(center.x + radius + 4, map.origin.x, NSMaxX(map) - 50), center.y - 17, 48, 17);
         // 近接する惑星名をずらし、元の天体位置へ引き出し線を付ける。
         for (NSUInteger attempt = 0; attempt < _bodies.size(); ++attempt) {
             bool overlap = false;
@@ -465,7 +490,10 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
         if (point) {
             RendererQualityScope lines(context, _rendererDisplayOptions, RendererPrimitive::line);
             [NSColor.whiteColor setStroke];
-            NSBezierPath *ring = [NSBezierPath bezierPathWithOvalInRect:NSMakeRect(map.origin.x + point->x - 9, map.origin.y + point->y - 9, 18, 18)];
+            const double radius = _selection && _selection->kind == ObjectKind::body
+                ? std::max(9.0, 4 + std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
+                    RadiusDisplayContext::planetarium, _bodies[_selection->index].id), 1.0, 120.0)) : 9.0;
+            NSBezierPath *ring = [NSBezierPath bezierPathWithOvalInRect:NSMakeRect(map.origin.x + point->x - radius, map.origin.y + point->y - radius, 2 * radius, 2 * radius)];
             ring.lineWidth = 1;
             [ring stroke];
         }

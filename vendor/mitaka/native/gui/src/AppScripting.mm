@@ -23,12 +23,7 @@ static NSString *const scriptCompatibilityNote =
         AppController *controller = weakSelf;
         ScriptSnapshot state;
         if (!controller) return state;
-        state.julian_date = controller->_jd;
-        state.rate_seconds_per_second = controller->_playback.simulationRate;
-        state.playing = controller->_playback.playing;
-        state.clock_tracking = controller->_playback.clockTracking;
-        state.time_info = [controller timeInfoVisible];
-        state.plus_time = [controller->_playback plusTimeState];
+        [controller fillScriptTimeSnapshot:state];
         const NSUInteger selected = controller->_solar.selectedBodyIndex;
         if (selected < scriptBodyNames.size()) state.target = scriptBodyNames[selected];
         state.camera_distance_au = [controller->_solar cameraState].distance_au;
@@ -41,6 +36,10 @@ static NSString *const scriptCompatibilityNote =
         state.comets = [controller smallBodyDisplayOptionsForKind:mitaka::SmallBodyKind::comet];
         state.satellites = [controller satelliteDisplayOptions];
         state.planets = [controller planetDisplayOptions];
+        // 共通 snapshot はロード中にも GUI の状態取得に使われる。
+        state.radius_display = controller->_radiusDisplayOptions;
+        state.radius_scale_mode = controller->_radiusScaleMode;
+        state.terrain_amplification = [controller terrainAmplification];
         state.eclipse = [controller eclipseDisplayOptions];
         state.landscape = controller->_horizon.showsLandscapeImage;
         const auto earthLayers = [controller earthLayerOptions];
@@ -204,37 +203,17 @@ static NSString *const scriptCompatibilityNote =
             case ScriptActionKind::set_time_step_value:
             case ScriptActionKind::set_time_speed:
             case ScriptActionKind::previous_time_step:
-            case ScriptActionKind::next_time_step: {
-                auto state = [_playback plusTimeState];
-                if (action.kind == ScriptActionKind::set_time_step) {
-                    if (!std::isfinite(action.number) || action.number != std::floor(action.number) ||
-                        action.number < 0 || action.number > 11)
-                        throw std::invalid_argument("Invalid Time step");
-                    state.step.select(static_cast<PlusTimeStep>(static_cast<int>(action.number)));
-                } else if (action.kind == ScriptActionKind::set_time_step_value) state.step.set_value_days(action.number);
-                else if (action.kind == ScriptActionKind::set_time_speed) state.speed = plus_time_speed(action.number);
-                else if (action.kind == ScriptActionKind::previous_time_step) state.step.previous();
-                else state.step.next();
-                return [_playback setPlusTimeState:state error:error];
-            }
+            case ScriptActionKind::next_time_step:
             case ScriptActionKind::step_time_forward:
-            case ScriptActionKind::step_time_rewind: {
-                const double date = [_playback plusTimeState].step.stepped_julian_date(_jd,
-                    action.kind == ScriptActionKind::step_time_forward ? 1 : -1);
-                (void)_model->bodies(date);
-                if (![self setDate:date]) throw std::runtime_error("date update failed");
-                break;
-            }
+            case ScriptActionKind::step_time_rewind:
             case ScriptActionKind::set_date:
-                // ScriptControllerへエラーを返す前に範囲を検査する。
-                (void)_model->bodies(action.number);
-                if (![self setDate:action.number]) throw std::runtime_error("date update failed");
-                break;
             case ScriptActionKind::set_rate:
-                [_playback setSimulationRate:action.number];
-                [_playback play];
-                break;
-            case ScriptActionKind::stop: [_playback pause]; break;
+            case ScriptActionKind::stop:
+            case ScriptActionKind::set_clock_tracking:
+            case ScriptActionKind::set_time_info:
+            case ScriptActionKind::set_time_animation_jd:
+            case ScriptActionKind::set_time_animation_calendar:
+                return [self applyScriptTimeAction:action error:error];
             case ScriptActionKind::select_target: {
                 const auto found = std::find(scriptBodyNames.begin(), scriptBodyNames.end(), action.text);
                 if (found == scriptBodyNames.end()) throw std::invalid_argument("Unsupported Camera.target: " + action.text);
@@ -327,6 +306,18 @@ static NSString *const scriptCompatibilityNote =
                 _horizon.showsLandscapeImage = action.enabled;
                 [NSApp.mainMenu update];
                 break;
+            case ScriptActionKind::set_terrain_amplification:
+                [self setTerrainAmplification:action.terrain_amplification];
+                break;
+            case ScriptActionKind::set_radius_scale:
+            case ScriptActionKind::set_radius_scale_mode: {
+                RadiusDisplayOptions options;
+                RadiusScaleMode mode;
+                if (![self readRadiusDisplayOptions:&options mode:&mode error:error]) return NO;
+                if (action.kind == ScriptActionKind::set_radius_scale) options = action.radius_display;
+                else mode = action.radius_scale_mode;
+                return [self applyRadiusDisplayOptions:options mode:mode error:error];
+            }
             case ScriptActionKind::set_earth_clouds:
             case ScriptActionKind::set_earth_city_lights: {
                 auto options = [self earthLayerOptions];
@@ -418,13 +409,6 @@ static NSString *const scriptCompatibilityNote =
                 else if (action.text == "Infrared") [self setMilkyWayMode:MilkyWayMode::infrared];
                 else throw std::invalid_argument("Unsupported Milkyway.type: " + action.text);
                 break;
-            case ScriptActionKind::set_clock_tracking:
-                if (![_playback setClockTracking:action.enabled]) {
-                    if (error) *error = @"時計追従を開始できません。";
-                    return NO;
-                }
-                break;
-            case ScriptActionKind::set_time_info: [self setTimeInfoVisible:action.enabled]; break;
             case ScriptActionKind::set_nebulae: _sky.showsNebulae = action.enabled; break;
             case ScriptActionKind::set_distant_galaxies: _sky.showsGalaxies = action.enabled; break;
             case ScriptActionKind::set_quasars: _sky.showsQuasars = action.enabled; break;

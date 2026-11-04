@@ -49,8 +49,16 @@ void test_roundtrip() {
     auto json = encode_session_state(state);
     const auto initial = decode_session_state(json);
     check(encode_session_state(initial) == json, "default state did not roundtrip exactly");
-    check(initial.version == 7 && initial.simulation_rate == 3600 && !initial.solar_camera.frame,
+    check(initial.version == 9 && initial.simulation_rate == 3600 && !initial.solar_camera.frame,
           "default values changed");
+    for (int level = 1; level <= 5; ++level) {
+        state.terrain_amplification = static_cast<TerrainAmplification>(level);
+        check(decode_session_state(encode_session_state(state)).terrain_amplification == state.terrain_amplification,
+              "terrain amplification did not roundtrip");
+    }
+    state.terrain_amplification = static_cast<TerrainAmplification>(0);
+    rejects([&] { encode_session_state(state); });
+    state.terrain_amplification = TerrainAmplification::x20;
     state.julian_date = 2460000.125;
     state.simulation_rate = -123.5;
     state.mode = 2;
@@ -111,6 +119,7 @@ void test_roundtrip() {
           restored.grids.equatorial && restored.grids.ecliptic && restored.grids.galactic && restored.grids.horizontal &&
           !restored.grids.circle_scales && restored.grids.square_scales && !restored.show_time_info,
           "independent display options did not roundtrip");
+    check(restored.terrain_amplification == TerrainAmplification::x20, "terrain amplification changed");
     check(restored.renderer.antialias && !restored.renderer.point_smoothing &&
           restored.renderer.line_smoothing && !restored.renderer.text_smoothing,
           "renderer preferences did not roundtrip independently");
@@ -128,6 +137,9 @@ void test_roundtrip() {
 }
 
 void test_missing_null_and_types() {
+    rejects_field(@"terrain_amplification", nil);
+    for (id value in @[NSNull.null, @YES, @NO, @0, @6, @1.5, @"1", @[], @{}])
+        rejects_field(@"terrain_amplification", value);
     for (NSString *field in @[@"sky_selected_body", @"horizon_selected_body"]) {
         rejects_field(field, nil);
         for (id value in @[@YES, @"1", @1.5, @(-1), @99, @(static_cast<int>(Body::earth))])
@@ -143,7 +155,7 @@ void test_missing_null_and_types() {
     }
     NSArray<NSString *> *fields = @[@"version", @"julian_date", @"simulation_rate", @"mode", @"magnitude_limit",
         @"sky_viewport", @"horizon_viewport", @"solar_camera", @"selected_body", @"constellations", @"observer_latitude_deg",
-        @"observer_longitude_deg", @"planets", @"stars", @"grids", @"renderer", @"show_time_info", @"show_nebulae",
+        @"observer_longitude_deg", @"planets", @"radius_display", @"stars", @"grids", @"renderer", @"show_time_info", @"show_nebulae",
         @"show_galaxies", @"show_quasars", @"milky_way_mode", @"time_settings", @"small_bodies", @"satellites", @"spacecraft", @"selected_star_name_hips", @"earth_layers", @"atmosphere", @"eclipse", @"plus_time", @"show_landscape_image"];
     for (NSString *field in fields) {
         rejects_field(field, nil);
@@ -161,7 +173,7 @@ void test_missing_null_and_types() {
     rejects_field(@"solar_camera", @[]);
     for (NSString *field in @[@"version", @"mode", @"selected_body"]) rejects_field(field, @1.5);
 
-    for (NSString *parent in @[@"sky_viewport", @"horizon_viewport", @"solar_camera", @"time_settings", @"planets", @"stars", @"grids", @"renderer", @"small_bodies", @"satellites", @"spacecraft", @"constellations", @"earth_layers", @"atmosphere", @"eclipse", @"plus_time"]) {
+    for (NSString *parent in @[@"sky_viewport", @"horizon_viewport", @"solar_camera", @"time_settings", @"planets", @"radius_display", @"stars", @"grids", @"renderer", @"small_bodies", @"satellites", @"spacecraft", @"constellations", @"earth_layers", @"atmosphere", @"eclipse", @"plus_time"]) {
         NSMutableDictionary *object = session_object();
         NSArray *keys = [object[parent] allKeys];
         for (NSString *key in keys) {
@@ -173,7 +185,7 @@ void test_missing_null_and_types() {
 }
 
 void test_ranges_and_camera() {
-    for (id version in @[@0, @1, @2, @3, @4, @5, @6, @8, @(-1), @4294967296.0]) rejects_field(@"version", version);
+    for (id version in @[@0, @1, @2, @3, @4, @5, @6, @7, @8, @10, @(-1), @4294967296.0]) rejects_field(@"version", version);
     for (id mode in @[@(-1), @3]) rejects_field(@"mode", mode);
     for (id body in @[@(-1), @11]) rejects_field(@"selected_body", body);
     for (id value in @[@0, @0.5, @(-0.5), @2592001, @(-2592001)]) rejects_field(@"simulation_rate", value);
@@ -324,6 +336,56 @@ void test_v6_display_boundaries() {
     rejects([&] { encode_session_state(large); });
 }
 
+void test_plus_time_zone() {
+    const auto default_json = encode_session_state(SessionState{});
+    check(!decode_session_state(default_json).plus_time_zone, "default timezone was inferred");
+    check(session_object()[@"plus_time_zone"] == NSNull.null, "absent timezone was not encoded as null");
+    SessionState state;
+    state.time_settings.utc_offset_minutes = 540;
+    check(!decode_session_state(encode_session_state(state)).plus_time_zone,
+          "UI offset was copied into an unset Plus timezone");
+    for (std::int32_t seconds : {std::numeric_limits<std::int32_t>::min(), -32400, -1, 0, 1, 19800,
+                                 std::numeric_limits<std::int32_t>::max()}) {
+        state.plus_time_zone = PlusTimeZone(seconds);
+        const auto json = encode_session_state(state);
+        const auto restored = decode_session_state(json);
+        check(restored.plus_time_zone && restored.plus_time_zone->seconds_west_of_utc == seconds,
+              "explicit Plus timezone changed or became unset");
+        check(restored.time_settings.utc_offset_minutes == 540,
+              "Plus timezone overwrote the independent UI offset");
+        check(encode_session_state(restored) == json, "explicit timezone did not roundtrip exactly");
+    }
+    state.plus_time_zone.reset();
+    check(!decode_session_state(encode_session_state(state)).plus_time_zone, "cleared timezone remained set");
+    rejects_field(@"plus_time_zone", nil);
+    for (id value in @[@YES, @NO, @0, @1.5, @"UTC", @[], @{}]) rejects_field(@"plus_time_zone", value);
+    for (id value in @[@YES, @NO, NSNull.null, @"0", @[], @{}, @0.5, @(-0.5),
+                       @(-2147483649LL), @2147483648LL, @(-2147483648.25), @2147483647.25]) {
+        auto object = session_object();
+        object[@"plus_time_zone"] = @{@"seconds_west_utc": value};
+        const auto before = encode_session_state(state);
+        rejects([&] { state = decode_session_state(json_bytes(object)); });
+        check(encode_session_state(state) == before, "invalid timezone partially replaced the caller state");
+    }
+    auto object = session_object();
+    object[@"plus_time_zone"] = @{@"seconds_west_utc": @0, @"future_extension": @YES};
+    const auto with_extra = decode_session_state(json_bytes(object));
+    check(with_extra.plus_time_zone && with_extra.plus_time_zone->seconds_west_of_utc == 0,
+          "nested timezone extra changed the existing inert-key policy");
+    // 非有限数値は Foundation のシリアライズ前に拒否されるため、JSON入力を直接作る。
+    const auto zone_key = default_json.find("\"plus_time_zone\"");
+    check(zone_key != std::string::npos, "encoded session has no timezone key");
+    const auto null_value = default_json.find("null", zone_key);
+    check(null_value != std::string::npos, "encoded default timezone is not null");
+    for (const std::string token : {"NaN", "1e999", "-1e999"}) {
+        auto invalid_number = default_json;
+        invalid_number.replace(null_value, 4, "{\"seconds_west_utc\":" + token + "}");
+        rejects([&] { decode_session_state(invalid_number); });
+    }
+    state.version = 7;
+    rejects([&] { encode_session_state(state); });
+}
+
 void test_json_limits() {
     for (std::string_view text : {"", "null", "true", "[]", "{}", "{", "{\"version\":NaN}",
                                   "{\"version\":1e999}", "{\"version\":1,}"})
@@ -332,7 +394,7 @@ void test_json_limits() {
     rejects([&] { decode_session_state(invalid_utf8); });
     auto maximum = encode_session_state(SessionState{});
     maximum.resize(maximum_session_state_bytes, ' ');
-    check(decode_session_state(maximum).version == 7, "size limit rejected exact boundary");
+    check(decode_session_state(maximum).version == 9, "size limit rejected exact boundary");
     maximum += ' ';
     rejects([&] { decode_session_state(maximum); });
 }
@@ -354,7 +416,7 @@ void test_layer_roundtrip_and_boundaries() {
     state.constellations.exceptions = {"Ser",std::string("\x82\xa0")};
     const auto json = encode_session_state(state);
     const auto decoded = decode_session_state(json);
-    check(encode_session_state(decoded) == json, "all v7 display layers roundtrip exactly");
+    check(encode_session_state(decoded) == json, "all v8 display layers roundtrip exactly");
     check(decoded.small_bodies.selected_ids[0].source_key == raw_key &&
           decoded.constellations.exceptions == state.constellations.exceptions,
           "non-UTF8 source and constellation IDs preserved losslessly");
@@ -433,6 +495,7 @@ int main() {
             test_ranges_and_camera();
             test_display_option_boundaries();
             test_v6_display_boundaries();
+            test_plus_time_zone();
             test_json_limits();
             test_layer_roundtrip_and_boundaries();
             std::cout << "session state: " << checks << " checks passed\n";

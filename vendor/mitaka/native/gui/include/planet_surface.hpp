@@ -4,6 +4,7 @@
 #include "local_image.hpp"
 #include "earth_layers.hpp"
 #include "eclipse_display.hpp"
+#include "surface_depth.hpp"
 #include "mitaka/rotation.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -21,19 +22,25 @@ struct SurfaceSphere {
     double longitude_offset_turns = 0.5;
     const EarthLayerBinding* earth_layers = nullptr;
     const EclipseSurfaceBinding* eclipse = nullptr;
+    // 同じcamera/viewport/姿勢/JDで作ったimmutable frame。所有者は呼出し終了まで保持する。
+    // terrainは基準球を完全置換、sphereは従来球、noneは不透明面なし。
+    const TerrainSurfaceFrame* terrain = nullptr;
 };
 
 // 球の投影範囲だけを走査し、最も近い正の交点を合成する。配列順には依存しない。
-// 中心が画面外・カメラ背面でも見える縁を描く。視点は全ての球の外側が必要。
+// 中心が画面外・カメラ背面でも見える縁を描く。球fallbackでは視点は球外が必要。
+// 地形ではdatum内の視点も保存済みの実交点で扱う。
 // viewport・画像・姿勢の検証条件はrender_surface_viewと同じ。
 // 地球層のbindingは同じカメラ位置・太陽方向・物理半径を持つ必要がある。
 // 夜景は地表へ加算、雲はadditive_outputへ出力する。呼出し側は地表を
 // SourceOver、その後additive_outputをRGB加算する。alphaは透過率ではない。
-// 可視な雲で出力先がnullなら拒否。例外時の出力先は変更しない。
+// 可視な雲で出力先がnullなら拒否。depth_outputは全不透明面の確定深度。
+// 例外時はいずれの出力先も変更しない。地形frameのrequest一致は呼出し側で照合する。
 TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
                                   const SolarCamera& camera,
                                   std::size_t width, std::size_t height,
-                                  TextureImage* additive_output = nullptr);
+                                  TextureImage* additive_output = nullptr,
+                                  SurfaceDepthFrame* depth_output = nullptr);
 
 // 経緯度テクスチャをカメラに正対する模式的な球面へ描く。入力の上端は北極。
 // orientationはJ2000黄道で表す天体固定系の右手正規直交基底。

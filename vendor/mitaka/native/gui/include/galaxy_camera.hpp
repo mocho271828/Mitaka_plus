@@ -1,0 +1,41 @@
+#pragma once
+
+#include "sdss_spatial_model.hpp"
+#include "solar_camera.hpp"
+
+namespace mitaka::gui {
+
+// Native の独立 pc 空間。旧 Plus のカメラ上限/視野角を再現する型ではない。
+// 全有限 float 距離のカタログを扱える範囲を用意し、AU カメラの上限は変えない。
+constexpr double minimum_galaxy_distance_pc = 1e-6;
+constexpr double maximum_galaxy_coordinate_pc = 1e40;
+struct GalaxyCameraPc {
+    NativeEclipticPositionPc target{0, 0, 0};
+    double yaw_deg = 35, pitch_deg = 35, distance_pc = 10000;
+    void orbit(double dx_points, double dy_points);
+    void pan(double dx_points, double dy_points, double width, double height);
+    void zoom(double logarithmic_delta);
+};
+
+// 非有限値、|target 成分| > 1e40 pc、距離範囲外、|pitch| > 89 は拒否。
+// 検証済みの値を返す。元の値を書き換えない。
+GalaxyCameraPc checked_galaxy_camera(GalaxyCameraPc camera);
+
+struct GalaxyProjectionPc { double x, y, depth_pc; };
+
+// 基底/viewport を一度検証して、全原行の投影で共有する。
+// 左上原点、垂直視野角45度、near = distance_pc * 1e-4。
+// 位置は native J2000 黄道 pc。finite でない位置は拒否、near 手前は nullopt。
+// viewport は (0,1e7] point。画面外も返すため描画時に clip が必要。
+class GalaxyProjector {
+public:
+    GalaxyProjector(GalaxyCameraPc camera, double width, double height);
+    std::optional<GalaxyProjectionPc> project(NativeEclipticPositionPc position) const;
+    bool contains(const GalaxyProjectionPc& position) const noexcept;
+private:
+    GalaxyCameraPc camera_;
+    SolarCameraBasis basis_;
+    double width_, height_;
+};
+
+} // namespace mitaka::gui

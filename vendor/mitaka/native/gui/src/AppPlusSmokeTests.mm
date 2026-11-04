@@ -13,6 +13,21 @@ void requirePlus(bool condition, const char *message) {
     if (!condition) throw std::runtime_error(message);
 }
 
+bool sameRadius(const RadiusDisplayOptions& a, const RadiusDisplayOptions& b) {
+    return a.space_planet == b.space_planet && a.space_sun == b.space_sun &&
+        a.planetarium_planet == b.planetarium_planet && a.planetarium_sun_moon == b.planetarium_sun_moon;
+}
+
+bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
+    const auto sameVector = [](mitaka::Vec3 x, mitaka::Vec3 y) {
+        return x.x == y.x && x.y == y.y && x.z == y.z;
+    };
+    if (!sameVector(a.target, b.target) || a.yaw_deg != b.yaw_deg || a.pitch_deg != b.pitch_deg ||
+        a.distance_au != b.distance_au || a.frame.has_value() != b.frame.has_value()) return false;
+    return !a.frame || (sameVector(a.frame->outward, b.frame->outward) &&
+        sameVector(a.frame->right, b.frame->right) && sameVector(a.frame->up, b.frame->up));
+}
+
 void checkSolarObservation(SolarSystemView *view, mitaka::ObserverSite site, double julianDate) {
     const auto scene = [view scene];
     requirePlus(scene.julian_date == julianDate, "solar eclipse frame did not receive the current Julian date");
@@ -153,10 +168,88 @@ void checkCapturedImage(DisplayOutputController *output, DisplayImageFormat form
         requirePlus(_observerPlaces == observerSource, "observer selection replaced its source catalog");
         checkSolarObservation(_solar, {_observerLatitude, _observerLongitude}, _jd);
         for (NSString *name in @[@"saveSession:", @"openSession:", @"rememberSession:", @"restoreSession:",
-                                 @"showBrowser:", @"showObserver:", @"showCalendar:", @"setCurrentTime:",
+                                 @"showBrowser:", @"showObserver:", @"showRadiusDisplay:", @"showCalendar:", @"setCurrentTime:",
                                  @"showProjection:", @"toggleProjectionPointer:", @"toggleProjectionFade:",
                                  @"runScript:", @"cancelScript:", @"showScriptConsole:"])
             commands(NSSelectorFromString(name), 1, self);
+        RadiusDisplayOptions initialRadius;
+        RadiusScaleMode initialMode;
+        NSString *radiusError = nil;
+        requirePlus([self readRadiusDisplayOptions:&initialRadius mode:&initialMode error:&radiusError],
+                    "radius settings could not be read");
+        NSMenuItem *radiusCommand = commands(@selector(showRadiusDisplay:), 1, self).firstObject;
+        requirePlus([NSApp sendAction:radiusCommand.action to:radiusCommand.target from:radiusCommand] &&
+                    _radiusDisplayController.isWindowLoaded, "radius settings menu did not open its window");
+        requirePlus([_radiusDisplayController applyFieldValues:@[@"2", @"3", @"4", @"5"]
+                    mode:static_cast<NSInteger>(RadiusScaleMode::keep_orbit) error:&radiusError],
+                    "radius settings panel did not apply to the app");
+        RadiusDisplayOptions appliedRadius;
+        RadiusScaleMode appliedMode;
+        requirePlus([self readRadiusDisplayOptions:&appliedRadius mode:&appliedMode error:&radiusError] &&
+                    appliedRadius.space_planet == 2 && appliedRadius.space_sun == 3 &&
+                    appliedRadius.planetarium_planet == 4 && appliedRadius.planetarium_sun_moon == 5 &&
+                    appliedMode == RadiusScaleMode::keep_orbit, "radius settings panel changed the wrong fields");
+        requirePlus(![_radiusDisplayController applyFieldValues:@[@"2", @"0", @"4", @"5"]
+                    mode:1 error:&radiusError] && radiusError.length &&
+                    [self readRadiusDisplayOptions:&appliedRadius mode:&appliedMode error:nullptr] &&
+                    appliedRadius.space_sun == 3, "invalid radius field altered app state");
+        [_solar selectBody:10];
+        [_solar focusSelection];
+        const auto previousMoonTarget = [_solar cameraState].target;
+        RadiusDisplayOptions movedMoon = appliedRadius;
+        movedMoon.space_planet = 20;
+        requirePlus([self applyRadiusDisplayOptions:movedMoon mode:RadiusScaleMode::keep_orbit error:&radiusError],
+                    "could not change scale while following the moon");
+        const auto moonPosition = [_solar displayPosition:10];
+        const auto moonTarget = [_solar cameraState].target;
+        requirePlus((moonPosition.x != previousMoonTarget.x || moonPosition.y != previousMoonTarget.y ||
+                     moonPosition.z != previousMoonTarget.z) &&
+                    moonTarget.x == moonPosition.x && moonTarget.y == moonPosition.y && moonTarget.z == moonPosition.z &&
+                    [[_solar cameraStateDescription] containsString:@"選択天体を追従"],
+                    "scale change did not update the tracked moon target");
+        requirePlus([self applyRadiusDisplayOptions:appliedRadius mode:RadiusScaleMode::keep_orbit error:&radiusError],
+                    "could not restore radius settings while following the moon");
+        requirePlus([self applyRadiusDisplayOptions:appliedRadius mode:RadiusScaleMode::keep_radius error:&radiusError],
+                    "could not select keep-radius mode without changing scales");
+        [_solar selectBody:10];
+        [_solar focusSelection];
+        const auto followedCamera = [_solar cameraState];
+        NSString *followingDescription = [_solar cameraStateDescription];
+        requirePlus([followingDescription containsString:@"選択天体を追従"], "radius test did not start tracking");
+        RadiusDisplayOptions rejectedRadius = appliedRadius;
+        rejectedRadius.space_planet = 6;
+        radiusError = nil;
+        requirePlus(![self applyRadiusDisplayOptions:rejectedRadius mode:RadiusScaleMode::keep_radius error:&radiusError] &&
+                    radiusError.length && [self readRadiusDisplayOptions:&appliedRadius mode:&appliedMode error:nullptr] &&
+                    sameRadius(appliedRadius, {2, 3, 4, 5}) && appliedMode == RadiusScaleMode::keep_radius &&
+                    sameCamera(followedCamera, [_solar cameraState]) &&
+                    [[_solar cameraStateDescription] isEqualToString:followingDescription] &&
+                    !_solar.journeyActive && !_solar.flightAnimating,
+                    "rejected keep-radius change altered scales, camera, or tracking");
+        [_solar startJourneyAtLatitude:0 longitude:0];
+        requirePlus(_solar.journeyActive && _solar.flightAnimating, "radius test did not start flight");
+        const auto flightCamera = [_solar cameraState];
+        rejectedRadius = appliedRadius;
+        rejectedRadius.space_sun = 6;
+        radiusError = nil;
+        requirePlus(![self applyRadiusDisplayOptions:rejectedRadius mode:RadiusScaleMode::keep_radius error:&radiusError] &&
+                    radiusError.length && [self readRadiusDisplayOptions:&appliedRadius mode:&appliedMode error:nullptr] &&
+                    sameRadius(appliedRadius, {2, 3, 4, 5}) && appliedMode == RadiusScaleMode::keep_radius &&
+                    sameCamera(flightCamera, [_solar cameraState]) && _solar.journeyActive && _solar.flightAnimating,
+                    "rejected keep-radius change altered scales, camera, or flight");
+        RadiusDisplayOptions planetariumRadius = appliedRadius;
+        planetariumRadius.planetarium_planet = 7;
+        planetariumRadius.planetarium_sun_moon = 8;
+        requirePlus([self applyRadiusDisplayOptions:planetariumRadius mode:RadiusScaleMode::keep_radius error:&radiusError] &&
+                    [self readRadiusDisplayOptions:&appliedRadius mode:&appliedMode error:nullptr] &&
+                    sameRadius(appliedRadius, planetariumRadius) && appliedMode == RadiusScaleMode::keep_radius &&
+                    sameCamera(flightCamera, [_solar cameraState]) && _solar.journeyActive && _solar.flightAnimating,
+                    "keep-radius planetarium-only change failed or interrupted flight");
+        [_solar resetCamera];
+        requirePlus([self applyRadiusDisplayOptions:initialRadius mode:RadiusScaleMode::keep_orbit error:&radiusError] &&
+                    [self applyRadiusDisplayOptions:initialRadius mode:initialMode error:&radiusError],
+                    "radius settings could not be restored");
+        [_radiusDisplayController close];
         for (NSString *name in @[@"playForward", @"playBackward", @"playRealtime", @"pause"])
             commands(NSSelectorFromString(name), 1, _playback);
         const auto range = _model->time_range();
@@ -308,6 +401,20 @@ void checkCapturedImage(DisplayOutputController *output, DisplayImageFormat form
             return current;
         });
         const auto planetFlags = flags([self planetDisplayOptions]);
+        const auto terrainCommands = commands(@selector(selectTerrainAmplification:), 5, self);
+        for (NSUInteger index = 0; index < terrainCommands.count; ++index) {
+            NSMenuItem *item = terrainCommands[index];
+            requirePlus(item.tag == static_cast<NSInteger>(index) &&
+                        [NSApp sendAction:item.action to:item.target from:item], "terrain amplification action failed");
+            requirePlus(static_cast<NSUInteger>([self terrainAmplification]) == index + 1 &&
+                        _solar.terrainAmplification == [self terrainAmplification] &&
+                        flags([self planetDisplayOptions]) == planetFlags,
+                        "terrain amplification changed unrelated state or failed to reach the solar view");
+            [item.menu update];
+            for (NSMenuItem *candidate in terrainCommands)
+                requirePlus(candidate.state == (candidate == item ? NSControlStateValueOn : NSControlStateValueOff),
+                            "terrain amplification checkmarks disagree with the selected level");
+        }
         checkDisplayCommands(@selector(toggleEarthLayer:), 2, self, [&] {
             const auto current = flags([self earthLayerOptions]);
             requirePlus(flags(_solar.earthLayerOptions) == current && flags([self planetDisplayOptions]) == planetFlags,
@@ -573,7 +680,7 @@ void checkCapturedImage(DisplayOutputController *output, DisplayImageFormat form
         requirePlus([self canWriteOutputURL:destination], "output policy rejected a temporary destination outside source data");
         requirePlus([self applySessionState:original] && encode_session_state([self sessionState]) == encode_session_state(original),
                     "Plus smoke did not restore the original application state");
-        requirePlus([self runSessionLayerSmokeTest], "v7 display layer session smoke failed");
+        requirePlus([self runSessionLayerSmokeTest], "v8 display layer session smoke failed");
         std::printf("Plus AppKit smoke passed: local observers, calendar grid/offset controls, 30 layer toggles, three atmosphere modes, three brightness commands, independent name selection, four renderer quality settings, three star markings, time information, three modes, full session restore, playback/tracking stop, nine encoded scene captures\n");
         return YES;
     } catch (const std::exception& error) {

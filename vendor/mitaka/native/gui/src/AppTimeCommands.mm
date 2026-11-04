@@ -1,6 +1,7 @@
 #import "AppControllerInternal.h"
 #include <array>
 #include <stdexcept>
+#include <limits>
 
 namespace {
 NSMenuItem *timeCommand(NSMenu *menu, NSString *title, SEL action, id target) {
@@ -46,6 +47,7 @@ double fieldNumber(NSTextField *field, bool integer) {
 - (void)addTimeMenu:(NSMenu *)menu {
     NSMenu *time = timeSubmenu(menu, @"時刻");
     timeCommand(time, @"カレンダー・固定時差…", @selector(showCalendar:), self);
+    timeCommand(time, @"旧 Plus 地方時の時差…", @selector(showPlusTimeZone:), self);
     timeCommand(time, @"現在 UTC を一度適用", @selector(setCurrentTime:), self);
     timeCommand(time, @"現在 UTC に継続追従", @selector(toggleClockTracking:), self);
     timeCommand(time, @"日時情報を表示", @selector(toggleTimeInfo:), self);
@@ -62,6 +64,78 @@ double fieldNumber(NSTextField *field, bool integer) {
         @"1 暦月", @"1 暦年", @"10 暦年", @"100 暦年", @"任意の秒数…"];
     for (NSUInteger i = 0; i < titles.count; ++i)
         timeCommand(steps, titles[i], @selector(selectTimeStep:), self).tag = i;
+}
+
+- (void)showPlusTimeZone:(id)sender {
+    (void)sender;
+    if (!_plusTimeZoneWindow) {
+        _plusTimeZoneWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 510, 260)
+            styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable backing:NSBackingStoreBuffered defer:NO];
+        _plusTimeZoneWindow.title = @"旧 Plus 地方時の時差";
+        _plusTimeZoneWindow.releasedWhenClosed = NO;
+        _plusTimeZoneWindow.appearance = _window.appearance;
+        _plusTimeZoneEnabledButton = [NSButton checkboxWithTitle:@"地方時の時差を明示設定する"
+            target:self action:@selector(changePlusTimeZoneEnabled:)];
+        _plusTimeZoneField = [NSTextField textFieldWithString:@""];
+        _plusTimeZoneField.accessibilityLabel = @"seconds_west_utc（西向きの秒差）";
+        NSTextField *help = [NSTextField wrappingLabelWithString:
+            @"Lua の Time.local* 専用です。seconds_west_utc は UTC から西向きの秒差で、日本標準時は −32400、UTC は 0 です。−2147483648〜2147483647 の整数を入力してください。未設定では地方時 API を利用できません。夏時間の補正はなく、カレンダーの表示時差と OS の設定からは補完しません。"];
+        help.textColor = NSColor.secondaryLabelColor;
+        help.font = [NSFont systemFontOfSize:11];
+        NSStackView *form = [NSStackView stackViewWithViews:@[_plusTimeZoneEnabledButton,
+            timeRow(@"seconds_west_utc", _plusTimeZoneField), help,
+            [NSButton buttonWithTitle:@"時差を適用" target:self action:@selector(applyPlusTimeZone:)]]];
+        form.orientation = NSUserInterfaceLayoutOrientationVertical;
+        form.alignment = NSLayoutAttributeLeading;
+        form.spacing = 14;
+        form.translatesAutoresizingMaskIntoConstraints = NO;
+        [_plusTimeZoneWindow.contentView addSubview:form];
+        [NSLayoutConstraint activateConstraints:@[
+            [form.leadingAnchor constraintEqualToAnchor:_plusTimeZoneWindow.contentView.leadingAnchor constant:20],
+            [form.trailingAnchor constraintEqualToAnchor:_plusTimeZoneWindow.contentView.trailingAnchor constant:-20],
+            [form.topAnchor constraintEqualToAnchor:_plusTimeZoneWindow.contentView.topAnchor constant:20],
+            [help.widthAnchor constraintEqualToAnchor:form.widthAnchor]]];
+        [_plusTimeZoneWindow center];
+    }
+    const auto zone = [_playback plusTimeZone];
+    _plusTimeZoneEnabledButton.state = zone ? NSControlStateValueOn : NSControlStateValueOff;
+    _plusTimeZoneField.stringValue = zone ? calendarNumber(zone->seconds_west_of_utc, true) : @"";
+    [self changePlusTimeZoneEnabled:nil];
+    [_plusTimeZoneWindow makeKeyAndOrderFront:nil];
+}
+
+- (void)changePlusTimeZoneEnabled:(id)sender {
+    (void)sender;
+    _plusTimeZoneField.enabled = _plusTimeZoneEnabledButton.state == NSControlStateValueOn;
+}
+
+- (BOOL)applyPlusTimeZoneText:(NSString *)text enabled:(BOOL)enabled error:(NSString **)error {
+    std::optional<PlusTimeZone> zone;
+    if (enabled) {
+        NSScanner *scanner = [NSScanner scannerWithString:text];
+        scanner.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        long long seconds = 0;
+        if (![scanner scanLongLong:&seconds] || !scanner.isAtEnd ||
+            seconds < std::numeric_limits<std::int32_t>::min() || seconds > std::numeric_limits<std::int32_t>::max()) {
+            if (error) *error = @"seconds_west_utc は −2147483648〜2147483647 の整数で指定してください。";
+            return NO;
+        }
+        zone.emplace(static_cast<std::int32_t>(seconds));
+    }
+    // 時差は解釈の設定だけを変更する。取消・入力拒否・成功のいずれも日時や再生を変更しない。
+    [_playback setPlusTimeZone:zone];
+    return YES;
+}
+
+- (void)applyPlusTimeZone:(id)sender {
+    (void)sender;
+    NSString *error = nil;
+    if (![self applyPlusTimeZoneText:_plusTimeZoneField.stringValue
+        enabled:_plusTimeZoneEnabledButton.state == NSControlStateValueOn error:&error]) {
+        [self showError:error];
+        return;
+    }
+    [_plusTimeZoneWindow close];
 }
 
 - (void)showCalendar:(id)sender {
@@ -326,6 +400,7 @@ double fieldNumber(NSTextField *field, bool integer) {
 }
 
 - (BOOL)validateTimeMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(showPlusTimeZone:)) return YES;
     if (item.action == @selector(toggleTimeInfo:)) {
         item.state = _timeInfoVisible ? NSControlStateValueOn : NSControlStateValueOff;
         return YES;

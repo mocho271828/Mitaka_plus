@@ -29,6 +29,8 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(view, @"小惑星・彗星ブラウザ…", @selector(showSmallBodyBrowser:), self);
     command(view, @"衛星ブラウザ…", @selector(showSatelliteBrowser:), self);
     command(view, @"探査機ブラウザ…", @selector(showSpacecraftBrowser:), self);
+    command(view, @"銀河・球状星団の3D表示…", @selector(showGalaxyBrowser:), self);
+    command(view, @"旧Plus形式の球状星団・近傍銀河を読み込む", @selector(loadPlusGalaxyCatalogs:), self);
     command(view, @"画像・動画・音声ブラウザ…", @selector(showMediaBrowser:), self);
     command(view, @"太陽系の小天体を表示", @selector(toggleSmallBodies:), self);
     command(view, @"太陽系の衛星を表示", @selector(toggleSatellites:), self);
@@ -38,6 +40,8 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     for (NSUInteger i = 0; i < spacecraftLayers.count; ++i)
         command(spacecraft, spacecraftLayers[i], @selector(toggleSpacecraftDisplay:), self).tag = i;
     command(view, @"観測地点…", @selector(showObserver:), self);
+    command(view, @"天体の表示半径倍率…", @selector(showRadiusDisplay:), self);
+    command(view, @"ローカル地形を再読込", @selector(reloadTerrain:), self);
     [view addItem:NSMenuItem.separatorItem];
     [self addDisplayMenus:view];
     NSArray<NSString *> *titles = @[@"星座線", @"星座境界", @"星座名", @"NGC・IC", @"SDSS 銀河", @"SDSS QSO", @"星座絵"];
@@ -61,6 +65,30 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(script, @"実行を停止", @selector(cancelScript:), self);
     command(script, @"実行ログ", @selector(showScriptConsole:), self);
     [self addTimeMenu:menu];
+}
+- (void)showRadiusDisplay:(id)sender {
+    (void)sender;
+    if (!_radiusDisplayController) {
+        _radiusDisplayController = [[RadiusDisplayController alloc] init];
+        __weak AppController *weakSelf = self;
+        _radiusDisplayController.readSettings = ^BOOL(RadiusDisplayOptions *options, RadiusScaleMode *mode, NSString **error) {
+            AppController *controller = weakSelf;
+            if (!controller) {
+                if (error) *error = @"表示半径設定の適用先が終了しました。";
+                return NO;
+            }
+            return [controller readRadiusDisplayOptions:options mode:mode error:error];
+        };
+        _radiusDisplayController.applySettings = ^BOOL(RadiusDisplayOptions options, RadiusScaleMode mode, NSString **error) {
+            AppController *controller = weakSelf;
+            if (!controller) {
+                if (error) *error = @"表示半径設定の適用先が終了しました。";
+                return NO;
+            }
+            return [controller applyRadiusDisplayOptions:options mode:mode error:error];
+        };
+    }
+    [_radiusDisplayController showWindow:nil];
 }
 - (void)showBrowser:(id)sender {
     (void)sender;
@@ -150,9 +178,13 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     [self setMilkyWayMode:static_cast<MilkyWayMode>(sender.tag)];
 }
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(showRadiusDisplay:)) return _model && !_loading;
+    if (item.action == @selector(reloadTerrain:)) return _model && !_loading;
+    if (item.action == @selector(showGalaxyBrowser:)) return _extendedCatalogs && !_loading;
+    if (item.action == @selector(loadPlusGalaxyCatalogs:)) return _extendedCatalogs && !_loading && !_galaxyLoading;
     if (item.action == @selector(toggleMainFullScreen:) || item.action == @selector(showAbout:))
         return [self validateWindowMenuItem:item];
-    if (item.action == @selector(togglePlanetDisplay:) || item.action == @selector(toggleStarDisplay:) ||
+    if (item.action == @selector(togglePlanetDisplay:) || item.action == @selector(selectTerrainAmplification:) || item.action == @selector(toggleStarDisplay:) ||
         item.action == @selector(toggleEarthLayer:) || item.action == @selector(selectAtmosphereMode:) ||
         item.action == @selector(toggleEclipseDisplay:) || item.action == @selector(toggleLandscapeImage:) ||
         item.action == @selector(selectStarMarking:) || item.action == @selector(toggleGridDisplay:) ||
@@ -190,7 +222,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
         if (item.tag >= 0 && item.tag < 7) item.state = values[item.tag] ? NSControlStateValueOn : NSControlStateValueOff;
         return _model && !_loading;
     }
-    if (item.action == @selector(showCalendar:) || item.action == @selector(setCurrentTime:) ||
+    if (item.action == @selector(showPlusTimeZone:) || item.action == @selector(showCalendar:) || item.action == @selector(setCurrentTime:) ||
         item.action == @selector(stepTime:) || item.action == @selector(selectTimeStep:) ||
         item.action == @selector(toggleClockTracking:) || item.action == @selector(toggleTimeInfo:))
         return [self validateTimeMenuItem:item];

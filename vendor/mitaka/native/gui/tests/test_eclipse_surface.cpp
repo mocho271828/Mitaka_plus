@@ -60,6 +60,13 @@ void run() {
     check(umbra && penumbra,"independent umbra orange and penumbra red boundary");
     const EclipseSurfaceBinding inactive(sun,{{14,8,0},.5},{caster},shadows);
     check(!inactive.active(),"no cone receiver intersection is inactive");
+    check(inactive.effect_at({13.5,0,0},{-1,0,0},0).multiplier==std::array<double,3>{0,0,0},
+          "actual terrain intersection is evaluated outside the datum sphere");
+    check(dark.effect_at({13.5,0,0},{-1,0,0},0).multiplier==dark.effect({-1,0,0},0).multiplier,
+          "actual sphere point agrees with sphere wrapper");
+    rejects([&]{dark.effect_at({NAN,0,0},{-1,0,0},0);});
+    rejects([&]{dark.effect_at({13.5,0,0},{0,0,0},0);});
+    rejects([&]{dark.effect_at({13.5,0,0},{-1,0,0},-1);});
     const EclipseSurfaceBinding duplicate(sun,{{14,1,0},.5},{caster,caster},shadows);
     const EclipseSurfaceBinding single(sun,{{14,1,0},.5},{caster},shadows);
     const double factor=single.effect({-1,0,0},0).multiplier[0];

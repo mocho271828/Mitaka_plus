@@ -6,6 +6,9 @@
 
 using namespace mitaka;
 using namespace mitaka::gui;
+@interface SolarSystemView (SmallBodyPickingTests)
+- (void)pickBodyAtPoint:(NSPoint)point;
+@end
 namespace {
 unsigned checks = 0;
 void require(bool value, const char *message) { ++checks; if (!value) throw std::runtime_error(message); }
@@ -80,6 +83,16 @@ void tests() {
     [view setSmallBodyDisplayModel:display];
     [view setSmallBodyOrbitSnapshot:orbits];
     require(view.visibleSmallBodyCount == 1, "solar view displays valid small body positions");
+    const auto viewMap = NSInsetRect(view.bounds, 18, 40);
+    const auto viewPoints = visible_small_bodies(*frame, *display, camera, viewMap);
+    require(viewPoints.size() == 1, "click fixture has a visible small body");
+    const auto click = NSMakePoint(viewPoints[0].point.x, viewPoints[0].point.y);
+    [view pickBodyAtPoint:click];
+    require(view.selectedSmallBodyIndex == 0, "visible small body is selected through the view");
+    view.smallBodiesVisible = NO;
+    [view pickBodyAtPoint:click];
+    require(view.selectedSmallBodyIndex == NSNotFound, "hidden small body cannot be selected through the view");
+    view.smallBodiesVisible = YES;
     __block NSString *description = nil;
     __block NSString *cameraDescription = nil;
     view.selectionChanged = ^(NSString *text) { description = text; };

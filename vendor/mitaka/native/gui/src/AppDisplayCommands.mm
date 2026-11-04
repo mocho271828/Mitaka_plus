@@ -49,6 +49,10 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
 }
 
 @implementation AppController (DisplayCommands)
+- (void)reloadTerrain:(id)sender {
+    (void)sender;
+    if (_model && !_loading) [_solar reloadTerrain];
+}
 - (void)setMilkyWayMode:(MilkyWayMode)mode {
     switch (mode) {
         case MilkyWayMode::none: case MilkyWayMode::normal:
@@ -60,6 +64,11 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     [NSApp.mainMenu update];
 }
 - (PlanetDisplayOptions)planetDisplayOptions { return _solar.planetDisplayOptions; }
+- (TerrainAmplification)terrainAmplification { return _solar.terrainAmplification; }
+- (void)setTerrainAmplification:(TerrainAmplification)value {
+    _solar.terrainAmplification = value;
+    [NSApp.mainMenu update];
+}
 - (void)setPlanetDisplayOptions:(const PlanetDisplayOptions&)options {
     _sky.planetDisplayOptions = options;
     _horizon.planetDisplayOptions = options;
@@ -100,6 +109,8 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
 - (void)addDisplayMenus:(NSMenu *)menu {
     NSMenu *planets = displaySubmenu(menu, @"惑星・月", @[@"表示", @"名前", @"軌道", @"自転軸"],
                    @selector(togglePlanetDisplay:), self);
+    displaySubmenu(planets, @"地形の高さ", @[@"1 倍", @"2 倍", @"5 倍", @"10 倍", @"20 倍"],
+                   @selector(selectTerrainAmplification:), self);
     NSMenu *earth = displaySubmenu(planets, @"地球", @[@"雲", @"夜景を強調"], @selector(toggleEarthLayer:), self);
     NSMenuItem *landscape = [earth addItemWithTitle:@"地平の風景画像" action:@selector(toggleLandscapeImage:) keyEquivalent:@""];
     landscape.target = self;
@@ -121,6 +132,7 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     _sky.rendererDisplayOptions = options;
     _horizon.rendererDisplayOptions = options;
     _solar.rendererDisplayOptions = options;
+    [_galaxyBrowser setRendererDisplayOptions:options];
     [NSApp.mainMenu update];
 }
 - (void)toggleRendererDisplay:(NSMenuItem *)sender {
@@ -130,6 +142,10 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
 - (void)togglePlanetDisplay:(NSMenuItem *)sender {
     auto options = [self planetDisplayOptions];
     if (toggleOption(options, planetFlags, sender.tag)) [self setPlanetDisplayOptions:options];
+}
+- (void)selectTerrainAmplification:(NSMenuItem *)sender {
+    if (sender.tag < 0 || sender.tag > 4) return;
+    [self setTerrainAmplification:static_cast<TerrainAmplification>(sender.tag + 1)];
 }
 - (void)toggleEclipseDisplay:(NSMenuItem *)sender {
     auto options = [self eclipseDisplayOptions];
@@ -171,6 +187,11 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     bool valid = false;
     if (item.action == @selector(togglePlanetDisplay:))
         valid = checkOption(item, [self planetDisplayOptions], planetFlags);
+    else if (item.action == @selector(selectTerrainAmplification:)) {
+        valid = item.tag >= 0 && item.tag <= 4;
+        item.state = valid && item.tag + 1 == static_cast<NSInteger>([self terrainAmplification])
+            ? NSControlStateValueOn : NSControlStateValueOff;
+    }
     else if (item.action == @selector(toggleEclipseDisplay:))
         valid = checkOption(item, [self eclipseDisplayOptions], eclipseFlags);
     else if (item.action == @selector(toggleEarthLayer:)) {
