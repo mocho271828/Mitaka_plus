@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #include "satellite_scene.hpp"
+#include "HipSpatialRenderer.h"
 #include "radius_display_validation.hpp"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <algorithm>
@@ -237,6 +238,7 @@ using namespace mitaka::gui;
     // 古い要求の完了で新しい選択を上書きしない。コアの I/O は UI スレッドから分離する。
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         std::shared_ptr<const SkyModel> loaded;
+        std::shared_ptr<const HipSpatialModel> hipModel;
         std::shared_ptr<const PlanetTextures> textures;
         std::shared_ptr<const SkyBackgrounds> backgrounds;
         std::shared_ptr<const SmallBodyModel> smallBodies;
@@ -249,6 +251,7 @@ using namespace mitaka::gui;
         NSString *failure = nil;
         try {
             loaded = std::make_shared<const SkyModel>(SkyModel::load(path.fileSystemRepresentation));
+            hipModel = build_hip_spatial_model(loaded->stars());
             textures = std::make_shared<const PlanetTextures>(load_planet_textures(path.fileSystemRepresentation));
             backgrounds = std::make_shared<const SkyBackgrounds>(load_sky_backgrounds(path.fileSystemRepresentation));
             extended = std::make_shared<const ExtendedCatalogs>(load_extended_catalogs(path.fileSystemRepresentation));
@@ -272,7 +275,7 @@ using namespace mitaka::gui;
                 [self configurePlayback];
                 [self updateEnabled];
                 [self refreshSmallBodyOrbits];
-                if (self->_galaxyBrowser && !self->_galaxyModel) [self loadGalaxyIncludingPlus:NO];
+                if (!self->_galaxyModel) [self loadGalaxyIncludingPlus:NO];
                 [self showError:[NSString stringWithFormat:@"読み込み失敗（%@）: %@%@", path, failure,
                     self->_model ? @"\n直前に読み込めたデータの表示を継続しています。" : @""]];
                 return;
@@ -310,7 +313,7 @@ using namespace mitaka::gui;
                 [self resetSmallBodyDisplayForCurrentModel];
                 [self prepareGalaxyForDataRoot:path];
                 self->_activePath = [path copy];
-                if (self->_galaxyBrowser) [self loadGalaxyIncludingPlus:reloadPlusGalaxy];
+                [self loadGalaxyIncludingPlus:reloadPlusGalaxy];
                 [self->_mediaBrowser loadDataDirectory:[NSURL fileURLWithPath:path isDirectory:YES]];
                 self->_pathLabel.stringValue = path;
                 self->_pathLabel.toolTip = path;
@@ -327,6 +330,7 @@ using namespace mitaka::gui;
                 [self->_horizon setBodies:bodies julianDate:initialJD];
                 [self rebuildBrowser];
                 [self rebuildObserverPlaces];
+                [self->_solar setHipModel:hipModel];
                 [self->_solar setTextures:textures];
                 [self->_solar setTerrainDataDirectory:path];
                 [self->_solar setBodies:solarBodies orbits:orbits];

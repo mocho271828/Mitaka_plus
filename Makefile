@@ -20,7 +20,7 @@ test: check-source
 	$(MAKE) -C "$(MITAKA)/native/gui" test controller-test
 
 reference-test: check-source check-data
-	CF96_DATA="$${DATA_ROOT}/cf96.dat" $(MAKE) -C "$(MITAKA)/native/core" reference-test rotation-reference-test lunar-reference-test atmosphere-reference-test eclipse-reference-test
+	CF96_DATA="$${DATA_ROOT}/cf96.dat" $(MAKE) -C "$(MITAKA)/native/core" reference-test rotation-reference-test lunar-reference-test atmosphere-reference-test eclipse-reference-test our-galaxy-reference-test
 
 data-test: check-source check-data
 	$(MAKE) -C "$(MITAKA)/native/core" DATA_ROOT="$$(dirname "$${DATA_ROOT%/}")" data-test

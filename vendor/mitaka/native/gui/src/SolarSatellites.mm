@@ -56,6 +56,7 @@ using namespace mitaka::gui;
 }
 - (void)selectSatellite:(NSUInteger)index {
     if (!_satelliteSnapshot || index >= _satelliteSnapshot->positions.size()) return;
+    [self clearGalaxySelection];
     _selection.reset();
     _smallBodySelection.reset();
     _spacecraftSelection.reset();

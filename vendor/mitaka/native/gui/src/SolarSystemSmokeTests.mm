@@ -54,7 +54,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     const auto spacecraftSelection = _spacecraftSelection;
     NSTimer *timer = _flightTimer;
     const double lastTime = _lastFlightTime, progress = _journey.progress();
-    for (double distance : {1001.0, 1e-15, std::numeric_limits<double>::infinity(),
+    for (double distance : {maximum_solar_distance_au * 2, 1e-15, std::numeric_limits<double>::infinity(),
                             std::numeric_limits<double>::quiet_NaN()}) {
         auto invalid = camera;
         invalid.distance_au = distance;

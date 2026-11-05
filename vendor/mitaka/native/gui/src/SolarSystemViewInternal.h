@@ -5,6 +5,8 @@
 #import "TerrainSurfaceController.h"
 #include "surface_navigation.hpp"
 #include "interplanetary_flight.hpp"
+#import "GalaxyOverlay.h"
+@class GalaxyOverlay;
 
 @interface SolarSystemView () {
     mitaka::gui::SolarBodies _bodies;
@@ -20,6 +22,11 @@
     double _julianDate;
     mitaka::gui::SolarOrbits _orbits;
     mitaka::gui::SolarCamera _camera;
+    std::optional<mitaka::gui::SolarCamera> _lastNotifiedCamera;
+    GalaxyOverlay *_galaxyOverlay;
+    std::optional<mitaka::gui::GalaxySpatialRecordId> _galaxySelection;
+    std::optional<std::size_t> _hipSelection;
+    BOOL _ourGalaxySelected;
     std::vector<mitaka::Vec3> _lunarOrbit;
     mitaka::gui::SurfaceNavigation _navigation;
     mitaka::gui::InterplanetaryFlight _journey;
@@ -76,6 +83,11 @@
 - (void)orbitByX:(double)dx y:(double)dy;
 - (void)panByX:(double)dx y:(double)dy;
 - (void)pickBodyAtPoint:(NSPoint)click;
+- (void)clearGalaxySelection;
+- (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedGalaxyRecord;
+- (std::optional<std::size_t>)selectedHipIndex;
+- (BOOL)isOurGalaxySelected;
+- (mitaka::gui::GalaxyOverlayDiagnostics)galaxyOverlayDiagnostics;
 - (void)reportNavigationError:(const char *)message;
 - (void)invalidateFlightTimer;
 - (void)leaveNavigation;

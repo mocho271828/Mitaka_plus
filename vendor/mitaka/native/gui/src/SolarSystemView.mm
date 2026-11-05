@@ -4,6 +4,9 @@
 #import "SolarSceneRenderer.h"
 #import "SmallBodyRenderer.h"
 #import "SatelliteRenderer.h"
+#import "GalaxyOverlay.h"
+#include "shared_camera.hpp"
+#include "our_galaxy_navigation.hpp"
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -18,10 +21,18 @@ static NSDictionary<NSAttributedStringKey, id> *textStyle(NSColor *color, CGFloa
 
 using CameraChange = void (^)(SolarCamera&);
 
+static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
+    const auto sameVector = [](Vec3 x, Vec3 y) { return x.x == y.x && x.y == y.y && x.z == y.z; };
+    if (!sameVector(a.target, b.target) || a.distance_au != b.distance_au) return false;
+    const auto x = solar_camera_basis(a), y = solar_camera_basis(b);
+    return sameVector(x.outward, y.outward) && sameVector(x.right, y.right) && sameVector(x.up, y.up);
+}
+
 @implementation SolarSystemView
 
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _galaxyOverlay = [[GalaxyOverlay alloc] initWithView:self];
         _smallBodiesVisible = YES;
         _terrainAmplification = TerrainAmplification::x1;
         _spacecraftVisible = YES;
@@ -106,6 +117,45 @@ using CameraChange = void (^)(SolarCamera&);
 - (Vec3)displayPosition:(NSUInteger)index {
     return solar_display_position([self scene], index);
 }
+- (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel { return [_galaxyOverlay ourGalaxyModel]; }
+- (std::shared_ptr<const HipSpatialModel>)hipModel { return [_galaxyOverlay hipModel]; }
+- (void)setHipModel:(std::shared_ptr<const HipSpatialModel>)model {
+    if ([_galaxyOverlay hipModel] != model && _hipSelection) {
+        _hipSelection.reset(); _following = NO; [self notifySelection]; [self notifyCamera];
+    }
+    [_galaxyOverlay setHipModel:std::move(model)];
+    self.needsDisplay = YES;
+}
+- (void)setOurGalaxyModel:(std::shared_ptr<const mitaka::OurGalaxyModel>)model {
+    if ([_galaxyOverlay ourGalaxyModel] != model && _ourGalaxySelected) {
+        _ourGalaxySelected = NO; _following = NO; [self notifySelection]; [self notifyCamera];
+    }
+    [_galaxyOverlay setOurGalaxyModel:std::move(model)];
+    self.needsDisplay = YES;
+}
+- (void)setGalaxyModel:(std::shared_ptr<const GalaxySpatialModel>)model {
+    if ([_galaxyOverlay model] != model) {
+        if (_galaxySelection) _following = NO;
+        [self clearGalaxySelection];
+    }
+    [_galaxyOverlay setModel:std::move(model)];
+    [self notifySelection];
+    self.needsDisplay = YES;
+}
+- (void)clearGalaxySelection {
+    [_galaxyOverlay invalidatePendingPicks]; _galaxySelection.reset(); _hipSelection.reset(); _ourGalaxySelected = NO;
+}
+- (void)setGalaxyVisibility:(GalaxySpatialVisibility)visibility {
+    [_galaxyOverlay setVisibility:visibility];
+    if (_galaxySelection && !visibility.visible(_galaxySelection->family)) {
+        _galaxySelection.reset(); _following = NO; [self notifySelection]; [self notifyCamera];
+    }
+    self.needsDisplay = YES;
+}
+- (std::optional<GalaxySpatialRecordId>)selectedGalaxyRecord { return _galaxySelection; }
+- (std::optional<std::size_t>)selectedHipIndex { return _hipSelection; }
+- (BOOL)isOurGalaxySelected { return _ourGalaxySelected; }
+- (GalaxyOverlayDiagnostics)galaxyOverlayDiagnostics { return [_galaxyOverlay diagnostics]; }
 - (void)setTextures:(std::shared_ptr<const PlanetTextures>)textures {
     _textures = std::move(textures);
     [self notifySelection];
@@ -187,6 +237,7 @@ using CameraChange = void (^)(SolarCamera&);
 }
 - (void)selectBody:(NSUInteger)index {
     if (!_hasData || index >= _bodies.size()) return;
+    [self clearGalaxySelection];
     _selection = index;
     _smallBodySelection.reset();
     _satelliteSelection.reset();
@@ -214,6 +265,21 @@ using CameraChange = void (^)(SolarCamera&);
     } else if (_smallBodySelection) description = [self smallBodySelectionDescription];
     else if (_satelliteSelection) description = [self satelliteSelectionDescription];
     else if (_spacecraftSelection) description = [self spacecraftSelectionDescription];
+    else if (_hipSelection && [_galaxyOverlay hipModel]) {
+        const auto& star = [_galaxyOverlay hipModel]->points[*_hipSelection];
+        description = [NSString stringWithFormat:@"HIP %d\n正の視差から推定した位置 · 固有運動なし\n黄道 X %+.6g pc\n黄道 Y %+.6g pc\n黄道 Z %+.6g pc",
+            star.hip, star.position.x_pc, star.position.y_pc, star.position.z_pc];
+    } else if (_ourGalaxySelected) {
+        description = @"天の川銀河\n公式 1.3.1 の銀河中心と楕円体を使用\n座標の配置と旧 Plus の一致は未検証";
+    } else if (_galaxySelection && [_galaxyOverlay model]) {
+        const auto model = [_galaxyOverlay model];
+        const auto id = *_galaxySelection;
+        const auto row = model->row(id);
+        NSArray<NSString *> *families = @[@"SDSS 銀河", @"SDSS クエーサー", @"球状星団", @"近傍銀河"];
+        if (row.position) description = [NSString stringWithFormat:@"%@ · 出典 %lu · 原行 %lu\n日心黄道 X %+.6g pc\n日心黄道 Y %+.6g pc\n日心黄道 Z %+.6g pc",
+            families[static_cast<NSUInteger>(id.family)], id.source_index + 1, id.ordinal + 1,
+            row.position->x_pc, row.position->y_pc, row.position->z_pc];
+    }
     if (self.selectionChanged) self.selectionChanged(description);
     if (self.navigationChanged) self.navigationChanged();
 }
@@ -245,10 +311,18 @@ using CameraChange = void (^)(SolarCamera&);
             std::hypot(moon.x-earth.x, moon.y-earth.y, moon.z-earth.z) * astronomical_unit_km,
             _camera.distance_au * astronomical_unit_km, _earthMoonFollowing ? @" · 地球と月を追従" : @""];
     }
+    if (_camera.distance_au >= astronomical_units_per_parsec)
+        return [NSString stringWithFormat:@"視点距離 %.6g pc  ·  方位 %.1f° / 仰角 %.1f°%@",
+            _camera.distance_au / astronomical_units_per_parsec, _camera.yaw_deg, _camera.pitch_deg,
+            _following ? @"  ·  選択天体を追従" : @""];
     return [NSString stringWithFormat:@"視点距離 %.3f AU  ·  方位 %.1f° / 仰角 %.1f°%@", _camera.distance_au,
         _camera.yaw_deg, _camera.pitch_deg, _following ? @"  ·  選択天体を追従" : @""];
 }
 - (void)notifyCamera {
+    if (!_lastNotifiedCamera || !sameCamera(*_lastNotifiedCamera, _camera)) {
+        [_galaxyOverlay invalidatePendingPicks];
+        _lastNotifiedCamera = _camera;
+    }
     const BOOL overviewVisible = !_earthMoonMode && !_surfacePreview && !_surfaceActive && !_journeyActive;
     if (_notifiedOverviewVisible != overviewVisible) {
         _notifiedOverviewVisible = overviewVisible;
@@ -310,7 +384,56 @@ using CameraChange = void (^)(SolarCamera&);
 }
 - (void)zoomIn { [self zoomBy:-0.25]; }
 - (void)zoomOut { [self zoomBy:0.25]; }
+- (void)showOurGalaxyOverview {
+    if (![_galaxyOverlay ourGalaxyModel]) return;
+    const NSRect map = [self mapRect];
+    if (map.size.width <= 0 || map.size.height <= 0) return;
+    try {
+        const auto camera = frame_our_galaxy({{0, 0, 0}}, galaxy_camera_from_shared(shared_camera_from_solar(_camera)),
+                                             8000, map.size.width, map.size.height);
+        const auto solar = solar_camera_from_shared(shared_camera_from_galaxy(camera));
+        [self leaveNavigation];
+        [self clearGalaxySelection];
+        _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
+        _ourGalaxySelected = YES; _following = YES;
+        [self notifySelection];
+        [self changeCamera:^(SolarCamera& next) { next = solar; }];
+    } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
+}
 - (void)focusSelection {
+    if (_ourGalaxySelected && [_galaxyOverlay ourGalaxyModel]) {
+        const auto position = our_galaxy_center({{0, 0, 0}});
+        const auto frame = _camera.frame;
+        [self leaveNavigation]; _camera.frame = frame; _following = YES;
+        const Vec3 target{position.x_pc * astronomical_units_per_parsec,
+                          position.y_pc * astronomical_units_per_parsec,
+                          position.z_pc * astronomical_units_per_parsec};
+        [self changeCamera:^(SolarCamera& next) { next.target = target; }];
+        return;
+    }
+    if (_hipSelection && [_galaxyOverlay hipModel]) {
+        const auto position = [_galaxyOverlay hipModel]->points[*_hipSelection].position;
+        const auto frame = _camera.frame;
+        [self leaveNavigation]; _camera.frame = frame; _following = YES;
+        const Vec3 target{position.x_pc * astronomical_units_per_parsec,
+                          position.y_pc * astronomical_units_per_parsec,
+                          position.z_pc * astronomical_units_per_parsec};
+        [self changeCamera:^(SolarCamera& next) { next.target = target; }];
+        return;
+    }
+    if (_galaxySelection && [_galaxyOverlay model]) {
+        const auto position = [_galaxyOverlay model]->row(*_galaxySelection).position;
+        if (!position) return;
+        const auto frame = _camera.frame;
+        [self leaveNavigation];
+        _camera.frame = frame;
+        _following = YES;
+        const Vec3 target{position->x_pc * astronomical_units_per_parsec,
+                          position->y_pc * astronomical_units_per_parsec,
+                          position->z_pc * astronomical_units_per_parsec};
+        [self changeCamera:^(SolarCamera& next) { next.target = target; }];
+        return;
+    }
     if (!_selection && _smallBodySelection) { [self focusSmallBodySelection]; return; }
     if (!_selection && _satelliteSelection) { [self focusSatelliteSelection]; return; }
     if (!_selection && _spacecraftSelection) { [self focusSpacecraftSelection]; return; }
@@ -321,6 +444,10 @@ using CameraChange = void (^)(SolarCamera&);
     [self changeCamera:^(SolarCamera& next) { next.target = target; next.frame.reset(); next.distance_au = std::max(next.distance_au, 0.05); }];
 }
 - (void)showSurface {
+    if (_galaxySelection || _hipSelection || _ourGalaxySelected) {
+        if (self.cameraChanged) self.cameraChanged(@"銀河や星団の表面表示には対応していません。");
+        return;
+    }
     if ([self rejectSmallBodySurfaceNavigation] || [self rejectSatelliteSurfaceNavigation] || [self rejectSpacecraftSurfaceNavigation]) return;
     if (!_hasData) return;
     if (!_selection) [self selectBody:3];
@@ -374,6 +501,7 @@ using CameraChange = void (^)(SolarCamera&);
 - (void)pickBodyAtPoint:(NSPoint)click {
     // 地表では地面の向こうの天体を選ばないよう、一覧による選択に限定する。
     if (!_hasData || _surfaceActive || _journeyActive || !NSPointInRect(click, [self mapRect])) return;
+    [_galaxyOverlay invalidatePendingPicks];
     try {
         const auto scene = [self scene];
         const auto picked = pick_solar_body(scene, click);
@@ -389,8 +517,20 @@ using CameraChange = void (^)(SolarCamera&);
                 ? pick_spacecraft(*scene.spacecraft, scene.camera, scene.map, click, scene.spacecraft_display) : std::nullopt;
             if (spacecraft) { [self selectSpacecraft:*spacecraft]; return; }
             _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
-            _following = NO; _surfacePreview = NO;
+            [self clearGalaxySelection]; _following = NO; _surfacePreview = NO;
             [self notifySelection]; [self notifyCamera]; self.needsDisplay = YES;
+            const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(_camera));
+            const NSRect map = [self mapRect];
+            __weak SolarSystemView *weakSelf = self;
+            [_galaxyOverlay pickSpatialAtPoint:NSMakePoint(click.x - map.origin.x, click.y - map.origin.y)
+                camera:galaxyCamera completion:^(GalaxyOverlaySelection result) {
+                    SolarSystemView *view = weakSelf;
+                    if (!view) return;
+                    view->_galaxySelection = result.galaxy;
+                    view->_hipSelection = result.hip;
+                    view->_ourGalaxySelected = result.our_galaxy;
+                    [view notifySelection]; view.needsDisplay = YES;
+                }];
         }
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
 }
@@ -420,7 +560,58 @@ using CameraChange = void (^)(SolarCamera&);
     }
     try {
         [self refreshTerrain];
+        NSString *galaxyStatus = nil;
+        bool galaxyDrawn = false;
+        {
+            try {
+                const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(_camera));
+                [_galaxyOverlay drawInRect:map camera:galaxyCamera quality:_rendererDisplayOptions
+                                    scale:self.window ? self.window.backingScaleFactor : 1];
+                galaxyDrawn = true;
+                galaxyStatus = _galaxyOverlay.status;
+            } catch (const std::exception& error) {
+                galaxyStatus = [NSString stringWithFormat:@"銀河を表示できません: %s", error.what()];
+            }
+        }
         auto diagnostics = draw_solar_scene(context, [self scene]);
+        if (galaxyDrawn && _galaxySelection && [_galaxyOverlay isRecordDisplayed:*_galaxySelection]) {
+            const auto info = [_galaxyOverlay diagnostics];
+            const auto position = [_galaxyOverlay model]->row(*_galaxySelection).position;
+            if (info.displayed && position) {
+                const GalaxyProjector projector(info.displayed->camera, map.size.width, map.size.height);
+                const auto projected = projector.project(*position);
+                if (projected && projector.contains(*projected)) {
+                    [[NSColor systemYellowColor] setStroke];
+                    NSBezierPath *marker = [NSBezierPath bezierPathWithOvalInRect:
+                        NSMakeRect(map.origin.x + projected->x - 5, map.origin.y + projected->y - 5, 10, 10)];
+                    marker.lineWidth = 1;
+                    [marker stroke];
+                }
+            }
+        }
+        if (galaxyDrawn && _hipSelection && [_galaxyOverlay isHipDisplayed:*_hipSelection]) {
+            const auto info = [_galaxyOverlay diagnostics];
+            const auto position = [_galaxyOverlay hipModel]->points[*_hipSelection].position;
+            const GalaxyProjector projector(info.displayed->camera, map.size.width, map.size.height);
+            const auto projected = projector.project(position);
+            if (projected && projector.contains(*projected)) {
+                [[NSColor systemYellowColor] setStroke];
+                NSBezierPath *marker = [NSBezierPath bezierPathWithOvalInRect:
+                    NSMakeRect(map.origin.x + projected->x - 5, map.origin.y + projected->y - 5, 10, 10)];
+                marker.lineWidth = 1; [marker stroke];
+            }
+        }
+        if (galaxyDrawn && [_galaxyOverlay hipModel]) {
+            NSString *note = @"HIP: 正視差のみ・固定光度、固有運動なし";
+            galaxyStatus = galaxyStatus.length ? [galaxyStatus stringByAppendingFormat:@" · %@", note] : note;
+        }
+        if (galaxyDrawn && [_galaxyOverlay ourGalaxyModel]) {
+            NSString *note = @"天の川: 座標仮定・低解像度の放射吸収。旧 Plus との一致、星や銀河個別の吸収は未検証";
+            galaxyStatus = galaxyStatus.length ? [galaxyStatus stringByAppendingFormat:@" · %@", note] : note;
+        }
+        if (galaxyStatus.length)
+            [galaxyStatus drawAtPoint:NSMakePoint(map.origin.x + 8, NSMaxY(map) - 20)
+                                withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
         const auto terrain = [self terrainDiagnostics];
         diagnostics.insert(diagnostics.end(), terrain.begin(), terrain.end());
         NSMutableArray<NSString *> *messages = [NSMutableArray arrayWithCapacity:diagnostics.size()];

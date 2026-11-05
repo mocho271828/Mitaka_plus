@@ -214,8 +214,10 @@ NSString *details(const GalaxySpatialModel& model, GalaxySpatialRecordId id) {
 }
 - (void)visibilityChanged:(id)sender {
     (void)sender;
-    [_view setGalaxyVisibility:{_families[0].state == NSControlStateValueOn, _families[1].state == NSControlStateValueOn,
-        _families[2].state == NSControlStateValueOn, _families[3].state == NSControlStateValueOn}];
+    const GalaxySpatialVisibility visibility{_families[0].state == NSControlStateValueOn, _families[1].state == NSControlStateValueOn,
+        _families[2].state == NSControlStateValueOn, _families[3].state == NSControlStateValueOn};
+    [_view setGalaxyVisibility:visibility];
+    if (self.visibilityChanged) self.visibilityChanged(visibility);
 }
 - (void)resetCamera:(id)sender { (void)sender; [_view setGalaxyCamera:GalaxyCameraPc{}]; }
 - (void)focus:(id)sender { (void)sender; [_view focusSelection]; }

@@ -15,7 +15,8 @@
 #include "terrain_amplification.hpp"
 #include "mitaka/observation.hpp"
 #include <memory>
-namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; }
+namespace mitaka { struct OurGalaxyModel; }
+namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; struct GalaxySpatialVisibility; class GalaxySpatialModel; struct HipSpatialModel; }
 
 @interface SolarSystemView : NSView
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
@@ -40,6 +41,12 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @property(nonatomic, copy) void (^navigationChanged)(void);
 // 全体表示と地球・月／地表／飛行表示の切替後に通知する。カメラ移動だけでは通知しない。
 @property(nonatomic, copy) void (^overviewVisibilityChanged)(BOOL visible);
+- (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel;
+- (std::shared_ptr<const mitaka::gui::HipSpatialModel>)hipModel;
+- (void)setHipModel:(std::shared_ptr<const mitaka::gui::HipSpatialModel>)model;
+- (void)setOurGalaxyModel:(std::shared_ptr<const mitaka::OurGalaxyModel>)model;
+- (void)setGalaxyModel:(std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model;
+- (void)setGalaxyVisibility:(mitaka::gui::GalaxySpatialVisibility)visibility;
 - (void)setTextures:(std::shared_ptr<const mitaka::gui::PlanetTextures>)textures;
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies;
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies
@@ -51,6 +58,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)zoomIn;
 - (void)zoomOut;
 - (void)focusSelection;
+- (void)showOurGalaxyOverview;
 - (void)showSurface;
 - (NSString *)cameraStateDescription;
 - (mitaka::gui::SolarCamera)cameraState;

@@ -30,6 +30,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(view, @"衛星ブラウザ…", @selector(showSatelliteBrowser:), self);
     command(view, @"探査機ブラウザ…", @selector(showSpacecraftBrowser:), self);
     command(view, @"銀河・球状星団の3D表示…", @selector(showGalaxyBrowser:), self);
+    command(view, @"天の川銀河の全景（近似）", @selector(showOurGalaxyOverview:), self);
     command(view, @"旧Plus形式の球状星団・近傍銀河を読み込む", @selector(loadPlusGalaxyCatalogs:), self);
     command(view, @"画像・動画・音声ブラウザ…", @selector(showMediaBrowser:), self);
     command(view, @"太陽系の小天体を表示", @selector(toggleSmallBodies:), self);
@@ -180,6 +181,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
     if (item.action == @selector(showRadiusDisplay:)) return _model && !_loading;
     if (item.action == @selector(reloadTerrain:)) return _model && !_loading;
+    if (item.action == @selector(showOurGalaxyOverview:)) return [_solar ourGalaxyModel] != nullptr;
     if (item.action == @selector(showGalaxyBrowser:)) return _extendedCatalogs && !_loading;
     if (item.action == @selector(loadPlusGalaxyCatalogs:)) return _extendedCatalogs && !_loading && !_galaxyLoading;
     if (item.action == @selector(toggleMainFullScreen:) || item.action == @selector(showAbout:))

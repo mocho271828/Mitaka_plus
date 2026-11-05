@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #include "galaxy_spatial_load.hpp"
+#include "mitaka/our_galaxy_model.hpp"
 
 namespace {
 NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
@@ -19,10 +20,21 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     if (_activePath && [_activePath isEqualToString:path]) [self cancelGalaxyLoading];
     else [self invalidateGalaxy];
 }
+- (void)showOurGalaxyOverview:(id)sender {
+    (void)sender;
+    if (![_solar ourGalaxyModel]) return;
+    if (_mode.selectedSegment != 1) { _mode.selectedSegment = 1; [self changeMode:nil]; }
+    [_solar showOurGalaxyOverview];
+}
 - (void)showGalaxyBrowser:(id)sender {
     if (!_extendedCatalogs || _loading) return;
     if (!_galaxyBrowser) {
         _galaxyBrowser = [[GalaxyController alloc] init];
+        __weak AppController *weakSelf = self;
+        _galaxyBrowser.visibilityChanged = ^(GalaxySpatialVisibility visibility) {
+            AppController *controller = weakSelf;
+            if (controller) [controller->_solar setGalaxyVisibility:visibility];
+        };
         [_galaxyBrowser setRendererDisplayOptions:[self rendererDisplayOptions]];
         [_galaxyBrowser setModel:_galaxyModel diagnostics:_galaxyDiagnostics ? _galaxyDiagnostics : @""];
     }
@@ -53,10 +65,19 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     __weak AppController *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         GalaxySpatialLoadResult result;
+        std::shared_ptr<const mitaka::OurGalaxyModel> ourGalaxy;
         NSString *failure = nil;
         try {
             result = load_galaxy_spatial_model(directory, *catalogs, includePlus, {},
                 [cancellation] { return cancellation->load(); });
+            if (!result.cancelled && !cancellation->load()) {
+                try {
+                    ourGalaxy = std::make_shared<const mitaka::OurGalaxyModel>(
+                        mitaka::load_our_galaxy_model(directory / "ourgalaxy_model.dat"));
+                } catch (const mitaka::CatalogError& error) {
+                    result.diagnostics.push_back(error.what());
+                }
+            }
         } catch (const std::exception& error) {
             failure = [NSString stringWithFormat:@"銀河の読込に失敗: %s", error.what()];
         }
@@ -76,6 +97,8 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
                 controller->_galaxyModel = result.model;
                 controller->_galaxyUsesPlusCatalogs = includePlus;
                 controller->_galaxyDiagnostics = diagnosticText(result.diagnostics);
+                [controller->_solar setGalaxyModel:controller->_galaxyModel];
+                if (ourGalaxy) [controller->_solar setOurGalaxyModel:ourGalaxy];
             }
             [controller->_galaxyBrowser setModel:controller->_galaxyModel diagnostics:controller->_galaxyDiagnostics];
             [NSApp.mainMenu update];
@@ -94,6 +117,8 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     _galaxyModel.reset();
     _galaxyUsesPlusCatalogs = NO;
     _galaxyDiagnostics = @"データ未読込";
+    [_solar setGalaxyModel:nullptr];
+    [_solar setOurGalaxyModel:nullptr];
     [_galaxyBrowser invalidate];
     [_galaxyBrowser setModel:nullptr diagnostics:_galaxyDiagnostics];
 }

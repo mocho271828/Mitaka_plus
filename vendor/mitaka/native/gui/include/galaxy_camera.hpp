@@ -8,10 +8,14 @@ namespace mitaka::gui {
 // Native の独立 pc 空間。旧 Plus のカメラ上限/視野角を再現する型ではない。
 // 全有限 float 距離のカタログを扱える範囲を用意し、AU カメラの上限は変えない。
 constexpr double minimum_galaxy_distance_pc = 1e-6;
+// 共有ビューは太陽系の最小距離まで同じ投影器を利用する。独立銀河ビューの zoom 下限は上記。
+constexpr double minimum_galaxy_projection_distance_pc = 1e-12 / (648000.0 / 3.14159265358979323846);
 constexpr double maximum_galaxy_coordinate_pc = 1e40;
 struct GalaxyCameraPc {
     NativeEclipticPositionPc target{0, 0, 0};
     double yaw_deg = 35, pitch_deg = 35, distance_pc = 10000;
+    // 地表などの任意姿勢を pc 空間でも失わず維持する。
+    std::optional<SolarCameraBasis> frame = std::nullopt;
     void orbit(double dx_points, double dy_points);
     void pan(double dx_points, double dy_points, double width, double height);
     void zoom(double logarithmic_delta);

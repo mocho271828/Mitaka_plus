@@ -184,6 +184,7 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 @interface AppController (GalaxyCommands)
 - (void)prepareGalaxyForDataRoot:(NSString *)path;
 - (void)showGalaxyBrowser:(id)sender;
+- (void)showOurGalaxyOverview:(id)sender;
 - (void)loadPlusGalaxyCatalogs:(id)sender;
 - (void)loadGalaxyIncludingPlus:(BOOL)includePlus;
 - (void)cancelGalaxyLoading;
@@ -362,6 +363,10 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 
 @interface AppController (GalaxySmokeTests)
 - (void)runGalaxySmokeTestWithCompletion:(void (^)(void))completion;
+@end
+
+@interface AppController (SolarGalaxySmokeTests)
+- (void)runSolarGalaxySmokeTestWithCompletion:(void (^)(void))completion;
 @end
 
 @interface AppController (ScriptSmokeTests)

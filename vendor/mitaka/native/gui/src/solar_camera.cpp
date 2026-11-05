@@ -9,7 +9,7 @@ namespace {
 constexpr double radians_per_degree = 3.14159265358979323846 / 180;
 constexpr double tangent_half_fov = 0.41421356237309504880;
 constexpr double minimum_distance = 0.000005;
-constexpr double maximum_distance = 1000;
+constexpr double maximum_distance = maximum_solar_distance_au;
 
 bool finite(Vec3 value) {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
@@ -152,10 +152,10 @@ void SolarCamera::pan(double dx_points, double dy_points, double width, double h
 void SolarCamera::zoom(double logarithmic_delta) {
     validate(*this);
     deltas(logarithmic_delta, 0);
-    distance_au = std::exp(std::clamp(std::log(distance_au) + std::clamp(logarithmic_delta, -100.0, 100.0),
-                                     std::log(minimum(*this)), std::log(maximum_distance)));
-    // exp(log(x))の丸めが次のvalidateで範囲外にならないよう端点を固定する。
-    distance_au = std::clamp(distance_au, minimum(*this), maximum_distance);
+    const double next_log = std::log(distance_au) + std::clamp(logarithmic_delta, -100.0, 100.0);
+    if (next_log <= std::log(minimum(*this))) distance_au = minimum(*this);
+    else if (next_log >= std::log(maximum_distance)) distance_au = maximum_distance;
+    else distance_au = std::exp(next_log);
 }
 
 std::optional<SolarProjection> project_solar(Vec3 position, const SolarCamera& camera,

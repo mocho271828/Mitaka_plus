@@ -114,8 +114,9 @@ void movement_tests() {
         rejects([&] { (void)checked_galaxy_camera(invalid); });
         rejects([&] { (void)GalaxyProjector(invalid, 800, 600); });
     }
-    // AU camera の既存値域はこの実装によって広がらない。
-    SolarCamera solar; solar.distance_au = 1001;
+    // AU camera は pc 空間と同じ距離上限を共有する。
+    SolarCamera solar; solar.distance_au = std::nextafter(maximum_solar_distance_au,
+                                                         std::numeric_limits<double>::infinity());
     rejects([&] { (void)solar_camera_basis(solar); });
 }
 } // namespace

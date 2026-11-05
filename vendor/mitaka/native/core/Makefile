@@ -22,7 +22,7 @@ endif
 SOURCES = src/astronomy.cpp src/catalog.cpp src/ephemeris.cpp src/rotation.cpp src/lunar.cpp src/observation.cpp src/extended_catalog.cpp src/place_catalog.cpp src/small_body_catalog.cpp src/small_body_text.cpp src/small_body_orbit.cpp src/satellite_catalog.cpp src/satellite_catalog_parser.cpp src/satellite_position.cpp src/satellite_rotation.cpp src/satellite_model.cpp src/satellite_registration.cpp src/satellite_absolute.cpp src/spacecraft_trajectory.cpp src/spacecraft_trajectory_parser.cpp src/spacecraft_position.cpp src/minor_planet_position.cpp src/small_body_orbit_path.cpp
 SOURCES += src/atmosphere.cpp src/atmosphere_multiple.cpp src/atmosphere_emission_map.cpp
 SOURCES += src/constellation_art.cpp src/eclipse.cpp src/terrain.cpp src/terrain_sampling.cpp
-SOURCES += src/galaxy_catalog.cpp src/our_galaxy_model.cpp
+SOURCES += src/galaxy_catalog.cpp src/our_galaxy_model.cpp src/our_galaxy_radiative.cpp
 OBJECTS = $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 LIBRARY = $(BUILD_DIR)/libmitaka_core.a
 TESTS = $(addprefix $(BUILD_DIR)/test_,astronomy catalog ephemeris rotation lunar observation extended_catalog place_catalog small_body_orbit small_body_catalog satellite_catalog satellite_position satellite_rotation satellite_model satellite_absolute spacecraft_trajectory spacecraft_position minor_planet_position small_body_orbit_path)
@@ -30,7 +30,7 @@ TESTS = $(addprefix $(BUILD_DIR)/test_,astronomy catalog ephemeris rotation luna
 TESTS += $(BUILD_DIR)/test_atmosphere
 TESTS += $(BUILD_DIR)/test_constellation_art
 TESTS += $(BUILD_DIR)/test_eclipse $(BUILD_DIR)/test_terrain
-TESTS += $(BUILD_DIR)/test_galaxy_catalog $(BUILD_DIR)/test_our_galaxy_model
+TESTS += $(BUILD_DIR)/test_galaxy_catalog $(BUILD_DIR)/test_our_galaxy_model $(BUILD_DIR)/test_our_galaxy_radiative
 
 .PHONY: all test data-test reference-test rotation-reference-test lunar-reference-test universal
 all: $(LIBRARY) $(BUILD_DIR)/core_probe
@@ -125,3 +125,14 @@ $(BUILD_DIR)/test_eclipse_upstream: tests/test_eclipse_upstream.cpp $(BUILD_DIR)
 
 eclipse-reference-test: $(BUILD_DIR)/test_eclipse_upstream
 	$(BUILD_DIR)/test_eclipse_upstream
+
+.PHONY: our-galaxy-reference-test
+$(BUILD_DIR)/our_galaxy_upstream.inc: $(UPSTREAM)/Mitaka/mtk_our_galaxy_rt.cpp tests/extract_our_galaxy.awk | $(BUILD_DIR)
+	LC_ALL=C awk -f tests/extract_our_galaxy.awk "$<" > "$@.tmp"
+	mv "$@.tmp" "$@"
+
+$(BUILD_DIR)/test_our_galaxy_radiative_upstream: tests/test_our_galaxy_radiative_upstream.cpp $(BUILD_DIR)/our_galaxy_upstream.inc $(LIBRARY)
+	$(CXX) $(CPPFLAGS) -I"$(BUILD_DIR)" -I$(UPSTREAM)/Mitaka $(CXXFLAGS) $(REFERENCE_FLAGS) -Wno-unused-variable $< $(LIBRARY) $(LDFLAGS) -o $@
+
+our-galaxy-reference-test: $(BUILD_DIR)/test_our_galaxy_radiative_upstream
+	$(BUILD_DIR)/test_our_galaxy_radiative_upstream

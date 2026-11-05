@@ -29,9 +29,9 @@ LANDSCAPE_OBJECTS = $(addprefix $(BUILD_DIR)/,landscape_selection.o earth_landsc
 OBJECTS += $(LANDSCAPE_OBJECTS)
 ECLIPSE_OBJECTS = $(addprefix $(BUILD_DIR)/,eclipse_surface.o eclipse_display.o eclipse_cone_renderer.o)
 OBJECTS += $(ECLIPSE_OBJECTS)
-GALAXY_OBJECTS = $(addprefix $(BUILD_DIR)/,galaxy_camera.o galaxy_spatial_scene.o galaxy_spatial_load.o GalaxyRenderer.o GalaxyView.o GalaxyController.o)
+GALAXY_OBJECTS = $(addprefix $(BUILD_DIR)/,galaxy_camera.o shared_camera.o galaxy_spatial_scene.o galaxy_spatial_load.o GalaxyRenderer.o GalaxyView.o GalaxyController.o)
 TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o terrain_snapshot.o terrain_source_lease.o)
-OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS)
+OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS) $(BUILD_DIR)/GalaxyOverlay.o $(BUILD_DIR)/OurGalaxyRenderer.o $(BUILD_DIR)/OurGalaxyRadiativeRenderer.o $(BUILD_DIR)/HipSpatialRenderer.o $(BUILD_DIR)/our_galaxy_navigation.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
 
 ifneq ($(ARCH),)
@@ -467,11 +467,23 @@ $(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_earth_layers $(BUILD_DIR)/tes
 
 $(BUILD_DIR)/test_galaxy_camera: tests/test_galaxy_camera.cpp $(BUILD_DIR)/galaxy_camera.o $(BUILD_DIR)/solar_camera.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_shared_camera: tests/test_shared_camera.cpp $(BUILD_DIR)/shared_camera.o $(BUILD_DIR)/galaxy_camera.o $(BUILD_DIR)/solar_camera.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_galaxy_spatial_scene: tests/test_galaxy_spatial_scene.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_galaxy_spatial_load: tests/test_galaxy_spatial_load.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_load.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_galaxy_renderer: tests/test_galaxy_renderer.mm $(addprefix $(BUILD_DIR)/,GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_hip_spatial_renderer: tests/test_hip_spatial_renderer.mm $(addprefix $(BUILD_DIR)/,HipSpatialRenderer.o GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_our_galaxy_renderer: tests/test_our_galaxy_renderer.mm $(addprefix $(BUILD_DIR)/,OurGalaxyRenderer.o OurGalaxyRadiativeRenderer.o grid_geometry.o GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_our_galaxy_radiative_renderer: tests/test_our_galaxy_radiative_renderer.mm $(addprefix $(BUILD_DIR)/,OurGalaxyRadiativeRenderer.o grid_geometry.o galaxy_camera.o solar_camera.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_our_galaxy_navigation: tests/test_our_galaxy_navigation.cpp $(addprefix $(BUILD_DIR)/,our_galaxy_navigation.o galaxy_camera.o solar_camera.o)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_galaxy_overlay: tests/test_galaxy_overlay.mm $(addprefix $(BUILD_DIR)/,GalaxyOverlay.o OurGalaxyRenderer.o OurGalaxyRadiativeRenderer.o our_galaxy_navigation.o grid_geometry.o HipSpatialRenderer.o GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
 $(BUILD_DIR)/test_galaxy_controller: tests/test_galaxy_controller.mm $(GALAXY_OBJECTS) $(addprefix $(BUILD_DIR)/,solar_camera.o sdss_spatial_model.o RendererQuality.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
@@ -499,7 +511,7 @@ $(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controlle
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
 
 .PHONY: unit8-test galaxy-controller-test script-time-test
-unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
+unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
 	@for binary in $^; do "$$binary" || exit $$?; done
 test: unit8-test
 galaxy-controller-test: $(BUILD_DIR)/test_galaxy_controller

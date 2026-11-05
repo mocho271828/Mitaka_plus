@@ -117,7 +117,7 @@ void test_camera() {
     camera.orbit(0, 1e100); near(camera.pitch_deg, 89);
     camera.orbit(0, -1e100); near(camera.pitch_deg, -89);
     camera.zoom(-1e100); near(camera.distance_au, 0.000005, 1e-15);
-    camera.zoom(1e100); near(camera.distance_au, 1000);
+    camera.zoom(1e100); camera.zoom(1e100); near(camera.distance_au, maximum_solar_distance_au);
     camera.orbit(1e300, 0);
     check(std::isfinite(at(camera.target).depth), "large finite orbit input");
 

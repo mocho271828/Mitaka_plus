@@ -6,6 +6,8 @@
 
 namespace mitaka::gui {
 
+constexpr double maximum_solar_distance_au = (648000.0 / 3.14159265358979323846) * 1e40;
+
 // outwardは視線の逆方向。right/up/outwardは右手正規直交基底。
 struct SolarCameraBasis { Vec3 outward, right, up; };
 
@@ -24,7 +26,7 @@ struct SolarCamera {
     void orbit(double dx_points, double dy_points);
     // 画面上の物体がドラッグ方向へ動くよう、注視点を平行移動する。
     void pan(double dx_points, double dy_points, double width, double height);
-    // 正値で遠ざかる。通常は0.000005..1000AU、frame指定時は1e-12..1000AU。
+    // 正値で遠ざかる。上限は銀河カメラの 1e40 pc と同じ距離。
     void zoom(double logarithmic_delta);
 };
 

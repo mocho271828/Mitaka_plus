@@ -50,7 +50,7 @@
          "assert(Camera.target == 'Satellite.Moon')\n"
          "Camera.zoom = 2 * mtk.UNIT_AU\n"
          "assert(math.abs(Camera.zoom - 2 * UNIT_AU) < 1e-16)\n"
-         "for _, distance in ipairs({1, 1e-15 * UNIT_AU, math.huge, 0/0}) do\n"
+         "for _, distance in ipairs({1e41, 1e-15 * UNIT_AU, math.huge, 0/0}) do\n"
          "  local before = Camera.zoom\n"
          "  local ok, failure = pcall(function() Camera.zoom = distance end)\n"
          "  assert(not ok and type(failure) == 'string' and #failure > 0)\n"

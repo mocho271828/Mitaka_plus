@@ -27,6 +27,7 @@ SolarCamera direction_camera(const GalaxyCameraPc& camera) {
     SolarCamera direction;
     direction.yaw_deg = camera.yaw_deg;
     direction.pitch_deg = camera.pitch_deg;
+    direction.frame = camera.frame;
     return direction;
 }
 double dot(NativeEclipticPositionPc value, Vec3 axis) {
@@ -38,9 +39,10 @@ GalaxyCameraPc checked_galaxy_camera(GalaxyCameraPc camera) {
     position_valid(camera.target);
     if (!std::isfinite(camera.yaw_deg) || !std::isfinite(camera.pitch_deg) ||
         std::abs(camera.pitch_deg) > 89 || !std::isfinite(camera.distance_pc) ||
-        camera.distance_pc < minimum_galaxy_distance_pc ||
+        camera.distance_pc < minimum_galaxy_projection_distance_pc ||
         camera.distance_pc > maximum_galaxy_coordinate_pc)
         throw std::invalid_argument("invalid galaxy camera in parsecs");
+    if (camera.frame) (void)solar_camera_basis(direction_camera(camera));
     return camera;
 }
 
@@ -50,6 +52,7 @@ void GalaxyCameraPc::orbit(double dx, double dy) {
     direction.orbit(dx, dy);
     yaw_deg = direction.yaw_deg;
     pitch_deg = direction.pitch_deg;
+    frame = direction.frame;
 }
 void GalaxyCameraPc::pan(double dx, double dy, double width, double height) {
     (void)checked_galaxy_camera(*this);

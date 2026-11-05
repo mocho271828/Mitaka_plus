@@ -13,6 +13,7 @@ GalaxyRasterSize galaxy_raster_size(double width_points, double height_points, d
 struct GalaxyRenderCounts {
     std::size_t total = 0, hidden = 0, invalid = 0, outside = 0, drawn = 0;
 };
+enum class GalaxyBackground { opaque, transparent };
 class GalaxyBitmap final {
 public:
     GalaxyBitmap(CGImageRef image, GalaxyRenderCounts counts);
@@ -30,6 +31,6 @@ private:
 std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
     const GalaxySpatialModel& model, GalaxyCameraPc camera, GalaxySpatialVisibility visibility,
     RendererDisplayOptions quality, double width_points, double height_points, double backing_scale,
-    std::function<bool()> should_cancel = {});
+    std::function<bool()> should_cancel = {}, GalaxyBackground background = GalaxyBackground::opaque);
 
 } // namespace mitaka::gui

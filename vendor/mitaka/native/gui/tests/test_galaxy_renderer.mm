@@ -192,10 +192,33 @@ void cancellation_tests() {
     check(!render_galaxy_bitmap(*model, camera, {}, {}, 64, 64, 1, [&] { return ++calls == completion; }),
           "completion cancellation discards finished bitmap");
 }
+void transparent_background_tests() {
+    const GalaxySpatialModel empty({});
+    const auto blank = render_galaxy_bitmap(empty, camera, {}, {}, 64, 64, 1, {}, GalaxyBackground::transparent);
+    const auto blank_pixels = pixels(*blank);
+    check(std::all_of(blank_pixels.begin(), blank_pixels.end(), [](std::uint8_t value) { return value == 0; }),
+          "empty transparent image contains no color or alpha");
+
+    auto snapshot = evaluate_sdss_spatial_snapshot(std::make_shared<const SdssSpatialModel>(
+        std::vector<SdssSpatialSource>{{SdssKind::galaxy, "point", {{{0, 0}, 1, 0}}}}));
+    GalaxySpatialModel model({GalaxySdssSource{snapshot, 0}});
+    const auto bitmap = render_galaxy_bitmap(model, camera, {}, {}, 64, 64, 1, {}, GalaxyBackground::transparent);
+    const auto data = pixels(*bitmap);
+    check(bitmap->counts().drawn == 1, "transparent rendering retains projected objects");
+    check(data[3] == 0, "uncovered pixel remains transparent");
+    const auto position = GalaxyProjector(camera, 64, 64).project(*model.row(model.record_id(0)).position);
+    check(bool(position), "test object projects into the viewport");
+    const auto pixel = (std::size_t(position->y) * 64 + std::size_t(position->x)) * 4;
+    check(data[pixel + 3] > 0 && data[pixel + 2] > 0, "projected pixel contains visible color and alpha");
+    for (std::size_t i = 0; i < data.size(); i += 4)
+        check(data[i] <= data[i + 3] && data[i + 1] <= data[i + 3] && data[i + 2] <= data[i + 3],
+              "transparent image uses premultiplied alpha");
+}
 }
 int main() {
     try {
         dimensions_tests(); counts_and_pixels_tests(); duplicate_pixel_equivalence_tests(); cancellation_tests();
+        transparent_background_tests();
         std::cout << "Galaxy renderer: " << checks << " checks passed\n";
         return 0;
     } catch (const std::exception& error) {

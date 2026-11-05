@@ -3,6 +3,7 @@
 
 // data root の読込は呼出し側が行う。ここでは元データへ書き込まない。
 @interface GalaxyController : NSWindowController <NSWindowDelegate>
+@property(nonatomic, copy) void (^visibilityChanged)(mitaka::gui::GalaxySpatialVisibility);
 - (void)setModel:(std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model diagnostics:(NSString *)diagnostics;
 - (GalaxyView *)galaxyView;
 - (void)setRendererDisplayOptions:(mitaka::gui::RendererDisplayOptions)options;

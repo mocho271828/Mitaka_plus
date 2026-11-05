@@ -9,7 +9,9 @@
 - (void)runSmokeTest {
     [self runScriptSmokeTestWithCompletion:^{
         [self runSmallBodySmokeTestWithCompletion:^{
-            [self runGalaxySmokeTestWithCompletion:^{ [self runSceneSmokeTest]; }];
+            [self runGalaxySmokeTestWithCompletion:^{
+                [self runSolarGalaxySmokeTestWithCompletion:^{ [self runSceneSmokeTest]; }];
+            }];
         }];
     }];
 }

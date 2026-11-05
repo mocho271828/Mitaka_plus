@@ -37,7 +37,7 @@ GalaxyBitmap::~GalaxyBitmap() { CGImageRelease(image_); }
 std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
     const GalaxySpatialModel& model, GalaxyCameraPc camera, GalaxySpatialVisibility visibility,
     RendererDisplayOptions quality, double width, double height, double scale,
-    std::function<bool()> should_cancel) {
+    std::function<bool()> should_cancel, GalaxyBackground background) {
     const GalaxyProjector projector(camera, width, height);
     const auto raster = galaxy_raster_size(width, height, scale);
     if (!std::isfinite(double(raster.width) / width) || !std::isfinite(double(raster.height) / height))
@@ -48,8 +48,13 @@ std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
         colors, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big));
     CGColorSpaceRelease(colors);
     if (!context) throw std::runtime_error("galaxy bitmap: cannot allocate image context");
-    CGContextSetRGBFillColor(context.get(), 0.015, 0.02, 0.035, 1);
-    CGContextFillRect(context.get(), CGRectMake(0, 0, raster.width, raster.height));
+    const CGRect bounds = CGRectMake(0, 0, raster.width, raster.height);
+    if (background == GalaxyBackground::transparent) {
+        CGContextClearRect(context.get(), bounds);
+    } else {
+        CGContextSetRGBFillColor(context.get(), 0.015, 0.02, 0.035, 1);
+        CGContextFillRect(context.get(), bounds);
+    }
     CGContextTranslateCTM(context.get(), 0, raster.height);
     CGContextScaleCTM(context.get(), double(raster.width) / width, -double(raster.height) / height);
     RendererQualityScope general(context.get(), quality);
