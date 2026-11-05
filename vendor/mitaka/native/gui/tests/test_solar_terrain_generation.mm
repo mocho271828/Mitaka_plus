@@ -1,4 +1,5 @@
 #import "../src/SolarSystemViewInternal.h"
+#import "SolarDateUpdate.h"
 
 #include "shared_camera.hpp"
 #include <atomic>
@@ -109,7 +110,7 @@ struct Observed {
     const bool failureDiagnostic = std::any_of(diagnostics.begin(), diagnostics.end(), [](const std::string& diagnostic) {
         return diagnostic.find("injected moon failure") != std::string::npos;
     });
-    _observations.push_back({scene.julian_date, scene.camera.yaw_deg,
+    if (earth || moon || failureDiagnostic) _observations.push_back({scene.julian_date, scene.camera.yaw_deg,
         earth ? earth->request.data_directory.string() : "", coherent,
         earth && solar_terrain_frame(scene, 3) && earth->request.julian_date == scene.julian_date &&
             earth->request.camera.yaw_deg == scene.camera.yaw_deg,
@@ -177,7 +178,11 @@ void spatialPickAcrossScenePublication(bool hip) {
     const NSPoint click = NSMakePoint(map.origin.x + projected->x, map.origin.y + projected->y);
     [view pickBodyAtPoint:click];
     const auto oldPublications = view.publications;
-    [view setObservationSite:{35, 139} julianDate:2451546];
+    SolarDateInput input{2451546, {35, 139}, bodies, false, {}, {}, nullptr, nullptr,
+        prepare_satellite_scene(nullptr, nullptr), nullptr};
+    auto candidate = [view prepareDateUpdate:input];
+    [view commitDateUpdate:std::move(candidate)];
+    [view finishDateUpdate];
     drawView(view);
     require(view.publications > oldPublications, "same camera scene published while pick was pending");
     waitFor([&] { return hip ? [view selectedHipIndex].has_value() : [view selectedGalaxyRecord].has_value(); },
@@ -230,63 +235,93 @@ void tests() {
     const auto firstCamera = [view cameraState];
     [view refreshTerrain];
     start_count(probe, 1);
+    require([view displayedScene].julian_date == 2451545, "initial datum scene is published");
     advance(view, 2451546);
-    advance(view, 2451547);
-    const auto latestCamera = [view cameraState];
-    require(firstCamera.yaw_deg != latestCamera.yaw_deg && [view observations].empty(), "A is held while B and C input accumulates");
-    dispatch_semaphore_signal(probe->permit[1]);
-    waitFor([&] { return probe->finished[1] == 1; }, "moon completed");
-    require([view observations].empty(), "one body cannot publish a partial scene");
-    dispatch_semaphore_signal(probe->permit[0]);
-    waitFor([&] { return [view observations].size() == 1; }, "A publishes while input remains active");
-    auto observed = [view observations];
-    require(observed[0].date == 2451545 && observed[0].yaw == firstCamera.yaw_deg && observed[0].coherent,
-        "A terrain, camera and date are one scene");
+    require([view displayedScene].julian_date == 2451546, "manual date is visible before terrain completes");
+    require(!solar_terrain_frame([view displayedScene], 3), "new date does not reuse old terrain");
+    release(probe);
     start_count(probe, 2);
-    require([view displayedScene].camera.yaw_deg == firstCamera.yaw_deg, "A remains displayed during C preparation");
+    require(probe->cancelled[0] == 1 && probe->cancelled[1] == 1 && [view observations].empty(),
+        "late results from old date cannot publish");
+    const auto dateCamera = [view cameraState];
+    [view orbitByX:15 y:0]; [view refreshTerrain];
+    [view orbitByX:15 y:0]; [view refreshTerrain];
+    const auto latestCamera = [view cameraState];
     release(probe);
-    waitFor([&] { return [view observations].size() == 2; }, "C publishes");
-    observed = [view observations];
-    require(observed[1].date == 2451547 && observed[1].yaw == latestCamera.yaw_deg && observed[1].coherent,
-        "C is latest input, with matching terrain and camera");
-    require(probe->started[0] == 2 && probe->started[1] == 2, "B was coalesced");
-
-    advance(view, 2451548);
+    waitFor([&] { return [view observations].size() == 1; }, "current date terrain publishes during movement");
+    auto observed = [view observations];
+    require(observed[0].date == 2451546 && observed[0].yaw == dateCamera.yaw_deg && observed[0].coherent,
+        "terrain and camera remain coherent during movement");
     start_count(probe, 3);
-    [view setTerrainDataDirectory:@"/selected/new"];
-    advance(view, 2451549);
     release(probe);
+    waitFor([&] { return [view observations].size() == 2; }, "latest camera publishes");
+    observed = [view observations];
+    require(observed[1].date == 2451546 && observed[1].yaw == latestCamera.yaw_deg && observed[1].coherent,
+        "latest camera and terrain match");
+    require(firstCamera.yaw_deg != latestCamera.yaw_deg, "camera inputs were applied");
+
+    [view orbitByX:15 y:0]; [view refreshTerrain];
     start_count(probe, 4);
-    require(probe->cancelled[0] == 1 && probe->cancelled[1] == 1 && [view observations].size() == 2,
-        "source change cancels and suppresses old callbacks");
+    [view setTerrainDataDirectory:@"/selected/new"];
+    [view refreshTerrain];
+    release(probe);
+    start_count(probe, 5);
+    require(probe->cancelled[0] == 2 && probe->cancelled[1] == 2 && [view observations].size() == 2,
+        "source change suppresses old callbacks");
     release(probe);
     waitFor([&] { return [view observations].size() == 3; }, "new source publishes");
     observed = [view observations];
-    require(observed[2].date == 2451549 && observed[2].root == "/selected/new" && observed[2].coherent,
-        "new source publishes only its matching scene");
+    require(observed[2].root == "/selected/new" && observed[2].coherent, "new source matches scene");
     probe->failMoon = true;
-    advance(view, 2451550);
-    start_count(probe, 5);
+    [view orbitByX:15 y:0]; [view refreshTerrain];
+    start_count(probe, 6);
     release(probe);
-    waitFor([&] { return [view observations].size() == 4; }, "failed body still completes its scene");
+    waitFor([&] { return [view observations].size() == 4; }, "failed body completes scene");
     observed = [view observations];
-    require(observed[3].date == 2451550 && observed[3].earthReady && observed[3].moonMissing &&
-        observed[3].failureDiagnostic, "one failed body and the other successful body publish together with diagnostic");
+    require(observed[3].earthReady && observed[3].moonMissing && observed[3].failureDiagnostic,
+        "failure publishes sphere and diagnostic alongside successful terrain");
     probe->failMoon = false;
 
-    advance(view, 2451551);
-    start_count(probe, 6);
-    [view setFrameSize:NSMakeSize(640, 480)];
-    advance(view, 2451552);
-    release(probe);
+    [view orbitByX:15 y:0]; [view refreshTerrain];
     start_count(probe, 7);
-    require(probe->cancelled[0] == 2 && probe->cancelled[1] == 2 && [view observations].size() == 4,
-        "viewport change cancels and suppresses old callbacks");
+    [view setFrameSize:NSMakeSize(640, 480)]; [view refreshTerrain];
+    require([view displayedScene].julian_date == 2451546, "resize baseline preserves date");
+    release(probe);
+    start_count(probe, 8);
+    require(probe->cancelled[0] == 3 && probe->cancelled[1] == 3 && [view observations].size() == 4,
+        "resize suppresses old callbacks");
     release(probe);
     waitFor([&] { return [view observations].size() == 5; }, "resized viewport publishes");
     observed = [view observations];
-    require(observed[4].date == 2451552 && observed[4].coherent && observed[4].width != observed[2].width,
-        "resized viewport publishes its matching scene and terrain");
+    require(observed[4].coherent && observed[4].width != observed[2].width,
+        "resized viewport matches terrain");
+    // 表示 A を保持したまま B が処理中に C の候補作成が失敗しても、B を後着公開しない。
+    const auto beforeFailure = [view displayedScene];
+    const auto beforeCamera = beforeFailure.camera;
+    const double beforeDate = beforeFailure.julian_date;
+    [view orbitByX:15 y:0]; [view refreshTerrain];
+    start_count(probe, 9);
+    auto invalid = std::make_shared<SmallBodySnapshot>();
+    SolarDateInput input{2451547, {35, 139}, bodies, false, {}, {}, invalid, nullptr,
+        prepare_satellite_scene(nullptr, nullptr), nullptr};
+    bool failed = false;
+    try { (void)[view prepareDateUpdate:input]; }
+    catch (const std::invalid_argument&) { failed = true; [view invalidatePendingDateTerrain]; }
+    require(failed, "invalid date candidate must fail before publication");
+    release(probe);
+    waitFor([&] { return probe->finished[0] == 9 && probe->finished[1] == 9; }, "cancelled workers finish");
+    [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.02]];
+    const auto afterFailure = [view displayedScene];
+    require([view observations].size() == 5 && afterFailure.julian_date == beforeDate &&
+        afterFailure.camera.yaw_deg == beforeCamera.yaw_deg,
+        "failed date candidate cancels late result and retains published date and camera");
+    start_count(probe, 10);
+    release(probe);
+    waitFor([&] { return [view observations].size() == 6; }, "displayed scene terrain retries after failure");
+    const auto retry = [view displayedScene];
+    require(retry.julian_date == beforeDate && retry.camera.yaw_deg == beforeCamera.yaw_deg &&
+        solar_terrain_frame(retry, 3) && solar_terrain_frame(retry, 10),
+        "retry restores terrain for the retained displayed scene");
     [view cancelTerrain];
 }
 }

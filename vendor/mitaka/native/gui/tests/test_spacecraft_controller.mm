@@ -99,7 +99,11 @@ void tests() {
     nextFrame->julian_date = 2451546;
     nextFrame->positions[1035] = Vec3{1, 2, 3};
     nextFrame->positioned_count = 1;
-    [controller setSnapshot:nextFrame];
+    auto prepared = [controller prepareSnapshot:nextFrame];
+    require([details.string containsString:@"2451545"], "preparing does not update visible details");
+    [controller commitPreparedDate:std::move(prepared)];
+    require([details.string containsString:@"2451545"], "commit defers visible details update");
+    [controller finishDateUpdate];
     NSString *state = [controller tableView:table objectValueForTableColumn:table.tableColumns[2] row:0];
     require(table.selectedRow == 0 && [state isEqualToString:@"位置評価済み"],
         "snapshot update retains the source selection and updates evaluated state");
@@ -124,6 +128,9 @@ void tests() {
     try { [controller setSnapshot:frame]; } catch (const std::invalid_argument&) { rejected = true; }
     require(rejected, "snapshot from another source model is rejected");
     require(table.numberOfRows == 0 && !select.enabled, "invalid snapshot leaves the current model and selection unchanged");
+    rejected = false;
+    try { (void)[controller prepareSnapshot:frame]; } catch (const std::invalid_argument&) { rejected = true; }
+    require(rejected && table.numberOfRows == 0, "invalid candidate is rejected without changing the browser");
     [controller setModel:{} snapshot:{}];
     require(table.numberOfRows == 0 && source.numberOfItems == 1 && !next.enabled && !select.enabled,
         "clearing the model removes old source choices and selection");

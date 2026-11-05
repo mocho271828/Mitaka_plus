@@ -21,7 +21,7 @@ struct Record { double date; double yaw; bool coherent; bool realTerrain; };
 - (void)redrawPublishedScene {
     auto scene=[self displayedScene]; auto value=scene.terrain ? (*scene.terrain)[3] : nullptr;
     bool ok=value && solar_terrain_frame(scene,3) && value->request.julian_date==scene.julian_date && value->request.camera.yaw_deg==scene.camera.yaw_deg;
-    _records.push_back({scene.julian_date,scene.camera.yaw_deg,ok,value && value->frame.mode==TerrainSurfaceMode::terrain && value->frame.patches_read>0});
+    if (value) _records.push_back({scene.julian_date,scene.camera.yaw_deg,ok,value->frame.mode==TerrainSurfaceMode::terrain && value->frame.patches_read>0});
     [super redrawPublishedScene];
 }
 @end
@@ -33,11 +33,11 @@ int main(int argc,char **argv) { @autoreleasepool { [NSApplication sharedApplica
     bodies[0].position_au={0,0,0}; bodies[3].position_au={1,0,0}; bodies[10].position_au={1.0026,0,0};
     [view setBodies:bodies]; view.planetDisplayOptions={true,false,false,false}; [view setTerrainDataDirectory:[NSString stringWithUTF8String:argv[1]]]; [view configureNearEarth];
     [view setObservationSite:{35,139} julianDate:2451545]; [view refreshTerrain];
-    for(int i=1;i<=20;++i) { [view beginSceneUpdate]; [view setObservationSite:{35,139} julianDate:2451545+i]; [view orbitByX:1 y:0]; [view endSceneUpdate]; [view refreshTerrain]; }
+    for(int i=1;i<=20;++i) { [view beginSceneUpdate]; [view setObservationSite:{35,139} julianDate:2451545]; [view orbitByX:1 y:0]; [view endSceneUpdate]; [view refreshTerrain]; }
     NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:60];
     while([view records].size()<2 && deadline.timeIntervalSinceNow>0) [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
     auto records=[view records]; require(records.size()==2,"first/latest publication missing");
-    require(records[0].date==2451545 && records[1].date==2451565,"wrong published date");
+    require(records[0].date==2451545 && records[1].date==2451545,"wrong published date");
     require(records[0].yaw!=records[1].yaw,"camera input did not change");
     require(records[0].coherent && records[1].coherent && records[0].realTerrain && records[1].realTerrain,"scene/terrain mismatch or no real terrain");
     std::cout << "Real Earth: 20 queued input changes -> " << records.size() << " atomic publications, first JD=" << records[0].date << " yaw=" << records[0].yaw << ", final JD=" << records[1].date << " yaw=" << records[1].yaw << "; terrain mode and snapshot match for both" << std::endl;

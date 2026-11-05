@@ -7,6 +7,7 @@
 #import "SpacecraftRenderer.h"
 #include "small_body_display.hpp"
 #include "satellite_display.hpp"
+#include "satellite_scene_update.hpp"
 #include "display_options.hpp"
 #include "radius_display.hpp"
 #include "renderer_options.hpp"
@@ -88,6 +89,9 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @property(nonatomic, readonly) NSUInteger selectedSatelliteIndex;
 @property(nonatomic, readonly) NSUInteger visibleSatelliteCount;
 - (void)setSatelliteSnapshot:(std::shared_ptr<const mitaka::gui::SatelliteSnapshot>)snapshot;
+// commit は事前計算済みの値だけを交換し、通知・追従更新は finish で行う。
+- (BOOL)commitPreparedSatelliteScene:(const mitaka::gui::PreparedSatelliteScene&)scene;
+- (void)finishSatelliteSceneUpdate:(BOOL)notifySelection;
 - (void)selectSatellite:(NSUInteger)index;
 - (void)setSatelliteDisplayModel:(std::shared_ptr<const mitaka::gui::SatelliteDisplayModel>)display;
 - (std::shared_ptr<const mitaka::gui::SatelliteDisplayModel>)satelliteDisplayModel;

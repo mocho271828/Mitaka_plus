@@ -9,10 +9,16 @@
 #include "sky_catalog_index.hpp"
 #include "sky_background.hpp"
 #include "constellation_art_model.hpp"
+#include "GridRenderer.h"
 #include <set>
 #include <memory>
 
 NSString *bodyName(mitaka::gui::Body body);
+
+struct PreparedSkyDate {
+    mitaka::gui::SkyBodies bodies;
+    mitaka::gui::GridGeometryCache grid;
+};
 
 @interface SkyView : NSView
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
@@ -37,6 +43,10 @@ NSString *bodyName(mitaka::gui::Body body);
 - (void)setModel:(std::shared_ptr<const mitaka::gui::SkyModel>)model
          bodies:(const mitaka::gui::SkyBodies&)bodies;
 - (void)setBodies:(const mitaka::gui::SkyBodies&)bodies;
+- (PreparedSkyDate)prepareBodies:(const mitaka::gui::SkyBodies&)bodies
+                observationSite:(mitaka::ObserverSite)site julianDate:(double)julianDate;
+- (void)commitPreparedDate:(PreparedSkyDate&&)prepared;
+- (void)finishDateUpdate;
 - (void)setExtendedCatalogs:(std::shared_ptr<const mitaka::gui::ExtendedCatalogs>)catalogs;
 - (void)setSkyBackgrounds:(std::shared_ptr<const mitaka::gui::SkyBackgrounds>)backgrounds;
 - (void)setConstellationArt:(std::shared_ptr<const mitaka::gui::ConstellationArtModel>)art;

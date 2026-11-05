@@ -51,21 +51,36 @@ void visit_small_body_orbit_segments(const SmallBodySnapshot& snapshot,
     const SolarCamera& camera, NSRect map,
     const std::function<void(const SmallBodyProjectedOrbitSegment&)>& visitor) {
     if (!visitor || !usable(snapshot, display, map) || !orbits || orbits->cancelled
-        || orbits->model != snapshot.model || orbits->paths.size() != snapshot.positions.size()) return;
+        || orbits->model != snapshot.model || orbits->paths.size() != snapshot.positions.size()
+        || orbits->minor_planet_paths.size() != snapshot.positions.size()) return;
     for (std::size_t row = 0; row < orbits->paths.size(); ++row) {
-        if (!orbits->paths[row] || !display.visibility(row).orbit) continue;
-        const auto& path = *orbits->paths[row];
+        if (!display.visibility(row).orbit) continue;
         const auto& id = snapshot.model->dataset().records[row].id;
-        if (path.id.source_key != id.source_key || path.id.record_ordinal != id.record_ordinal) continue;
-        for (const auto& indices : small_body_orbit_segments(path)) {
-            const auto line = project_solar_segment(path.samples[indices[0]].evaluation.state->position_au,
-                path.samples[indices[1]].evaluation.state->position_au, camera, map.size.width, map.size.height);
-            if (!line) continue;
-            auto first = (*line)[0], second = (*line)[1];
-            first.x += map.origin.x; first.y += map.origin.y;
-            second.x += map.origin.x; second.y += map.origin.y;
-            visitor({row, first, second});
-        }
+        const auto visit_path = [&](const auto& path, auto position) {
+            if (path.id.source_key != id.source_key || path.id.record_ordinal != id.record_ordinal) return;
+            std::optional<Vec3> previous;
+            for (const auto& sample : path.samples) {
+                const auto current = position(sample);
+                if (previous && current) {
+                    const auto line = project_solar_segment(*previous, *current, camera, map.size.width, map.size.height);
+                    if (line) {
+                        auto first = (*line)[0], second = (*line)[1];
+                        first.x += map.origin.x; first.y += map.origin.y;
+                        second.x += map.origin.x; second.y += map.origin.y;
+                        visitor({row, first, second});
+                    }
+                }
+                // 欠損点は軌道の切れ目として保持し、前後を直結しない。
+                previous = current;
+            }
+        };
+        if (orbits->paths[row])
+            visit_path(*orbits->paths[row], [](const auto& sample) -> std::optional<Vec3> {
+                if (!sample.evaluation.state) return std::nullopt;
+                return sample.evaluation.state->position_au;
+            });
+        if (orbits->minor_planet_paths[row] && !orbits->minor_planet_paths[row]->cancelled)
+            visit_path(*orbits->minor_planet_paths[row], [](const auto& sample) { return sample.position; });
     }
 }
 void draw_small_bodies(CGContextRef context, const SmallBodySnapshot& snapshot,

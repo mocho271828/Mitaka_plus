@@ -3,6 +3,13 @@
 #include "small_body_display.hpp"
 #include "mitaka/small_body_orbit_path.hpp"
 
+namespace mitaka::gui {
+struct SmallBodyBrowserDate {
+    std::shared_ptr<const SmallBodySnapshot> snapshot;
+    std::shared_ptr<const SmallBodyDisplayModel> display;
+};
+}
+
 @interface SmallBodyController : NSWindowController <NSTableViewDataSource, NSTableViewDelegate>
 @property(nonatomic, copy) void (^chooseObject)(NSUInteger index, BOOL center);
 @property(nonatomic, copy) void (^optionsChanged)(mitaka::SmallBodyKind kind, mitaka::gui::SmallBodyKindDisplayOptions options);
@@ -14,4 +21,9 @@
 - (void)setModel:(std::shared_ptr<const mitaka::gui::SmallBodyModel>)model
         snapshot:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)snapshot;
 - (void)setSnapshot:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)snapshot;
+// prepare と commit の間はブラウザの model を変更しない。
+- (mitaka::gui::SmallBodyBrowserDate)prepareSnapshot:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)snapshot
+    display:(std::shared_ptr<const mitaka::gui::SmallBodyDisplayModel>)display;
+- (void)commitPreparedDate:(mitaka::gui::SmallBodyBrowserDate&&)prepared;
+- (void)finishDateUpdate;
 @end

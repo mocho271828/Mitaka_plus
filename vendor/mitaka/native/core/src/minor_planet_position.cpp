@@ -11,8 +11,15 @@ using Code = SmallBodyDiagnosticCode;
 
 void add(MinorPlanetPositionEvaluation& result, Code code, std::string field,
          std::string message) {
+    const bool failure = code == Code::invalid_source || code == Code::invalid_time
+        || code == Code::calculation_failed || code == Code::outside_time_range;
     const auto found = std::find_if(result.diagnostics.begin(), result.diagnostics.end(),
-        [&](const auto& item) { return item.code == code && item.field == field; });
+        [&](const auto& item) {
+            if (item.code != code || item.field != field) return false;
+            // 失敗の原因は同じ code / field の既存診断があっても消さない。
+            return !failure || (item.message == message && item.source_key == result.id.source_key
+                && item.record_ordinal == result.id.record_ordinal);
+        });
     if (found == result.diagnostics.end())
         result.diagnostics.push_back({code, result.id.source_key, result.id.record_ordinal,
                                       std::move(field), std::move(message)});
@@ -43,8 +50,10 @@ bool validate_elements(const OrbitalElements& orbit, MinorPlanetPositionEvaluati
 
 MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyRecord& record,
                                                              double time) {
-    MinorPlanetPositionEvaluation result{record.id, time, {}, {}, record.diagnostics};
+    MinorPlanetPositionEvaluation result{record.id, time, {}, {}, record.diagnostics,
+                                          MinorPlanetPositionStatus::invalid_record};
     if (!std::isfinite(time)) {
+        result.status = MinorPlanetPositionStatus::unavailable_at_time;
         add(result, Code::invalid_time, "legacy_julian_date", "requested legacy numeric JD must be finite");
         return result;
     }
@@ -75,6 +84,7 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
             return result;
         }
         if (time < range.first_jd || time > range.last_jd) {
+            result.status = MinorPlanetPositionStatus::unavailable_at_time;
             add(result, Code::outside_time_range, "legacy_julian_date", "requested time is outside the declared source range");
             return result;
         }
@@ -88,9 +98,11 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         [](const auto& item) { return item.code == Code::unresolved_frame; }), result.diagnostics.end());
     add(result, Code::unresolved_time_scale, "time_scale",
         "requested legacy numeric JD is used unchanged; physical UTC/TT/TDB is not verified");
+    result.status = MinorPlanetPositionStatus::unavailable_at_time;
     try {
         result.heliocentric_j2000_ecliptic_au = orbital_state(*orbit, time).position_au;
         result.contract = minor_planet_packed_position_contract;
+        result.status = MinorPlanetPositionStatus::success;
     } catch (const std::invalid_argument& error) {
         add(result, Code::calculation_failed, "orbit", error.what());
     } catch (const std::out_of_range& error) {

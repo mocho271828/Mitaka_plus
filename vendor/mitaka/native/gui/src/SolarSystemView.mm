@@ -126,7 +126,12 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)endSceneUpdate {
     if (!_sceneUpdateDepth) throw std::logic_error("unbalanced scene update");
     --_sceneUpdateDepth;
-    if (!_sceneUpdateDepth) self.needsDisplay = YES;
+    if (!_sceneUpdateDepth) {
+        self.needsDisplay = YES;
+        // 日時は他ビューと同期して適用されるため、非表示中も即座に新 JD を公開する。
+        if (_publishedScene && _publishedScene->scene().julian_date != _julianDate)
+            [self refreshTerrain];
+    }
 }
 - (NSRect)mapRect { return NSInsetRect(self.bounds, 18, 40); }
 - (Vec3)displayPosition:(NSUInteger)index {

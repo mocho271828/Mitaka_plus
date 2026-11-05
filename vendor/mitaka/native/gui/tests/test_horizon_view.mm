@@ -131,6 +131,31 @@ struct HorizonFixture {
         spacecraft = evaluate_spacecraft_snapshot(spacecraft_model, 2451545);
     }
 };
+void test_prepared_date(HorizonView *view) {
+    HorizonFixture fixture;
+    SkyBodies bodies{};
+    const double jd = 2451545;
+    [view setBodies:bodies julianDate:jd earthPosition:{0, 0, 0}
+        smallBodies:fixture.frame smallBodyDisplay:fixture.display spacecraft:fixture.spacecraft];
+    check([view selectSmallBody:0], "fixture selection failed");
+    __block unsigned notifications = 0;
+    view.selectionChanged = ^(NSString *) { ++notifications; };
+    rejects<std::invalid_argument>([&] {
+        (void)[view prepareBodies:bodies julianDate:std::numeric_limits<double>::quiet_NaN()
+            earthPosition:{0, 0, 0} smallBodies:nullptr smallBodyDisplay:nullptr spacecraft:nullptr];
+    });
+    near(view.julianDate, jd);
+    check(view.selectedSmallBodyIndex == 0 && notifications == 0, "failed preparation changed the published state");
+    auto prepared = [view prepareBodies:bodies julianDate:jd earthPosition:{0, 0, 0}
+        smallBodies:fixture.frame smallBodyDisplay:fixture.display spacecraft:fixture.spacecraft];
+    check(!prepared.smallBodyObjects.empty() && !prepared.spacecraftObjects.empty(), "moving objects were not prepared");
+    check(view.selectedSmallBodyIndex == 0 && notifications == 0, "preparation changed the published state");
+    [view commitPreparedDate:std::move(prepared)];
+    check(view.selectedSmallBodyIndex == 0 && notifications == 0, "commit notified or lost selection");
+    [view finishDateUpdate];
+    check(notifications == 1, "deferred notification was not sent");
+    view.selectionChanged = nil;
+}
 NSData *rendered_bitmap(HorizonView *view) {
     NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
     check(bitmap != nil, "could not capture moving object rendering");
@@ -339,6 +364,7 @@ int main(int argc, char **argv) {
             HorizonView *view = [[HorizonView alloc] initWithFrame:NSMakeRect(0, 0, 800, 480)];
             test_state(view);
             test_drawing(view);
+            test_prepared_date(view);
             if (argc == 2) test_data(view, argv[1]);
             std::cout << "horizon view: " << checks << " checks passed\n";
             return 0;

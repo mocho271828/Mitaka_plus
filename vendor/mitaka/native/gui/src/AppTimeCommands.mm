@@ -415,9 +415,12 @@ double fieldNumber(NSTextField *field, bool integer) {
 }
 
 - (NSString *)timeDisplayDescription {
+    return [self timeDisplayDescriptionForJulianDate:_jd];
+}
+- (NSString *)timeDisplayDescriptionForJulianDate:(double)jd {
     if (!_model) return @"データを選択してください";
-    const auto date = displayDate(_jd + _timeSettings.utc_offset_minutes / 1440.0);
+    const auto date = displayDate(jd + _timeSettings.utc_offset_minutes / 1440.0);
     return [NSString stringWithFormat:@"暦表時刻 JD %.6f · %04d-%02d-%02d %02d:%02d %@ 相当（固定時差・時系補正なし）",
-        _jd, date.year, date.month, date.day, date.hour, date.minute, offsetTitle(_timeSettings.utc_offset_minutes)];
+        jd, date.year, date.month, date.day, date.hour, date.minute, offsetTitle(_timeSettings.utc_offset_minutes)];
 }
 @end

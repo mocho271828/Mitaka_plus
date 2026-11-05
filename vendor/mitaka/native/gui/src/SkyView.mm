@@ -237,6 +237,21 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     [self notifySelection];
     self.needsDisplay = YES;
 }
+- (PreparedSkyDate)prepareBodies:(const SkyBodies&)bodies
+                observationSite:(mitaka::ObserverSite)site julianDate:(double)julianDate {
+    PreparedSkyDate candidate{bodies, _gridCache};
+    candidate.grid.set_observation(site, julianDate);
+    return candidate;
+}
+- (void)commitPreparedDate:(PreparedSkyDate&&)prepared {
+    static_assert(std::is_nothrow_move_assignable_v<GridGeometryCache>);
+    _bodies = prepared.bodies;
+    _gridCache = std::move(prepared.grid);
+}
+- (void)finishDateUpdate {
+    [self notifySelection];
+    self.needsDisplay = YES;
+}
 - (void)selectBody:(NSUInteger)index {
     if (!_model || index >= _bodies.size()) return;
     _selection = Selection{ObjectKind::body, index};

@@ -76,7 +76,7 @@ using namespace mitaka;
 - (void)refreshSmallBodyOrbits {
     if (_loading || !_smallBodyModel || !_smallBodyDisplay || _mode.selectedSegment != 1 || ![_solar smallBodiesSceneVisible]) {
         [_smallBodyOrbitController cancel];
-        [_smallBodyBrowser setOrbitStatus:@"軌道計算は小天体が表示される 3D 画面で行います。固定 TDB 区間は保持します。"];
+        [_smallBodyBrowser setOrbitStatus:@"軌道計算は小天体が表示される 3D 画面で行います。彗星の指定 TDB 区間は保持します。"];
         return;
     }
     try {
@@ -89,8 +89,8 @@ using namespace mitaka;
             return;
         }
         if (!_smallBodyOrbitController) _smallBodyOrbitController = [[SmallBodyOrbitController alloc] init];
-        [_smallBodyBrowser setOrbitStatus:[NSString stringWithFormat:@"軌道を計算中: %lu 行 × %lu 標本（上限 %lu 標本）",
-            rows.size(), _smallBodyOrbitSampling.sample_count, maximum_small_body_orbit_total_samples]];
+        [_smallBodyBrowser setOrbitStatus:[NSString stringWithFormat:@"軌道を計算中: %lu 行、最大各 %lu 標本",
+            rows.size(), _smallBodyOrbitSampling.sample_count]];
         __weak AppController *weakSelf = self;
         [_smallBodyOrbitController requestModel:_smallBodyModel display:_smallBodyDisplay sampling:_smallBodyOrbitSampling
             completion:^(std::shared_ptr<const SmallBodyOrbitSnapshot> result, NSString *error) {
@@ -101,7 +101,7 @@ using namespace mitaka;
                 controller->_smallBodyOrbits = std::move(result);
                 [controller->_solar setSmallBodyOrbitSnapshot:controller->_smallBodyOrbits];
                 [controller->_smallBodyBrowser setOrbitStatus:[NSString stringWithFormat:
-                    @"固定 TDB 区間: %lu 行 × %lu 標本、欠損・未確定 %lu 行。原本は保持し、欠損を跨ぐ線は描きません。",
+                    @"軌道計算: %lu 行、最大各 %lu 標本、欠損・未確定 %lu 行。原本は保持し、欠損を跨ぐ線は描きません。",
                     controller->_smallBodyOrbits->requested_count, controller->_smallBodyOrbitSampling.sample_count,
                     controller->_smallBodyOrbits->unresolved_count]];
             }];

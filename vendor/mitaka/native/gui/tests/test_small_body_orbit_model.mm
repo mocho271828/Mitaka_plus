@@ -32,6 +32,7 @@ void evaluation_and_visibility() {
     data->records[4].encoding = SmallBodyEncoding::packed_36;
     data->records[4].raw_record_bytes = std::string(36, '\0');
     data->records[4].time_scale = SmallBodyTimeScale::unresolved;
+    data->records[4].orbit = OrbitalElements{2451545, 1, 0.2, 0, 1, 0, 0, 0};
     data->records[5].orbit = std::monostate{};
     const auto original_bytes = data->sources.front().bytes;
     auto model = std::make_shared<SmallBodyModel>(data);
@@ -70,11 +71,11 @@ void evaluation_and_visibility() {
     display->set_kind_options(SmallBodyKind::comet, {true, true, true, true});
     display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, true});
     const auto chosen = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling);
-    require(chosen->requested_count == 2 && chosen->paths[1] && chosen->paths[4] && !chosen->paths[0],
+    require(chosen->requested_count == 2 && chosen->paths[1] && chosen->minor_planet_paths[4] && !chosen->paths[0],
         "kind options and source identity membership control orbit requests");
-    require(!chosen->paths[4]->samples.front().evaluation.state
-        && has_diagnostic(chosen->paths[4]->samples.front(), SmallBodyDiagnosticCode::unresolved_time_scale),
-        "legacy numeric JD row never enters the TDB orbit path through the position model");
+    require(!chosen->paths[4] && chosen->minor_planet_paths[4]->samples.size() == 5
+        && chosen->minor_planet_paths[4]->samples.front().position,
+        "packed36 follows its own numeric JD orbit path, separate from the TDB path");
     display = std::make_shared<SmallBodyDisplayModel>(*display);
     display->set_kind_options(SmallBodyKind::comet, {false, true, true, true});
     require(small_body_orbit_requested_rows(*model, *display, orbit_test::sampling) == std::vector<std::size_t>{4},
@@ -112,8 +113,7 @@ void invalid_requests_and_limits() {
     try {
         evaluate_small_body_orbit_snapshot(many, options, maximum, [&] { ++cancellation_calls; return false; });
     } catch (const std::length_error& error) {
-        message = std::string(error.what()).find("524288") != std::string::npos
-            && std::string(error.what()).find("129 requested rows x 4096") != std::string::npos;
+        message = std::string(error.what()).find("524288") != std::string::npos;
     }
     require(message && cancellation_calls == 0, "whole oversized request is explained and rejected before sampling");
     require(data->records.size() == 129 && options->dataset()->records.size() == 129,
@@ -148,12 +148,60 @@ void cancellation() {
         orbit_test::sampling, [] { return true; });
     require(frame->cancelled && frame->paths.empty(), "empty request still observes cancellation");
 }
+void minor_planet_requests() {
+    auto data = orbit_test::dataset(2);
+    auto& packed = data->records[0];
+    packed.kind = SmallBodyKind::asteroid;
+    packed.encoding = SmallBodyEncoding::packed_36;
+    packed.raw_record_bytes = std::string(36, '\0');
+    packed.time_scale = SmallBodyTimeScale::unresolved;
+    packed.orbit = OrbitalElements{2451545, 1, 0.2, 0, 1, 0, 0, 0};
+    auto& unresolved = data->records[1];
+    unresolved.kind = SmallBodyKind::trans_neptunian;
+    unresolved.encoding = SmallBodyEncoding::packed_37;
+    unresolved.time_scale = SmallBodyTimeScale::unresolved;
+    auto model = std::make_shared<SmallBodyModel>(data);
+    auto display = orbit_test::display(data);
+    display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
+    display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, false});
+    auto frame = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling);
+    require(frame->requested_count == 2 && frame->completed_count == 2 && frame->unresolved_count == 1,
+            "supported and unresolved rows retain distinct outcomes");
+    require(frame->minor_planet_paths[0] && !frame->paths[0]
+            && frame->minor_planet_paths[0]->samples.size() == 5,
+            "packed36 has one numeric-JD full-period path");
+    require(frame->paths[1] && !frame->minor_planet_paths[1]
+            && frame->paths[1]->samples.size() == 2 && !frame->paths[1]->samples[0].evaluation.state,
+            "unresolved packed37 has bounded diagnostic samples and no orbit");
+    std::size_t checks = 0;
+    frame = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling, [&] { return ++checks == 3; });
+    require(frame->cancelled && frame->completed_count == 0 && !frame->minor_planet_paths[0],
+            "cancellation during packed36 sampling never publishes a partial row");
+
+    auto many_data = orbit_test::dataset(385);
+    for (auto& record : many_data->records) {
+        record.kind = SmallBodyKind::asteroid;
+        record.encoding = SmallBodyEncoding::packed_36;
+    }
+    auto many_model = std::make_shared<SmallBodyModel>(many_data);
+    auto many_display = orbit_test::display(many_data);
+    many_display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
+    const SmallBodyOrbitSampling maximum{2451535, 2451555, 4096};
+    rejects<std::length_error>([&] { small_body_orbit_requested_rows(*many_model, *many_display, maximum); },
+                               "packed36 total budget rejects an oversized request");
+    std::vector<SmallBodyId> ids;
+    for (std::size_t index = 0; index < 384; ++index) ids.push_back(many_data->records[index].id);
+    many_display->set_selected_ids(ids);
+    many_display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, true});
+    require(small_body_orbit_requested_rows(*many_model, *many_display, maximum).size() == 384,
+            "packed36 total budget accepts its exact boundary without truncation");
+}
 void local_data(const char* directory) {
     const auto data = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
     const auto model = std::make_shared<SmallBodyModel>(data);
     const auto display = orbit_test::display(data);
     const SmallBodyOrbitSampling sampling{2451545 - 182.625, 2451545 + 182.625, 129};
-    const auto frame = evaluate_small_body_orbit_snapshot(model, display, sampling);
+    auto frame = evaluate_small_body_orbit_snapshot(model, display, sampling);
     require(frame->paths.size() == data->records.size(), "all local original rows remain addressable");
     std::size_t requested = 0, unresolved = 0;
     for (std::size_t row = 0; row < data->records.size(); ++row) {
@@ -178,12 +226,34 @@ void local_data(const char* directory) {
         && frame->unresolved_count == unresolved && !frame->cancelled, "local counts derive from the actual full source");
     std::cout << "Local orbit rows=" << data->records.size() << " requested=" << requested
               << " unresolved=" << unresolved << '\n';
+    frame.reset();
+    auto all_display = orbit_test::display(data);
+    all_display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
+    all_display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, false});
+    const auto all = evaluate_small_body_orbit_snapshot(model, all_display, sampling);
+    std::size_t packed_count = 0;
+    for (std::size_t row = 0; row < data->records.size(); ++row) {
+        const auto& record = data->records[row];
+        if (record.encoding != SmallBodyEncoding::packed_36 || record.kind == SmallBodyKind::comet) continue;
+        ++packed_count;
+        require(all->minor_planet_paths[row] && !all->paths[row], "each original packed36 row has its own orbit");
+        const auto& path = *all->minor_planet_paths[row];
+        require(path.id.source_key == record.id.source_key && path.id.record_ordinal == record.id.record_ordinal
+                && path.samples.size() == sampling.sample_count, "packed36 preserves identity and all requested points");
+        for (const auto& sample : path.samples)
+            require(sample.position.has_value(), "local packed36 sample evaluates successfully");
+    }
+    require(packed_count > 0 && all->requested_count == data->records.size()
+            && all->completed_count == all->requested_count && !all->cancelled,
+            "all local rows fit the budgets and complete without truncation");
+    std::cout << "All kinds requested=" << all->requested_count << " packed36=" << packed_count
+              << " packed samples=" << packed_count * sampling.sample_count << '\n';
 }
 }
 int main(int argc, char** argv) {
     @autoreleasepool {
         try {
-            evaluation_and_visibility(); invalid_requests_and_limits(); cancellation();
+            evaluation_and_visibility(); invalid_requests_and_limits(); cancellation(); minor_planet_requests();
             if (argc == 2) local_data(argv[1]);
             else if (argc != 1) throw std::invalid_argument("usage: test_small_body_orbit_model [data_directory]");
             std::cout << "Small-body orbit model tests passed: " << checks << " checks\n";

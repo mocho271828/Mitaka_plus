@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
+#include <type_traits>
 
 using namespace mitaka;
 using namespace mitaka::gui;
@@ -242,20 +243,61 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     self.needsDisplay = YES;
 }
 - (void)setBodies:(const SkyBodies&)bodies julianDate:(double)julianDate earthPosition:(Vec3)earthPosition {
-    _earthPosition = earthPosition;
-    _earthJulianDate = julianDate;
-    [self setBodies:bodies julianDate:julianDate];
+    [self setBodies:bodies julianDate:julianDate earthPosition:earthPosition
+        smallBodies:_smallBodies smallBodyDisplay:_smallBodyDisplay spacecraft:_spacecraft];
 }
 - (void)setBodies:(const SkyBodies&)bodies julianDate:(double)julianDate
     earthPosition:(Vec3)earthPosition smallBodies:(std::shared_ptr<const SmallBodySnapshot>)smallBodies
     smallBodyDisplay:(std::shared_ptr<const SmallBodyDisplayModel>)display
     spacecraft:(std::shared_ptr<const SpacecraftSnapshot>)spacecraft {
-    if (!smallBodies || (_smallBodies && _smallBodies->model != smallBodies->model)) _smallBodySelection.reset();
-    if (!spacecraft || (_spacecraft && _spacecraft->model != spacecraft->model)) _spacecraftSelection.reset();
-    _smallBodies = std::move(smallBodies);
-    _smallBodyDisplay = std::move(display);
-    _spacecraft = std::move(spacecraft);
-    [self setBodies:bodies julianDate:julianDate earthPosition:earthPosition];
+    auto prepared = [self prepareBodies:bodies julianDate:julianDate earthPosition:earthPosition
+        smallBodies:std::move(smallBodies) smallBodyDisplay:std::move(display) spacecraft:std::move(spacecraft)];
+    [self commitPreparedDate:std::move(prepared)];
+    [self finishDateUpdate];
+}
+- (HorizonPreparedDate)prepareBodies:(const SkyBodies&)bodies julianDate:(double)julianDate
+    earthPosition:(Vec3)earthPosition smallBodies:(std::shared_ptr<const SmallBodySnapshot>)smallBodies
+    smallBodyDisplay:(std::shared_ptr<const SmallBodyDisplayModel>)display
+    spacecraft:(std::shared_ptr<const SpacecraftSnapshot>)spacecraft {
+    HorizonPreparedDate result;
+    result.bodies = bodies;
+    result.grid.set_observation(_site, julianDate);
+    result.frame = result.grid.frame();
+    result.earthPosition = earthPosition;
+    result.julianDate = julianDate;
+    result.clearSmallBodySelection = !smallBodies || (_smallBodies && _smallBodies->model != smallBodies->model);
+    result.clearSpacecraftSelection = !spacecraft || (_spacecraft && _spacecraft->model != spacecraft->model);
+    result.smallBodies = std::move(smallBodies);
+    result.smallBodyDisplay = std::move(display);
+    result.spacecraft = std::move(spacecraft);
+    if (_smallBodiesVisible && result.smallBodies && result.smallBodyDisplay && result.smallBodies->model &&
+        result.smallBodyDisplay->dataset().get() == &result.smallBodies->model->dataset())
+        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition);
+    if (_spacecraftVisible && result.spacecraft)
+        result.spacecraftObjects = horizon_spacecraft_objects(*result.spacecraft, _spacecraftDisplayOptions.points,
+            _spacecraftDisplayOptions.labels, julianDate, earthPosition, spacecraft_scene_position);
+    return result;
+}
+- (void)commitPreparedDate:(HorizonPreparedDate&&)prepared {
+    static_assert(std::is_nothrow_move_assignable_v<SkyBodies>);
+    static_assert(std::is_nothrow_move_assignable_v<GridGeometryCache>);
+    static_assert(std::is_nothrow_move_assignable_v<std::optional<ObservationFrame>>);
+    _bodies = std::move(prepared.bodies);
+    _gridCache = std::move(prepared.grid);
+    _frame = std::move(prepared.frame);
+    _earthPosition = prepared.earthPosition;
+    _earthJulianDate = _julianDate = prepared.julianDate;
+    _smallBodies = std::move(prepared.smallBodies);
+    _smallBodyDisplay = std::move(prepared.smallBodyDisplay);
+    _spacecraft = std::move(prepared.spacecraft);
+    _smallBodyObjects = std::move(prepared.smallBodyObjects);
+    _spacecraftObjects = std::move(prepared.spacecraftObjects);
+    if (prepared.clearSmallBodySelection) _smallBodySelection.reset();
+    if (prepared.clearSpacecraftSelection) _spacecraftSelection.reset();
+}
+- (void)finishDateUpdate {
+    [self notifySelection];
+    self.needsDisplay = YES;
 }
 - (void)rebuildMovingObjects {
     _smallBodyObjects.clear();

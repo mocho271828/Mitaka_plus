@@ -88,6 +88,25 @@ int main(int argc, char **argv) {
             const auto model = std::make_shared<const SkyModel>(SkyModel::load(argv[1]));
             SkyView *view = [[SkyView alloc] initWithFrame:NSMakeRect(0, 0, 1024, 512)];
             [view setModel:model bodies:model->bodies(2451545)];
+            __block unsigned dateNotifications = 0;
+            view.selectionChanged = ^(NSString *) { ++dateNotifications; };
+            [view selectBody:0];
+            dateNotifications = 0;
+            const auto nextBodies = model->bodies(2451546);
+            bool rejectedDate = false;
+            try {
+                (void)[view prepareBodies:nextBodies observationSite:{91, 0} julianDate:2451546];
+            } catch (const std::invalid_argument&) { rejectedDate = true; }
+            check(rejectedDate && dateNotifications == 0 && view.selectedBodyIndex == 0,
+                  "failed sky preparation changed selection or notified observers");
+            auto date = [view prepareBodies:nextBodies observationSite:{35.68, 139.76} julianDate:2451546];
+            check(dateNotifications == 0 && view.selectedBodyIndex == 0,
+                  "preparing sky date changed selection or notified observers");
+            [view commitPreparedDate:std::move(date)];
+            check(dateNotifications == 0 && view.selectedBodyIndex == 0,
+                  "committing sky date notified observers before all views were committed");
+            [view finishDateUpdate];
+            check(dateNotifications == 1, "finishing sky date did not notify observers");
             [view zoomIn];
             check([view viewport].zoom > 1, "zoom action failed");
             check([view selectStarHIP:model->stars()[0].hip], "HIP selection failed");

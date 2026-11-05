@@ -14,7 +14,25 @@
 #include "earth_landscapes.hpp"
 #include <set>
 #include "mitaka/observation.hpp"
+#include "GridRenderer.h"
+#include "horizon_objects.hpp"
 #include <memory>
+
+namespace mitaka::gui {
+// 準備から公開までは地平図の地点・表示設定を変更しない。
+struct HorizonPreparedDate {
+    SkyBodies bodies;
+    GridGeometryCache grid;
+    std::optional<ObservationFrame> frame;
+    Vec3 earthPosition;
+    double julianDate;
+    std::shared_ptr<const SmallBodySnapshot> smallBodies;
+    std::shared_ptr<const SmallBodyDisplayModel> smallBodyDisplay;
+    std::shared_ptr<const SpacecraftSnapshot> spacecraft;
+    std::vector<HorizonObject> smallBodyObjects, spacecraftObjects;
+    bool clearSmallBodySelection, clearSpacecraftSelection;
+};
+}
 
 @interface HorizonView : NSView
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
@@ -59,6 +77,13 @@
     smallBodies:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)smallBodies
     smallBodyDisplay:(std::shared_ptr<const mitaka::gui::SmallBodyDisplayModel>)display
     spacecraft:(std::shared_ptr<const mitaka::gui::SpacecraftSnapshot>)spacecraft;
+- (mitaka::gui::HorizonPreparedDate)prepareBodies:(const mitaka::gui::SkyBodies&)bodies julianDate:(double)julianDate
+    earthPosition:(mitaka::Vec3)earthPosition
+    smallBodies:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)smallBodies
+    smallBodyDisplay:(std::shared_ptr<const mitaka::gui::SmallBodyDisplayModel>)display
+    spacecraft:(std::shared_ptr<const mitaka::gui::SpacecraftSnapshot>)spacecraft;
+- (void)commitPreparedDate:(mitaka::gui::HorizonPreparedDate&&)prepared;
+- (void)finishDateUpdate;
 - (mitaka::ObserverSite)observerSite;
 - (void)setObserverSite:(mitaka::ObserverSite)site;
 - (mitaka::gui::HorizonViewport)viewport;

@@ -1,4 +1,5 @@
 #import "AppControllerInternal.h"
+#import "SolarDateUpdate.h"
 #include "satellite_scene.hpp"
 #include "HipSpatialRenderer.h"
 #include "radius_display_validation.hpp"
@@ -11,6 +12,15 @@
 #include <stdexcept>
 
 using namespace mitaka::gui;
+
+template <typename Action>
+static bool finishDatePresentation(const char *name, Action&& action) {
+    try { action(); return true; }
+    catch (const std::exception& error) {
+        std::fprintf(stderr, "date presentation %s failed: %s\n", name, error.what());
+        return false;
+    }
+}
 
 @implementation AppController
 
@@ -362,6 +372,10 @@ using namespace mitaka::gui;
 - (void)refresh {
     [_sky setObservationSite:{_observerLatitude, _observerLongitude} julianDate:_jd];
     [_solar setObservationSite:{_observerLatitude, _observerLongitude} julianDate:_jd];
+    [self refreshPresentation];
+}
+
+- (void)refreshPresentation {
     _jdField.stringValue = [NSString stringWithFormat:@"%.6f", _jd];
     _dateLabel.stringValue = [self timeDisplayDescription];
     [self refreshBodyButtons];
@@ -436,46 +450,103 @@ using namespace mitaka::gui;
 }
 
 - (BOOL)updateDate:(double)jd refreshOrbits:(BOOL)refreshOrbits {
+    // AppKit の状態と地形 controller の公開・取消はメインスレッドに限定する。
+    if (![NSThread isMainThread]) {
+        std::fprintf(stderr, "date update must run on the main thread\n");
+        return NO;
+    }
     if (!_model || _loading) return NO;
+    SkyBodies bodies;
+    SolarBodies solarBodies;
+    std::shared_ptr<const SmallBodySnapshot> smallBodies;
+    std::shared_ptr<const SatelliteSnapshot> satellites;
+    std::shared_ptr<const SpacecraftSnapshot> spacecraft;
+    std::shared_ptr<const SatelliteDisplayModel> satelliteDisplay;
+    std::shared_ptr<const SatelliteOrbitGeometry> satelliteOrbits;
+    std::optional<PreparedSkyDate> skyDate;
+    std::optional<HorizonPreparedDate> horizonDate;
+    std::shared_ptr<PreparedSolarDate> solarDate;
+    std::optional<SmallBodyBrowserDate> smallBodyBrowserDate;
+    std::optional<SatellitePreparedDate> satelliteBrowserDate;
+    std::shared_ptr<const SpacecraftSnapshot> spacecraftBrowserDate;
+    NSString *dateLabel = nil;
+    NSString *dateField = nil;
     try {
-        const auto bodies = _model->bodies(jd);
-        const auto satellites = [self satelliteSnapshotAtDate:jd];
+        dateLabel = [self timeDisplayDescriptionForJulianDate:jd];
+        dateField = [NSString stringWithFormat:@"%.6f", jd];
+        bodies = _model->bodies(jd);
+        satellites = [self satelliteSnapshotAtDate:jd];
         const NSUInteger selectedSatellite = _solar.selectedSatelliteIndex;
         const auto source = _satelliteModel && selectedSatellite < _satelliteModel->model().records().size()
             ? std::optional<std::string>{_satelliteModel->source(selectedSatellite)} : std::nullopt;
-        const auto solarBodies = satellites
-            ? apply_satellite_parent_positions(_model->solar_bodies(jd), *satellites, source)
-            : _model->solar_bodies(jd);
+        const auto unadjustedSolarBodies = _model->solar_bodies(jd);
+        solarBodies = satellites
+            ? apply_satellite_parent_positions(unadjustedSolarBodies, *satellites, source)
+            : unadjustedSolarBodies;
         // 再生中は軌道線の標本を保持し、位置と姿勢だけを同一 JD で更新する。
-        const auto orbits = refreshOrbits ? _model->solar_orbits(jd) : SolarOrbits{};
-        const auto lunarOrbit = refreshOrbits ? _model->lunar_orbit(jd) : std::vector<mitaka::Vec3>{};
-        const auto smallBodies = [self smallBodySnapshotAtDate:jd];
-        const auto spacecraft = [self spacecraftSnapshotAtDate:jd];
-        _bodies = bodies;
-        _solarBodies = solarBodies;
-        _jd = jd;
-        [_solar beginSceneUpdate];
-        @try {
-            [_sky setBodies:bodies];
-            [_horizon setBodies:bodies julianDate:jd earthPosition:_model->solar_bodies(jd)[3].position_au
-                smallBodies:smallBodies smallBodyDisplay:_smallBodyDisplay spacecraft:spacecraft];
-            if (refreshOrbits) {
-                [_solar setBodies:solarBodies orbits:orbits];
-                [_solar setLunarOrbit:lunarOrbit];
+        auto orbits = refreshOrbits ? _model->solar_orbits(jd) : SolarOrbits{};
+        auto lunarOrbit = refreshOrbits ? _model->lunar_orbit(jd) : std::vector<mitaka::Vec3>{};
+        smallBodies = [self smallBodySnapshotAtDate:jd];
+        spacecraft = [self spacecraftSnapshotAtDate:jd];
+        satelliteDisplay = _satelliteDisplay;
+        if (satellites && satellites->model) {
+            auto model = std::shared_ptr<const mitaka::SatelliteModel>(satellites->model, &satellites->model->model());
+            if (!satelliteDisplay) satelliteDisplay = std::make_shared<SatelliteDisplayModel>(model);
+            else if (satelliteDisplay->model() != model) {
+                auto replacement = std::make_shared<SatelliteDisplayModel>(*satelliteDisplay);
+                replacement->rebind(model);
+                satelliteDisplay = std::move(replacement);
             }
-            else [_solar setBodies:solarBodies];
-            [self applySmallBodySnapshot:smallBodies];
-            [self applySatelliteSnapshot:satellites];
-            [self applySpacecraftSnapshot:spacecraft];
-            [self refresh];
-        } @finally {
-            [_solar endSceneUpdate];
-        }
-        return YES;
+        } else satelliteDisplay.reset();
+        auto satelliteDate = prepare_satellite_scene(satellites, satelliteDisplay);
+        satelliteDisplay = satelliteDate.display();
+        satelliteOrbits = satelliteDate.orbits();
+        if (_smallBodyBrowser) smallBodyBrowserDate.emplace(
+            [_smallBodyBrowser prepareSnapshot:smallBodies display:_smallBodyDisplay]);
+        if (_satelliteBrowser) satelliteBrowserDate.emplace(
+            [_satelliteBrowser prepareSnapshot:satellites display:satelliteDisplay orbitGeometry:satelliteOrbits]);
+        if (_spacecraftBrowser) spacecraftBrowserDate = [_spacecraftBrowser prepareSnapshot:spacecraft];
+        const mitaka::ObserverSite site{_observerLatitude, _observerLongitude};
+        skyDate.emplace([_sky prepareBodies:bodies observationSite:site julianDate:jd]);
+        horizonDate.emplace([_horizon prepareBodies:bodies julianDate:jd
+            earthPosition:unadjustedSolarBodies[3].position_au smallBodies:smallBodies
+            smallBodyDisplay:_smallBodyDisplay spacecraft:spacecraft]);
+        SolarDateInput input{jd, site, solarBodies, bool(refreshOrbits), std::move(orbits),
+            std::move(lunarOrbit), smallBodies, _smallBodyDisplay, std::move(satelliteDate), spacecraft};
+        solarDate = [_solar prepareDateUpdate:input];
     } catch (const std::exception& error) {
+        [_solar invalidatePendingDateTerrain];
         [self showError:[NSString stringWithFormat:@"時刻を適用できません: %s\n現在の表示時刻は JD %.6f です。", error.what(), _jd]];
         return NO;
     }
+    // 全候補が揃うまで公開も通知も行わない。各 commit は確保や callback を含まない。
+    _bodies = bodies;
+    _solarBodies = solarBodies;
+    _jd = jd;
+    _smallBodySnapshot = std::move(smallBodies);
+    _satelliteSnapshot = std::move(satellites);
+    _satelliteDisplay = std::move(satelliteDisplay);
+    _spacecraftSnapshot = std::move(spacecraft);
+    [_sky commitPreparedDate:std::move(*skyDate)];
+    [_horizon commitPreparedDate:std::move(*horizonDate)];
+    [_solar commitDateUpdate:std::move(solarDate)];
+    if (_smallBodyBrowser) [_smallBodyBrowser commitPreparedDate:std::move(*smallBodyBrowserDate)];
+    if (_satelliteBrowser) [_satelliteBrowser commitPreparedDate:std::move(*satelliteBrowserDate)];
+    if (_spacecraftBrowser) [_spacecraftBrowser commitPreparedDate:std::move(spacecraftBrowserDate)];
+    _dateLabel.stringValue = dateLabel;
+    _jdField.stringValue = dateField;
+    // 表示補助が失敗しても、すでに全ビューへ公開した日時を失敗と誤報しない。
+    bool presentationOK = true;
+    presentationOK &= finishDatePresentation("sky", [&] { [_sky finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("horizon", [&] { [_horizon finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("solar", [&] { [_solar finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("small body browser", [&] { [_smallBodyBrowser finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("satellite browser", [&] { [_satelliteBrowser finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("spacecraft browser", [&] { [_spacecraftBrowser finishDateUpdate]; });
+    presentationOK &= finishDatePresentation("small body orbits", [&] { [self refreshSmallBodyOrbits]; });
+    presentationOK &= finishDatePresentation("status", [&] { [self refreshPresentation]; });
+    if (!presentationOK) [self showError:@"日時は更新されましたが、表示情報の更新に失敗しました。詳細はログを確認してください。"];
+    return YES;
 }
 
 - (void)applyDate:(id)sender {
@@ -485,10 +556,11 @@ using namespace mitaka::gui;
     scanner.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
     double value = 0;
     if (![scanner scanDouble:&value] || !scanner.isAtEnd || !std::isfinite(value)) {
+        _jdField.stringValue = [NSString stringWithFormat:@"%.6f", _jd];
         [self showError:[NSString stringWithFormat:@"JD は有限の数値で入力してください。現在の表示時刻は JD %.6f です。", _jd]];
         return;
     }
-    [self setDate:value];
+    if (![self setDate:value]) _jdField.stringValue = [NSString stringWithFormat:@"%.6f", _jd];
 }
 - (void)stepDate:(NSButton *)sender { [self setDate:_jd + sender.tag]; }
 - (void)stepHour:(NSButton *)sender { [self setDate:_jd + sender.tag / 24.0]; }

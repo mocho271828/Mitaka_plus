@@ -49,7 +49,8 @@ using namespace mitaka::gui;
 }
 - (void)setSmallBodyOrbitSnapshot:(std::shared_ptr<const SmallBodyOrbitSnapshot>)snapshot {
     if (snapshot && (!_smallBodySnapshot || snapshot->model != _smallBodySnapshot->model
-        || snapshot->paths.size() != _smallBodySnapshot->positions.size() || snapshot->cancelled))
+        || snapshot->paths.size() != _smallBodySnapshot->positions.size()
+        || snapshot->minor_planet_paths.size() != _smallBodySnapshot->positions.size() || snapshot->cancelled))
         throw std::invalid_argument("small-body orbit snapshot/model mismatch");
     _smallBodyOrbits = std::move(snapshot);
     self.needsDisplay = YES;

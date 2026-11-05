@@ -126,11 +126,15 @@ NSString *string(const std::string& text) {
         [_samples.widthAnchor constraintEqualToConstant:65].active = YES;
         NSButton *apply = [NSButton buttonWithTitle:@"軌道区間を適用" target:self action:@selector(applySampling:)];
         NSStackView *sampling = [NSStackView stackViewWithViews:@[
-            [NSTextField labelWithString:@"TDB JD"], _firstJD, [NSTextField labelWithString:@"〜"], _lastJD,
+            [NSTextField labelWithString:@"彗星 TDB JD"], _firstJD, [NSTextField labelWithString:@"〜"], _lastJD,
             [NSTextField labelWithString:@"標本数"], _samples, apply]];
         sampling.spacing = 8;
         [rows addObject:sampling];
-        _orbitStatus = [NSTextField wrappingLabelWithString:@"軌道線は固定 TDB 区間の近似です。packed36 の数値 JD は混用しません。"];
+        NSTextField *orbitExplanation = [NSTextField wrappingLabelWithString:@"彗星は指定区間、36 byte の小惑星・外縁天体は元期から一周期を標本化します。標本数は共通です。小惑星・外縁天体の数値 JD の物理時系は未確定です。"];
+        orbitExplanation.accessibilityIdentifier = @"small-body-orbit-explanation";
+        orbitExplanation.font = [NSFont systemFontOfSize:11];
+        [rows addObject:orbitExplanation];
+        _orbitStatus = [NSTextField wrappingLabelWithString:@"軌道線は二体近似です。"];
         _orbitStatus.accessibilityIdentifier = @"small-body-orbit-status";
         _orbitStatus.font = [NSFont systemFontOfSize:11];
         _membership = [NSTextField labelWithString:@"表示集合 0 件（行の選択・検索とは独立）"];
@@ -179,6 +183,24 @@ NSString *string(const std::string& text) {
     _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
         _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
     if (self.window.visible) { [_table reloadData]; [self updateDetails]; }
+}
+- (SmallBodyBrowserDate)prepareSnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot
+    display:(std::shared_ptr<const SmallBodyDisplayModel>)display {
+    if (snapshot && snapshot->model != _model) throw std::invalid_argument("small-body snapshot/model mismatch");
+    if (display && (!_model || display->dataset().get() != &_model->dataset()))
+        throw std::invalid_argument("small-body display/model mismatch");
+    return {std::move(snapshot), std::move(display)};
+}
+- (void)commitPreparedDate:(SmallBodyBrowserDate&&)prepared {
+    _snapshot = std::move(prepared.snapshot);
+    _display = std::move(prepared.display);
+}
+- (void)finishDateUpdate {
+    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
+        _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
+    [self updateOptions];
+    [_table reloadData];
+    [self updateSelectionControls];
 }
 - (void)setDisplayModel:(std::shared_ptr<const SmallBodyDisplayModel>)display {
     if (display && (!_model || display->dataset().get() != &_model->dataset()))

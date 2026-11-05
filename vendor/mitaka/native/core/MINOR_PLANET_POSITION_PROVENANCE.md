@@ -50,6 +50,8 @@ invalid_argument / out_of_range / runtime_error を計算失敗の診断に変�
 
 ## 検証
 
+P1-4 の sampler は、位置評価で行全体が無効な場合と、その時刻だけ位置を得られない場合を明示的に区別する。原レコードに以前の不正診断があっても、元期が宣言期間外なだけなら後続の有効な標本を計算する。同一の code / field の以前の失敗診断と今回の異なる原因も保持する。この境界不具合は人工レコードで再現し、同梱 36 byte 実データでは再現していない。
+
 専用テストは `native/core/tests/test_minor_planet_position.cpp`。次の依存で独立ビルドする。
 
 ```sh

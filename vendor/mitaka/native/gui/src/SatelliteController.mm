@@ -173,6 +173,28 @@ NSString *string(const std::string& text) {
     _orbits = std::move(geometry);
     [self updateDetails];
 }
+- (SatellitePreparedDate)prepareSnapshot:(std::shared_ptr<const SatelliteSnapshot>)snapshot
+    display:(std::shared_ptr<const SatelliteDisplayModel>)display
+    orbitGeometry:(std::shared_ptr<const SatelliteOrbitGeometry>)geometry {
+    if (snapshot && snapshot->model != _model) throw std::invalid_argument("satellite snapshot/model mismatch");
+    if (display && (!_model || display->model().get() != &_model->model()))
+        throw std::invalid_argument("satellite display/model mismatch");
+    if (geometry && geometry->snapshot != snapshot)
+        throw std::invalid_argument("satellite orbit/snapshot mismatch");
+    return {std::move(snapshot), std::move(display), std::move(geometry)};
+}
+- (void)commitPreparedDate:(SatellitePreparedDate&&)prepared {
+    _snapshot = std::move(prepared.snapshot);
+    _display = std::move(prepared.display);
+    _orbits = std::move(prepared.orbits);
+}
+- (void)finishDateUpdate {
+    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本の衛星 %lu 件 · 出典 %lu 種類 · 位置評価 %lu 件",
+        _model->model().records().size(), _model->sources().size(), _snapshot ? _snapshot->positioned_count : 0] : @"データ未読込";
+    [self refreshDisplayControls];
+    if (self.window.visible) [_table reloadData];
+    [self updateDetails];
+}
 - (void)refreshDisplayControls {
     const auto options = _display ? _display->options() : SatelliteDisplayOptions{};
     const bool values[] = {options.visible,options.labels,options.orbits,options.selected_only};

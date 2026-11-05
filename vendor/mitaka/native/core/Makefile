@@ -19,13 +19,13 @@ CXXFLAGS += -O1 -fno-omit-frame-pointer -fsanitize=$(SANITIZE)
 LDFLAGS += -fsanitize=$(SANITIZE)
 endif
 
-SOURCES = src/astronomy.cpp src/catalog.cpp src/ephemeris.cpp src/rotation.cpp src/lunar.cpp src/observation.cpp src/extended_catalog.cpp src/place_catalog.cpp src/small_body_catalog.cpp src/small_body_text.cpp src/small_body_orbit.cpp src/satellite_catalog.cpp src/satellite_catalog_parser.cpp src/satellite_position.cpp src/satellite_rotation.cpp src/satellite_model.cpp src/satellite_registration.cpp src/satellite_absolute.cpp src/spacecraft_trajectory.cpp src/spacecraft_trajectory_parser.cpp src/spacecraft_position.cpp src/minor_planet_position.cpp src/small_body_orbit_path.cpp
+SOURCES = src/astronomy.cpp src/catalog.cpp src/ephemeris.cpp src/rotation.cpp src/lunar.cpp src/observation.cpp src/extended_catalog.cpp src/place_catalog.cpp src/small_body_catalog.cpp src/small_body_text.cpp src/small_body_orbit.cpp src/satellite_catalog.cpp src/satellite_catalog_parser.cpp src/satellite_position.cpp src/satellite_rotation.cpp src/satellite_model.cpp src/satellite_registration.cpp src/satellite_absolute.cpp src/spacecraft_trajectory.cpp src/spacecraft_trajectory_parser.cpp src/spacecraft_position.cpp src/minor_planet_position.cpp src/minor_planet_orbit_path.cpp src/small_body_orbit_path.cpp
 SOURCES += src/atmosphere.cpp src/atmosphere_multiple.cpp src/atmosphere_emission_map.cpp
 SOURCES += src/constellation_art.cpp src/eclipse.cpp src/terrain.cpp src/terrain_sampling.cpp
 SOURCES += src/galaxy_catalog.cpp src/our_galaxy_model.cpp src/our_galaxy_radiative.cpp
 OBJECTS = $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 LIBRARY = $(BUILD_DIR)/libmitaka_core.a
-TESTS = $(addprefix $(BUILD_DIR)/test_,astronomy catalog ephemeris rotation lunar observation extended_catalog place_catalog small_body_orbit small_body_catalog satellite_catalog satellite_position satellite_rotation satellite_model satellite_absolute spacecraft_trajectory spacecraft_position minor_planet_position small_body_orbit_path)
+TESTS = $(addprefix $(BUILD_DIR)/test_,astronomy catalog ephemeris rotation lunar observation extended_catalog place_catalog small_body_orbit small_body_catalog satellite_catalog satellite_position satellite_rotation satellite_model satellite_absolute spacecraft_trajectory spacecraft_position minor_planet_position minor_planet_orbit_path small_body_orbit_path)
 
 TESTS += $(BUILD_DIR)/test_atmosphere
 TESTS += $(BUILD_DIR)/test_constellation_art

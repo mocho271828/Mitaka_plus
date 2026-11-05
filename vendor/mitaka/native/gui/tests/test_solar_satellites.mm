@@ -217,6 +217,31 @@ void viewTests(std::shared_ptr<const SatelliteBrowserModel> source) {
     [view setSatelliteSnapshot:later];
     require(same([view cameraState].target, *later->positions[0]), "following tracks same-model Julian date updates");
     require(selectionCallbacks == 1, "same-model time update does not signal a selection change");
+    auto staged = snapshot(source);
+    staged->julian_date = later->julian_date + 1;
+    staged->positions[0] = Vec3{0.6, 0.4, 0.1};
+    const auto oldGeometry = [view satelliteOrbitGeometry];
+    const auto oldCamera = [view cameraState];
+    const auto prepared = prepare_satellite_scene(staged, display);
+    require(prepared.orbits() && prepared.orbits()->snapshot == staged && prepared.display() == display,
+        "preparation constructs geometry with the candidate snapshot and display");
+    require([view satelliteOrbitGeometry] == oldGeometry && same([view cameraState].target, oldCamera.target),
+        "preparation does not publish candidate geometry or move the camera");
+    rejects([&] { (void)prepare_satellite_scene(staged, wrongDisplay); }, "preparation rejects a mismatched display");
+    auto badPrepared = snapshot(source); badPrepared->positions.pop_back();
+    rejects([&] { (void)prepare_satellite_scene(badPrepared, display); }, "preparation rejects an invalid snapshot");
+    require([view satelliteOrbitGeometry] == oldGeometry && [view satelliteDisplayModel] == display &&
+        view.selectedSatelliteIndex == 0 && same([view cameraState].target, oldCamera.target),
+        "failed preparation leaves the published satellite scene unchanged");
+    const auto callbacksBeforeCommit = selectionCallbacks;
+    const BOOL needsNotification = [view commitPreparedSatelliteScene:prepared];
+    require([view satelliteOrbitGeometry] == prepared.orbits() && [view satelliteDisplayModel] == display &&
+        same([view cameraState].target, oldCamera.target) && selectionCallbacks == callbacksBeforeCommit,
+        "commit reuses prepared geometry and defers tracking and notifications");
+    [view finishSatelliteSceneUpdate:needsNotification];
+    require(same([view cameraState].target, *staged->positions[0]) && selectionCallbacks == callbacksBeforeCommit,
+        "finishing the update tracks the staged position without a selection change");
+    [view setSatelliteSnapshot:later];
     const auto validCamera = [view cameraState];
     [view selectSatellite:1];
     [view focusSelection];

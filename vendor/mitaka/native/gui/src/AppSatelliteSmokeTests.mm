@@ -28,7 +28,7 @@ bool sameSatelliteCamera(const SolarCamera& a, const SolarCamera& b) {
     return !a.frame || (sameSatellitePosition(a.frame->outward, b.frame->outward) &&
         sameSatellitePosition(a.frame->right, b.frame->right) && sameSatellitePosition(a.frame->up, b.frame->up));
 }
-void clearSatelliteByBlankClick(SolarSystemView *view) {
+bool clearSatelliteByBlankClick(SolarSystemView *view) {
     const auto planets = view.planetDisplayOptions;
     const BOOL smallBodies = view.smallBodiesVisible;
     const auto satellites = [view satelliteDisplayModel];
@@ -43,11 +43,17 @@ void clearSatelliteByBlankClick(SolarSystemView *view) {
     view.smallBodiesVisible = NO;
     [view setSatelliteDisplayModel:hiddenSatellites];
     view.spacecraftVisible = NO;
+    // クリックは実際に描画された世代を対象とするため、非表示を描画してから操作する。
+    [view display];
+    const auto displayed = [view displayedScene];
+    const bool hidden = !displayed.planet_display.visible && !displayed.small_bodies &&
+        displayed.satellite_display && !displayed.satellite_display->options().visible && !displayed.spacecraft;
     [view pickBodyAtPoint:NSMakePoint(NSMidX(view.bounds), NSMidY(view.bounds))];
     view.planetDisplayOptions = planets;
     view.smallBodiesVisible = smallBodies;
     [view setSatelliteDisplayModel:satellites];
     view.spacecraftVisible = spacecraft;
+    return hidden;
 }
 }
 
@@ -179,7 +185,7 @@ void clearSatelliteByBlankClick(SolarSystemView *view) {
                         "small-body selection retained the previous satellite parent source");
                 }
                 [self chooseSatellite:*chosen center:NO];
-                clearSatelliteByBlankClick(_solar);
+                require(clearSatelliteByBlankClick(_solar), "blank-click scene did not render hidden objects");
                 require(_solar.selectedSatelliteIndex == NSNotFound && _solar.selectedBodyIndex == NSNotFound &&
                     _solar.selectedSmallBodyIndex == NSNotFound && sameSatelliteParents(_solarBodies, defaults),
                     "blank click retained selection or the previous satellite parent source");
@@ -209,7 +215,8 @@ void clearSatelliteByBlankClick(SolarSystemView *view) {
         [self applySatelliteSnapshot:originalSnapshot];
         if (originalSatellite < rowCount) [_solar selectSatellite:originalSatellite];
         else if (_smallBodyModel && originalSmallBody < _smallBodyModel->dataset().records.size()) [_solar selectSmallBody:originalSmallBody];
-        else if (originalBody == NSNotFound) clearSatelliteByBlankClick(_solar);
+        else if (originalBody == NSNotFound)
+            require(clearSatelliteByBlankClick(_solar), "restored blank-click scene did not render hidden objects");
         [_solar setCameraState:saved.solar_camera];
         [self refreshSatelliteParents];
         require(sameSessionSmokeJSON(encode_session_state([self sessionState]), savedJSON) && _satelliteSnapshot == originalSnapshot &&

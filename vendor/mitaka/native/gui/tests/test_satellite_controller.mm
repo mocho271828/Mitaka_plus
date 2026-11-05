@@ -142,7 +142,28 @@ void tests() {
     nextFrame->julian_date = 2451546;
     nextFrame->positions[1035] = Vec3{1, 2, 3};
     nextFrame->positioned_count = 1;
-    [controller setSnapshot:nextFrame];
+    auto orbit = std::make_shared<SatelliteOrbitGeometry>();
+    orbit->snapshot = nextFrame;
+    auto wrongOrbit = std::make_shared<SatelliteOrbitGeometry>();
+    wrongOrbit->snapshot = frame;
+    auto wrongFrame = std::make_shared<SatelliteSnapshot>();
+    auto wrongModel = std::make_shared<SatelliteModel>(SatelliteDataset{});
+    auto wrongDisplay = std::make_shared<SatelliteDisplayModel>(wrongModel);
+    unsigned rejectedCandidates = 0;
+    try { (void)[controller prepareSnapshot:wrongFrame display:display orbitGeometry:nullptr]; }
+    catch (const std::invalid_argument&) { ++rejectedCandidates; }
+    try { (void)[controller prepareSnapshot:nextFrame display:wrongDisplay orbitGeometry:orbit]; }
+    catch (const std::invalid_argument&) { ++rejectedCandidates; }
+    try { (void)[controller prepareSnapshot:nextFrame display:display orbitGeometry:wrongOrbit]; }
+    catch (const std::invalid_argument&) { ++rejectedCandidates; }
+    require(rejectedCandidates == 3 && [details.string containsString:@"2451545"] && table.selectedRow == 0,
+        "invalid candidate leaves the snapshot and selection unchanged");
+    auto prepared = [controller prepareSnapshot:nextFrame display:display orbitGeometry:orbit];
+    require([details.string containsString:@"2451545"], "preparation leaves displayed details unchanged");
+    [controller commitPreparedDate:std::move(prepared)];
+    require([details.string containsString:@"2451545"] && table.selectedRow == 0,
+        "commit does not update the UI or disturb the selection");
+    [controller finishDateUpdate];
     NSString *state = [controller tableView:table objectValueForTableColumn:table.tableColumns[3] row:0];
     require(table.selectedRow == 0 && [state isEqualToString:@"位置評価済み"],
         "snapshot update retains the source selection and updates evaluated state");

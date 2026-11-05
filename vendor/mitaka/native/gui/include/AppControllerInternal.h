@@ -135,6 +135,7 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 }
 
 - (BOOL)setDate:(double)jd;
+- (void)applyDate:(id)sender;
 - (BOOL)updateDate:(double)jd refreshOrbits:(BOOL)refreshOrbits;
 - (void)showError:(NSString *)message;
 - (void)changeMode:(id)sender;
@@ -230,6 +231,7 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)toggleClockTracking:(id)sender;
 - (BOOL)validateTimeMenuItem:(NSMenuItem *)item;
 - (NSString *)timeDisplayDescription;
+- (NSString *)timeDisplayDescriptionForJulianDate:(double)jd;
 @end
 
 @interface AppController (DisplayCommands)

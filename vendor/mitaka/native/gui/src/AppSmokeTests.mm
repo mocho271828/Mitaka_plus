@@ -1,9 +1,26 @@
 #import "AppControllerInternal.h"
+#import "SolarSystemViewInternal.h"
+#import "SolarDateUpdate.h"
+#import <objc/runtime.h>
 #include "surface_navigation.hpp"
 #include "satellite_scene.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+
+static std::shared_ptr<mitaka::gui::PreparedSolarDate> failSolarDatePreparation(
+    id, SEL, const mitaka::gui::SolarDateInput&) {
+    throw std::runtime_error("injected solar date preparation failure");
+}
+static void failSkyDatePresentation(id, SEL) {
+    throw std::runtime_error("injected sky date presentation failure");
+}
+static IMP originalHorizonFinish = nullptr;
+static bool horizonFinishCalled = false;
+static void recordHorizonDatePresentation(id receiver, SEL selector) {
+    horizonFinishCalled = true;
+    reinterpret_cast<void (*)(id, SEL)>(originalHorizonFinish)(receiver, selector);
+}
 
 @implementation AppController (SmokeTests)
 - (void)runSmokeTest {
@@ -34,7 +51,81 @@
     const auto range = _model->time_range();
     const double savedJD = _jd;
     const double nextJD = savedJD < range.second ? std::min(savedJD + 1, range.second) : range.first;
-    if (![self setDate:nextJD] || ![self setDate:savedJD]) std::exit(EXIT_FAILURE);
+    __block BOOL acceptedOffMain = YES;
+    dispatch_semaphore_t backgroundFinished = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        acceptedOffMain = [self updateDate:nextJD refreshOrbits:YES];
+        dispatch_semaphore_signal(backgroundFinished);
+    });
+    dispatch_semaphore_wait(backgroundFinished, DISPATCH_TIME_FOREVER);
+    if (acceptedOffMain || _jd != savedJD || _horizon.julianDate != savedJD ||
+        [_solar displayedScene].julian_date != savedJD) {
+        [self showError:@"smoke: background date update was not rejected atomically"];
+        return;
+    }
+    Method prepareDate = class_getInstanceMethod(SolarSystemView.class, @selector(prepareDateUpdate:));
+    if (!prepareDate) { [self showError:@"smoke: solar date preparation API missing"]; return; }
+    for (NSInteger mode = 0; mode < 3; ++mode) {
+        _mode.selectedSegment = mode;
+        [self changeMode:nil];
+        const auto oldScene = [_solar displayedScene];
+        const auto oldMoon = oldScene.bodies[10];
+        const auto oldCamera = [_solar cameraState];
+        const auto oldSmall = _smallBodySnapshot;
+        const auto oldSatellite = _satelliteSnapshot;
+        const auto oldSpacecraft = _spacecraftSnapshot;
+        const double oldHorizon = _horizon.julianDate;
+        NSString *oldDateText = [_dateLabel.stringValue copy];
+        IMP original = method_setImplementation(prepareDate, reinterpret_cast<IMP>(failSolarDatePreparation));
+        _smokeTest = NO;
+        const BOOL accepted = [self updateDate:nextJD refreshOrbits:YES];
+        _jdField.stringValue = [NSString stringWithFormat:@"%.6f", nextJD];
+        [self applyDate:nil];
+        const BOOL restoredAfterFailure = [_jdField.stringValue isEqualToString:[NSString stringWithFormat:@"%.6f", savedJD]];
+        _jdField.stringValue = @"invalid";
+        [self applyDate:nil];
+        const BOOL restoredAfterInvalid = [_jdField.stringValue isEqualToString:[NSString stringWithFormat:@"%.6f", savedJD]];
+        _smokeTest = YES;
+        method_setImplementation(prepareDate, original);
+        const auto afterScene = [_solar displayedScene];
+        const auto afterCamera = [_solar cameraState];
+        const auto afterMoon = afterScene.bodies[10];
+        if (accepted || !restoredAfterFailure || !restoredAfterInvalid || _jd != savedJD || _horizon.julianDate != oldHorizon ||
+            afterScene.julian_date != savedJD || afterMoon.position_au.x != oldMoon.position_au.x ||
+            afterMoon.position_au.y != oldMoon.position_au.y || afterMoon.position_au.z != oldMoon.position_au.z ||
+            afterCamera.target.x != oldCamera.target.x || afterCamera.target.y != oldCamera.target.y ||
+            afterCamera.target.z != oldCamera.target.z || _smallBodySnapshot != oldSmall ||
+            _satelliteSnapshot != oldSatellite || _spacecraftSnapshot != oldSpacecraft ||
+            ![_dateLabel.stringValue isEqualToString:oldDateText]) {
+            [self showError:@"smoke: failed date preparation changed the published state"];
+            return;
+        }
+    }
+    Method skyFinish = class_getInstanceMethod(SkyView.class, @selector(finishDateUpdate));
+    Method horizonFinish = class_getInstanceMethod(HorizonView.class, @selector(finishDateUpdate));
+    if (!skyFinish || !horizonFinish) { [self showError:@"smoke: date presentation API missing"]; return; }
+    IMP originalSkyFinish = method_setImplementation(skyFinish, reinterpret_cast<IMP>(failSkyDatePresentation));
+    originalHorizonFinish = method_setImplementation(horizonFinish, reinterpret_cast<IMP>(recordHorizonDatePresentation));
+    horizonFinishCalled = false;
+    _smokeTest = NO;
+    const BOOL presentationAccepted = [self updateDate:nextJD refreshOrbits:YES];
+    _smokeTest = YES;
+    method_setImplementation(skyFinish, originalSkyFinish);
+    method_setImplementation(horizonFinish, originalHorizonFinish);
+    if (!presentationAccepted || !horizonFinishCalled || _jd != nextJD ||
+        _horizon.julianDate != nextJD || [_solar displayedScene].julian_date != nextJD ||
+        ![self setDate:savedJD]) {
+        [self showError:@"smoke: date presentation failure interrupted publication or later notifications"];
+        return;
+    }
+    for (NSInteger mode = 0; mode < 3; ++mode) {
+        _mode.selectedSegment = mode;
+        [self changeMode:nil];
+        if (![self setDate:nextJD] || _horizon.julianDate != _jd ||
+            [_solar displayedScene].julian_date != _jd || ![self setDate:savedJD] ||
+            _horizon.julianDate != _jd || [_solar displayedScene].julian_date != _jd)
+            std::exit(EXIT_FAILURE);
+    }
     _mode.selectedSegment = 0;
     [self changeMode:nil];
     [_sky selectBody:4];
@@ -129,6 +220,9 @@
         [self->_playback pause];
         if (!(self->_jd > startJD) || self->_playback.playing || !self->_jdField.enabled) {
             [self showError:@"smoke: real timer failed to advance or pause"]; return;
+        }
+        if (self->_horizon.julianDate != self->_jd || [self->_solar displayedScene].julian_date != self->_jd) {
+            [self showError:@"smoke: displayed scene playback time mismatch"]; return;
         }
         if (!self->_satelliteSnapshot || self->_satelliteSnapshot->model != self->_satelliteModel ||
             self->_satelliteSnapshot->julian_date != self->_jd) {

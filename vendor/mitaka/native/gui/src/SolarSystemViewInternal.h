@@ -32,6 +32,7 @@
     mitaka::gui::SurfaceNavigation _navigation;
     mitaka::gui::InterplanetaryFlight _journey;
     BOOL _journeyActive;
+    BOOL _dateJourneyFinished;
     NSTimer *_flightTimer;
     NSString *_flightNotice;
     BOOL _surfaceActive;

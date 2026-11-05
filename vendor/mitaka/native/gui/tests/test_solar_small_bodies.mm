@@ -13,6 +13,70 @@ namespace {
 unsigned checks = 0;
 void require(bool value, const char *message) { ++checks; if (!value) throw std::runtime_error(message); }
 bool same(Vec3 a, Vec3 b) { return std::hypot(a.x-b.x, a.y-b.y, a.z-b.z) < 1e-12; }
+void minor_planet_orbit_tests() {
+    auto dataset = std::make_shared<SmallBodyDataset>();
+    SmallBodyRecord asteroid;
+    asteroid.id = {"mp.dat", 0};
+    asteroid.kind = SmallBodyKind::asteroid;
+    asteroid.encoding = SmallBodyEncoding::packed_36;
+    dataset->records.push_back(asteroid);
+    auto tno = asteroid;
+    tno.id = {"TNO.dat", 0};
+    tno.kind = SmallBodyKind::trans_neptunian;
+    dataset->records.push_back(tno);
+    dataset->sources.push_back({"mp.dat", {}, "asteroid-fixture", 1, true});
+    dataset->sources.push_back({"TNO.dat", {}, "tno-fixture", 1, true});
+    auto model = std::make_shared<SmallBodyModel>(dataset);
+    auto display = std::make_shared<SmallBodyDisplayModel>(dataset);
+    display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
+    display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, false});
+    SmallBodySnapshot frame;
+    frame.model = model;
+    frame.positions.resize(dataset->records.size());
+    SmallBodyOrbitSnapshot orbits;
+    orbits.model = model;
+    orbits.display = display;
+    orbits.paths.resize(dataset->records.size());
+    orbits.minor_planet_paths.resize(dataset->records.size());
+    MinorPlanetOrbitPath path;
+    path.id = asteroid.id;
+    path.samples = {{1, Vec3{0.1, 0.2, 0.1}}, {2, Vec3{0.3, 0.4, 0.2}},
+                    {3, std::nullopt}, {4, Vec3{0.5, 0.6, 0.3}}, {5, Vec3{0.7, 0.8, 0.4}}};
+    orbits.minor_planet_paths[0] = path;
+    path.id = tno.id;
+    orbits.minor_planet_paths[1] = path;
+    SolarCamera camera;
+    camera.distance_au = 7;
+    const NSRect map = NSMakeRect(18, 40, 760, 520);
+    std::vector<SmallBodyProjectedOrbitSegment> segments;
+    const auto collect = [&] {
+        segments.clear();
+        visit_small_body_orbit_segments(frame, *display, &orbits, camera, map,
+            [&](const auto& segment) { segments.push_back(segment); });
+    };
+    collect();
+    require(segments.size() == 4 && segments[0].index == 0 && segments[2].index == 1,
+        "asteroid and TNO use their original rows and do not bridge missing samples");
+    const auto expected = project_solar_segment(*path.samples[0].position, *path.samples[1].position,
+        camera, map.size.width, map.size.height);
+    require(expected && std::abs(segments[0].first.x - (*expected)[0].x - map.origin.x) < 1e-10
+        && std::abs(segments[0].second.y - (*expected)[1].y - map.origin.y) < 1e-10,
+        "packed36 orbit lines use the shared heliocentric projection");
+    display->set_kind_options(SmallBodyKind::asteroid, {true, false, false, false});
+    collect();
+    require(segments.size() == 2 && segments[0].index == 1, "asteroid orbit toggle leaves TNO lines visible");
+    display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
+    orbits.minor_planet_paths[0]->id.record_ordinal = 2;
+    collect();
+    require(segments.size() == 2 && segments[0].index == 1, "packed36 path rejects incorrect original row identity");
+    orbits.minor_planet_paths[0]->id = asteroid.id;
+    orbits.minor_planet_paths[0]->cancelled = true;
+    collect();
+    require(segments.size() == 2 && segments[0].index == 1, "cancelled partial packed36 paths are not drawn");
+    orbits.cancelled = true;
+    collect();
+    require(segments.empty(), "cancelled whole snapshot is not drawn");
+}
 void tests() {
     auto dataset = std::make_shared<SmallBodyDataset>();
     SmallBodyRecord record;
@@ -82,6 +146,12 @@ void tests() {
     [view setSmallBodySnapshot:frame];
     [view setSmallBodyDisplayModel:display];
     [view setSmallBodyOrbitSnapshot:orbits];
+    auto malformedOrbits = std::make_shared<SmallBodyOrbitSnapshot>(*orbits);
+    malformedOrbits->minor_planet_paths.clear();
+    bool rejectedMalformedOrbits = false;
+    try { [view setSmallBodyOrbitSnapshot:malformedOrbits]; }
+    catch (const std::invalid_argument&) { rejectedMalformedOrbits = true; }
+    require(rejectedMalformedOrbits, "orbit snapshot rejects mismatched minor-planet path count");
     require(view.visibleSmallBodyCount == 1, "solar view displays valid small body positions");
     const auto viewMap = NSInsetRect(view.bounds, 18, 40);
     const auto viewPoints = visible_small_bodies(*frame, *display, camera, viewMap);
@@ -177,7 +247,7 @@ void tests() {
 int main() {
     @autoreleasepool {
         [NSApplication sharedApplication];
-        try { tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
+        try { minor_planet_orbit_tests(); tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
         catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }
     }
 }

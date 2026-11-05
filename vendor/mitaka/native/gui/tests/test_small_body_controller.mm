@@ -49,6 +49,21 @@ void tests() {
     auto display = std::make_shared<SmallBodyDisplayModel>(dataset);
     [controller setModel:model snapshot:frame];
     [controller setDisplayModel:display];
+    auto foreignDataset = std::make_shared<SmallBodyDataset>();
+    auto foreignDisplay = std::make_shared<SmallBodyDisplayModel>(foreignDataset);
+    bool rejectedCandidate = false;
+    try { (void)[controller prepareSnapshot:frame display:foreignDisplay]; }
+    catch (const std::invalid_argument&) { rejectedCandidate = true; }
+    require(rejectedCandidate, "candidate with another dataset is rejected before publication");
+    auto foreignModel = std::make_shared<SmallBodyModel>(foreignDataset);
+    auto foreignFrame = evaluate_small_body_snapshot(foreignModel, 2451545);
+    rejectedCandidate = false;
+    try { (void)[controller prepareSnapshot:foreignFrame display:display]; }
+    catch (const std::invalid_argument&) { rejectedCandidate = true; }
+    require(rejectedCandidate, "candidate with another snapshot model is rejected before publication");
+    auto prepared = [controller prepareSnapshot:frame display:display];
+    [controller commitPreparedDate:std::move(prepared)];
+    [controller finishDateUpdate];
     require(table.numberOfRows == 0 && !next.enabled, "search invalidates old rows immediately");
     waitForResult(count);
     require(table.numberOfRows == 500 && next.enabled && !previous.enabled, "first page uses bounded visible row references");
@@ -110,6 +125,12 @@ void tests() {
     NSTextField *samples = (NSTextField *)findView(root, ^bool(NSView *view) {
         return [view.accessibilityIdentifier isEqualToString:@"small-body-orbit-samples"];
     });
+    NSTextField *orbitExplanation = (NSTextField *)findView(root, ^bool(NSView *view) {
+        return [view.accessibilityIdentifier isEqualToString:@"small-body-orbit-explanation"];
+    });
+    require([orbitExplanation.stringValue containsString:@"元期から一周期"]
+        && [orbitExplanation.stringValue containsString:@"物理時系は未確定"],
+        "orbit controls explain packed36 sampling and unresolved physical time scale");
     NSTextField *orbitStatus = (NSTextField *)findView(root, ^bool(NSView *view) {
         return [view.accessibilityIdentifier isEqualToString:@"small-body-orbit-status"];
     });

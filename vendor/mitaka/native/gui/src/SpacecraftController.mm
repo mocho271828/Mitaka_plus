@@ -138,6 +138,18 @@ NSString *string(const std::string& text) {
         _model->model().dataset().definitions.size(), _model->sources().size(), _snapshot ? _snapshot->positioned_count : 0] : @"データ未読込";
     if (self.window.visible) { [_table reloadData]; [self updateDetails]; }
 }
+- (std::shared_ptr<const SpacecraftSnapshot>)prepareSnapshot:(std::shared_ptr<const SpacecraftSnapshot>)snapshot {
+    if (snapshot && snapshot->model != _model) throw std::invalid_argument("spacecraft snapshot/model mismatch");
+    return snapshot;
+}
+- (void)commitPreparedDate:(std::shared_ptr<const SpacecraftSnapshot>&&)snapshot {
+    _snapshot = std::move(snapshot);
+}
+- (void)finishDateUpdate {
+    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本の探査機 %lu 件 · 出典 %lu 種類 · 位置評価 %lu 件",
+        _model->model().dataset().definitions.size(), _model->sources().size(), _snapshot ? _snapshot->positioned_count : 0] : @"データ未読込";
+    if (self.window.visible) { [_table reloadData]; [self updateDetails]; }
+}
 - (void)showWindow:(id)sender { [super showWindow:sender]; [_table reloadData]; [self updateDetails]; }
 - (void)filter:(id)sender { (void)sender; _offset = 0; [self startSearch]; }
 - (void)startSearch {

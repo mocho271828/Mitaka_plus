@@ -18,11 +18,16 @@
     auto date = mitaka::gregorian_date_time((range.first + range.second) / 2);
     date.hour = 12; date.minute = 34; date.second = 56;
     const double expectedJD = mitaka::julian_date(date);
-    std::size_t asteroidRows = 0;
-    for (const auto& record : _smallBodyModel->dataset().records)
-        if (record.kind == mitaka::SmallBodyKind::asteroid) ++asteroidRows;
-    const bool asteroidBudgetExceeded = asteroidRows >
-        maximum_small_body_orbit_total_samples / _smallBodyOrbitSampling.sample_count;
+    auto budgetCandidate = *_smallBodyDisplay;
+    for (const auto kind : {mitaka::SmallBodyKind::asteroid, mitaka::SmallBodyKind::trans_neptunian,
+                            mitaka::SmallBodyKind::comet})
+        budgetCandidate.set_kind_options(kind, {true, true, true, kind != mitaka::SmallBodyKind::asteroid});
+    bool asteroidBudgetExceeded = false;
+    try {
+        (void)small_body_orbit_requested_rows(*_smallBodyModel, budgetCandidate, _smallBodyOrbitSampling);
+    } catch (const std::length_error&) {
+        asteroidBudgetExceeded = true;
+    }
     const std::int32_t knownHIP = _starNameSelection && !_starNameSelection->known_hips().empty()
         ? *_starNameSelection->known_hips().begin() : 0;
     NSString *source = [NSString stringWithFormat:
@@ -68,10 +73,13 @@
          " assert(not pcall(function() object:hide('All') end))\n"
          " assert(not pcall(function() object:isVisible('All') end))\n"
          "end\n"
+         "local ok,failure=pcall(function() Asteroids.selectedOnly=false end)\n"
          "if %@ then\n"
-         " local ok,failure=pcall(function() Asteroids.selectedOnly=false end)\n"
          " assert(not ok and type(failure)=='string' and string.find(failure,'total sample limit',1,true))\n"
          " assert(Asteroids.selectedOnly and Asteroids.orbits and Asteroids.visible and Asteroids.labels)\n"
+         "else\n"
+         " assert(ok and not Asteroids.selectedOnly)\n"
+         " Asteroids.selectedOnly=true; assert(Asteroids.selectedOnly)\n"
          "end\n"
          "print('__smoke_small_satellite')\n"
          "assert(not Asteroids.labels and not TNObjects.orbits and not Comets.selectedOnly and not Comets.orbits and not Satellites.labels)\n"
@@ -227,7 +235,7 @@
         if (failure) { [controller showError:failure]; return; }
         if (![controller applySessionState:original]) return;
         std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,radius,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
-            asteroidBudgetExceeded ? "rejection-tested" : "no-local-over-budget-asteroids");
+            asteroidBudgetExceeded ? "rejection-tested" : "acceptance-tested");
         completion();
     };
     // RPC の出力境界で通常のウィンドウ操作を行い、次の Lua 読み取りが実表示を参照することを確かめる。

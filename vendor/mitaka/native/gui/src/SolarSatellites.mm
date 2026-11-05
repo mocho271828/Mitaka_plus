@@ -7,6 +7,27 @@
 using namespace mitaka;
 using namespace mitaka::gui;
 
+PreparedSatelliteScene mitaka::gui::prepare_satellite_scene(
+    std::shared_ptr<const SatelliteSnapshot> snapshot,
+    std::shared_ptr<const SatelliteDisplayModel> display) {
+    if (snapshot) {
+        if (!snapshot->model || snapshot->positions.size() != snapshot->model->model().records().size())
+            throw std::invalid_argument("satellite snapshot does not match its dataset");
+        if (!std::isfinite(snapshot->julian_date)) throw std::invalid_argument("satellite snapshot Julian date must be finite");
+        for (const auto& position : snapshot->positions)
+            if (position && (!std::isfinite(position->x) || !std::isfinite(position->y) || !std::isfinite(position->z)))
+                throw std::invalid_argument("satellite snapshot position must be finite");
+        const auto model = std::shared_ptr<const SatelliteModel>(snapshot->model, &snapshot->model->model());
+        if (display && display->model() != model)
+            throw std::invalid_argument("satellite display does not match its snapshot");
+        if (!display) display = std::make_shared<SatelliteDisplayModel>(model);
+    } else if (display) {
+        throw std::invalid_argument("satellite display does not match its snapshot");
+    }
+    auto orbits = snapshot ? satellite_orbit_geometry(snapshot) : nullptr;
+    return PreparedSatelliteScene(std::move(snapshot), std::move(display), std::move(orbits));
+}
+
 @implementation SolarSystemView (Satellites)
 - (NSUInteger)selectedSatelliteIndex { return !_selection && _satelliteSelection ? *_satelliteSelection : NSNotFound; }
 - (BOOL)satellitesSceneVisible {
@@ -24,30 +45,27 @@ using namespace mitaka::gui;
     self.needsDisplay = YES;
 }
 - (void)setSatelliteSnapshot:(std::shared_ptr<const SatelliteSnapshot>)snapshot {
-    if (snapshot) {
-        if (!snapshot->model || snapshot->positions.size() != snapshot->model->model().records().size())
-            throw std::invalid_argument("satellite snapshot does not match its dataset");
-        if (!std::isfinite(snapshot->julian_date)) throw std::invalid_argument("satellite snapshot Julian date must be finite");
-        for (const auto& position : snapshot->positions)
-            if (position && (!std::isfinite(position->x) || !std::isfinite(position->y) || !std::isfinite(position->z)))
-                throw std::invalid_argument("satellite snapshot position must be finite");
-    }
-    const auto orbits = snapshot ? satellite_orbit_geometry(snapshot) : nullptr;
     auto display = _satelliteDisplay;
     if (!snapshot) display.reset();
-    else if (!display || display->model().get() != &snapshot->model->model()) {
-        const auto model = std::shared_ptr<const SatelliteModel>(snapshot->model, &snapshot->model->model());
-        display = std::make_shared<SatelliteDisplayModel>(model);
-    }
+    else if (!snapshot->model || (display && display->model().get() != &snapshot->model->model())) display.reset();
+    const auto prepared = prepare_satellite_scene(std::move(snapshot), std::move(display));
+    const BOOL notify = [self commitPreparedSatelliteScene:prepared];
+    [self finishSatelliteSceneUpdate:notify];
+}
+- (BOOL)commitPreparedSatelliteScene:(const PreparedSatelliteScene&)scene {
+    const auto& snapshot = scene.snapshot();
     const BOOL wasSelected = !_selection && _satelliteSelection.has_value();
     if (!snapshot || !_satelliteSnapshot || snapshot->model != _satelliteSnapshot->model) {
         if (_satelliteSelection && !_selection) _following = NO;
         _satelliteSelection.reset();
     }
-    _satelliteSnapshot = std::move(snapshot);
-    _satelliteDisplay = std::move(display);
-    _satelliteOrbits = orbits;
-    if (wasSelected || (!_selection && _satelliteSelection)) {
+    _satelliteSnapshot = snapshot;
+    _satelliteDisplay = scene.display();
+    _satelliteOrbits = scene.orbits();
+    return wasSelected || (!_selection && _satelliteSelection);
+}
+- (void)finishSatelliteSceneUpdate:(BOOL)notifySelection {
+    if (notifySelection) {
         [self updateTrackedCamera];
         [self notifySelection];
         [self notifyCamera];
