@@ -56,6 +56,15 @@ void test_roundtrip() {
         check(decode_session_state(encode_session_state(state)).terrain_amplification == state.terrain_amplification,
               "terrain amplification did not roundtrip");
     }
+    // 銀河まで拡張した距離は、保存と復元の両方で描画カメラと同じ上限を使う。
+    for (const double distance : {1001.0, 1e12, maximum_solar_distance_au}) {
+        state.solar_camera.distance_au = distance;
+        check(decode_session_state(encode_session_state(state)).solar_camera.distance_au == distance,
+              "extended camera distance did not roundtrip");
+    }
+    state.solar_camera.distance_au = maximum_solar_distance_au * 2;
+    rejects([&] { encode_session_state(state); });
+    state.solar_camera.distance_au = 100;
     state.terrain_amplification = static_cast<TerrainAmplification>(0);
     rejects([&] { encode_session_state(state); });
     state.terrain_amplification = TerrainAmplification::x20;
@@ -205,7 +214,7 @@ void test_ranges_and_camera() {
         [object[@"horizon_viewport"] addEntriesFromDictionary:change];
         rejects([&] { decode_session_state(json_bytes(object)); });
     }
-    for (NSDictionary *change in @[@{@"pitch_deg": @90}, @{@"distance_au": @0}, @{@"distance_au": @1001},
+    for (NSDictionary *change in @[@{@"pitch_deg": @90}, @{@"distance_au": @0}, @{@"distance_au": @(maximum_solar_distance_au * 2)},
                                    @{@"distance_au": @1e-10}, @{@"target": @[@1, @2]},
                                    @{@"target": @[@1, @2, @YES]}, @{@"frame": @{}},
                                    @{@"frame": @{@"right": @[@1, @0, @0], @"up": @[@0, @1, @0],
