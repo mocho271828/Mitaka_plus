@@ -10,6 +10,8 @@ struct GalaxyOverlayRequest {
     NSSize size;
     double scale;
     GalaxySpatialVisibility visibility;
+    bool hip_visible;
+    bool our_galaxy_visible;
 };
 enum class GalaxyOverlayDisplay { none, preview, complete };
 struct GalaxyOverlayDiagnostics {
@@ -37,6 +39,9 @@ struct GalaxyOverlaySelection {
 - (std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model;
 - (void)invalidatePendingPicks;
 - (void)setVisibility:(mitaka::gui::GalaxySpatialVisibility)visibility;
+- (void)setHipVisible:(BOOL)visible;
+- (void)setOurGalaxyVisible:(BOOL)visible;
+- (BOOL)isOurGalaxyVisible;
 // 前回描画の可視性・抽出条件・投影を満たす行か照会する。
 - (BOOL)isRecordDisplayed:(mitaka::gui::GalaxySpatialRecordId)record;
 - (BOOL)isHipDisplayed:(std::size_t)index;

@@ -300,6 +300,7 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 NSString *ourPath = [self->_activePath stringByAppendingPathComponent:@"ourgalaxy_model.dat"];
                 if ([[NSFileManager defaultManager] fileExistsAtPath:ourPath]) {
                     if (![self->_solar ourGalaxyModel]) failGalaxySmoke("real OurGalaxy model was not loaded");
+                    [self setMilkyWayMode:MilkyWayMode::normal];
                     auto camera = [self->_solar cameraState];
                     camera.target = {0, 0, 0};
                     camera.distance_au = 20000 * astronomical_units_per_parsec;
@@ -331,6 +332,21 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                     [self->_solar focusSelection];
                     if (!solarGalaxyVectorMatches(overview.target, [self->_solar cameraState].target))
                         failGalaxySmoke("OurGalaxy focus did not preserve the center");
+                    [self->_solar setGalaxyModel:nullptr];
+                    if (![self->_solar isOurGalaxySelected] ||
+                        ![[self->_solar cameraStateDescription] containsString:@"選択天体を追従"] ||
+                        !solarGalaxyVectorMatches(overview.target, [self->_solar cameraState].target))
+                        failGalaxySmoke("SDSS replacement lost OurGalaxy selection or tracking");
+                    [self->_solar setGalaxyModel:state->model];
+                    const auto milkyWayMode = self->_sky.milkyWayMode;
+                    [self setMilkyWayMode:MilkyWayMode::none];
+                    if ([self->_solar isOurGalaxySelected] ||
+                        [[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
+                        failGalaxySmoke("hiding OurGalaxy retained its selection or tracking");
+                    [self showOurGalaxyOverview:nil];
+                    if ([self->_solar isOurGalaxySelected])
+                        failGalaxySmoke("hidden OurGalaxy overview was selectable");
+                    [self setMilkyWayMode:milkyWayMode];
                 }
                 const auto hip = [self->_solar hipModel];
                 if (hip && !hip->points.empty()) {
@@ -369,6 +385,15 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 if (before.distance_au != after.distance_au || !solarGalaxyFrameMatches(before.frame, after.frame) ||
                     ![[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
                     failGalaxySmoke("HIP focus changed orientation or did not enable tracking");
+                [self->_solar setGalaxyModel:nullptr];
+                if ([self->_solar selectedHipIndex] != selected ||
+                    ![[self->_solar cameraStateDescription] containsString:@"選択天体を追従"] ||
+                    !solarGalaxyVectorMatches(after.target, [self->_solar cameraState].target))
+                    failGalaxySmoke("SDSS replacement lost HIP selection or tracking");
+                [self->_solar setGalaxyModel:state->model];
+                if ([self->_solar selectedHipIndex] != selected ||
+                    ![[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
+                    failGalaxySmoke("SDSS restore lost HIP selection or tracking");
                 // 地球付近で以前の表示下限を往復し、地表カメラの最小距離でも同じ恒星が描かれる。
                 const auto star = [self->_solar hipModel]->points.front().position;
                 const double x = star.x_pc - 1.0 / astronomical_units_per_parsec;
@@ -389,6 +414,17 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                         !solarGalaxyCameraMatches(nearDiag.displayed->camera, closeCamera))
                         failGalaxySmoke("HIP disappeared near the old 0.206 AU boundary or minimum distance");
                 }
+                // 恒星の表示設定は同じ 3D レイヤーにも届き、選択と追尾を解除する。
+                auto stars = [self starDisplayOptions];
+                const bool starsVisible = stars.visible;
+                [self->_solar focusSelection];
+                stars.visible = false;
+                [self setStarDisplayOptions:stars];
+                if ([self->_solar selectedHipIndex] ||
+                    [[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
+                    failGalaxySmoke("hiding HIP retained its selection or tracking");
+                stars.visible = starsVisible;
+                [self setStarDisplayOptions:stars];
                 state->phase = 12;
             }
             if (state->phase == 12) {
@@ -485,6 +521,16 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
             if (diag.display != GalaxyOverlayDisplay::complete || !diag.displayed ||
                 !solarGalaxyCameraMatches(diag.displayed->camera, state->latest)) return;
             if (diag.displayed_drawn == 0) failGalaxySmoke("latest SDSS frame contained no rendered sources");
+            [self->_solar focusSelection];
+            [self->_solar setGalaxyModel:state->model];
+            if (![self->_solar selectedGalaxyRecord] ||
+                ![[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
+                failGalaxySmoke("unchanged SDSS model lost selection or tracking");
+            [self->_solar setGalaxyModel:nullptr];
+            if ([self->_solar selectedGalaxyRecord] ||
+                [[self->_solar cameraStateDescription] containsString:@"選択天体を追従"])
+                failGalaxySmoke("replaced SDSS model retained stale selection or tracking");
+            [self->_solar setGalaxyModel:state->model];
             [timer invalidate];
             [self->_solar resetCamera];
             std::printf("Solar/galaxy AppKit smoke passed: real OurGalaxy and HIP draw when available, real SDSS draw, selection/focus, 1000 AU and 1 pc zoom round trip, latest frame\n");

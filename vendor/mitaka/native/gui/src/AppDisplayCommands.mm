@@ -61,6 +61,7 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     }
     _sky.milkyWayMode = mode;
     _horizon.milkyWayMode = mode;
+    [_solar setOurGalaxyVisible:mode != MilkyWayMode::none];
     [NSApp.mainMenu update];
 }
 - (PlanetDisplayOptions)planetDisplayOptions { return _solar.planetDisplayOptions; }
@@ -96,6 +97,7 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     validate_star_display(options);
     _sky.starDisplayOptions = options;
     _horizon.starDisplayOptions = options;
+    [_solar setHipVisible:options.visible];
     if (_model && !_loading) [self refresh];
     [NSApp.mainMenu update];
 }

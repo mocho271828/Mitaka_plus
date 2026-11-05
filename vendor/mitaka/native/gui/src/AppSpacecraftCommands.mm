@@ -21,13 +21,15 @@
 - (void)applySpacecraftSnapshot:(std::shared_ptr<const SpacecraftSnapshot>)snapshot {
     _spacecraftSnapshot = std::move(snapshot);
     [_solar setSpacecraftSnapshot:_spacecraftSnapshot];
+    [_horizon setSpacecraftSnapshot:_spacecraftSnapshot];
     [_spacecraftBrowser setSnapshot:_spacecraftSnapshot];
 }
 - (void)toggleSpacecraft:(id)sender {
     (void)sender;
     if (!_spacecraftModel || _loading) return;
     _solar.spacecraftVisible = !_solar.spacecraftVisible;
-    _mode.selectedSegment = 1;
+    _horizon.spacecraftVisible = _solar.spacecraftVisible;
+    if (_mode.selectedSegment != 2) _mode.selectedSegment = 1;
     [self changeMode:nil];
 }
 - (void)toggleSpacecraftDisplay:(NSMenuItem *)sender {
@@ -40,14 +42,19 @@
         default: return;
     }
     _solar.spacecraftDisplayOptions = options;
+    _horizon.spacecraftDisplayOptions = options;
 }
 - (void)chooseSpacecraft:(NSUInteger)index center:(BOOL)center {
     if (!_spacecraftModel || _loading || index >= _spacecraftModel->model().dataset().definitions.size()) return;
     [_solar selectSpacecraft:index];
     _solar.spacecraftVisible = YES;
-    _mode.selectedSegment = 1;
+    _horizon.spacecraftVisible = YES;
+    if (_mode.selectedSegment != 2) _mode.selectedSegment = 1;
     [self changeMode:nil];
-    if (center) [_solar focusSelection];
+    if (_mode.selectedSegment == 2) {
+        [_horizon selectSpacecraft:index];
+        if (center) [_horizon focusSelection];
+    } else if (center) [_solar focusSelection];
     [self updateEnabled];
 }
 @end

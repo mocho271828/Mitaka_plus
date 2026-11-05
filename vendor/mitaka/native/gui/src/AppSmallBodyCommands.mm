@@ -44,6 +44,7 @@ using namespace mitaka;
     (void)small_body_orbit_requested_rows(*_smallBodyModel, *display, _smallBodyOrbitSampling);
     _smallBodyDisplay = std::move(display);
     [_solar setSmallBodyDisplayModel:_smallBodyDisplay];
+    [_horizon setSmallBodyDisplayModel:_smallBodyDisplay];
     [_smallBodyBrowser setDisplayModel:_smallBodyDisplay];
     [self refreshSmallBodyOrbits];
 }
@@ -118,12 +119,15 @@ using namespace mitaka;
     if (!_smallBodyModel) return {};
     const NSUInteger index = _solar.selectedSmallBodyIndex;
     const auto selection = index < _smallBodyModel->dataset().records.size() ? std::optional<std::size_t>{index} : std::nullopt;
-    return evaluate_small_body_snapshot(_smallBodyModel, jd, _mode.selectedSegment == 1 && _solar.smallBodiesVisible, selection);
+    const BOOL visible = (_mode.selectedSegment == 1 || _mode.selectedSegment == 2) && _solar.smallBodiesVisible;
+    return evaluate_small_body_snapshot(_smallBodyModel, jd, visible, selection);
 }
 - (void)applySmallBodySnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot {
     _smallBodySnapshot = std::move(snapshot);
     [_solar setSmallBodySnapshot:_smallBodySnapshot];
     [_solar setSmallBodyDisplayModel:_smallBodyDisplay];
+    [_horizon setSmallBodySnapshot:_smallBodySnapshot];
+    [_horizon setSmallBodyDisplayModel:_smallBodyDisplay];
     [_smallBodyBrowser setSnapshot:_smallBodySnapshot];
     [_smallBodyBrowser setDisplayModel:_smallBodyDisplay];
     [self refreshSmallBodyOrbits];
@@ -137,16 +141,21 @@ using namespace mitaka;
     (void)sender;
     if (!_smallBodyModel || _loading) return;
     _solar.smallBodiesVisible = !_solar.smallBodiesVisible;
-    _mode.selectedSegment = 1;
+    _horizon.smallBodiesVisible = _solar.smallBodiesVisible;
+    if (_mode.selectedSegment != 2) _mode.selectedSegment = 1;
     [self changeMode:nil];
 }
 - (void)chooseSmallBody:(NSUInteger)index center:(BOOL)center {
     if (!_smallBodyModel || _loading || index >= _smallBodyModel->dataset().records.size()) return;
     [_solar selectSmallBody:index];
     _solar.smallBodiesVisible = YES;
-    _mode.selectedSegment = 1;
+    _horizon.smallBodiesVisible = YES;
+    if (_mode.selectedSegment != 2) _mode.selectedSegment = 1;
     [self changeMode:nil];
-    if (center) [_solar focusSelection];
+    if (_mode.selectedSegment == 2) {
+        [_horizon selectSmallBody:index];
+        if (center) [_horizon focusSelection];
+    } else if (center) [_solar focusSelection];
     [self updateEnabled];
 }
 @end

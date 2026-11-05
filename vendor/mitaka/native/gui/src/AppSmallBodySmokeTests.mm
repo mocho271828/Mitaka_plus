@@ -117,6 +117,36 @@ bool sameSmallBodyPosition(mitaka::Vec3 a, mitaka::Vec3 b) {
             _smallBodyModel == source && source->dataset().records.size() == rowCount,
             "small-body display toggle replaced or truncated the source catalog");
 
+    _mode.selectedSegment = 2;
+    [self changeMode:nil];
+    require(_mode.selectedSegment == 2 && _smallBodySnapshot->evaluated_all,
+            "horizon entry did not evaluate visible small bodies");
+    if (positioned) {
+        [self chooseSmallBody:*positioned center:YES];
+        require(_mode.selectedSegment == 2 && _horizon.selectedSmallBodyIndex == *positioned,
+                "small-body browser selection left horizon or failed to select");
+        const auto range = _model->time_range();
+        const double nextDate = _jd < range.second ? std::min(_jd + 0.25, range.second) : range.first;
+        require([self updateDate:nextDate refreshOrbits:NO] && _horizon.julianDate == _jd &&
+                _smallBodySnapshot->julian_date == _jd && _horizon.selectedSmallBodyIndex == *positioned,
+                "horizon date update lost selection or date coherence");
+    }
+    [self toggleSmallBodies:nil];
+    require(_mode.selectedSegment == 2 && !_horizon.smallBodiesVisible,
+            "small-body toggle left horizon or failed to hide");
+    [self toggleSmallBodies:nil];
+    require(_mode.selectedSegment == 2 && _horizon.smallBodiesVisible && _smallBodySnapshot->evaluated_all,
+            "small-body toggle left horizon or failed to evaluate");
+    if (_spacecraftSnapshot) {
+        for (std::size_t index = 0; index < _spacecraftSnapshot->positions.size(); ++index) {
+            if (!spacecraft_scene_position(*_spacecraftSnapshot, index)) continue;
+            [self chooseSpacecraft:index center:YES];
+            require(_mode.selectedSegment == 2 && _horizon.selectedSpacecraftIndex == index,
+                    "spacecraft browser selection left horizon or failed to select");
+            break;
+        }
+    }
+
     require([self applySessionState:saved], "small-body smoke could not restore the previous session");
     if (selected < rowCount) [_solar selectSmallBody:selected];
     [self refreshSmallBodies];

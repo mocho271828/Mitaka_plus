@@ -1,5 +1,8 @@
 #import <AppKit/AppKit.h>
 #include "sky_model.hpp"
+#include "small_body_model.hpp"
+#include "small_body_display.hpp"
+#include "SpacecraftRenderer.h"
 #include "display_options.hpp"
 #include "radius_display.hpp"
 #include "constellation_display.hpp"
@@ -33,6 +36,16 @@
 - (const std::string&)observerPlaceIdentifier;
 @property(nonatomic, readonly) NSUInteger visibleStarCount;
 @property(nonatomic, readonly) NSUInteger selectedBodyIndex;
+@property(nonatomic, readonly) NSUInteger selectedSmallBodyIndex;
+@property(nonatomic, readonly) NSUInteger selectedSpacecraftIndex;
+@property(nonatomic) BOOL smallBodiesVisible;
+@property(nonatomic) BOOL spacecraftVisible;
+@property(nonatomic) mitaka::gui::SpacecraftDisplayOptions spacecraftDisplayOptions;
+- (void)setSmallBodySnapshot:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)snapshot;
+- (void)setSmallBodyDisplayModel:(std::shared_ptr<const mitaka::gui::SmallBodyDisplayModel>)display;
+- (void)setSpacecraftSnapshot:(std::shared_ptr<const mitaka::gui::SpacecraftSnapshot>)snapshot;
+- (BOOL)selectSmallBody:(NSUInteger)index;
+- (BOOL)selectSpacecraft:(NSUInteger)index;
 @property(nonatomic, readonly) double julianDate;
 - (void)setModel:(std::shared_ptr<const mitaka::gui::SkyModel>)model
          bodies:(const mitaka::gui::SkyBodies&)bodies;
@@ -40,6 +53,12 @@
 - (void)setConstellationArt:(std::shared_ptr<const mitaka::gui::ConstellationArtModel>)art;
 - (void)setSelectedStarNameHIPs:(const std::set<std::int32_t>&)hips;
 - (void)setBodies:(const mitaka::gui::SkyBodies&)bodies julianDate:(double)julianDate;
+- (void)setBodies:(const mitaka::gui::SkyBodies&)bodies julianDate:(double)julianDate earthPosition:(mitaka::Vec3)earthPosition;
+- (void)setBodies:(const mitaka::gui::SkyBodies&)bodies julianDate:(double)julianDate
+    earthPosition:(mitaka::Vec3)earthPosition
+    smallBodies:(std::shared_ptr<const mitaka::gui::SmallBodySnapshot>)smallBodies
+    smallBodyDisplay:(std::shared_ptr<const mitaka::gui::SmallBodyDisplayModel>)display
+    spacecraft:(std::shared_ptr<const mitaka::gui::SpacecraftSnapshot>)spacecraft;
 - (mitaka::ObserverSite)observerSite;
 - (void)setObserverSite:(mitaka::ObserverSite)site;
 - (mitaka::gui::HorizonViewport)viewport;

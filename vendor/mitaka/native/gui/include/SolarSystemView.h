@@ -47,6 +47,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setOurGalaxyModel:(std::shared_ptr<const mitaka::OurGalaxyModel>)model;
 - (void)setGalaxyModel:(std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model;
 - (void)setGalaxyVisibility:(mitaka::gui::GalaxySpatialVisibility)visibility;
+- (void)setHipVisible:(BOOL)visible;
+- (void)setOurGalaxyVisible:(BOOL)visible;
 - (void)setTextures:(std::shared_ptr<const mitaka::gui::PlanetTextures>)textures;
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies;
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies

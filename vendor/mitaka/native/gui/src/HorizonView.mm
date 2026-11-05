@@ -6,6 +6,7 @@
 #import "ConstellationArtRenderer.h"
 #import "GridRenderer.h"
 #import "SkyView.h"
+#include "horizon_objects.hpp"
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -46,6 +47,16 @@ void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size, const
         NSForegroundColorAttributeName: color
     }];
 }
+NSString *spacecraftSampling(const SpacecraftSnapshot& snapshot, std::size_t index) {
+    if (index >= snapshot.evaluations.size() || !snapshot.evaluations[index] || !snapshot.evaluations[index]->sampling) return @"位置の評価方法は未確認";
+    switch (snapshot.evaluations[index]->sampling->kind) {
+        case SpacecraftSamplingKind::exact_record: return @"原記録に一致";
+        case SpacecraftSamplingKind::interpolated: return @"原記録間の線形補間";
+        case SpacecraftSamplingKind::clamped_before: return @"記録期間前・先頭位置に固定";
+        case SpacecraftSamplingKind::clamped_after: return @"記録期間後・末尾位置に固定";
+    }
+    return @"位置の評価方法は未確認";
+}
 NSColor *bodyColor(Body body, bool belowHorizon) {
     NSColor *color = body == Body::sun ? NSColor.systemYellowColor
         : body == Body::mars ? NSColor.systemOrangeColor : NSColor.systemCyanColor;
@@ -73,6 +84,15 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     std::shared_ptr<const ConstellationArtModel> _constellationArt;
     std::set<std::int32_t> _selectedStarNameHIPs;
     std::optional<Selection> _selection;
+    std::optional<std::size_t> _smallBodySelection, _spacecraftSelection;
+    std::shared_ptr<const SmallBodySnapshot> _smallBodies;
+    std::shared_ptr<const SmallBodyDisplayModel> _smallBodyDisplay;
+    std::shared_ptr<const SpacecraftSnapshot> _spacecraft;
+    std::vector<HorizonObject> _smallBodyObjects, _spacecraftObjects;
+    Vec3 _earthPosition;
+    double _earthJulianDate;
+    BOOL _smallBodiesVisible, _spacecraftVisible;
+    SpacecraftDisplayOptions _spacecraftDisplayOptions;
     ObserverSite _site;
     std::optional<ObservationFrame> _frame;
     double _julianDate, _magnitudeLimit;
@@ -83,6 +103,9 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _earthPosition = {};
+        _earthJulianDate = std::numeric_limits<double>::quiet_NaN();
+        _smallBodiesVisible = _spacecraftVisible = YES;
         _site = {35.68, 139.76};
         _julianDate = 2451545;
         _frame.emplace(_site, _julianDate);
@@ -146,6 +169,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     _site = site;
     _julianDate = julianDate;
     _frame = _gridCache.frame();
+    [self rebuildMovingObjects];
     [self notifySelection];
     self.needsDisplay = YES;
 }
@@ -188,6 +212,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [_starRenderer setSelectedNameHIPs:_selectedStarNameHIPs];
     _bodies = bodies;
     _selection.reset();
+    _smallBodySelection.reset();
+    _spacecraftSelection.reset();
     [self notifySelection];
     self.needsDisplay = YES;
 }
@@ -211,8 +237,81 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     _bodies = bodies;
     _julianDate = julianDate;
     _frame = _gridCache.frame();
+    [self rebuildMovingObjects];
     [self notifySelection];
     self.needsDisplay = YES;
+}
+- (void)setBodies:(const SkyBodies&)bodies julianDate:(double)julianDate earthPosition:(Vec3)earthPosition {
+    _earthPosition = earthPosition;
+    _earthJulianDate = julianDate;
+    [self setBodies:bodies julianDate:julianDate];
+}
+- (void)setBodies:(const SkyBodies&)bodies julianDate:(double)julianDate
+    earthPosition:(Vec3)earthPosition smallBodies:(std::shared_ptr<const SmallBodySnapshot>)smallBodies
+    smallBodyDisplay:(std::shared_ptr<const SmallBodyDisplayModel>)display
+    spacecraft:(std::shared_ptr<const SpacecraftSnapshot>)spacecraft {
+    if (!smallBodies || (_smallBodies && _smallBodies->model != smallBodies->model)) _smallBodySelection.reset();
+    if (!spacecraft || (_spacecraft && _spacecraft->model != spacecraft->model)) _spacecraftSelection.reset();
+    _smallBodies = std::move(smallBodies);
+    _smallBodyDisplay = std::move(display);
+    _spacecraft = std::move(spacecraft);
+    [self setBodies:bodies julianDate:julianDate earthPosition:earthPosition];
+}
+- (void)rebuildMovingObjects {
+    _smallBodyObjects.clear();
+    _spacecraftObjects.clear();
+    if (_earthJulianDate != _julianDate) return;
+    if (_smallBodiesVisible && _smallBodies && _smallBodyDisplay && _smallBodies->model &&
+        _smallBodyDisplay->dataset().get() == &_smallBodies->model->dataset())
+        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition);
+    if (_spacecraftVisible && _spacecraft)
+        _spacecraftObjects = horizon_spacecraft_objects(*_spacecraft, _spacecraftDisplayOptions.points,
+            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, spacecraft_scene_position);
+}
+- (void)movingObjectsChanged {
+    [self rebuildMovingObjects];
+    [self notifySelection];
+    self.needsDisplay = YES;
+}
+- (BOOL)smallBodiesVisible { return _smallBodiesVisible; }
+- (void)setSmallBodiesVisible:(BOOL)value { _smallBodiesVisible = value; [self movingObjectsChanged]; }
+- (BOOL)spacecraftVisible { return _spacecraftVisible; }
+- (void)setSpacecraftVisible:(BOOL)value { _spacecraftVisible = value; [self movingObjectsChanged]; }
+- (SpacecraftDisplayOptions)spacecraftDisplayOptions { return _spacecraftDisplayOptions; }
+- (void)setSpacecraftDisplayOptions:(SpacecraftDisplayOptions)value { _spacecraftDisplayOptions = value; [self movingObjectsChanged]; }
+- (void)setSmallBodySnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot {
+    if (_smallBodies == snapshot) return;
+    if (!snapshot || (_smallBodies && _smallBodies->model != snapshot->model)) _smallBodySelection.reset();
+    _smallBodies = std::move(snapshot);
+    [self movingObjectsChanged];
+}
+- (void)setSmallBodyDisplayModel:(std::shared_ptr<const SmallBodyDisplayModel>)display {
+    _smallBodyDisplay = std::move(display); [self movingObjectsChanged];
+}
+- (void)setSpacecraftSnapshot:(std::shared_ptr<const SpacecraftSnapshot>)snapshot {
+    if (_spacecraft == snapshot) return;
+    if (!snapshot || (_spacecraft && _spacecraft->model != snapshot->model)) _spacecraftSelection.reset();
+    _spacecraft = std::move(snapshot);
+    [self movingObjectsChanged];
+}
+- (NSUInteger)selectedSmallBodyIndex { return _smallBodySelection ? *_smallBodySelection : NSNotFound; }
+- (NSUInteger)selectedSpacecraftIndex { return _spacecraftSelection ? *_spacecraftSelection : NSNotFound; }
+- (BOOL)selectSmallBody:(NSUInteger)index {
+    if (!_smallBodies || !_smallBodies->model || index >= _smallBodies->model->dataset().records.size()) return NO;
+    _selection.reset(); _spacecraftSelection.reset(); _smallBodySelection = index;
+    [self notifySelection]; self.needsDisplay = YES; return YES;
+}
+- (BOOL)selectSpacecraft:(NSUInteger)index {
+    if (!_spacecraft || !_spacecraft->model || index >= _spacecraft->positions.size()) return NO;
+    _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection = index;
+    [self notifySelection]; self.needsDisplay = YES; return YES;
+}
+- (const HorizonObject*)selectedMovingObject {
+    const auto* objects = _smallBodySelection ? &_smallBodyObjects : &_spacecraftObjects;
+    const auto index = _smallBodySelection ? _smallBodySelection : _spacecraftSelection;
+    if (!index) return nullptr;
+    const auto found = std::find_if(objects->begin(), objects->end(), [&](const auto& object) { return object.index == *index; });
+    return found == objects->end() ? nullptr : &*found;
 }
 - (HorizonViewport)viewport { return _viewport; }
 - (void)setViewport:(HorizonViewport)viewport {
@@ -235,12 +334,15 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     return {star.right_ascension_degrees, star.declination_degrees};
 }
 - (void)focusSelection {
-    if (!_selection || !_model) return;
-    const auto coordinates = _frame->to_horizontal([self selectionCoordinates]);
+    if (!_model) return;
+    const auto* moving = [self selectedMovingObject];
+    if (!_selection && !moving) return;
+    const auto coordinates = _frame->to_horizontal(moving ? moving->coordinates : [self selectionCoordinates]);
     [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::max(4.0, _viewport.zoom)}];
 }
 - (void)selectBody:(NSUInteger)index {
     if (!_model || index >= _bodies.size()) return;
+    _smallBodySelection.reset(); _spacecraftSelection.reset();
     _selection = Selection{ObjectKind::body, index};
     [self notifySelection];
     self.needsDisplay = YES;
@@ -249,7 +351,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     return _selection && _selection->kind == ObjectKind::body ? _selection->index : NSNotFound;
 }
 - (void)clearSelection {
-    _selection.reset();
+    _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection.reset();
     [self notifySelection];
     self.needsDisplay = YES;
 }
@@ -258,6 +360,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto index = _model->star_index(hip);
     if (!index) return NO;
     _magnitudeLimit = std::max(_magnitudeLimit, static_cast<double>(_model->stars()[*index].apparent_v_magnitude));
+    _smallBodySelection.reset(); _spacecraftSelection.reset();
     _selection = Selection{ObjectKind::star, *index};
     [self notifySelection];
     self.needsDisplay = YES;
@@ -288,6 +391,20 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n%@",
             name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", detail];
     }
+    if ((_smallBodySelection || _spacecraftSelection) && _model) {
+        const auto* object = [self selectedMovingObject];
+        const std::string& title = _smallBodySelection ? _smallBodies->model->title(*_smallBodySelection)
+                                                       : _spacecraft->model->title(*_spacecraftSelection);
+        NSString *name = [NSString stringWithUTF8String:title.c_str()];
+        if (!name) name = @"名称不明";
+        if (object) {
+            const auto horizontal = _frame->to_horizontal(object->coordinates);
+            description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n地心距離 %.6f AU",
+                name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", object->distance_au];
+        } else description = [NSString stringWithFormat:@"%@\n現在の時刻または表示設定では位置を表示できません。", name];
+        if (object && _spacecraftSelection)
+            description = [description stringByAppendingFormat:@"\n%@", spacecraftSampling(*_spacecraft, *_spacecraftSelection)];
+    }
     if (self.selectionChanged) self.selectionChanged(description);
 }
 - (void)mouseDown:(NSEvent *)event {
@@ -312,7 +429,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0 || !NSPointInRect(point, map)) return;
     double nearest = 8 * 8;
-    _selection.reset();
+    _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection.reset();
     const auto consider = [&](EquatorialCoordinates coordinates, Selection selection) {
         const auto projected = projectHorizontal(_frame->to_horizontal(coordinates), _viewport, map.size);
         if (!projected) return;
@@ -327,8 +444,22 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     }
     for (std::size_t index = 0; _planetDisplayOptions.visible && index < _bodies.size(); ++index)
         consider(_bodies[index].coordinates, {ObjectKind::body, index});
+    const auto considerMoving = [&](const HorizonObject& object, bool smallBody) {
+        if (!object.body) return;
+        const auto projected = projectHorizontal(_frame->to_horizontal(object.coordinates), _viewport, map.size);
+        if (!projected) return;
+        const double dx = map.origin.x + projected->x - point.x, dy = map.origin.y + projected->y - point.y;
+        const double distance = dx * dx + dy * dy;
+        if (distance <= nearest) {
+            nearest = distance; _selection.reset();
+            if (smallBody) { _smallBodySelection = object.index; _spacecraftSelection.reset(); }
+            else { _spacecraftSelection = object.index; _smallBodySelection.reset(); }
+        }
+    };
+    for (const auto& object : _smallBodyObjects) considerMoving(object, true);
+    for (const auto& object : _spacecraftObjects) considerMoving(object, false);
     double nearestBody = std::numeric_limits<double>::infinity();
-    const bool hadNearestSelection = _selection.has_value();
+    const bool hadNearestSelection = _selection.has_value() || _smallBodySelection.has_value() || _spacecraftSelection.has_value();
     for (std::size_t index = 0; !hadNearestSelection && _planetDisplayOptions.visible && index < _bodies.size(); ++index) {
         const auto projected = projectHorizontal(_frame->to_horizontal(_bodies[index].coordinates), _viewport, map.size);
         if (!projected) continue;
@@ -451,6 +582,42 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
             RadiusDisplayContext::planetarium, body.id), 1.0, 120.0);
         [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - radius, center.y - radius, 2 * radius, 2 * radius)] fill];
         if (_planetDisplayOptions.labels) drawText(bodyName(body.id), NSMakePoint(center.x + radius + 4, center.y - 16), color, 12, _rendererDisplayOptions);
+    }
+    const auto drawMoving = [&](const std::vector<HorizonObject>& objects, bool smallBody) {
+        for (const auto& object : objects) {
+            const auto horizontal = _frame->to_horizontal(object.coordinates);
+            const auto point = projectHorizontal(horizontal, _viewport, map.size);
+            if (!point) continue;
+            const NSPoint center = NSMakePoint(map.origin.x + point->x, map.origin.y + point->y);
+            NSColor *color = smallBody ? NSColor.systemOrangeColor : NSColor.systemGreenColor;
+            if (horizontal.altitude_deg < 0) color = [color colorWithAlphaComponent:0.4];
+            if (object.body) {
+                RendererQualityScope points(context, _rendererDisplayOptions, RendererPrimitive::point);
+                [color setFill];
+                [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(center.x - 3, center.y - 3, 6, 6)] fill];
+            }
+            if (object.label) {
+                const auto& title = smallBody ? _smallBodies->model->title(object.index) : _spacecraft->model->title(object.index);
+                NSString *name = [NSString stringWithUTF8String:title.c_str()];
+                if (!name) name = @"名称不明";
+                if (!smallBody && object.index < _spacecraft->evaluations.size() && _spacecraft->evaluations[object.index] && _spacecraft->evaluations[object.index]->sampling) {
+                    const auto kind = _spacecraft->evaluations[object.index]->sampling->kind;
+                    if (kind == SpacecraftSamplingKind::clamped_before || kind == SpacecraftSamplingKind::clamped_after)
+                        name = [name stringByAppendingString:@"（期間外・端点固定）"];
+                }
+                drawText(name, NSMakePoint(center.x + 7, center.y - 12), color, 11, _rendererDisplayOptions);
+            }
+        }
+    };
+    drawMoving(_smallBodyObjects, true);
+    drawMoving(_spacecraftObjects, false);
+    if (const auto* object = [self selectedMovingObject]; object && object->body) {
+        const auto point = projectHorizontal(_frame->to_horizontal(object->coordinates), _viewport, map.size);
+        if (point) {
+            RendererQualityScope lines(context, _rendererDisplayOptions, RendererPrimitive::line);
+            [NSColor.whiteColor setStroke];
+            [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(map.origin.x + point->x - 9, map.origin.y + point->y - 9, 18, 18)] stroke];
+        }
     }
     if (_selection && (_selection->kind == ObjectKind::star
         ? _starDisplayOptions.visible : _planetDisplayOptions.visible)) {

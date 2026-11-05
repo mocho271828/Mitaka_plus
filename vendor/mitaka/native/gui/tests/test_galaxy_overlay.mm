@@ -1,6 +1,8 @@
 #import "../src/GalaxyOverlay.h"
+#include "our_galaxy_navigation.hpp"
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 using namespace mitaka;
@@ -54,11 +56,23 @@ void radiativeFailureKeepsOtherLayers() {
     auto hip = std::make_shared<HipSpatialModel>();
     hip->points.push_back({0, 1, {0, 0, 0}});
     // 実際の放射モデルは 512×512 の二つの map を必須とする。
-    const auto invalidRadiative = std::make_shared<const OurGalaxyModel>();
+    auto invalidRadiative = std::make_shared<OurGalaxyModel>();
+    invalidRadiative->groups[0].positions = {
+        {std::numeric_limits<float>::quiet_NaN(), 0, 0},
+        {std::numeric_limits<float>::infinity(), 0, 0},
+        {std::numeric_limits<float>::max(), 0, 0},
+        {0, 0, 0}};
     [overlay setModel:galaxy];
     [overlay setHipModel:hip];
     [overlay setOurGalaxyModel:invalidRadiative];
     const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    draw(overlay, camera);
+    const auto preview = [overlay diagnostics];
+    check(preview.display == GalaxyOverlayDisplay::preview && preview.our_galaxy_drawn == 1 &&
+          preview.hip_drawn > 0 && preview.displayed_drawn > 0,
+          "invalid OurGalaxy points prevented valid preview layers");
+    check([overlay isHipDisplayed:0] && [overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, 0}],
+          "invalid OurGalaxy points made surviving preview layers unselectable");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "radiative failure prevented other layers from completing");
     const auto state = [overlay diagnostics];
@@ -75,6 +89,68 @@ void radiativeFailureKeepsOtherLayers() {
         check([overlay diagnostics].display == GalaxyOverlayDisplay::complete && !view.needsDisplay,
               "failed layer retried the same request");
     }
+}
+void visibilityControls() {
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    const auto galaxy = fixture();
+    auto hip = std::make_shared<HipSpatialModel>();
+    hip->points.push_back({0, 1, {0, 0, 0}});
+    [overlay setModel:galaxy];
+    [overlay setHipModel:hip];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "visible HIP did not finish rendering");
+    check([overlay isHipDisplayed:0], "visible HIP must be displayed");
+    const auto stale = std::make_shared<bool>(false);
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection) { *stale = true; }];
+    [overlay setHipVisible:NO];
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview &&
+          [overlay diagnostics].hip_drawn == 0 && ![overlay isHipDisplayed:0], "hidden HIP appeared in preview");
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "hidden HIP prevented SDSS rendering");
+    check([overlay diagnostics].displayed_drawn > 0 && [overlay diagnostics].hip_drawn == 0 &&
+          ![overlay isHipDisplayed:0] && !*stale, "hidden HIP rendered or stale pick survived");
+    const auto hidden = std::make_shared<bool>(false);
+    const auto selectedHidden = std::make_shared<GalaxyOverlaySelection>();
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection selection) {
+        *selectedHidden = selection; *hidden = true;
+    }];
+    waitFor([&] { return *hidden; }, "hidden HIP pick did not finish");
+    check(!selectedHidden->hip, "hidden HIP was selectable");
+    [overlay setHipVisible:YES];
+    draw(overlay, camera);
+    check([overlay isHipDisplayed:0], "re-enabled HIP missing from preview");
+
+    GalaxyOverlay *ourOverlay = [[GalaxyOverlay alloc] initWithView:view];
+    auto our = std::make_shared<OurGalaxyModel>();
+    const auto center = our_galaxy_center({{0, 0, 0}});
+    our->groups[0].positions.push_back({static_cast<float>(center.x_pc), static_cast<float>(center.y_pc), static_cast<float>(center.z_pc)});
+    [ourOverlay setOurGalaxyModel:our];
+    const auto wide = frame_our_galaxy({{0, 0, 0}}, camera, 8000, 512, 512);
+    draw(ourOverlay, wide);
+    check([ourOverlay diagnostics].our_galaxy_drawn > 0, "visible OurGalaxy missing from preview");
+    const auto visible = std::make_shared<bool>(false);
+    const auto selectedVisible = std::make_shared<GalaxyOverlaySelection>();
+    [ourOverlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:wide completion:^(GalaxyOverlaySelection selection) {
+        *selectedVisible = selection; *visible = true;
+    }];
+    waitFor([&] { return *visible; }, "visible OurGalaxy pick did not finish");
+    check(selectedVisible->our_galaxy, "visible OurGalaxy was not selectable");
+    [ourOverlay setOurGalaxyVisible:NO];
+    draw(ourOverlay, wide);
+    check([ourOverlay diagnostics].our_galaxy_drawn == 0, "hidden OurGalaxy appeared in preview");
+    const auto hiddenOur = std::make_shared<bool>(false);
+    const auto selectedOur = std::make_shared<GalaxyOverlaySelection>();
+    [ourOverlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:wide completion:^(GalaxyOverlaySelection selection) {
+        *selectedOur = selection; *hiddenOur = true;
+    }];
+    waitFor([&] { return *hiddenOur; }, "hidden OurGalaxy pick did not finish");
+    check(!selectedOur->our_galaxy, "hidden OurGalaxy was selectable");
+    waitFor([&] { draw(ourOverlay, wide); return [ourOverlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "all hidden layers never reached a complete frame");
+    check([ourOverlay diagnostics].our_galaxy_drawn == 0, "hidden OurGalaxy appeared in complete frame");
 }
 void tests() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -162,6 +238,7 @@ void tests() {
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "replacement model did not converge");
     radiativeFailureKeepsOtherLayers();
+    visibilityControls();
 }
 } // namespace
 int main() {

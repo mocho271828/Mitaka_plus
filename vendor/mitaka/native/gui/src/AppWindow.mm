@@ -118,6 +118,8 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     [_horizon setObserverSite:{_observerLatitude, _observerLongitude}];
     _horizon.hidden = YES;
     _solar = [[SolarSystemView alloc] initWithFrame:NSZeroRect];
+    [_solar setHipVisible:_sky.starDisplayOptions.visible];
+    [_solar setOurGalaxyVisible:_sky.milkyWayMode != MilkyWayMode::none];
     _sky.hidden = YES;
     _mode = [NSSegmentedControl segmentedControlWithLabels:@[@"全天図", @"太陽系 3D", @"地平図"]
         trackingMode:NSSegmentSwitchTrackingSelectOne target:self action:@selector(changeMode:)];

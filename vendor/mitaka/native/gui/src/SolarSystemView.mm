@@ -119,6 +119,20 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel { return [_galaxyOverlay ourGalaxyModel]; }
 - (std::shared_ptr<const HipSpatialModel>)hipModel { return [_galaxyOverlay hipModel]; }
+- (void)setHipVisible:(BOOL)visible {
+    [_galaxyOverlay setHipVisible:visible];
+    if (!visible && _hipSelection) {
+        _hipSelection.reset(); _following = NO; [self notifySelection]; [self notifyCamera];
+    }
+    self.needsDisplay = YES;
+}
+- (void)setOurGalaxyVisible:(BOOL)visible {
+    [_galaxyOverlay setOurGalaxyVisible:visible];
+    if (!visible && _ourGalaxySelected) {
+        _ourGalaxySelected = NO; _following = NO; [self notifySelection]; [self notifyCamera];
+    }
+    self.needsDisplay = YES;
+}
 - (void)setHipModel:(std::shared_ptr<const HipSpatialModel>)model {
     if ([_galaxyOverlay hipModel] != model && _hipSelection) {
         _hipSelection.reset(); _following = NO; [self notifySelection]; [self notifyCamera];
@@ -134,9 +148,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     self.needsDisplay = YES;
 }
 - (void)setGalaxyModel:(std::shared_ptr<const GalaxySpatialModel>)model {
-    if ([_galaxyOverlay model] != model) {
-        if (_galaxySelection) _following = NO;
-        [self clearGalaxySelection];
+    if ([_galaxyOverlay model] != model && _galaxySelection) {
+        _galaxySelection.reset(); _following = NO; [self notifyCamera];
     }
     [_galaxyOverlay setModel:std::move(model)];
     [self notifySelection];
@@ -385,7 +398,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)zoomIn { [self zoomBy:-0.25]; }
 - (void)zoomOut { [self zoomBy:0.25]; }
 - (void)showOurGalaxyOverview {
-    if (![_galaxyOverlay ourGalaxyModel]) return;
+    if (![_galaxyOverlay ourGalaxyModel] || ![_galaxyOverlay isOurGalaxyVisible]) return;
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
     try {

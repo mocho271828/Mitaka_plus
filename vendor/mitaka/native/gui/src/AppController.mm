@@ -290,7 +290,7 @@ using namespace mitaka::gui;
                 const auto orbits = loaded->solar_orbits(initialJD);
                 const auto lunarOrbit = loaded->lunar_orbit(initialJD);
                 const auto smallBodySnapshot = evaluate_small_body_snapshot(smallBodies, initialJD,
-                    self->_mode.selectedSegment == 1 && self->_solar.smallBodiesVisible);
+                    (self->_mode.selectedSegment == 1 || self->_mode.selectedSegment == 2) && self->_solar.smallBodiesVisible);
                 self->_model = loaded;
                 self->_textures = textures;
                 self->_skyBackgrounds = backgrounds;
@@ -327,7 +327,11 @@ using namespace mitaka::gui;
                 [self->_horizon setModel:loaded bodies:bodies];
                 [self->_horizon setExtendedCatalogs:extended];
                 [self->_horizon setConstellationArt:constellationArt];
-                [self->_horizon setBodies:bodies julianDate:initialJD];
+                [self->_horizon setBodies:bodies julianDate:initialJD earthPosition:loaded->solar_bodies(initialJD)[3].position_au
+                    smallBodies:smallBodySnapshot smallBodyDisplay:self->_smallBodyDisplay spacecraft:spacecraftSnapshot];
+                self->_horizon.smallBodiesVisible = self->_solar.smallBodiesVisible;
+                self->_horizon.spacecraftVisible = self->_solar.spacecraftVisible;
+                self->_horizon.spacecraftDisplayOptions = self->_solar.spacecraftDisplayOptions;
                 [self rebuildBrowser];
                 [self rebuildObserverPlaces];
                 [self->_solar setHipModel:hipModel];
@@ -451,7 +455,8 @@ using namespace mitaka::gui;
         _solarBodies = solarBodies;
         _jd = jd;
         [_sky setBodies:bodies];
-        [_horizon setBodies:bodies julianDate:jd];
+        [_horizon setBodies:bodies julianDate:jd earthPosition:_model->solar_bodies(jd)[3].position_au
+            smallBodies:smallBodies smallBodyDisplay:_smallBodyDisplay spacecraft:spacecraft];
         if (refreshOrbits) {
             [_solar setBodies:solarBodies orbits:orbits];
             [_solar setLunarOrbit:lunarOrbit];

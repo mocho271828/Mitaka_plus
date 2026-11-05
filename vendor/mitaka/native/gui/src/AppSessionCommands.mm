@@ -216,6 +216,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     _smallBodyOrbitSampling = state.small_bodies.orbit_sampling;
     _smallBodyDisplay = prepared.small_bodies;
     [_solar setSmallBodyDisplayModel:_smallBodyDisplay];
+    [_horizon setSmallBodyDisplayModel:_smallBodyDisplay];
     [_smallBodyBrowser setDisplayModel:_smallBodyDisplay];
     [_smallBodyBrowser setOrbitSampling:_smallBodyOrbitSampling];
     _satelliteDisplay = prepared.satellites;
@@ -242,6 +243,9 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     _solar.smallBodiesVisible = state.small_bodies.visible;
     _solar.spacecraftVisible = state.spacecraft.visible;
     _solar.spacecraftDisplayOptions = {state.spacecraft.points, state.spacecraft.labels, state.spacecraft.orbits};
+    _horizon.smallBodiesVisible = _solar.smallBodiesVisible;
+    _horizon.spacecraftVisible = _solar.spacecraftVisible;
+    _horizon.spacecraftDisplayOptions = _solar.spacecraftDisplayOptions;
     [self refreshSmallBodies];
     [self updateEnabled];
 }

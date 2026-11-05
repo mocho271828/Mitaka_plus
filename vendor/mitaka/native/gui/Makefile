@@ -19,6 +19,7 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,AppWindowCommands.o WindowPresentationContr
 OBJECTS += $(BUILD_DIR)/AppSatelliteSmokeTests.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,SpacecraftController.o SpacecraftRenderer.o spacecraft_browser_model.o SolarSpacecraft.o AppSpacecraftCommands.o small_body_display.o satellite_display.o constellation_display.o horizon_segments.o AppConstellationCommands.o small_body_orbit_model.o SmallBodyOrbitController.o)
 OBJECTS += $(BUILD_DIR)/ConstellationRenderer.o
+OBJECTS += $(BUILD_DIR)/horizon_objects.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,satellite_orbit_geometry.o session_layers.o session_layers_json.o)
 OBJECTS += $(BUILD_DIR)/AppSessionSmokeTests.o $(BUILD_DIR)/AppGalaxySmokeTests.o
 OBJECTS += $(BUILD_DIR)/AppStarCommands.o
@@ -192,13 +193,17 @@ $(BUILD_DIR)/test_sky_view: tests/test_sky_view.mm $(SKY_VIEW_OBJECTS) core
 
 DISPLAY_TEST_OBJECTS = $(SKY_VIEW_OBJECTS) $(addprefix $(BUILD_DIR)/,HorizonView.o SolarSceneRenderer.o SatelliteRenderer.o satellite_browser_model.o SmallBodyRenderer.o small_body_model.o small_body_display.o small_body_orbit_model.o satellite_display.o satellite_orbit_geometry.o SpacecraftRenderer.o spacecraft_browser_model.o planet_surface.o surface_navigation.o)
 HORIZON_LANDSCAPE_TEST_OBJECTS = $(LANDSCAPE_OBJECTS) $(addprefix $(BUILD_DIR)/,observer_places.o place_display_model.o landscape_geometry.o)
-DISPLAY_TEST_OBJECTS += $(BUILD_DIR)/earth_layers.o $(BUILD_DIR)/atmosphere_renderer.o $(HORIZON_LANDSCAPE_TEST_OBJECTS)
+DISPLAY_TEST_OBJECTS += $(BUILD_DIR)/earth_layers.o $(BUILD_DIR)/atmosphere_renderer.o $(BUILD_DIR)/horizon_objects.o $(HORIZON_LANDSCAPE_TEST_OBJECTS)
 DISPLAY_TEST_OBJECTS += $(ECLIPSE_OBJECTS) $(BUILD_DIR)/satellite_scene.o $(BUILD_DIR)/surface_depth.o $(TERRAIN_OBJECTS)
 $(BUILD_DIR)/test_display_rendering: tests/test_display_rendering.mm $(DISPLAY_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(DISPLAY_TEST_OBJECTS) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
 
-$(BUILD_DIR)/test_horizon_view: tests/test_horizon_view.mm $(BUILD_DIR)/HorizonView.o $(SKY_VIEW_OBJECTS) $(HORIZON_LANDSCAPE_TEST_OBJECTS) core
+HORIZON_OBJECT_TEST_OBJECTS = $(addprefix $(BUILD_DIR)/,horizon_objects.o small_body_model.o small_body_display.o SpacecraftRenderer.o spacecraft_browser_model.o)
+$(BUILD_DIR)/test_horizon_view: tests/test_horizon_view.mm $(BUILD_DIR)/HorizonView.o $(SKY_VIEW_OBJECTS) $(HORIZON_LANDSCAPE_TEST_OBJECTS) $(HORIZON_OBJECT_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
+
+$(BUILD_DIR)/test_horizon_objects: tests/test_horizon_objects.cpp $(addprefix $(BUILD_DIR)/,horizon_objects.o small_body_model.o spacecraft_browser_model.o small_body_display.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
 $(BUILD_DIR)/test_small_body_model: tests/test_small_body_model.mm $(BUILD_DIR)/small_body_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/small_body_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
@@ -234,7 +239,8 @@ controller-test: $(BUILD_DIR)/test_spacecraft_controller $(BUILD_DIR)/test_solar
 	"$(BUILD_DIR)/test_display_output"
 	"$(BUILD_DIR)/test_window_presentation"
 
-test: $(BUILD_DIR)/test_spacecraft_browser_model $(BUILD_DIR)/test_spacecraft_renderer $(BUILD_DIR)/test_small_body_display $(BUILD_DIR)/test_satellite_display $(BUILD_DIR)/test_satellite_scene $(BUILD_DIR)/test_satellite_browser_model $(BUILD_DIR)/test_grid_geometry $(BUILD_DIR)/test_distance_scales $(BUILD_DIR)/test_grid_renderer $(BUILD_DIR)/test_renderer_quality $(BUILD_DIR)/test_html_bridge_policy $(BUILD_DIR)/test_display_rendering $(BUILD_DIR)/test_star_labels $(BUILD_DIR)/test_small_body_model $(BUILD_DIR)/test_media_catalog $(BUILD_DIR)/test_calendar_time $(BUILD_DIR)/test_sky_background $(BUILD_DIR)/test_gui_file_io $(BUILD_DIR)/test_observer_places $(BUILD_DIR)/test_catalog_browser_model $(BUILD_DIR)/test_extended_catalogs $(BUILD_DIR)/test_sky_catalog_index $(BUILD_DIR)/test_session_state $(BUILD_DIR)/test_sky_model $(BUILD_DIR)/test_solar_model $(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_planet_textures $(BUILD_DIR)/test_playback_clock $(BUILD_DIR)/test_surface_navigation $(BUILD_DIR)/test_interplanetary_flight $(BUILD_DIR)/test_constellation_display $(BUILD_DIR)/test_horizon_segments $(BUILD_DIR)/test_satellite_orbit_geometry $(BUILD_DIR)/test_session_layers $(BUILD_DIR)/test_small_body_orbit_model $(BUILD_DIR)/test_small_body_orbit_controller
+test: $(BUILD_DIR)/test_horizon_objects $(BUILD_DIR)/test_spacecraft_browser_model $(BUILD_DIR)/test_spacecraft_renderer $(BUILD_DIR)/test_small_body_display $(BUILD_DIR)/test_satellite_display $(BUILD_DIR)/test_satellite_scene $(BUILD_DIR)/test_satellite_browser_model $(BUILD_DIR)/test_grid_geometry $(BUILD_DIR)/test_distance_scales $(BUILD_DIR)/test_grid_renderer $(BUILD_DIR)/test_renderer_quality $(BUILD_DIR)/test_html_bridge_policy $(BUILD_DIR)/test_display_rendering $(BUILD_DIR)/test_star_labels $(BUILD_DIR)/test_small_body_model $(BUILD_DIR)/test_media_catalog $(BUILD_DIR)/test_calendar_time $(BUILD_DIR)/test_sky_background $(BUILD_DIR)/test_gui_file_io $(BUILD_DIR)/test_observer_places $(BUILD_DIR)/test_catalog_browser_model $(BUILD_DIR)/test_extended_catalogs $(BUILD_DIR)/test_sky_catalog_index $(BUILD_DIR)/test_session_state $(BUILD_DIR)/test_sky_model $(BUILD_DIR)/test_solar_model $(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_planet_textures $(BUILD_DIR)/test_playback_clock $(BUILD_DIR)/test_surface_navigation $(BUILD_DIR)/test_interplanetary_flight $(BUILD_DIR)/test_constellation_display $(BUILD_DIR)/test_horizon_segments $(BUILD_DIR)/test_satellite_orbit_geometry $(BUILD_DIR)/test_session_layers $(BUILD_DIR)/test_small_body_orbit_model $(BUILD_DIR)/test_small_body_orbit_controller
+	"$(BUILD_DIR)/test_horizon_objects"
 	"$(BUILD_DIR)/test_constellation_display"
 	"$(BUILD_DIR)/test_horizon_segments"
 	"$(BUILD_DIR)/test_satellite_orbit_geometry"
@@ -367,7 +373,7 @@ $(BUILD_DIR)/test_constellation_art_projection: tests/test_constellation_art_pro
 $(BUILD_DIR)/test_constellation_art_renderer: tests/test_constellation_art_renderer.mm $(BUILD_DIR)/ConstellationArtRenderer.o $(BUILD_DIR)/constellation_art_model.o $(BUILD_DIR)/constellation_art_projection.o $(BUILD_DIR)/RendererQuality.o $(BUILD_DIR)/StarRenderer.o $(BUILD_DIR)/star_labels.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/sky_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
 
-$(BUILD_DIR)/test_horizon_background_view: tests/test_horizon_background_view.mm $(BUILD_DIR)/HorizonView.o $(SKY_VIEW_OBJECTS) $(HORIZON_LANDSCAPE_TEST_OBJECTS) core
+$(BUILD_DIR)/test_horizon_background_view: tests/test_horizon_background_view.mm $(BUILD_DIR)/HorizonView.o $(SKY_VIEW_OBJECTS) $(HORIZON_LANDSCAPE_TEST_OBJECTS) $(HORIZON_OBJECT_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
 
 .PHONY: star-art-test
