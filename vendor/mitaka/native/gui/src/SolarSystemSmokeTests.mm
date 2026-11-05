@@ -187,11 +187,15 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     _satelliteSelection.reset(); _satelliteDisplay = hiddenSatelliteDisplay(satelliteDisplay);
     _spacecraftSelection.reset(); _spacecraftVisible = NO;
     NSString *notice = _flightNotice;
+    NSString *terrainDirectory = [_terrainDataDirectory copy];
+    // 合成配置の球面選択を同期的に公開し、描画済み scene と同じ経路で検証する。
+    [self setTerrainDataDirectory:nil];
     const BOOL surface = _surfaceActive, earthMoon = _earthMoonMode, preview = _surfacePreview;
     const BOOL earthMoonFollowing = _earthMoonFollowing, following = _following;
     BOOL passed = NO;
     try {
         [self showEarthMoon];
+        [self refreshTerrain];
         const BOOL pairVisible = self.visibleBodyCount == 2;
         // 中心円が枠外、または中心が背面でも、実球の手前交点を選べることを確認する。
         const NSRect map = [self mapRect];
@@ -205,9 +209,13 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         _bodies[3].position_au = j2000_ecliptic_to_equatorial({0, (10*edgeSlope + overhang)*radius, 0});
         _bodies[10].position_au = {20*radius, 0, 0};
         const NSPoint edge = NSMakePoint(NSMaxX(map)-0.01, NSMidY(map));
+        self.needsDisplay = YES;
+        [self refreshTerrain];
         [self pickBodyAtPoint:edge];
         const BOOL pickedEdge = _selection && *_selection == 3;
         _bodies[3].position_au = j2000_ecliptic_to_equatorial({10.1*radius, 0.999*radius, 0});
+        self.needsDisplay = YES;
+        [self refreshTerrain];
         [self pickBodyAtPoint:edge];
         const BOOL pickedBehindCenter = _selection && *_selection == 3;
         _bodies = bodies;
@@ -243,6 +251,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         const BOOL interrupted = !self.flightAnimating && _camera.distance_au == beforeInterrupt.distance_au
             && _camera.target.x == beforeInterrupt.target.x;
         passed = pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface && ascended && interrupted;
+        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d ascended=%d interrupted=%d",
+            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, ascended, interrupted);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
     [self invalidateFlightTimer];
     _camera = camera; _bodies = bodies; _navigation = navigation; _selection = selection;
@@ -252,6 +262,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     _satelliteSelection = satelliteSelection; _satelliteDisplay = satelliteDisplay;
     _spacecraftSelection = spacecraftSelection; _spacecraftVisible = spacecraftVisible;
     _notifiedSatelliteSelection = notifiedSatelliteSelection;
+    [self setTerrainDataDirectory:terrainDirectory];
     [self notifySelection]; [self notifyCamera]; self.needsDisplay = YES;
     return passed;
 }
@@ -259,6 +270,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     const NSRect map = [self mapRect];
     if (!_hasData || _surfaceActive || _journeyActive || map.size.width < 160 || map.size.height < 100) return NO;
     const BOOL savedEarthMoon = _earthMoonMode, savedEarthMoonFollowing = _earthMoonFollowing, savedPreview = _surfacePreview;
+    NSString *terrainDirectory = [_terrainDataDirectory copy];
+    [self setTerrainDataDirectory:nil];
     const SolarCamera saved = _camera;
     const SolarBodies savedBodies = _bodies;
     const auto selected = _selection;
@@ -293,6 +306,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     const BOOL focused = _following && _camera.target.x == earth.x && _camera.target.y == earth.y && _camera.target.z == earth.z;
     const BOOL invalidCameraRejected = [self rejectsInvalidCameraStatesWithoutChanges];
     [self resetCamera];
+    [self refreshTerrain];
     const BOOL visible = self.visibleBodyCount > 0;
 
     // 入力イベントを注入せず、実際のクリック経路を合成配置で確認する。
@@ -303,11 +317,15 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     _bodies[0].position_au = {0, 0, 0};
     _bodies[1].position_au = {5, 0, 0};
     const NSPoint center = NSMakePoint(NSMidX(map), NSMidY(map));
+    self.needsDisplay = YES;
+    [self refreshTerrain];
     [self pickBodyAtPoint:center];
     const BOOL pickedFront = _selection && *_selection == 1;
 
     _bodies[1].position_au = {11, 0, 0};
     _bodies[0].position_au = {9.9995, 0, 0};
+    self.needsDisplay = YES;
+    [self refreshTerrain];
     [self pickBodyAtPoint:center];
     const BOOL clippedNear = !_selection;
 
@@ -325,6 +343,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         _bodies[0].position_au = j2000_ecliptic_to_equatorial({0,
             (p.x - map.size.width / 2) * _camera.distance_au / focal,
             (map.size.height / 2 - p.y) * _camera.distance_au / focal});
+        self.needsDisplay = YES;
+        [self refreshTerrain];
         partialVisible = partialVisible && self.visibleBodyCount == 1;
         const NSPoint click = NSMakePoint(map.origin.x + std::clamp(p.x, 1.0, map.size.width - 1),
             map.origin.y + std::clamp(p.y, 1.0, map.size.height - 1));
@@ -339,14 +359,19 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         _bodies[0].position_au = j2000_ecliptic_to_equatorial({0,
             (outside.x - map.size.width / 2) * _camera.distance_au / focal,
             (map.size.height / 2 - outside.y) * _camera.distance_au / focal});
+        self.needsDisplay = YES;
+        [self refreshTerrain];
         [self pickBodyAtPoint:click];
         clippedViewport = clippedViewport && self.visibleBodyCount == 0 && !_selection;
     }
 
     _camera.distance_au = 10;
     _bodies[0].position_au = {0, 0, 0};
+    self.needsDisplay = YES;
+    [self refreshTerrain];
     [self pickBodyAtPoint:center];
     [self focusSelection];
+    [self refreshTerrain];
     [self pickBodyAtPoint:NSMakePoint(NSMaxX(map) - 1, NSMaxY(map) - 1)];
     const BOOL cleared = !_selection && !_following;
 
@@ -359,6 +384,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     _satelliteSelection = satelliteSelection; _satelliteDisplay = satelliteDisplay;
     _spacecraftSelection = spacecraftSelection; _spacecraftVisible = spacecraftVisible;
     _notifiedSatelliteSelection = notifiedSatelliteSelection;
+    [self setTerrainDataDirectory:terrainDirectory];
     [self notifySelection];
     [self notifyCamera];
     self.needsDisplay = YES;
@@ -446,6 +472,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     NSBitmapImageRep *before = [self renderedBitmap];
     // 位置・照明・視点を固定し、別日時の姿勢だけで実画素が変わることを確認する。
     _bodies[3].orientation = laterEarthOrientation;
+    self.needsDisplay = YES;
     NSBitmapImageRep *after = [self renderedBitmap];
     const BOOL passed = surfacePixelDifferences(before, after, self.bounds, sample) > 20;
     _bodies = savedBodies;

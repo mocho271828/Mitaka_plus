@@ -8,6 +8,10 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
 }
 
 @implementation SolarSystemView (Terrain)
+- (NSArray<TerrainSurfaceController *> *)makeTerrainControllers {
+    return @[[TerrainSurfaceController new], [TerrainSurfaceController new],
+        [TerrainSurfaceController new], [TerrainSurfaceController new]];
+}
 - (void)setTerrainDataDirectory:(NSString *)directory {
     [self cancelTerrain];
     _terrainDataDirectory = [directory copy];
@@ -15,6 +19,10 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
 }
 - (void)cancelTerrain {
     for (TerrainSurfaceController *controller in _terrainControllers) [controller cancel];
+    _terrainSceneCoordinator.invalidate();
+    _publishedScene.reset();
+    _hasTerrainViewport = NO;
+    _submittedSceneRevision = 0;
     _terrainRequests = {};
     _terrainSnapshots = {};
     _terrainErrors = {};
@@ -24,47 +32,81 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     self.needsDisplay = YES;
 }
 - (void)refreshTerrain {
-    const auto scene = [self scene];
-    if (!_hasData || !_terrainDataDirectory || !scene.planet_display.visible ||
-        (!scene.physical_navigation && !scene.earth_moon && !scene.surface_body)) {
+    if (!_hasData || _sceneUpdateDepth) return;
+    const auto live = [self scene];
+    if (_hasTerrainViewport && (!NSEqualRects(_terrainViewport, live.map) || _terrainBackingScale != live.backing_scale))
         [self cancelTerrain];
-        return;
-    }
+    _terrainViewport = live.map;
+    _terrainBackingScale = live.backing_scale;
+    _hasTerrainViewport = YES;
+    if (_submittedSceneRevision == _sceneRevision && _submittedSceneRevision != 0) return;
     if (!_terrainControllers) {
-        _terrainControllers = @[[TerrainSurfaceController new], [TerrainSurfaceController new],
-            [TerrainSurfaceController new], [TerrainSurfaceController new]];
+        _terrainControllers = [self makeTerrainControllers];
     }
+    SolarSceneResources resources{_textures,
+        live.small_bodies ? _smallBodySnapshot : nullptr,
+        live.satellites ? _satelliteSnapshot : nullptr,
+        live.spacecraft ? _spacecraftSnapshot : nullptr,
+        _smallBodyDisplay, _smallBodyOrbits, _satelliteDisplay, _satelliteOrbits, _satelliteSnapshot};
+    TerrainSceneCandidate candidate{SolarSceneOwner(live, std::move(resources)), {}, {}, _sceneRevision};
+    candidate.owner.set_terrain({});
+    TerrainSceneCoordinator::Mask requested;
+    const auto scene = candidate.owner.scene();
     for (std::size_t slot = 0; slot < terrainBodies.size(); ++slot) {
         const auto index = terrainBodies[slot];
-        TerrainSurfaceController *controller = _terrainControllers[slot];
+        if (!_terrainDataDirectory || !scene.planet_display.visible ||
+            (!scene.physical_navigation && !scene.earth_moon && !scene.surface_body)) continue;
         try {
-            const auto request = solar_terrain_request(scene, index, _terrainDataDirectory.fileSystemRepresentation);
-            if (!request) {
-                [controller cancel];
-                _terrainRequests[index].reset();
-                _terrainSnapshots[index].reset();
-                _terrainErrors[index].clear();
-                continue;
+            candidate.requests[slot] = solar_terrain_request(scene, index, _terrainDataDirectory.fileSystemRepresentation);
+            if (candidate.requests[slot]) requested.set(slot);
+        } catch (const std::exception& error) {
+            candidate.errors[slot] = error.what();
+        }
+    }
+    _submittedSceneRevision = _sceneRevision;
+    [self applyTerrainTransition:_terrainSceneCoordinator.submit(
+        std::make_shared<const TerrainSceneCandidate>(std::move(candidate)), requested)];
+}
+- (SolarScene)displayedScene { return _publishedScene ? _publishedScene->scene() : [self scene]; }
+- (void)applyTerrainTransition:(TerrainSceneCoordinator::Transition)transition {
+    for (const auto& publication : transition.published) {
+        const auto latest = _terrainSceneCoordinator.published();
+        if (!latest || latest->ticket != publication->ticket) continue;
+        auto owner = std::make_shared<SolarSceneOwner>(publication->scene->owner);
+        SolarSceneOwner::TerrainFrames frames{};
+        _terrainRequests = {};
+        _terrainErrors = {};
+        for (std::size_t slot = 0; slot < terrainBodies.size(); ++slot) {
+            const auto index = terrainBodies[slot];
+            _terrainRequests[index] = publication->scene->requests[slot];
+            _terrainErrors[index] = publication->scene->errors[slot];
+            if (publication->results[slot]) {
+                frames[index] = publication->results[slot]->snapshot;
+                _terrainErrors[index] = publication->results[slot]->error;
             }
-            // 描画のたびに同じI/Oを再発行しない。明示再読込ではこのkeyも取り消す。
-            if (_terrainRequests[index] && terrain_surface_request_matches(*request, *_terrainRequests[index])) continue;
-            _terrainRequests[index] = request;
-            _terrainSnapshots[index].reset();
-            _terrainErrors[index].clear();
-            __weak SolarSystemView *weakSelf = self;
-            [controller requestSurface:*request completion:^(std::shared_ptr<const TerrainSurfaceSnapshot> snapshot, NSString *error) {
+        }
+        _terrainSnapshots = frames;
+        owner->set_terrain(std::move(frames));
+        const auto scene = owner->scene();
+        if (![self matchesDisplayedCamera:scene.camera map:scene.map]) [_galaxyOverlay invalidatePendingPicks];
+        _publishedScene = std::move(owner);
+        [self redrawPublishedScene];
+    }
+    if (!transition.start) return;
+    const auto start = *transition.start;
+    for (std::size_t slot = 0; slot < terrainBodies.size(); ++slot) {
+        if (!start.requested.test(slot) || !_terrainSceneCoordinator.is_active(start.ticket)) continue;
+        const auto request = *start.scene->requests[slot];
+        __weak SolarSystemView *weakSelf = self;
+        try {
+            [_terrainControllers[slot] requestSurface:request completion:^(std::shared_ptr<const TerrainSurfaceSnapshot> snapshot, NSString *error) {
                 SolarSystemView *strongSelf = weakSelf;
-                if (!strongSelf || !strongSelf->_terrainRequests[index] ||
-                    !terrain_surface_request_matches(*request, *strongSelf->_terrainRequests[index])) return;
-                strongSelf->_terrainSnapshots[index] = std::move(snapshot);
-                strongSelf->_terrainErrors[index] = error ? error.UTF8String : "";
-                strongSelf.needsDisplay = YES;
+                if (!strongSelf) return;
+                TerrainSceneResult result{std::move(snapshot), error ? error.UTF8String : ""};
+                [strongSelf applyTerrainTransition:strongSelf->_terrainSceneCoordinator.complete(start.ticket, slot, std::move(result))];
             }];
         } catch (const std::exception& error) {
-            [controller cancel];
-            _terrainRequests[index].reset();
-            _terrainSnapshots[index].reset();
-            _terrainErrors[index] = error.what();
+            [self applyTerrainTransition:_terrainSceneCoordinator.complete(start.ticket, slot, TerrainSceneResult{nullptr, error.what()})];
         }
     }
 }

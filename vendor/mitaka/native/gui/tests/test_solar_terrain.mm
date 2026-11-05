@@ -1,4 +1,6 @@
 #import "SolarSceneRenderer.h"
+#import "SolarSceneOwner.h"
+#include "satellite_browser_model.hpp"
 #include "surface_navigation.hpp"
 #include <iostream>
 #include <limits>
@@ -136,12 +138,73 @@ void snapshot_guards() {
     snapshot->status = TerrainSnapshotStatus::unavailable;
     check(!solar_terrain_frame(f.scene, 3), "missing terrain rendered");
 }
+void owned_scene_lifetime() {
+    std::optional<SolarSceneOwner> stored;
+    std::weak_ptr<const PlanetTextures> weak_textures;
+    std::weak_ptr<const SatelliteSnapshot> weak_eclipse;
+    std::weak_ptr<const TerrainSurfaceSnapshot> weak_terrain;
+    {
+        Fixture f;
+        auto textures = std::make_shared<const PlanetTextures>(f.textures);
+        auto eclipse = std::make_shared<const SatelliteSnapshot>();
+        auto terrain = f.snapshot(3);
+        GridGeometryCache grid;
+        grid.set_observation({35, 139}, 2451545.0);
+        // Exercise copying of an already populated lazy grid, too.
+        (void)grid.grid(GridCoordinateSystem::horizontal);
+        f.scene.textures = textures.get();
+        f.scene.grid_cache = &grid;
+        f.scene.satellites = nullptr;
+        f.scene.eclipse_satellites = eclipse.get();
+        SolarSceneResources resources;
+        resources.textures = textures;
+        resources.eclipse_satellites = eclipse;
+        weak_textures = textures;
+        weak_eclipse = eclipse;
+        weak_terrain = terrain;
+        stored.emplace(f.scene, resources);
+        const auto before = stored->scene();
+        const auto original = before.grid_cache->frame().to_equatorial({0, 0});
+        f.camera.yaw_deg = 25;
+        f.bodies[3].position_au.x = 7;
+        f.snapshots[3].reset();
+        grid.set_observation({0, 0}, 2451546.0);
+        const auto after = stored->scene();
+        const auto retained = after.grid_cache->frame().to_equatorial({0, 0});
+        check(after.camera.yaw_deg == 180 && after.bodies[3].position_au.x == 1, "scene values alias live input");
+        check(original.right_ascension_deg == retained.right_ascension_deg &&
+              original.declination_deg == retained.declination_deg,
+            "scene grid follows live cache");
+        check(after.satellites == nullptr && after.eclipse_satellites == eclipse.get(),
+            "hidden satellite lost eclipse snapshot");
+        check((*after.terrain)[3] == terrain, "scene terrain array aliases live input");
+        bool rejected = false;
+        try { (void)SolarSceneOwner(f.scene, {}); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        check(rejected, "unowned scene pointer accepted");
+    }
+    check(!weak_textures.expired() && !weak_eclipse.expired() && !weak_terrain.expired(),
+        "scene resource destroyed with source");
+    SolarSceneOwner copied = *stored;
+    SolarSceneOwner moved = std::move(copied);
+    stored.reset();
+    const auto moved_view = moved.scene();
+    check(moved_view.bodies[3].position_au.x == 1 && moved_view.camera.yaw_deg == 180,
+        "owner copy or move retained old references");
+    check(moved_view.textures && moved_view.eclipse_satellites && (*moved_view.terrain)[3],
+        "owner copy or move lost owned resources");
+    SolarSceneOwner::TerrainFrames replacement{};
+    moved.set_terrain(replacement);
+    check(!(*moved.scene().terrain)[3], "terrain setter did not replace old array");
+    check(weak_terrain.expired(), "replaced terrain retained after previous owner destruction");
+}
 }
 int main() {
     @autoreleasepool {
         try {
             requests();
             snapshot_guards();
+            owned_scene_lifetime();
             std::cout << "solar terrain: " << checks << " checks PASS\n";
             return 0;
         } catch (const std::exception& error) {

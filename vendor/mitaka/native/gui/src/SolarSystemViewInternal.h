@@ -3,6 +3,7 @@
 #import "SolarSceneRenderer.h"
 #import "GridRenderer.h"
 #import "TerrainSurfaceController.h"
+#import "TerrainSceneState.h"
 #include "surface_navigation.hpp"
 #include "interplanetary_flight.hpp"
 #import "GalaxyOverlay.h"
@@ -57,6 +58,14 @@
     std::shared_ptr<const mitaka::gui::SatelliteOrbitGeometry> _satelliteOrbits;
     BOOL _showsTimeInfo;
     BOOL _hasData;
+    std::uint64_t _sceneRevision;
+    unsigned _sceneUpdateDepth;
+    std::uint64_t _submittedSceneRevision;
+    TerrainSceneCoordinator _terrainSceneCoordinator;
+    std::shared_ptr<SolarSceneOwner> _publishedScene;
+    NSRect _terrainViewport;
+    double _terrainBackingScale;
+    BOOL _hasTerrainViewport;
     NSString *_terrainDataDirectory;
     NSArray<TerrainSurfaceController *> *_terrainControllers;
     std::array<std::optional<mitaka::gui::TerrainSurfaceRequest>, 11> _terrainRequests;
@@ -71,6 +80,11 @@
 
 @interface SolarSystemView (Internal)
 - (void)refreshTerrain;
+- (NSArray<TerrainSurfaceController *> *)makeTerrainControllers;
+- (void)applyTerrainTransition:(TerrainSceneCoordinator::Transition)transition;
+- (SolarScene)displayedScene;
+- (BOOL)matchesDisplayedCamera:(const mitaka::gui::SolarCamera&)camera map:(NSRect)map;
+- (void)redrawPublishedScene;
 - (std::vector<std::string>)terrainDiagnostics;
 - (NSRect)mapRect;
 - (mitaka::Vec3)displayPosition:(NSUInteger)index;

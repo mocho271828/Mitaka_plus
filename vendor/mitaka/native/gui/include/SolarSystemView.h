@@ -54,6 +54,9 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies
            orbits:(const mitaka::gui::SolarOrbits&)orbits;
 - (void)setLunarOrbit:(const std::vector<mitaka::Vec3>&)orbit;
+// 日時更新時の複数の setter を一つの表示場面として捕捉する。
+- (void)beginSceneUpdate;
+- (void)endSceneUpdate;
 - (void)selectBody:(NSUInteger)index;
 - (void)resetCamera;
 - (void)showInnerPlanets;

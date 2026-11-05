@@ -113,6 +113,21 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (BOOL)isFlipped { return YES; }
 - (BOOL)isOpaque { return YES; }
 - (BOOL)acceptsFirstResponder { return YES; }
+- (void)setNeedsDisplay:(BOOL)needsDisplay {
+    if (needsDisplay) ++_sceneRevision;
+    [super setNeedsDisplay:needsDisplay];
+}
+- (void)redrawPublishedScene { [super setNeedsDisplay:YES]; }
+- (BOOL)matchesDisplayedCamera:(const SolarCamera&)camera map:(NSRect)map {
+    const auto displayed = [self displayedScene];
+    return NSEqualRects(map, displayed.map) && sameCamera(camera, displayed.camera);
+}
+- (void)beginSceneUpdate { ++_sceneUpdateDepth; }
+- (void)endSceneUpdate {
+    if (!_sceneUpdateDepth) throw std::logic_error("unbalanced scene update");
+    --_sceneUpdateDepth;
+    if (!_sceneUpdateDepth) self.needsDisplay = YES;
+}
 - (NSRect)mapRect { return NSInsetRect(self.bounds, 18, 40); }
 - (Vec3)displayPosition:(NSUInteger)index {
     return solar_display_position([self scene], index);
@@ -296,7 +311,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (self.selectionChanged) self.selectionChanged(description);
     if (self.navigationChanged) self.navigationChanged();
 }
-- (NSString *)cameraStateDescription {
+- (NSString *)cameraInputDescription {
     if (_journeyActive) {
         NSString *phase = @"停止中";
         switch (_journey.phase()) {
@@ -330,6 +345,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             _following ? @"  ·  選択天体を追従" : @""];
     return [NSString stringWithFormat:@"視点距離 %.3f AU  ·  方位 %.1f° / 仰角 %.1f°%@", _camera.distance_au,
         _camera.yaw_deg, _camera.pitch_deg, _following ? @"  ·  選択天体を追従" : @""];
+}
+- (NSString *)cameraStateDescription {
+    return [@"操作値 · " stringByAppendingString:[self cameraInputDescription]];
 }
 - (void)notifyCamera {
     if (!_lastNotifiedCamera || !sameCamera(*_lastNotifiedCamera, _camera)) {
@@ -513,32 +531,47 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)pickBodyAtPoint:(NSPoint)click {
     // 地表では地面の向こうの天体を選ばないよう、一覧による選択に限定する。
-    if (!_hasData || _surfaceActive || _journeyActive || !NSPointInRect(click, [self mapRect])) return;
+    if (!_hasData || !NSPointInRect(click, [self mapRect])) return;
     [_galaxyOverlay invalidatePendingPicks];
     try {
-        const auto scene = [self scene];
+        const auto displayedOwner = _publishedScene;
+        const auto scene = displayedOwner ? displayedOwner->scene() : [self scene];
+        if (scene.surface_body || scene.physical_navigation || !NSEqualRects(scene.map, [self mapRect])) return;
         const auto picked = pick_solar_body(scene, click);
         if (picked) [self selectBody:*picked];
         else {
             const auto small = scene.small_bodies && scene.small_body_display
                 ? pick_small_body(*scene.small_bodies, *scene.small_body_display, scene.camera, scene.map, click) : std::nullopt;
-            if (small) { [self selectSmallBody:*small]; return; }
+            if (small) {
+                if (_smallBodySnapshot && scene.small_bodies->model == _smallBodySnapshot->model)
+                    [self selectSmallBody:*small];
+                return;
+            }
             const auto satellite = scene.satellites
                 ? pick_satellite(*scene.satellites, scene.camera, scene.map, click, scene.satellite_display) : std::nullopt;
-            if (satellite) { [self selectSatellite:*satellite]; return; }
+            if (satellite) {
+                if (_satelliteSnapshot && scene.satellites->model == _satelliteSnapshot->model)
+                    [self selectSatellite:*satellite];
+                return;
+            }
             const auto spacecraft = scene.spacecraft
                 ? pick_spacecraft(*scene.spacecraft, scene.camera, scene.map, click, scene.spacecraft_display) : std::nullopt;
-            if (spacecraft) { [self selectSpacecraft:*spacecraft]; return; }
+            if (spacecraft) {
+                if (_spacecraftSnapshot && scene.spacecraft->model == _spacecraftSnapshot->model)
+                    [self selectSpacecraft:*spacecraft];
+                return;
+            }
             _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
             [self clearGalaxySelection]; _following = NO; _surfacePreview = NO;
             [self notifySelection]; [self notifyCamera]; self.needsDisplay = YES;
-            const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(_camera));
-            const NSRect map = [self mapRect];
+            const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(scene.camera));
+            const SolarCamera pickedCamera = scene.camera;
+            const NSRect map = scene.map;
             __weak SolarSystemView *weakSelf = self;
             [_galaxyOverlay pickSpatialAtPoint:NSMakePoint(click.x - map.origin.x, click.y - map.origin.y)
                 camera:galaxyCamera completion:^(GalaxyOverlaySelection result) {
                     SolarSystemView *view = weakSelf;
-                    if (!view) return;
+                    if (!view || ![view matchesDisplayedCamera:pickedCamera map:map]) return;
                     view->_galaxySelection = result.galaxy;
                     view->_hipSelection = result.hip;
                     view->_ourGalaxySelected = result.our_galaxy;
@@ -548,7 +581,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
 }
 - (NSUInteger)visibleBodyCount {
-    return _hasData ? visible_solar_bodies([self scene]).size() : 0;
+    return _hasData ? visible_solar_bodies([self displayedScene]).size() : 0;
 }
 - (void)drawRect:(NSRect)dirtyRect {
     (void)dirtyRect;
@@ -559,12 +592,6 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     const NSRect map = [self mapRect];
     if (map.size.width < 160 || map.size.height < 100) return;
     RendererQualityScope text(context, _rendererDisplayOptions, RendererPrimitive::text);
-    NSString *title = @"太陽中心 · J2000 黄道座標 · 透視投影 · 天体サイズは模式表示";
-    if (_journeyActive) title = @"連続飛行 · 距離と半径は実比率 · 実時間の演出経路 · 地形は選択データから計算";
-    else if (_surfaceActive) title = @"実半径とローカル地形 · 木土天海は基準球面 · 周囲の微小天体は記号";
-    else if (_surfacePreview) title = @"選択天体の表面観察 · 模式半径 · ドラッグで観察方向を変更";
-    else if (_earthMoonMode) title = @"地球と月 · 距離と半径は実比率 · 1.5 pt 未満は位置の記号 · 月軌道は地心相対";
-    [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
     if (!_hasData) {
         self.toolTip = nil;
         [@"データを開くと太陽系を表示します。" drawAtPoint:NSMakePoint(map.origin.x + 20, NSMidY(map))
@@ -573,20 +600,31 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     }
     try {
         [self refreshTerrain];
+        const auto frameOwner = _publishedScene;
+        const auto frame = frameOwner ? frameOwner->scene() : [self scene];
+        NSString *title = @"太陽中心 · J2000 黄道座標 · 透視投影 · 天体サイズは模式表示";
+        if (frame.physical_navigation && !frame.surface_body) title = @"連続飛行 · 距離と半径は実比率 · 地形は選択データから計算";
+        else if (frame.surface_body) title = @"実半径とローカル地形 · 木土天海は基準球面 · 周囲の微小天体は記号";
+        else if (frame.preview_body) title = @"選択天体の表面観察 · 模式半径 · ドラッグで観察方向を変更";
+        else if (frame.earth_moon) title = @"地球と月 · 距離と半径は実比率 · 1.5 pt 未満は位置の記号 · 月軌道は地心相対";
+        if (_showsTimeInfo || _terrainSceneCoordinator.has_active())
+            title = [title stringByAppendingFormat:@" · 表示 JD %.5f", frame.julian_date];
+        if (_terrainSceneCoordinator.has_active()) title = [title stringByAppendingString:@" · 地形更新中"];
+        [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
         NSString *galaxyStatus = nil;
         bool galaxyDrawn = false;
         {
             try {
-                const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(_camera));
-                [_galaxyOverlay drawInRect:map camera:galaxyCamera quality:_rendererDisplayOptions
-                                    scale:self.window ? self.window.backingScaleFactor : 1];
+                const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(frame.camera));
+                [_galaxyOverlay drawInRect:frame.map camera:galaxyCamera quality:frame.renderer_display
+                                    scale:frame.backing_scale];
                 galaxyDrawn = true;
                 galaxyStatus = _galaxyOverlay.status;
             } catch (const std::exception& error) {
                 galaxyStatus = [NSString stringWithFormat:@"銀河を表示できません: %s", error.what()];
             }
         }
-        auto diagnostics = draw_solar_scene(context, [self scene]);
+        auto diagnostics = draw_solar_scene(context, frame);
         if (galaxyDrawn && _galaxySelection && [_galaxyOverlay isRecordDisplayed:*_galaxySelection]) {
             const auto info = [_galaxyOverlay diagnostics];
             const auto position = [_galaxyOverlay model]->row(*_galaxySelection).position;
@@ -650,16 +688,18 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [[NSString stringWithFormat:@"描画できません: %s", error.what()] drawAtPoint:NSMakePoint(map.origin.x + 20, NSMidY(map))
             withAttributes:textStyle(NSColor.labelColor, 12)];
     }
-    NSString *help = [NSString stringWithFormat:@"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   格子: %d AU", _camera.distance_au < 15 ? 1 : 10];
-    if (_journeyActive) help = @"飛行中は手動の視点操作を固定 · 一覧の選択は次の目的地 · 全体表示で飛行を終了";
-    else if (_surfaceActive) help = @"ドラッグ: 見回す   スクロール / ピンチ: 高度変更   天体の選択: 右の一覧   操作すると飛行を中断";
-    else if (_surfacePreview) help = @"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   全体表示へ戻るには「全体」";
-    else if (_earthMoonMode) help = @"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   月軌道は表示日時の地球に追従";
+    const auto helpOwner = _publishedScene;
+    const auto helpScene = helpOwner ? helpOwner->scene() : [self scene];
+    NSString *help = [NSString stringWithFormat:@"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   格子: %d AU", helpScene.camera.distance_au < 15 ? 1 : 10];
+    if (helpScene.physical_navigation && !helpScene.surface_body) help = @"飛行中は手動の視点操作を固定 · 一覧の選択は次の目的地 · 全体表示で飛行を終了";
+    else if (helpScene.surface_body) help = @"ドラッグ: 見回す   スクロール / ピンチ: 高度変更   天体の選択: 右の一覧   操作すると飛行を中断";
+    else if (helpScene.preview_body) help = @"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   全体表示へ戻るには「全体」";
+    else if (helpScene.earth_moon) help = @"ドラッグ: 回転   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   月軌道は表示日時の地球に追従";
     [help drawAtPoint:NSMakePoint(18, NSMaxY(self.bounds) - 24) withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
-    if ([self smallBodiesSceneVisible]) {
-        NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · 数値 JD %.5f", _smallBodySnapshot->julian_date] : @"";
+    if (helpScene.small_bodies) {
+        NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · 数値 JD %.5f", helpScene.small_bodies->julian_date] : @"";
         NSString *status = [NSString stringWithFormat:@"小天体 %lu / 原本 %lu 件を位置評価 · 二体近似%@（時系変換なし）",
-            _smallBodySnapshot->positioned_count, _smallBodySnapshot->positions.size(), time];
+            helpScene.small_bodies->positioned_count, helpScene.small_bodies->positions.size(), time];
         [status drawAtPoint:NSMakePoint(18, NSMaxY(self.bounds) - 39) withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
     }
 }

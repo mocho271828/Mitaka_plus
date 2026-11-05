@@ -7,6 +7,32 @@
 
 using namespace mitaka;
 using namespace mitaka::gui;
+
+@interface GenerationAwareTestView : NSView
+@property(nonatomic) NSUInteger sceneInvalidations;
+@property(nonatomic) NSUInteger publishedRedraws;
+@end
+@implementation GenerationAwareTestView
+- (void)setNeedsDisplay:(BOOL)needsDisplay {
+    if (needsDisplay) ++_sceneInvalidations;
+    [super setNeedsDisplay:needsDisplay];
+}
+- (void)redrawPublishedScene {
+    ++_publishedRedraws;
+    [super setNeedsDisplay:YES];
+}
+@end
+
+@interface OrdinaryTestView : NSView
+@property(nonatomic) NSUInteger redraws;
+@end
+@implementation OrdinaryTestView
+- (void)setNeedsDisplay:(BOOL)needsDisplay {
+    if (needsDisplay) ++_redraws;
+    [super setNeedsDisplay:needsDisplay];
+}
+@end
+
 namespace {
 void check(bool ok, const char* message) { if (!ok) throw std::runtime_error(message); }
 struct PickResult { bool called = false; std::optional<GalaxySpatialRecordId> picked; };
@@ -41,6 +67,29 @@ template<class F> void waitFor(F condition, const char *message) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
     while (!condition() && [deadline timeIntervalSinceNow] > 0) spin();
     check(condition(), message);
+}
+void asynchronousRedrawDoesNotInvalidateScene() {
+    GenerationAwareTestView *view = [[GenerationAwareTestView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    [overlay setModel:fixture()];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    draw(overlay, camera);
+    view.sceneInvalidations = 0;
+    view.publishedRedraws = 0;
+    view.needsDisplay = NO;
+    waitFor([&] { return view.publishedRedraws > 0; }, "asynchronous image did not request a redraw");
+    check(view.sceneInvalidations == 0,
+          "asynchronous image invalidated the scene instead of redrawing it");
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::complete,
+          "published redraw did not show the completed image");
+
+    OrdinaryTestView *plainView = [[OrdinaryTestView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *plainOverlay = [[GalaxyOverlay alloc] initWithView:plainView];
+    [plainOverlay setModel:fixture()];
+    draw(plainOverlay, camera);
+    plainView.redraws = 0;
+    waitFor([&] { return plainView.redraws > 0; }, "ordinary view was not redrawn");
 }
 NSPoint position(const GalaxySpatialModel& model, GalaxySpatialRecordId id, const GalaxyCameraPc& camera) {
     const auto row = model.row(id);
@@ -243,7 +292,7 @@ void tests() {
 } // namespace
 int main() {
     @autoreleasepool {
-        try { tests(); std::cout << "Galaxy overlay: PASS\n"; }
+        try { asynchronousRedrawDoesNotInvalidateScene(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
         catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }
 }

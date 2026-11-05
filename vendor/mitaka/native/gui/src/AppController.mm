@@ -454,18 +454,23 @@ using namespace mitaka::gui;
         _bodies = bodies;
         _solarBodies = solarBodies;
         _jd = jd;
-        [_sky setBodies:bodies];
-        [_horizon setBodies:bodies julianDate:jd earthPosition:_model->solar_bodies(jd)[3].position_au
-            smallBodies:smallBodies smallBodyDisplay:_smallBodyDisplay spacecraft:spacecraft];
-        if (refreshOrbits) {
-            [_solar setBodies:solarBodies orbits:orbits];
-            [_solar setLunarOrbit:lunarOrbit];
+        [_solar beginSceneUpdate];
+        @try {
+            [_sky setBodies:bodies];
+            [_horizon setBodies:bodies julianDate:jd earthPosition:_model->solar_bodies(jd)[3].position_au
+                smallBodies:smallBodies smallBodyDisplay:_smallBodyDisplay spacecraft:spacecraft];
+            if (refreshOrbits) {
+                [_solar setBodies:solarBodies orbits:orbits];
+                [_solar setLunarOrbit:lunarOrbit];
+            }
+            else [_solar setBodies:solarBodies];
+            [self applySmallBodySnapshot:smallBodies];
+            [self applySatelliteSnapshot:satellites];
+            [self applySpacecraftSnapshot:spacecraft];
+            [self refresh];
+        } @finally {
+            [_solar endSceneUpdate];
         }
-        else [_solar setBodies:solarBodies];
-        [self applySmallBodySnapshot:smallBodies];
-        [self applySatelliteSnapshot:satellites];
-        [self applySpacecraftSnapshot:spacecraft];
-        [self refresh];
         return YES;
     } catch (const std::exception& error) {
         [self showError:[NSString stringWithFormat:@"時刻を適用できません: %s\n現在の表示時刻は JD %.6f です。", error.what(), _jd]];

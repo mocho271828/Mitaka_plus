@@ -8,6 +8,10 @@
 #include <limits>
 
 using namespace mitaka::gui;
+@protocol GalaxyOverlayRedrawTarget <NSObject>
+- (void)redrawPublishedScene;
+@end
+
 namespace {
 bool sameFrame(const std::optional<SolarCameraBasis>& a, const std::optional<SolarCameraBasis>& b) {
     if (a.has_value() != b.has_value()) return false;
@@ -83,6 +87,14 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     return self;
 }
 - (void)dealloc { _generation->fetch_add(1, std::memory_order_relaxed); [self invalidatePendingPicks]; }
+- (void)redrawPublishedScene {
+    NSView *view = _view;
+    // 非同期画像の完成は新しい scene ではないため、地形の再計算を要求しない。
+    if ([view respondsToSelector:@selector(redrawPublishedScene)])
+        [(id<GalaxyOverlayRedrawTarget>)view redrawPublishedScene];
+    else
+        view.needsDisplay = YES;
+}
 - (void)invalidatePendingPicks { _pickGeneration->fetch_add(1, std::memory_order_relaxed); }
 - (std::shared_ptr<const GalaxySpatialModel>)model { return _model; }
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel { return _ourGalaxyModel; }
@@ -193,7 +205,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             overlay->_renderedDrawn = bitmap ? bitmap->counts().drawn : 0;
             overlay->_renderedOurGalaxyDrawn = ourBitmap ? ourBitmap->counts().drawn : 0;
             overlay->_status = failure ? [@"銀河を描画できません: " stringByAppendingString:failure] : nil;
-            overlay->_view.needsDisplay = YES;
+            [overlay redrawPublishedScene];
             [overlay startLatest];
         });
     });
@@ -302,7 +314,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     overlay->_diagnostics.display != mode ||
                     !sameRequest(*overlay->_diagnostics.displayed, request)) return;
                 overlay->_status = [@"銀河の選択に失敗: " stringByAppendingString:(failure ? failure : @"不明なエラー")];
-                overlay->_view.needsDisplay = YES;
+                [overlay redrawPublishedScene];
                 completion({});
             });
             return;

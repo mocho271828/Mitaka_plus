@@ -500,6 +500,9 @@ $(BUILD_DIR)/test_terrain_snapshot: tests/test_terrain_snapshot.cpp $(TERRAIN_OB
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_terrain_surface_controller: tests/test_terrain_surface_controller.mm $(TERRAIN_OBJECTS) $(addprefix $(BUILD_DIR)/,TerrainSurfaceController.o solar_camera.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+$(BUILD_DIR)/test_terrain_generation_coordinator: tests/test_terrain_generation_coordinator.cpp include/terrain_generation_coordinator.hpp
+	mkdir -p "$(BUILD_DIR)"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_terrain_compositing: tests/test_terrain_compositing.cpp $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o surface_depth.o planet_surface.o atmosphere_renderer.o earth_layers.o solar_camera.o eclipse_surface.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
@@ -517,7 +520,7 @@ $(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controlle
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
 
 .PHONY: unit8-test galaxy-controller-test script-time-test
-unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
+unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
 	@for binary in $^; do "$$binary" || exit $$?; done
 test: unit8-test
 galaxy-controller-test: $(BUILD_DIR)/test_galaxy_controller
@@ -527,7 +530,20 @@ script-time-test: $(BUILD_DIR)/test_script_time $(SCRIPT_HELPER)
 
 $(BUILD_DIR)/test_solar_terrain: tests/test_solar_terrain.mm $(DISPLAY_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(DISPLAY_TEST_OBJECTS) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
+$(BUILD_DIR)/test_solar_terrain_generation: tests/test_solar_terrain_generation.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
 .PHONY: solar-terrain-test
-solar-terrain-test: $(BUILD_DIR)/test_solar_terrain
+solar-terrain-test: $(BUILD_DIR)/test_solar_terrain $(BUILD_DIR)/test_solar_terrain_generation
 	"$(BUILD_DIR)/test_solar_terrain"
+	"$(BUILD_DIR)/test_solar_terrain_generation"
 test: solar-terrain-test
+
+# Optional integration against an explicitly selected real-data root.
+$(BUILD_DIR)/test_terrain_real_render: tests/test_terrain_real_render.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
+$(BUILD_DIR)/test_terrain_real_generation: tests/test_terrain_real_generation.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
+.PHONY: terrain-real-data-test
+terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_terrain_real_generation
+	"$(BUILD_DIR)/test_terrain_real_render" "$${DATA_ROOT:?Set DATA_ROOT}"
+	"$(BUILD_DIR)/test_terrain_real_generation" "$${DATA_ROOT:?Set DATA_ROOT}"
