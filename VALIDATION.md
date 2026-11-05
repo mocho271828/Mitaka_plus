@@ -9,7 +9,9 @@
 
 小天体の位置・軌道の局所回帰試験は通常構成と ASan/UBSan 構成で通過した。描画負荷の測定条件と結果は[機能優先順位](investigation/native-plus/feature-priorities.md)を参照する。Intel Mac・macOS 13 の実機、複数物理ディスプレイ、旧 Plus との全画素一致は未確認。Mitaka++ の有用な機能の調査・採用は [Issue #1](https://github.com/mocho271828/Mitaka_plus/issues/1) で管理する。新規依存は追加していない。
 
-P1-1〜P1-4 を含む `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はすべて成功した。公式比較は CF96・自転・月・大気・食・銀河を含む。空のビルドディレクトリでのビルドと `git lfs fsck` も成功した。地球・火星の実データによる地形表示と、地球の連続 20 回の視点操作を確認した。全機能の旧版一致や Intel Mac・macOS 13 実機での動作を保証するものではない。
+P1-1〜P1-4 を含む `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はすべて成功した。公式比較は CF96・自転・月・大気・食・銀河を含む。新規 clone でのビルド・単体テストと `git lfs fsck` も成功した。地球・火星の実データによる地形表示と、地球の連続 20 回の視点操作を確認した。全機能の旧版一致や Intel Mac・macOS 13 実機での動作を保証するものではない。
+
+追加検証はユーザーの指摘を受けて中止した。[今回の gate 判定](temp_gates/2026-11-05-20-10-00/)には既存の証拠を記録したが、同梱元の gate には評価途中の NO が残り、全 gate の通過は確認できていない。
 
 ## 2026-11-05: UNIT8 表示半径の採用
 
