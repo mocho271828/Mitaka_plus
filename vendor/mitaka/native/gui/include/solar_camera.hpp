@@ -21,9 +21,15 @@ struct SolarCamera {
     double distance_au = 100;
     // 地表視点では天体固定の局所鉛直を使うため、yaw/pitchの代わりに基底を指定する。
     std::optional<SolarCameraBasis> frame = std::nullopt;
+    // 通常視点のロール。frame 使用時は姿勢が基底に含まれる。
+    double roll_deg = 0;
+    // 任意姿勢の frame でも通常の投影範囲を使う。地表・飛行は false。
+    bool frame_is_orbit = false;
 
     // 左上原点のドラッグ量。orbitは0.35度/point。通常のpitchは±89度で制限。
     void orbit(double dx_points, double dy_points);
+    // 視線を変えずに画面の右・上方向を回す。正の角度は outward 軸の右ねじ方向。
+    void roll(double degrees);
     // 画面上の物体がドラッグ方向へ動くよう、注視点を平行移動する。
     void pan(double dx_points, double dy_points, double width, double height);
     // 正値で遠ざかる。上限は銀河カメラの 1e40 pc と同じ距離。

@@ -25,6 +25,11 @@ bool matching_date(double snapshot_date, double julian_date, Vec3 earth) {
 }
 } // namespace
 
+std::optional<EquatorialCoordinates> horizon_heliocentric_coordinates(Vec3 ecliptic, Vec3 earth) {
+    const auto object = make_object(0, ecliptic, earth, true, false);
+    return object ? std::optional<EquatorialCoordinates>(object->coordinates) : std::nullopt;
+}
+
 std::vector<HorizonObject> horizon_small_body_objects(
     const SmallBodySnapshot& snapshot, const SmallBodyDisplayModel& display,
     double julian_date, Vec3 earth) {

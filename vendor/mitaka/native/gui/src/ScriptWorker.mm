@@ -34,7 +34,7 @@ struct Context {
     std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
 };
 struct Reply {
-    enum Type { empty, number, boolean, text, calendar, radius_scale, function, original_argument } type = empty;
+    enum Type { empty, number, boolean, text, calendar, radius_scale, euler, function, original_argument } type = empty;
     double values[6]{};
     bool flag = false;
     int method = 0;
@@ -49,7 +49,9 @@ enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTi
               selectStarNames, deselectStarNames, isStarNameSelected, toggleAtmosphere,
               setTimeString, getTimeString, setLocalTime, getLocalTime, setTimeTo, setLocalTimeTo, setJDTo,
               getLocalComponentBase = 40, setLocalComponentBase = 50,
-              setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, toggleFlagBase = 100 };
+              setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, lookTarget, animateAzimuth, animateAltitude,
+              setModeTo, toggleMode, toggleModeTo, getOrient, getEuler, setOrient, setEuler, addEuler,
+              setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, toggleFlagBase = 100 };
 struct LocalTimeBinding {
     const char *property;
     const char *getter;
@@ -155,14 +157,14 @@ NSDictionary *request(NSDictionary *message) {
     return value;
 }
 void apply(ScriptActionKind kind, double number = 0, bool flag = false, const char *text = "", double duration = 0,
-           const std::vector<std::int32_t>& hips = {}, NSArray<NSNumber *> *radiusScale = @[]) {
+           const std::vector<std::int32_t>& hips = {}, NSArray<NSNumber *> *radiusScale = @[], NSArray<NSNumber *> *orientation = @[]) {
     NSString *value = [NSString stringWithUTF8String:text];
     if (!value) throw std::invalid_argument("Host names must be UTF-8");
     NSMutableArray<NSNumber *> *identifiers = [NSMutableArray arrayWithCapacity:hips.size()];
     for (const auto hip : hips) [identifiers addObject:@(hip)];
     request(@{@"op":@"apply", @"kind":@(static_cast<int>(kind)), @"number":@(number),
         @"enabled":@(flag), @"text":value, @"duration":@(duration), @"hips":identifiers,
-        @"radiusScale":radiusScale});
+        @"radiusScale":radiusScale, @"orientation":orientation});
 }
 NSDictionary *snapshot() { return request(@{@"op":@"snapshot"}); }
 Context& context(lua_State *state) { return **static_cast<Context **>(lua_getextraspace(state)); }
@@ -342,9 +344,35 @@ Reply readProperty(int object, const std::string& key) {
         if (key == "minute" || key == "min") return numeric(date.minute);
         if (key == "second" || key == "sec") return numeric(date.second);
     } else if (object == cameraObject) {
+        if (key == "look") return method(lookTarget);
+        if (key == "lookTo") return method(animateLookTarget);
+        if (key == "setTargetTo") return method(animateTarget);
+        if (key == "setAzimuthTo") return method(animateAzimuth);
+        if (key == "setAltitudeTo") return method(animateAltitude);
+        if (key == "setModeTo") return method(setModeTo);
+        if (key == "toggleMode") return method(toggleMode);
+        if (key == "toggleModeTo") return method(toggleModeTo);
+        if (key == "getOrient") return method(getOrient);
+        if (key == "getEuler") return method(getEuler);
+        if (key == "setOrient") return method(setOrient);
+        if (key == "setEuler") return method(setEuler);
+        if (key == "addEuler") return method(addEuler);
+        if (key == "setOrientTo") return method(setOrientTo);
+        if (key == "setEulerTo") return method(setEulerTo);
+        if (key == "addEulerTo") return method(addEulerTo);
         NSDictionary *current = snapshot();
+        if (key == "mode") {
+            if (current[@"cameraMode"] == NSNull.null) throw std::runtime_error("Camera.mode is unavailable in the sky view");
+            return numeric([current[@"cameraMode"] intValue]);
+        }
+        if (key == "modeDuration") return numeric([current[@"cameraModeDuration"] doubleValue]);
+        if (key == "duration") {
+            if (current[@"cameraDuration"] == NSNull.null) throw std::runtime_error("Camera.duration is not set");
+            return numeric([current[@"cameraDuration"] doubleValue]);
+        }
         if (key == "zoom") return numeric([current[@"distance"] doubleValue] / auPerParsec);
         if (key == "azimuth") return numeric([current[@"azimuth"] doubleValue]);
+        if (key == "altitude") return numeric([current[@"altitude"] doubleValue]);
         if (key == "target") return textReply(current[@"target"]);
     } else if (object == guiObject) {
         if (key == "saveImageDialog") return method(saveImageDialog);
@@ -420,6 +448,21 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         else throw std::invalid_argument("Unsupported Time property: " + key);
         apply(ScriptActionKind::set_date, plus_julian_date(date)); return;
     }
+    if (object == cameraObject && key == "duration") {
+        const double duration = numberAt(state, 3);
+        if (duration < 0) throw std::invalid_argument("Camera.duration must be nonnegative");
+        apply(ScriptActionKind::set_camera_duration, duration); return;
+    }
+    if (object == cameraObject && key == "modeDuration") {
+        const double duration = numberAt(state, 3);
+        if (duration < 0) throw std::invalid_argument("Camera.modeDuration must be nonnegative");
+        apply(ScriptActionKind::set_camera_mode_duration, duration); return;
+    }
+    if (object == cameraObject && key == "mode") {
+        const double mode = numberAt(state, 3);
+        if (mode != 0 && mode != 1) throw std::invalid_argument("Invalid Camera.mode");
+        apply(ScriptActionKind::set_camera_mode, mode); return;
+    }
     if (object == cameraObject && key == "zoom") {
         const double distance = numberAt(state, 3) * auPerParsec;
         if (!std::isfinite(distance) || distance <= 0) throw std::invalid_argument("Camera.zoom must be positive");
@@ -428,6 +471,9 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
     if (object == cameraObject && key == "target") { apply(ScriptActionKind::select_target, 0, false, textAt(state, 3)); return; }
     if (object == cameraObject && key == "azimuth") {
         apply(ScriptActionKind::set_camera_azimuth, numberAt(state, 3)); return;
+    }
+    if (object == cameraObject && key == "altitude") {
+        apply(ScriptActionKind::set_camera_altitude, numberAt(state, 3)); return;
     }
     throw std::invalid_argument("Unsupported host property: " + key);
 }
@@ -492,7 +538,107 @@ Reply invoke(lua_State *state, int operation) {
         if (operation != setTime && lua_gettop(state) != offset)
             throw std::invalid_argument("Time method requires no arguments");
     }
-    if (operation == setRadiusScale || operation == getRadiusScale ||
+    if (operation >= getOrient && operation <= addEulerTo) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        if (operation == getOrient || operation == getEuler) {
+            if (count != 0) throw std::invalid_argument("Camera orientation getter takes no arguments");
+            const bool quaternion = operation == getOrient;
+            NSArray *values = snapshot()[quaternion ? @"cameraOrientation" : @"cameraEuler"];
+            const NSUInteger size = quaternion ? 4 : 3;
+            if (![values isKindOfClass:NSArray.class] || values.count != size)
+                throw std::runtime_error("Camera orientation is unavailable in this view");
+            Reply result; result.type = quaternion ? Reply::radius_scale : Reply::euler;
+            for (NSUInteger i = 0; i < size; ++i) result.values[i] = [values[i] doubleValue];
+            return result;
+        }
+        const bool quaternion = operation == setOrient || operation == setOrientTo;
+        const bool animated = operation == setOrientTo || operation == setEulerTo || operation == addEulerTo;
+        const int required = quaternion ? 4 : 3;
+        if (count < required || count > required + (animated ? 2 : 0))
+            throw std::invalid_argument("Invalid Camera orientation arguments");
+        NSMutableArray<NSNumber *> *values = [NSMutableArray arrayWithCapacity:required];
+        for (int i = 1; i <= required; ++i) [values addObject:@(numberAt(state, offset + i))];
+        double duration = 0;
+        if (animated) {
+            if (count > required) duration = numberAt(state, offset + required + 1);
+            else {
+                id value = snapshot()[@"cameraDuration"];
+                if (value == NSNull.null) throw std::invalid_argument("Camera.duration is not set");
+                duration = [value doubleValue];
+            }
+        }
+        if (duration < 0) throw std::invalid_argument("Camera orientation duration must be nonnegative");
+        const bool smooth = count > required + 1 ? booleanAt(state, offset + required + 2) : true;
+        ScriptActionKind kind = operation == setOrient ? ScriptActionKind::set_camera_orientation :
+            operation == setEuler ? ScriptActionKind::set_camera_euler : operation == addEuler ? ScriptActionKind::add_camera_euler :
+            operation == setOrientTo ? ScriptActionKind::animate_camera_orientation :
+            operation == setEulerTo ? ScriptActionKind::animate_camera_euler : ScriptActionKind::animate_add_camera_euler;
+        apply(kind, 0, smooth, "", duration, {}, @[], values);
+    } else if (operation == setModeTo || operation == toggleMode || operation == toggleModeTo) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        const bool toggle = operation != setModeTo;
+        if ((!toggle && (count < 1 || count > 2)) || (toggle && count > (operation == toggleMode ? 0 : 1)))
+            throw std::invalid_argument("Invalid Camera mode arguments");
+        NSDictionary *current = snapshot();
+        double mode;
+        if (toggle) {
+            if (current[@"cameraMode"] == NSNull.null) throw std::invalid_argument("Camera.mode is unavailable in the sky view");
+            mode = 1 - [current[@"cameraMode"] intValue];
+        } else mode = numberAt(state, offset + 1);
+        if (mode != 0 && mode != 1) throw std::invalid_argument("Invalid Camera.mode");
+        const int durationIndex = offset + (toggle ? 1 : 2);
+        const double duration = operation == toggleMode ? 0 : (count >= (toggle ? 1 : 2) ? numberAt(state, durationIndex) : [current[@"cameraModeDuration"] doubleValue]);
+        if (duration < 0) throw std::invalid_argument("Camera mode duration must be nonnegative");
+        apply(ScriptActionKind::set_camera_mode, mode, false, "", duration);
+    } else if (operation == animateAzimuth || operation == animateAltitude) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        if (count < 1 || count > 3) throw std::invalid_argument("Camera animation requires a target and optional duration and smooth");
+        const double target = numberAt(state, offset + 1);
+        double duration;
+        if (count >= 2) duration = numberAt(state, offset + 2);
+        else {
+            id value = snapshot()[@"cameraDuration"];
+            if (value == NSNull.null) throw std::invalid_argument("Camera.duration must be set when duration is omitted");
+            duration = [value doubleValue];
+        }
+        if (duration < 0) throw std::invalid_argument("Camera animation duration must be nonnegative");
+        const bool smooth = count == 3 ? booleanAt(state, offset + 3) : true;
+        apply(operation == animateAzimuth ? ScriptActionKind::animate_camera_azimuth : ScriptActionKind::animate_camera_altitude,
+              target, smooth, "", duration);
+    } else if (operation == animateTarget) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        if (count < 1 || count > 2) throw std::invalid_argument("Camera:setTargetTo requires a target and optional duration");
+        double duration;
+        if (count == 2) duration = numberAt(state, offset + 2);
+        else {
+            id value = snapshot()[@"cameraDuration"];
+            if (value == NSNull.null) throw std::invalid_argument("Camera.duration is not set");
+            duration = [value doubleValue];
+        }
+        if (duration < 0) throw std::invalid_argument("Camera target duration must be nonnegative");
+        apply(ScriptActionKind::select_target, 0, true, textAt(state, offset + 1), duration);
+    } else if (operation == lookTarget || operation == animateLookTarget) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        const bool animated = operation == animateLookTarget;
+        if (count < 1 || count > (animated ? 2 : 1))
+            throw std::invalid_argument("Camera:look requires a target and optional animation duration");
+        double duration = 0;
+        if (animated) {
+            if (count == 2) duration = numberAt(state, offset + 2);
+            else {
+                id value = snapshot()[@"cameraDuration"];
+                if (value == NSNull.null) throw std::invalid_argument("Camera.duration is not set");
+                duration = [value doubleValue];
+            }
+            if (duration < 0) throw std::invalid_argument("Camera look duration must be nonnegative");
+        }
+        apply(ScriptActionKind::look_target, 0, animated, textAt(state, offset + 1), duration);
+    } else if (operation == setRadiusScale || operation == getRadiusScale ||
         operation == setRadiusScaleMode || operation == getRadiusScaleMode) {
         if (offset && objectAt(state) != planetsObject) throw std::invalid_argument("Expected Planets receiver");
         const int count = lua_gettop(state) - offset;
@@ -605,6 +751,7 @@ int pushReply(lua_State *state, const Reply& result) {
         case Reply::text: lua_pushstring(state, result.string); return 1;
         case Reply::calendar: for (double value : result.values) lua_pushinteger(state, static_cast<lua_Integer>(value)); return 6;
         case Reply::radius_scale: for (int i = 0; i < 4; ++i) lua_pushnumber(state, result.values[i]); return 4;
+        case Reply::euler: for (int i = 0; i < 3; ++i) lua_pushnumber(state, result.values[i]); return 3;
         case Reply::function: lua_pushinteger(state, result.method); lua_pushcclosure(state, callMethod, 1); return 1;
         case Reply::original_argument: lua_pushvalue(state, result.stack_index); return 1;
     }
@@ -683,6 +830,8 @@ void install(lua_State *state) {
     }
     lua_pushinteger(state, 0); lua_setfield(state, -2, "KEEP_RADIUS");
     lua_pushinteger(state, 1); lua_setfield(state, -2, "KEEP_ORBIT");
+    lua_pushinteger(state, 0); lua_setfield(state, -2, "PLANETARIUM");
+    lua_pushinteger(state, 1); lua_setfield(state, -2, "HIPPARCOS");
     lua_setglobal(state, "mtk");
     lua_sethook(state, instructionHook, LUA_MASKCOUNT, 1000);
 }

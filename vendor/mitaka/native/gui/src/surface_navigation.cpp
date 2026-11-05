@@ -9,7 +9,6 @@ namespace mitaka::gui {
 namespace {
 constexpr double radians_per_degree = 3.14159265358979323846 / 180;
 constexpr double maximum_height_km = 1e9;
-constexpr double flight_seconds = 3;
 
 double heading(double angle) {
     const double reduced = std::fmod(angle, 360);
@@ -36,11 +35,48 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
     return bodies[body_index - 1];
 }
 
+SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
+                                     std::size_t body_index) {
+    const auto info = surface_body_info(body_index);
+    const auto& body = bodies.at(body_index);
+    const auto basis = solar_camera_basis(camera);
+    const auto center = j2000_equatorial_to_ecliptic(body.position_au);
+    const Vec3 offset{camera.target.x + basis.outward.x * camera.distance_au - center.x,
+                      camera.target.y + basis.outward.y * camera.distance_au - center.y,
+                      camera.target.z + basis.outward.z * camera.distance_au - center.z};
+    const double distance = std::hypot(offset.x, offset.y, offset.z);
+    double height = distance * astronomical_unit_km - info.radius_km;
+    // AU 座標の減算で 2 m の境界をわずかに下回る丸め誤差を補う。
+    if (height >= minimum_surface_height_km - 1e-6) height = std::max(height, minimum_surface_height_km);
+    if (!std::isfinite(height) || height < minimum_surface_height_km || height > maximum_height_km)
+        throw std::invalid_argument("camera height cannot be represented by surface navigation");
+    const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
+    const Vec3 up{offset.x / distance, offset.y / distance, offset.z / distance};
+    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
+    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double clat = std::cos(latitude), slat = std::sin(latitude);
+    const double clon = std::cos(longitude), slon = std::sin(longitude);
+    const auto east = transform({-slon, clon, 0}, body.orientation);
+    const auto north = transform({-slat * clon, -slat * slon, clat}, body.orientation);
+    const Vec3 forward{-basis.outward.x, -basis.outward.y, -basis.outward.z};
+    const double elevation = std::asin(std::clamp(dot(forward, up), -1.0, 1.0)) / radians_per_degree;
+    // 天頂・天底では視線の水平成分が消えるため、右方向から方位を復元する。
+    const double azimuth = std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
+    SurfaceSite site{body_index, latitude / radians_per_degree, longitude / radians_per_degree,
+                     height, azimuth, elevation};
+    SurfaceNavigation candidate;
+    candidate.set_site(site);
+    const auto restored = solar_camera_basis(candidate.camera(bodies));
+    if (dot(restored.right, basis.right) < 1.0 - 1e-10 || dot(restored.up, basis.up) < 1.0 - 1e-10)
+        throw std::invalid_argument("camera roll cannot be represented by surface navigation");
+    return candidate.site();
+}
+
 void SurfaceNavigation::set_site(SurfaceSite site) {
     surface_body_info(site.body_index);
     if (!std::isfinite(site.latitude_deg) || std::abs(site.latitude_deg) > 90
         || !std::isfinite(site.longitude_deg) || !std::isfinite(site.heading_deg)
-        || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 89
+        || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 90
         || !std::isfinite(site.height_km) || site.height_km < minimum_surface_height_km
         || site.height_km > maximum_height_km)
         throw std::invalid_argument("invalid surface site");
@@ -87,22 +123,33 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
     return result;
 }
 
-void SurfaceNavigation::begin_flight(double time, double height, double elevation) {
+void SurfaceNavigation::begin_flight(double time, double height, double elevation, double duration) {
     if (!std::isfinite(time)) throw std::invalid_argument("flight time must be finite");
+    if (!std::isfinite(duration) || duration < 0) throw std::invalid_argument("flight duration must be nonnegative and finite");
+    if (duration == 0) {
+        site_.height_km = height;
+        site_.elevation_deg = elevation;
+        interrupt();
+        return;
+    }
     if (site_.height_km == height && site_.elevation_deg == elevation) {
         interrupt();
         return;
     }
-    flight_ = Flight{time, time, site_.height_km, height, site_.elevation_deg, elevation};
+    flight_ = Flight{time, time, site_.height_km, height, site_.elevation_deg, elevation, duration};
 }
 
-void SurfaceNavigation::begin_ascent(double monotonic_seconds) {
+void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_seconds) {
     begin_flight(monotonic_seconds, std::max(site_.height_km,
-                 surface_body_info(site_.body_index).radius_km * 8), -80);
+                 surface_body_info(site_.body_index).radius_km * 8), -80, duration_seconds);
 }
 
-void SurfaceNavigation::begin_descent(double monotonic_seconds) {
-    begin_flight(monotonic_seconds, minimum_surface_height_km, 0);
+void SurfaceNavigation::begin_descent(double monotonic_seconds, double duration_seconds) {
+    begin_flight(monotonic_seconds, minimum_surface_height_km, 0, duration_seconds);
+}
+
+void SurfaceNavigation::begin_descent_preserving_look(double monotonic_seconds, double duration_seconds) {
+    begin_flight(monotonic_seconds, minimum_surface_height_km, site_.elevation_deg, duration_seconds);
 }
 
 bool SurfaceNavigation::advance(double monotonic_seconds) {
@@ -114,7 +161,7 @@ bool SurfaceNavigation::advance(double monotonic_seconds) {
     }
     auto& flight = *flight_;
     flight.previous_time = monotonic_seconds;
-    const double t = std::clamp((monotonic_seconds - flight.start_time) / flight_seconds, 0.0, 1.0);
+    const double t = std::clamp((monotonic_seconds - flight.start_time) / flight.duration, 0.0, 1.0);
     if (t == 0) return false;
     const double smooth = t * t * (3 - 2 * t);
     const double old_height = site_.height_km, old_elevation = site_.elevation_deg;

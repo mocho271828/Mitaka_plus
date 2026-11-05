@@ -42,6 +42,11 @@ void test_state(HorizonView *view) {
     near([view viewport].center_altitude_deg, 0);
     near([view viewport].zoom, 1);
     check(viewportChanges == 4, "viewport callback mismatch");
+    [view setViewport:{180, 90, 1}];
+    near([view viewport].center_altitude_deg, 90);
+    [view zoomIn];
+    near([view viewport].center_altitude_deg, 90);
+    [view resetView];
     const double nan = std::numeric_limits<double>::quiet_NaN();
     rejects<std::invalid_argument>([&] { [view setViewport:{nan, 0, 1}]; });
     near([view viewport].center_azimuth_deg, 180);
@@ -169,7 +174,7 @@ void click_object(HorizonView *view, EquatorialCoordinates coordinates, double j
     [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 4}];
     const auto viewport = [view viewport];
     const NSRect map = NSInsetRect(view.bounds, 42, 34);
-    const auto point = project_sky({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
+    const auto point = project_horizon({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
         {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom},
         map.size.width, map.size.height);
     check(point.has_value(), "fixture object is outside viewport");

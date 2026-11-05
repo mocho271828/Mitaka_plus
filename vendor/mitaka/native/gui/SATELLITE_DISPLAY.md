@@ -35,6 +35,6 @@ y = a sqrt(1 - e²) sin(E)
 
 ## Lua と検証範囲
 
-`Satellites.visible/labels/orbits/selectedOnly` の boolean 取得・設定・toggle を公開する。取得と toggle は最新の native 設定を読み、ホストが拒否した更新は Lua エラーを返す。名前による旧 `show/hide/isVisible` と追加の `Satellite.<name>` target は、出典選択が未確定なので公開しない。名前が同じ原行を上書き・先頭一致で解決しない。根拠は [Lua 契約監査](../../investigation/native-plus/unit5/lua-comet-satellite-contracts.md) を参照する。
+`Satellites.visible/labels/orbits/selectedOnly` の boolean 取得・設定・toggle を公開する。取得と toggle は最新の native 設定を読み、ホストが拒否した更新は Lua エラーを返す。名前による旧 `show/hide/isVisible` は未対応。Lua の `Satellite.<name>` は現在選択中の衛星と同じ出典に限って名前を解決し、未選択時は全出典中で一意の場合だけ解決する。同一出典内の同名行も曖昧として拒否する。位置が評価できた対象だけを移動・地平図の注視に使う。旧版の言語別出典の選択方式は未確定であり、native の選択方式との一致は主張しない。根拠は [Lua 契約監査](../../investigation/native-plus/unit5/lua-comet-satellite-contracts.md) を参照する。
 
 専用試験は、表示集合と再読込の原子性、同名行、軌道の近点・遠点・回転・現在位置、不正 snapshot と描画領域の拒否、表示とクリックの一致、点・名称・軌道の画像差、一覧操作、Lua の厳密な型と最新 snapshot を検証する。原版 Windows の画像との比較試験ではない。実行ログと最終構成の結果は統合作業の記録を参照する。

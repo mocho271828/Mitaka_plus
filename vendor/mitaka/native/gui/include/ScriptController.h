@@ -14,6 +14,7 @@
 #include <set>
 #include <vector>
 #include <optional>
+#include <array>
 
 namespace mitaka::gui {
 
@@ -51,6 +52,12 @@ struct ScriptSnapshot {
     bool distant_galaxies = false;
     bool quasars = false;
     double camera_azimuth_deg = 180;
+    double camera_altitude_deg = 0;
+    std::optional<double> camera_duration;
+    std::optional<int> camera_mode;
+    double camera_mode_duration = 7.1;
+    std::optional<std::array<double, 4>> camera_orientation;
+    std::optional<std::array<double, 3>> camera_euler;
     bool target_browser = false;
     bool time_setting = false;
     bool place_setting = false;
@@ -84,7 +91,11 @@ enum class ScriptActionKind {
     previous_time_step, next_time_step, step_time_forward, step_time_rewind,
     set_shadows, set_shadow_borders, set_shadow_umbra, set_shadow_penumbra, set_landscape,
     set_time_animation_jd, set_time_animation_calendar, set_terrain_amplification,
-    set_radius_scale, set_radius_scale_mode
+    set_radius_scale, set_radius_scale_mode, set_camera_altitude, look_target,
+    set_camera_duration, animate_camera_azimuth, animate_camera_altitude,
+    set_camera_orientation, set_camera_euler, add_camera_euler,
+    animate_camera_orientation, animate_camera_euler, animate_add_camera_euler,
+    set_camera_mode, set_camera_mode_duration
 };
 struct ScriptAction {
     ScriptActionKind kind;
@@ -96,6 +107,7 @@ struct ScriptAction {
     TerrainAmplification terrain_amplification = TerrainAmplification::x1;
     RadiusDisplayOptions radius_display;
     RadiusScaleMode radius_scale_mode = RadiusScaleMode::keep_orbit;
+    std::array<double, 4> orientation{};
 };
 
 } // namespace mitaka::gui

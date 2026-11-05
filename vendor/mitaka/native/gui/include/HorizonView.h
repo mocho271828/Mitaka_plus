@@ -46,6 +46,7 @@ struct HorizonPreparedDate {
 @property(nonatomic) mitaka::gui::StarDisplayOptions starDisplayOptions;
 @property(nonatomic, copy) void (^selectionChanged)(NSString *description);
 @property(nonatomic, copy) void (^viewportChanged)(void);
+@property(nonatomic, copy) void (^userViewportChange)(void);
 @property(nonatomic) double magnitudeLimit;
 @property(nonatomic) BOOL showsTimeInfo;
 @property(nonatomic) BOOL showsLandscapeImage;
@@ -91,6 +92,12 @@ struct HorizonPreparedDate {
 - (void)selectBody:(NSUInteger)index;
 - (void)clearSelection;
 - (BOOL)selectStarHIP:(int32_t)hip;
+- (BOOL)lookAtBody:(mitaka::gui::Body)body;
+- (BOOL)lookAtStarHIP:(int32_t)hip;
+- (BOOL)viewportForBody:(mitaka::gui::Body)body result:(mitaka::gui::HorizonViewport *)result;
+- (BOOL)viewportForStarHIP:(int32_t)hip result:(mitaka::gui::HorizonViewport *)result;
+- (BOOL)viewportForHeliocentricPosition:(mitaka::Vec3)position julianDate:(double)julianDate
+                                  result:(mitaka::gui::HorizonViewport *)result;
 - (void)focusSelection;
 - (void)resetView;
 - (void)zoomIn;

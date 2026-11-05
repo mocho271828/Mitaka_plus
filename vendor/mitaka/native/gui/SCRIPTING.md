@@ -23,9 +23,19 @@
 | `Time.realtime` / `Time:toggleRealtime()` | OS 時計への継続追従を取得・設定・切替。開始に失敗すると Lua エラーを返す |
 | `Time.timeInfo` / `Time:toggleTimeInfo()` | 主画面の日付欄と地平・太陽系の日時情報表示。日時・再生・時計追従は変更しない |
 | `Time:prevStep()` / `nextStep()` | 列挙値だけを変更し、`stepValue` を保持。prev は `max(step−1,0)`、next は原版の `min(step+1,9)` |
-| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.Moon` を選択。ホストが検証する |
+| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.<名前>`、`Star.<HIP番号または英語固有名>`、`Asteroids.<番号または名前>`、`TNO.<番号または名前>`、`Comet.<名前>`、`Spacecraft.<名前>`、`GC.<名前>`、`Other.OurGalaxyCenter`、`Other.OurGalaxy` を選択。一意に解決でき、位置を計算できる対象に対応。探査機は原本の DisplayName または Name に一致させる |
+| `Camera:setTargetTo(target[,duration])` | 同じ対象へ非同期に移動する。省略時は `Camera.duration` 秒。移動中も惑星・月・小天体・探査機の位置を更新し、完了後は追従する |
+| `Camera:look(target)` | 地平図で太陽、地球以外の惑星、衛星、恒星、小天体、探査機、球状星団、銀河系中心、星座を視野中央へ向ける。星座は `Constel.<正式英語名>` または `Constel.<略号>`、その他は `Camera.target` と同じ指定方法を使う。地点・ズーム・選択対象を維持する |
+| `Camera:lookTo(target[,duration])` | 同じ対象へ方位と高度を非同期補間する。秒数の省略時は `Camera.duration`。補間中は現在日時の対象方向を終点に使い、完了後の継続追従はしない |
+| `Camera.mode` / `toggleMode()` / `setModeTo(mode[, duration])` / `toggleModeTo([duration])` | `mtk.PLANETARIUM` (0) と `mtk.HIPPARCOS` (1) を切り替える。地球近傍と地平図の間に限定 |
+| `Camera.modeDuration` | モード移行の秒数。通常起動時の初期値は 7.1 秒 |
+| `Camera:getOrient()` / `setOrient(x,y,z,w)` / `setOrientTo(x,y,z,w[,duration[,smooth]])` | 太陽系の通常視点で quaternion の姿勢を取得・設定・補間する |
+| `Camera:getEuler()` / `setEuler(h,p,r)` / `addEuler(h,p,r)` と各 `To` | 太陽系の通常視点で heading・pitch・roll の取得・設定・加算・補間を行う。角度は度単位 |
 | `Camera.zoom` | ターゲットまでの距離を **パーセク** で取得・設定。GUI の AU と変換する |
 | `Camera.azimuth` | 地平ビューの中心方位を度で取得・設定。北0・東90・西−90。設定時は地平ビューへ切り替え、拡大率を維持する |
+| `Camera.duration` | カメラ補間の秒数。通常起動時の初期値は 9 秒 |
+| `Camera:setAzimuthTo(value, duration, smooth)` / `setAltitudeTo` | 方位・高度を非同期補間。`duration` 省略時は `Camera.duration`、`smooth` 省略時は true。方位は最短経路への補正をしない |
+| `Camera.altitude` | 地平ビューの中心高度を度で取得・設定。水平0・天頂90。指定範囲は −90〜90 度で、範囲外はエラーとする。設定時は地平ビューへ切り替え、拡大率を維持する |
 | `Constels.lines/bounds/labels/illusts` | 全天図・地平図の星座線・境界線・名称・2D 星座絵の真偽値 |
 | `Constels:toggleLines()` / `toggleBounds()` / `toggleLabels()` / `toggleIllusts()` | 対応する表示を切り替える |
 | `Stars.visible/labels/bayerLabels/flamsteedLabels/hipLabels` | 全天図・地平図の恒星、固有名、バイエル符号、フラムスティード番号、HIP 番号の表示。`toggle()` / `toggleLabels()` / `toggleBayerLabels()` / `toggleFlamsteedLabels()` / `toggleHipLabels()` も利用可 |
@@ -82,7 +92,15 @@
 
 実描画には全体の表示、現在のビュー、位置の評価結果も反映される。追加衛星の軌道線は、検証済み Kepler 行について現在日時の親位置・軌道面を固定した瞬時楕円を描く。月の専用解析や未評価行は軌道線を作らず、一覧に診断を表示する。日時を進めた日心軌跡や旧版と同じ線形状を保証するものではない。小天体の軌道線は native の有限期間・標本予算に従う。詳細は [衛星表示の契約](SATELLITE_DISPLAY.md) と [小天体軌道の監査](../../investigation/native-plus/unit5/comet-orbit-contracts.md) を参照する。
 
-これら四群の旧 `show()` / `hide()` / `isVisible()` と追加の `Camera.target` 名は未接続。元の名前解決と起動時の言語別出典選択が未確定であり、全出典から最初の同名行を採る処理で代用しない。既存の `Satellite.Moon` は太陽・惑星・月の経路を維持する。
+これら四群の旧 `show()` / `hide()` / `isVisible()` は未接続。小天体は原番号・名前・別名の完全一致が全出典中で一行だけの場合に選択でき、同名行は曖昧として拒否する。`Satellite.<名前>` は、衛星ブラウザーであらかじめ選択した衛星と同じ出典内で名前を解決する。衛星が選択されていない場合は全出典で一意の名前だけを受け付ける。同じ出典内にも同名行がある場合や、その時刻の位置が未評価の場合はエラーを返す。衛星を選ぶときに出典を明示するこの native 版の方法と、旧版の起動時の言語別出典選択が一致するかは未確認。`Satellite.Moon` は太陽・惑星・月の経路を維持する。
+
+恒星の `Camera.target` は `star_names_HIP.dat` の英語名を大文字小文字を区別して完全一致で解決し、複数の HIP に一致する名前は拒否する。スクリプトで指定した恒星を選択中は指定した文字列を返し、それ以外の恒星は `Star.<HIP番号>` を返す。距離は現在の 3D 恒星表示と同じく正の視差から推定し、固有運動は含まない。位置が得られない恒星は移動できない。
+
+球状星団の `GC.<名前>` は同梱カタログの英語名を大文字小文字を区別して完全一致させる（例: `GC.Terzan 1`）。複数行に一致する名前や位置がない対象は拒否する。`Other.OurGalaxyCenter` は銀河系中心、`Other.OurGalaxy` は銀河系全体を表示し、注視時はいずれも中心を向く。中心位置と全体表示には現在の native 版の近似を使い、旧 Plus の配置や倍率との一致は未確認。`Galaxy.<名前>` と `Other.M31` などは名前とカタログの対応が未確認のため未対応。
+
+星座の `Camera:look` / `lookTo` は、一覧と同じ星座中心の赤経・赤緯を観測地点と現在日時の地平座標へ変換する。正式英語名または略号は大文字小文字を区別して完全一致させ、複数行に一致する場合は拒否する。星座への `Camera.target` は未対応。
+
+`Camera.mode` の取得・切替は地平図と太陽系表示に対応し、全天図ではエラーとなる。地表移行は地球近傍のみで、ほかの天体と `forceMode` は未対応。移行途中の表示モードは実際の画面に従うため、降下中の `toggleMode(To)` は遷移先ではなく表示中のモードを反転する。姿勢 API は太陽系の通常視点に限定し、地平図・全天図・地表・飛行中は未対応。`Camera:lookTo` の対象追従や補間方法の旧版との一致は未確認。`Camera:setTargetTo` は画面切替・手動視点操作・対象変更で停止する。天の川銀河の対象指定では即時指定時の姿勢へ補間し、それ以外の移動中は開始時の姿勢を保つ。移動距離は即時の `Camera.target` と同じ規則を用いる。旧版の `Camera.zoomMode` と移動経路の互換性は未対応・未確認である。
 
 GUI の表示プロパティはウィンドウを閉じた操作も反映する。画像保存パネルは非同期で、Lua は次の行へ進む。関数の正常終了はパネル開始までを意味し、保存・取消の結果を返さない。出力先は通常 GUI と同じ原本保護を通す。投影専用のポインタ・黒フェードは画像へ含まれない。
 
@@ -102,9 +120,9 @@ print("year", Time.year)
 
 旧 Plus の `doc/script_jp/` と同梱 GUI スクリプトの単位・操作を基に接続した。API ごとの資料と差異は [接続調査](../../investigation/native-plus/local-lua-audit.md) と [単位6の表示 API](../../investigation/native-plus/unit6/lua-display-contracts.md) に記録している。旧 Lua 5.1 用のすべてのスクリプトを実行できるものではない。実行系は Lua **5.4.9** であり、5.1 専用の `setfenv`、`getfenv`、`module`、グローバル `unpack` 等を補完しない。言語・ライブラリの差は [Lua 5.4 公式マニュアルの非互換一覧](https://www.lua.org/manual/5.4/manual.html#8) を参照する。
 
-原版の local 処理は CRT の固定 `__timezone` を参照するが、その初期化契約は未確定であり native は明示設定を用いる。旧カメラの四元数・Euler 角・遷移アニメーション、星座ごとの show/hide、3D 空間の星座絵、`Grids.surfacePointer`、旧独自 GUI も未対応。`Milkyway:toggleType()` / `Stars:toggleMarkingType()` は巡回順が未確認のため公開しない。対応表にない API はエラーとなる。表示フラグの接続は旧3D描画の再現を意味しない。
+原版の local 処理は CRT の固定 `__timezone` を参照するが、その初期化契約は未確定であり native は明示設定を用いる。旧カメラの姿勢・遷移アニメーションとの完全な互換、星座ごとの show/hide、3D 空間の星座絵、`Grids.surfacePointer`、旧独自 GUI も未対応。`Milkyway:toggleType()` / `Stars:toggleMarkingType()` は巡回順が未確認のため公開しない。対応表にない API はエラーとなる。表示フラグの接続は旧3D描画の再現を意味しない。
 
-`Camera.altitude` / `look()` / `fov` は未対応。現行の地平図は等距離円筒図で、中心高度が拡大率に応じて制限されるため、旧カメラの任意方向・視野角へそのまま対応できない。`State` は旧 Lua 文字列形式と native の JSON 形式が異なり未接続。`GUI.projection` / `dualWindow`、`Scene.Fader` / `Desktop.Fader` は詳細契約未確認のため alias として補完しない。
+地平ビューは視線を中心に球面を回転した円筒投影を使用し、天頂・天底の周囲も表示する。旧版との投影の一致は未確認。`fov` は未対応。`Camera.duration` の初期値には、旧 `scripts/init.lua` が読み込む `option.lua` の設定を採用している。`State` は旧 Lua 文字列形式と native の JSON 形式が異なり未接続。`GUI.projection` / `dualWindow`、`Scene.Fader` / `Desktop.Fader` は詳細契約未確認のため alias として補完しない。
 
 手元の配布スクリプトを読み取り確認した結果、`ui/scripts/12constels.lua` / `orion3d.lua` は個別星座・3D 配置・カメラアニメーション等に依存し、日食スクリプトも旧カメラの視点・姿勢等の未対応 API を使うため、そのままの全実行には未対応である。`scripts/init.lua` も旧 GUI と `mtk.LANGUAGE` に依存する。これらの原本は変更せず、自動実行しない。
 

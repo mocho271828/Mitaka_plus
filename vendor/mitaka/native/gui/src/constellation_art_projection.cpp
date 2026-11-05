@@ -1,4 +1,5 @@
 #include "constellation_art_projection.hpp"
+#include "horizon_morph_segments.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -36,7 +37,7 @@ private:
             (1 - t) * start_.y + t * end_.y, (1 - t) * start_.z + t * end_.z});
         if (!frame_) return p;
         const auto h = frame_->to_horizontal(p);
-        return {360 - h.azimuth_deg, h.altitude_deg};
+        return rotate_horizon({360 - h.azimuth_deg, h.altitude_deg}, viewport_);
     }
     bool accepted(std::array<EquatorialCoordinates, 5>& points, double dt) const {
         // 正規化直線の角速度は中央で最大。端点角ではなく保守的な上限を使う。
@@ -69,9 +70,20 @@ private:
         if (std::all_of(points.begin(), points.end(), [&](auto p) {
             return pole(p) && p.declination_deg * first.declination_deg > 0;
         })) return;
+        if (frame_ && viewport_.perspective_blend > 0) {
+            const double radians = angular_span_ * 3.14159265358979323846 / 180;
+            const double source_span = (b - a) * 2 * std::tan(radians / 2) * 180 / 3.14159265358979323846;
+            const auto decision = project_morph_interval(points, viewport_, width_, height_, source_span, limits_, result_);
+            if (decision != HorizonMorphDecision::subdivide) return;
+            if (depth == limits_.max_depth) return;
+            subdivide(a, m, first, points[1], middle, depth + 1);
+            subdivide(m, b, middle, points[3], last, depth + 1);
+            return;
+        }
         auto adjusted = points;
         if (accepted(adjusted, b - a)) {
-            const auto projected = project_sky_segment(adjusted.front(), adjusted.back(), viewport_, width_, height_);
+            const SkyViewport projected_viewport = frame_ ? SkyViewport{0, 0, viewport_.zoom} : viewport_;
+            const auto projected = project_sky_segment(adjusted.front(), adjusted.back(), projected_viewport, width_, height_);
             result_.segments.insert(result_.segments.end(), projected.begin(), projected.end());
         } else if (depth == limits_.max_depth) ++result_.omitted_intervals;
         else {
@@ -90,6 +102,7 @@ HorizonSegmentProjection project(Vec3 start, Vec3 end, const ObservationFrame* f
     SkyViewport viewport, double width, double height, HorizonSamplingLimits limits) {
     if (!std::isfinite(viewport.center_ra_deg) || !std::isfinite(viewport.center_dec_deg)
         || std::abs(viewport.center_dec_deg) > 90 || !std::isfinite(viewport.zoom) || viewport.zoom < 1 || viewport.zoom > 180
+        || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0 || viewport.perspective_blend > 1
         || !std::isfinite(width) || width <= 0 || !std::isfinite(height) || height <= 0
         || !std::isfinite(width * viewport.zoom) || !std::isfinite(height * viewport.zoom)
         || !std::isfinite(limits.max_source_step_deg) || limits.max_source_step_deg <= 0 || limits.max_source_step_deg > 2
@@ -106,7 +119,8 @@ HorizonSegmentProjection project_sky_constellation_art_segment(Vec3 start, Vec3 
 HorizonSegmentProjection project_horizon_constellation_art_segment(Vec3 start, Vec3 end,
     const ObservationFrame& frame, const HorizonViewport& viewport,
     double width, double height, HorizonSamplingLimits limits) {
-    return project(start, end, &frame, {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom},
+    return project(start, end, &frame, {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
+        viewport.zoom, viewport.perspective_blend},
         width, height, limits);
 }
 }

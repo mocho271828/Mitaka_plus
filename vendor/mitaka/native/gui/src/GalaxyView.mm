@@ -5,9 +5,15 @@
 
 using namespace mitaka::gui;
 namespace {
+bool sameVector(mitaka::Vec3 a, mitaka::Vec3 b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
 bool sameCamera(const GalaxyCameraPc& a, const GalaxyCameraPc& b) {
     return a.target.x_pc == b.target.x_pc && a.target.y_pc == b.target.y_pc && a.target.z_pc == b.target.z_pc &&
-        a.yaw_deg == b.yaw_deg && a.pitch_deg == b.pitch_deg && a.distance_pc == b.distance_pc;
+        a.yaw_deg == b.yaw_deg && a.pitch_deg == b.pitch_deg && a.distance_pc == b.distance_pc && a.roll_deg == b.roll_deg && a.frame_is_orbit == b.frame_is_orbit &&
+        a.frame.has_value() == b.frame.has_value() &&
+        (!a.frame || (sameVector(a.frame->outward, b.frame->outward) &&
+                       sameVector(a.frame->right, b.frame->right) && sameVector(a.frame->up, b.frame->up)));
 }
 NSString *errorText(const std::exception& error) {
     NSString *text = [NSString stringWithUTF8String:error.what()];
@@ -33,7 +39,7 @@ NSString *errorText(const std::exception& error) {
         _queue = dispatch_queue_create("org.mitaka.galaxy-render", DISPATCH_QUEUE_SERIAL);
         _renderStatus = @"データ未読込";
         self.accessibilityIdentifier = @"galaxy-view";
-        self.accessibilityLabel = @"銀河の3D表示。ドラッグで回転、Shiftを押しながらドラッグで平行移動、スクロールで拡大縮小。";
+        self.accessibilityLabel = @"銀河の3D表示。ドラッグで回転、Optionドラッグでロール、Shiftドラッグで平行移動、スクロールで拡大縮小。";
     }
     return self;
 }
@@ -211,9 +217,14 @@ NSString *errorText(const std::exception& error) {
     try {
         auto camera = _camera;
         if (event.modifierFlags & NSEventModifierFlagShift) camera.pan(dx, dy, self.bounds.size.width, self.bounds.size.height);
+        else if (event.modifierFlags & NSEventModifierFlagOption) camera.roll(dx * 0.35);
         else camera.orbit(dx, dy);
         [self setGalaxyCamera:camera];
     } catch (const std::exception& error) { _renderStatus = errorText(error); [self changed]; }
+}
+- (void)rotateWithEvent:(NSEvent *)event {
+    try { auto camera = _camera; camera.roll(event.rotation); [self setGalaxyCamera:camera]; }
+    catch (const std::exception& error) { _renderStatus = errorText(error); [self changed]; }
 }
 - (void)scrollWheel:(NSEvent *)event {
     try { auto camera = _camera; camera.zoom(event.scrollingDeltaY * 0.02); [self setGalaxyCamera:camera]; }

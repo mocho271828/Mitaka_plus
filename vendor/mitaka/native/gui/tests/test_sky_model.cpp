@@ -164,6 +164,38 @@ void test_projection() {
     rejects<std::invalid_argument>([&] { project_sky({0, 0}, {0, 0, 0}, 360, 180); });
     rejects<std::invalid_argument>([&] { project_sky({0, 0}, {}, 0, 180); });
     rejects<std::invalid_argument>([&] { project_sky({0, 0}, {}, 360, nan); });
+    for (const double altitude : {-90.0, -45.0, 0.0, 45.0, 90.0}) {
+        const SkyViewport view{73, altitude, 1};
+        for (const auto point : {ScreenPoint{20, 20}, ScreenPoint{100, 60}, ScreenPoint{180, 90},
+                                 ScreenPoint{270, 120}, ScreenPoint{340, 160}}) {
+            const auto projected = project_horizon(unproject_horizon(point, view, 360, 180), view, 360, 180);
+            check(projected.has_value(), "horizon round trip must remain visible");
+            near(projected->x, point.x);
+            near(projected->y, point.y);
+        }
+    }
+    for (const double blend : {0.0, 0.25, 0.5, 0.75, 1.0}) {
+        const SkyViewport view{73, 32, 2, blend};
+        const HorizonRasterProjection raster(view, 360, 180);
+        for (const auto point : {ScreenPoint{20.5, 20.5}, ScreenPoint{100.5, 60.5},
+                                 ScreenPoint{180.5, 90.5}, ScreenPoint{340.5, 160.5}}) {
+            const auto direction = unproject_horizon(point, view, 360, 180);
+            const auto pixel = raster.direction(static_cast<std::size_t>(point.x),
+                                                static_cast<std::size_t>(point.y));
+            near(pixel.right_ascension_deg, direction.right_ascension_deg);
+            near(pixel.declination_deg, direction.declination_deg);
+            const auto projected = project_horizon(direction, view, 360, 180);
+            check(projected.has_value(), "blended horizon direction must remain visible");
+            near(projected->x, point.x);
+            near(projected->y, point.y);
+        }
+    }
+    const SkyViewport perspective{0, 0, 1, 1};
+    const auto top = unproject_horizon({320, 0}, perspective, 640, 480);
+    near(top.declination_deg, 22.5);
+    const auto right = unproject_horizon({640, 240}, perspective, 640, 480);
+    near(right.right_ascension_deg,
+         360 - std::atan(0.4142135623730950488 * 4 / 3) * 180 / 3.14159265358979323846);
 }
 
 void test_navigation() {
@@ -180,6 +212,15 @@ void test_navigation() {
     check(anchor.has_value(), "zoom anchor remains visible");
     near(anchor->x, 270);
     near(anchor->y, 70);
+    for (const SkyViewport view : {SkyViewport{73, -70, 2}, SkyViewport{73, 0, 2}, SkyViewport{73, 70, 2}}) {
+        const ScreenPoint point{230, 60};
+        const auto target = unproject_horizon(point, view, 360, 180);
+        const auto zoomed_horizon = zoom_horizon(view, 1.5, point, 360, 180);
+        const auto projected = project_horizon(target, zoomed_horizon, 360, 180);
+        check(projected.has_value(), "horizon zoom anchor remains visible");
+        near(projected->x, point.x);
+        near(projected->y, point.y);
+    }
     const auto seam = project_sky_segment({350, 0}, {10, 0}, {}, 360, 180);
     check(seam.size() == 2, "RA seam must produce two short segments");
     for (const auto& segment : seam) {

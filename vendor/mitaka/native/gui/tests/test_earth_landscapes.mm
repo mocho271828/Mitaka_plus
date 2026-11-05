@@ -248,14 +248,15 @@ void projection_tests() {
     const auto ground = render_horizon_landscape(nullptr, nullptr, {}, 4, 4);
     for (std::size_t y = 0; y < 4; ++y) for (std::size_t x = 0; x < 4; ++x) {
         const auto offset = (y * 4 + x) * 4;
-        expect(ground.rgba[offset] == 0 && ground.rgba[offset + 3] == (y < 2 ? 0 : 255), "absent image draws black lower hemisphere");
+        expect(ground.rgba[offset] == 0 && ground.rgba[offset + 3] == 0, "absent image leaves the dimmed sky visible");
     }
     const auto moved = render_horizon_landscape(&texture, &landscape, {270, 10, 4}, 17, 13);
     for (std::size_t y : {std::size_t(0), std::size_t(6), std::size_t(12)})
         for (std::size_t x : {std::size_t(0), std::size_t(8), std::size_t(16)}) {
-            const double azimuth = 270 + ((x + .5) / 17 - .5) * 90;
-            const double altitude = 10 + (.5 - (y + .5) / 13) * 45;
-            const auto screen = project_sky({360 - azimuth, altitude}, {90, 10, 4}, 17, 13);
+            const auto direction = unproject_horizon({x + .5, y + .5}, {90, 10, 4}, 17, 13);
+            const double azimuth = 360 - direction.right_ascension_deg;
+            const double altitude = direction.declination_deg;
+            const auto screen = project_horizon(direction, {90, 10, 4}, 17, 13);
             expect(bool(screen), "pan and zoom sample projects into viewport");
             near(screen->x, x + .5, "landscape horizontal pixels align with HorizonView sky projection");
             near(screen->y, y + .5, "landscape vertical pixels align with HorizonView sky projection");
@@ -326,12 +327,12 @@ void loader_and_renderer_tests() {
     expect(rendered == first, "cached image draw remains stable");
     [renderer setObserverPlaceIdentifier:std::string("Planet.Earth.Local")];
     draw();
-    expect(rendered[0] == 255 && rendered[(height - 1) * width * 4] == 0, "missing selected image draws transparent sky and black ground");
+    expect(rendered[0] == 255 && rendered[(height - 1) * width * 4] == 255, "missing selected image leaves the sky visible");
     expect([renderer observerPlaceIdentifier] == "Planet.Earth.Local", "selected identifier retained");
     [renderer setObserverPlaceIdentifier:std::string{}];
     renderer.showsLandscapeImage = NO;
     draw();
-    expect(rendered[0] == 255 && rendered[(height - 1) * width * 4] == 0, "visibility toggle replaces image with original black ground");
+    expect(rendered[0] == 255 && rendered[(height - 1) * width * 4] == 255, "visibility toggle leaves the sky visible");
     renderer.showsLandscapeImage = YES;
     draw();
     expect(rendered == first, "reenabling image invalidates projection cache");

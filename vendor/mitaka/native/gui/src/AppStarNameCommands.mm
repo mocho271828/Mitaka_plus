@@ -12,6 +12,7 @@
     _starNameSelection->set_selection(hips);
     [_sky setSelectedStarNameHIPs:hips];
     [_horizon setSelectedStarNameHIPs:hips];
+    [_solar setSurfaceSelectedStarNameHIPs:hips];
     [_browser refreshConstellationVisibility];
 }
 - (void)setStarNameMembership:(const std::vector<std::int32_t>&)hips selected:(BOOL)selected {

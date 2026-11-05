@@ -7,7 +7,29 @@
 #include "surface_navigation.hpp"
 #include "interplanetary_flight.hpp"
 #import "GalaxyOverlay.h"
+#import "StarRenderer.h"
 @class GalaxyOverlay;
+
+enum class ScriptOrientationInterpolation { quaternion, euler, relative_euler };
+
+struct ScriptOrientationAnimation {
+    mitaka::gui::PlusOrientationQuaternion initial;
+    mitaka::gui::PlusOrientationQuaternion target;
+    mitaka::gui::PlusOrientationEuler initial_euler;
+    mitaka::gui::PlusOrientationEuler target_euler;
+    double start_time, duration;
+    bool smooth;
+    ScriptOrientationInterpolation interpolation;
+};
+
+struct ScriptTargetAnimation {
+    mitaka::Vec3 initial, target;
+    double initial_distance, target_distance, start_time, duration;
+    std::optional<std::size_t> body, small_body, spacecraft, satellite;
+    std::optional<mitaka::gui::GalaxySpatialRecordId> galaxy;
+    bool our_galaxy;
+    std::optional<mitaka::gui::PlusOrientationQuaternion> initial_orientation, target_orientation;
+};
 
 @interface SolarSystemView () {
     mitaka::gui::SolarBodies _bodies;
@@ -25,6 +47,17 @@
     mitaka::gui::SolarCamera _camera;
     std::optional<mitaka::gui::SolarCamera> _lastNotifiedCamera;
     GalaxyOverlay *_galaxyOverlay;
+    StarRenderer *_surfaceStarRenderer;
+    std::shared_ptr<const mitaka::gui::SkyModel> _surfaceSkyModel;
+    std::shared_ptr<const mitaka::gui::ConstellationArtModel> _surfaceConstellationArt;
+    mitaka::gui::ConstellationDisplayOptions _surfaceConstellationOptions;
+    std::shared_ptr<const mitaka::gui::SkyBackgrounds> _surfaceBackgrounds;
+    mitaka::gui::MilkyWayMode _surfaceMilkyWayMode;
+    NSImage *_surfaceBackgroundImage;
+    std::optional<std::array<double, 7>> _surfaceBackgroundKey;
+    mitaka::gui::StarDisplayOptions _surfaceStarOptions;
+    double _surfaceMagnitudeLimit;
+    BOOL _hipVisible;
     std::optional<mitaka::gui::GalaxySpatialRecordId> _galaxySelection;
     std::optional<std::size_t> _hipSelection;
     BOOL _ourGalaxySelected;
@@ -34,8 +67,15 @@
     BOOL _journeyActive;
     BOOL _dateJourneyFinished;
     NSTimer *_flightTimer;
+    NSTimer *_orientationTimer;
+    std::optional<ScriptOrientationAnimation> _orientationAnimation;
+    NSTimer *_targetTimer;
+    std::optional<ScriptTargetAnimation> _targetAnimation;
+    std::optional<mitaka::gui::PlusOrientationQuaternion> _scriptOrientation;
     NSString *_flightNotice;
     BOOL _surfaceActive;
+    BOOL _physicalSpaceActive;
+    BOOL _exitSurfaceAfterAscent;
     BOOL _surfacePreview;
     BOOL _earthMoonMode;
     BOOL _earthMoonFollowing;
@@ -109,7 +149,7 @@
 - (void)advanceFlightAtTime:(double)time;
 - (void)updateJourneyAtTime:(double)time;
 - (void)startFlightTimer;
-- (void)beginFlightAtSite:(mitaka::gui::SurfaceSite)site ascending:(BOOL)ascending;
+- (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site ascending:(BOOL)ascending preserveLook:(BOOL)preserveLook duration:(double)duration error:(NSString **)error;
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom;
 - (BOOL)smallBodiesSceneVisible;
 - (void)focusSmallBodySelection;

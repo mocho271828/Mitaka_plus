@@ -34,10 +34,11 @@ void curve(EquatorialCoordinates start, EquatorialCoordinates end, const Observa
         const double fraction = index / 4000.0;
         const auto horizontal = frame.to_horizontal({start.right_ascension_deg + delta * fraction,
             start.declination_deg + (end.declination_deg - start.declination_deg) * fraction});
-        // 極そのものの方位は定義できないため、任意の az=0 を描画の正解にしない。
-        if (std::abs(horizontal.altitude_deg) > 89.99999) continue;
-        const auto point = project_sky({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
-            {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom}, width, height);
+        const SkyViewport sky_viewport{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom};
+        const EquatorialCoordinates coordinates{360 - horizontal.azimuth_deg, horizontal.altitude_deg};
+        // 回転後の極では経度が定義できず、任意の経度を描画上の正解にできない。
+        if (std::abs(rotate_horizon(coordinates, sky_viewport).declination_deg) > 89.99999) continue;
+        const auto point = project_horizon(coordinates, sky_viewport, width, height);
         if (!point) continue;
         double nearest = std::numeric_limits<double>::infinity();
         for (const auto& segment : result.segments) {
@@ -64,8 +65,12 @@ void tests() {
     const auto zenith = frame.to_equatorial({0,90});
     curve({zenith.right_ascension_deg, zenith.declination_deg - 10}, {zenith.right_ascension_deg, zenith.declination_deg + 10}, frame, {});
     curve(zenith, {zenith.right_ascension_deg, zenith.declination_deg - 20}, frame, {});
+    curve({zenith.right_ascension_deg, zenith.declination_deg - 10},
+          {zenith.right_ascension_deg, zenith.declination_deg + 10}, frame, {0, 90, 2});
     const auto nadir = frame.to_equatorial({0,-90});
     curve({nadir.right_ascension_deg, nadir.declination_deg - 10}, {nadir.right_ascension_deg, nadir.declination_deg + 10}, frame, {});
+    curve({nadir.right_ascension_deg, nadir.declination_deg - 10},
+          {nadir.right_ascension_deg, nadir.declination_deg + 10}, frame, {0, -90, 2});
     HorizonSamplingLimits limits; limits.max_evaluations = 5;
     const auto limited = project_equatorial_segment_to_horizon({0,0}, {150,60}, frame, {}, 1200,700,limits);
     check(limited.evaluations <= 5 && limited.omitted_intervals > 0 && limited.segments.empty(), "budget exhaustion must not invent a long chord");

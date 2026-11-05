@@ -5,6 +5,7 @@
 #include "radius_display_validation.hpp"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -30,6 +31,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         _smokeTest = smokeTest;
         _jd = 2451545.0;
         _timeInfoVisible = YES;
+        _scriptCameraDuration = 9.0;
         _radiusScaleMode = RadiusScaleMode::keep_orbit;
         _observerLatitude = 35.68;
         _observerLongitude = 139.76;
@@ -59,6 +61,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 
 - (void)dealloc {
     [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
+    [_horizonProjectionTimer invalidate];
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
     [_solar cancelTerrain];
@@ -72,6 +75,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     (void)notification;
     [self savePreferences];
     _terminating = YES;
+    [self cancelHorizonProjection];
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
     [_solar cancelTerrain];
@@ -152,7 +156,10 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [_solar interruptFlight];
     [_playback suspendForSystemSleep];
     [_scripts cancel];
+    [_solar stopScriptOrientation];
+    [_solar stopScriptTargetTransition];
     [_starBrightness cancel];
+    [self stopScriptCameraAnimation];
 }
 - (void)systemDidWake:(NSNotification *)notification {
     (void)notification;
@@ -171,7 +178,9 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _travelButtons[1].enabled = enabled && _mode.selectedSegment == 1 && canLand && !_solar.journeyActive;
     _travelButtons[2].enabled = enabled && _mode.selectedSegment == 1 && _solar.surfaceNavigationActive && !_solar.journeyActive;
     _travelButtons[3].enabled = enabled && _mode.selectedSegment == 1 && !_solar.journeyActive;
-    _travelButtons[4].enabled = enabled && _solar.flightAnimating;
+    _travelButtons[4].enabled = enabled && (_solar.flightAnimating || _horizonProjectionTimer != nil);
+    _travelButtons[5].enabled = enabled && _mode.selectedSegment == 2 && !_solar.journeyActive && !_horizonProjectionTimer;
+    _travelButtons[6].enabled = enabled && _mode.selectedSegment == 1 && !_solar.journeyActive && !_solar.flightAnimating;
     _journeyButton.enabled = enabled && _mode.selectedSegment == 1 && canLand && !_solar.journeyActive && !_solar.flightAnimating;
     _resumeJourneyButton.enabled = enabled && _mode.selectedSegment == 1 && _solar.journeyActive && !_solar.flightAnimating;
     _cameraButtons[2].enabled = _cameraButtons[3].enabled = enabled && (_mode.selectedSegment != 1 || !_solar.journeyActive);
@@ -332,10 +341,18 @@ static bool finishDatePresentation(const char *name, Action&& action) {
                 [self->_sky setConstellationArt:constellationArt];
                 [self->_sky setSkyBackgrounds:backgrounds];
                 [self->_horizon setSkyBackgrounds:backgrounds];
+                [self->_solar setSurfaceSkyBackgrounds:backgrounds];
+                self->_solar.surfaceMilkyWayMode = self->_horizon.milkyWayMode;
                 [self->_horizon setEarthLandscapes:earthLandscapes];
                 [self->_horizon setObserverPlaceIdentifier:std::string{}];
                 [self->_horizon setModel:loaded bodies:bodies];
                 [self->_horizon setExtendedCatalogs:extended];
+                [self->_solar setSurfaceStarModel:loaded catalogs:extended];
+                [self->_solar setSurfaceConstellationArt:constellationArt];
+                self->_solar.surfaceConstellationDisplayOptions = self->_horizon.constellationDisplayOptions;
+                [self->_solar setSurfaceSelectedStarNameHIPs:[self selectedStarNameHIPs]];
+                [self->_solar setSurfaceStarDisplayOptions:self->_sky.starDisplayOptions];
+                [self->_solar setSurfaceMagnitudeLimit:self->_sky.magnitudeLimit];
                 [self->_horizon setConstellationArt:constellationArt];
                 [self->_horizon setBodies:bodies julianDate:initialJD earthPosition:loaded->solar_bodies(initialJD)[3].position_au
                     smallBodies:smallBodySnapshot smallBodyDisplay:self->_smallBodyDisplay spacecraft:spacecraftSnapshot];
@@ -568,6 +585,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 - (void)changeMagnitude:(id)sender {
     (void)sender;
     _sky.magnitudeLimit = _horizon.magnitudeLimit = std::round(_magnitudeSlider.doubleValue * 10) / 10;
+    [_solar setSurfaceMagnitudeLimit:_sky.magnitudeLimit];
     _magnitudeLabel.stringValue = [NSString stringWithFormat:@"V 等級 ≤ %.1f", _sky.magnitudeLimit];
     if (_model) [self refresh];
 }
@@ -587,9 +605,10 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     }
 }
 - (void)changeMode:(id)sender {
-    (void)sender;
+    if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
-    if (!solar) [_solar interruptFlight];
+    if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
+    if (!solar) { [_solar stopScriptTargetTransition]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
     _solar.hidden = !solar;
@@ -671,7 +690,153 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     if ([self readLandingLatitude:&latitude longitude:&longitude])
         [_solar takeOffFromEarthAtLatitude:latitude longitude:longitude];
 }
-- (void)stopFlight:(id)sender { (void)sender; [_solar interruptFlight]; }
+- (void)cancelHorizonProjection {
+    [_horizonProjectionTimer invalidate];
+    _horizonProjectionTimer = nil;
+    if (_horizon) {
+        auto viewport = [_horizon viewport];
+        if (viewport.perspective_blend != 0) {
+            viewport.perspective_blend = 0;
+            [_horizon setViewport:viewport];
+        }
+    }
+    [self updateEnabled];
+}
+- (void)advanceHorizonProjection {
+    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    const double progress = _horizonProjectionDuration <= 0 ? 1
+        : std::clamp((now - _horizonProjectionStartTime) / _horizonProjectionDuration, 0.0, 1.0);
+    const double smooth = progress * progress * (3 - 2 * progress);
+    auto viewport = [_horizon viewport];
+    viewport.perspective_blend = _horizonProjectionStart + (_horizonProjectionTarget - _horizonProjectionStart) * smooth;
+    [_horizon setViewport:viewport];
+    if (progress < 1) return;
+    [_horizonProjectionTimer invalidate];
+    _horizonProjectionTimer = nil;
+    if (_horizonProjectionTarget == 1) {
+        SurfaceSite site;
+        site.latitude_deg = _observerLatitude;
+        site.longitude_deg = _observerLongitude;
+        site.heading_deg = viewport.center_azimuth_deg;
+        site.elevation_deg = viewport.center_altitude_deg;
+        NSString *error = nil;
+        if (![_solar takeOffFromHorizon:site duration:_horizonAscentDuration error:&error]) {
+            [self cancelHorizonProjection];
+            [self showError:error ? error : @"地平図から離陸できません。"]; return;
+        }
+        _mode.selectedSegment = 1;
+        [self changeMode:nil];
+    }
+    [self updateEnabled];
+}
+- (void)startHorizonProjectionTo:(double)target duration:(double)duration {
+    [_horizonProjectionTimer invalidate];
+    _horizonProjectionTimer = nil;
+    _horizonProjectionStart = [_horizon viewport].perspective_blend;
+    _horizonProjectionTarget = target;
+    _horizonProjectionDuration = duration;
+    _horizonProjectionStartTime = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (duration <= 0 || _horizonProjectionStart == target) {
+        [self advanceHorizonProjection];
+        return;
+    }
+    __weak AppController *weakSelf = self;
+    _horizonProjectionTimer = [NSTimer timerWithTimeInterval:1.0 / 30 repeats:YES block:^(NSTimer *timer) {
+        (void)timer;
+        [weakSelf advanceHorizonProjection];
+    }];
+    [[NSRunLoop mainRunLoop] addTimer:_horizonProjectionTimer forMode:NSRunLoopCommonModes];
+    [self updateEnabled];
+}
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error {
+    if (!std::isfinite(duration) || duration < 0) {
+        if (error) *error = @"移動時間は 0 以上の有限数で指定してください。";
+        return NO;
+    }
+    if (surface) {
+        if (_mode.selectedSegment == 2) {
+            if (_horizonProjectionTimer) [self startHorizonProjectionTo:0 duration:duration];
+            return YES;
+        }
+        if (_mode.selectedSegment != 1) {
+            if (error) *error = @"地球付近の太陽系表示が必要です。";
+            return NO;
+        }
+        _earthDescentProjectionDuration = duration * 0.4;
+        if (![_solar descendToHorizonWithDuration:duration * 0.6 error:error]) return NO;
+        _pendingEarthDescent = YES;
+        [self surfaceNavigationChanged];
+        return YES;
+    }
+    if (_mode.selectedSegment == 1) {
+        if (!_pendingEarthDescent) return YES;
+        if (![_solar ascendFromEarthWithDuration:duration error:error]) return NO;
+        _pendingEarthDescent = NO;
+        return YES;
+    }
+    if (_mode.selectedSegment != 2) {
+        if (error) *error = @"地平図からのみ離陸できます。";
+        return NO;
+    }
+    if (!_model || _solar.journeyActive) {
+        if (error) *error = @"地平図から離陸できません。";
+        return NO;
+    }
+    if (duration == 0) {
+        const auto viewport = [_horizon viewport];
+        SurfaceSite site;
+        site.latitude_deg = _observerLatitude;
+        site.longitude_deg = _observerLongitude;
+        site.heading_deg = viewport.center_azimuth_deg;
+        site.elevation_deg = viewport.center_altitude_deg;
+        if (![_solar takeOffFromHorizon:site duration:0 error:error]) return NO;
+        [self cancelHorizonProjection];
+        _mode.selectedSegment = 1;
+        [self changeMode:nil];
+        return YES;
+    }
+    _horizonAscentDuration = duration * 0.6;
+    [self startHorizonProjectionTo:1 duration:duration * 0.4];
+    return YES;
+}
+- (void)takeOffFromHorizon:(id)sender {
+    (void)sender;
+    NSString *error = nil;
+    if (![self setEarthSurfaceMode:NO duration:3 error:&error]) {
+        [self showError:error ? error : @"地平図から離陸できません。"]; return;
+    }
+}
+- (void)descendToHorizon:(id)sender {
+    (void)sender;
+    NSString *error = nil;
+    if (![self setEarthSurfaceMode:YES duration:3 error:&error]) {
+        [self showError:error ? error : @"地平図へ降下できません。"]; return;
+    }
+}
+- (void)surfaceNavigationChanged {
+    if (_pendingEarthDescent && !_solar.flightAnimating) {
+        _pendingEarthDescent = NO;
+        SurfaceSite site;
+        if (_mode.selectedSegment == 1 && [_solar earthSurfaceSite:&site]
+            && site.height_km <= minimum_surface_height_km + 1e-9) {
+            const std::string identifier = [_horizon observerPlaceIdentifier];
+            const BOOL samePlace = _observerPlaces && std::any_of(_observerPlaces->places.begin(), _observerPlaces->places.end(),
+                [&](const auto& place) { return place.target_name == identifier && observer_place_matches(place, site.latitude_deg, site.longitude_deg); });
+            _observerLatitude = site.latitude_deg;
+            _observerLongitude = site.longitude_deg;
+            [_horizon setObserverSite:{site.latitude_deg, site.longitude_deg}];
+            if (!samePlace) [_horizon setObserverPlaceIdentifier:std::string{}];
+            [_sky setObservationSite:{site.latitude_deg, site.longitude_deg} julianDate:_jd];
+            [self stopScriptCameraAnimation];
+            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].zoom, 1}];
+            _mode.selectedSegment = 2;
+            [self changeMode:nil];
+            [self startHorizonProjectionTo:0 duration:_earthDescentProjectionDuration];
+        }
+    }
+    [self updateEnabled];
+}
+- (void)stopFlight:(id)sender { (void)sender; [self cancelHorizonProjection]; [_solar interruptFlight]; }
 - (void)startJourney:(id)sender {
     (void)sender;
     double latitude = 0, longitude = 0;

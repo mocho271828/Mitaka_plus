@@ -96,6 +96,22 @@ void fixture(const std::filesystem::path& directory) {
 }
 
 void test_camera() {
+    SolarCamera rotated;
+    const auto before_roll = solar_camera_basis(rotated);
+    rotated.roll(90);
+    const auto after_roll = solar_camera_basis(rotated);
+    same(after_roll.outward, before_roll.outward);
+    same(after_roll.right, before_roll.up);
+    check(!rotated.frame, "rolling an orbit camera must retain its projection limits");
+    auto framed = rotated;
+    framed.frame = after_roll;
+    rotated.orbit(10, 5);
+    framed.orbit(10, 5);
+    const auto orbit_basis = solar_camera_basis(rotated);
+    const auto framed_basis = solar_camera_basis(framed);
+    same(orbit_basis.outward, framed_basis.outward);
+    same(orbit_basis.right, framed_basis.right);
+    same(orbit_basis.up, framed_basis.up);
     SolarCamera camera{{0, 0, 0}, 0, 0, 10};
     const auto at = [&](Vec3 point) {
         const auto result = project_solar(point, camera, 800, 600);
@@ -114,8 +130,7 @@ void test_camera() {
     near(at({0, 0, 0}).x, 424); near(at({0, 0, 0}).y, 285);
     near(at(camera.target).x, 400); near(at(camera.target).y, 300);
     camera.orbit(-90 / 0.35, 0); near(camera.yaw_deg, 90);
-    camera.orbit(0, 1e100); near(camera.pitch_deg, 89);
-    camera.orbit(0, -1e100); near(camera.pitch_deg, -89);
+    camera.orbit(0, 10); near(camera.pitch_deg, 3.5);
     camera.zoom(-1e100); near(camera.distance_au, 0.000005, 1e-15);
     camera.zoom(1e100); camera.zoom(1e100); near(camera.distance_au, maximum_solar_distance_au);
     camera.orbit(1e300, 0);

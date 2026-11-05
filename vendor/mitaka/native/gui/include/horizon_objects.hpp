@@ -14,6 +14,8 @@ struct HorizonObject {
     bool label;
 };
 
+std::optional<EquatorialCoordinates> horizon_heliocentric_coordinates(Vec3 ecliptic_au, Vec3 earth_equatorial_au);
+
 // Earth は julian_date と同時刻の日心 J2000 赤道座標 AU。
 // 結果は地心幾何方向であり、視差・光行時間を含まない。
 // モデル・日時・行数が一致しない snapshot は全体を表示しない。

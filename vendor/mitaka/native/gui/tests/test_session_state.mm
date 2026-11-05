@@ -51,6 +51,13 @@ void test_roundtrip() {
     check(encode_session_state(initial) == json, "default state did not roundtrip exactly");
     check(initial.version == 9 && initial.simulation_rate == 3600 && !initial.solar_camera.frame,
           "default values changed");
+    state.solar_camera.roll(37);
+    check(decode_session_state(encode_session_state(state)).solar_camera.roll_deg == 37,
+          "camera roll did not roundtrip");
+    NSMutableDictionary *old_session = session_object();
+    [old_session[@"solar_camera"] removeObjectForKey:@"roll_deg"];
+    check(decode_session_state(json_bytes(old_session)).solar_camera.roll_deg == 0,
+          "previous v9 camera did not restore its default roll");
     for (int level = 1; level <= 5; ++level) {
         state.terrain_amplification = static_cast<TerrainAmplification>(level);
         check(decode_session_state(encode_session_state(state)).terrain_amplification == state.terrain_amplification,
@@ -186,6 +193,8 @@ void test_missing_null_and_types() {
         NSMutableDictionary *object = session_object();
         NSArray *keys = [object[parent] allKeys];
         for (NSString *key in keys) {
+            if ([parent isEqualToString:@"solar_camera"] &&
+                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"])) continue;
             object = session_object();
             [object[parent] removeObjectForKey:key];
             rejects([&] { decode_session_state(json_bytes(object)); });
@@ -207,9 +216,9 @@ void test_ranges_and_camera() {
         [object[@"sky_viewport"] addEntriesFromDictionary:change];
         rejects([&] { decode_session_state(json_bytes(object)); });
     }
-    for (NSDictionary *change in @[@{@"zoom": @0}, @{@"zoom": @181}, @{@"zoom": @1.0, @"center_altitude_deg": @1},
+    for (NSDictionary *change in @[@{@"zoom": @0}, @{@"zoom": @181}, @{@"zoom": @1.0, @"center_altitude_deg": @(-90.1)},
                                    @{@"center_azimuth_deg": @(-0.1)}, @{@"center_azimuth_deg": @360},
-                                   @{@"center_altitude_deg": @90}, @{@"center_altitude_deg": @YES}]) {
+                                   @{@"center_altitude_deg": @90.1}, @{@"center_altitude_deg": @YES}]) {
         NSMutableDictionary *object = session_object();
         [object[@"horizon_viewport"] addEntriesFromDictionary:change];
         rejects([&] { decode_session_state(json_bytes(object)); });

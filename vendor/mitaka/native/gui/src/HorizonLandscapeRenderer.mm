@@ -12,7 +12,7 @@ namespace {
 struct LandscapeKey {
     std::optional<std::size_t> selection;
     bool visible;
-    std::array<double, 3> viewport;
+    std::array<double, 4> viewport;
     std::size_t width, height;
     bool operator==(const LandscapeKey& other) const {
         return selection == other.selection && visible == other.visible && viewport == other.viewport &&
@@ -45,12 +45,14 @@ struct LandscapeKey {
 - (const std::string&)observerPlaceIdentifier { return _identifier; }
 - (void)drawInRect:(NSRect)rect viewport:(HorizonViewport)viewport quality:(RendererDisplayOptions)quality {
     if (!_model || rect.size.width <= 0 || rect.size.height <= 0) return;
-    const double scale = std::min(1.0, 1024 / std::max(rect.size.width, rect.size.height));
+    // 投影の移行中は毎フレーム画像を再生成するため、計算量を抑える。
+    const double maximumDimension = viewport.perspective_blend > 0 && viewport.perspective_blend < 1 ? 512 : 1024;
+    const double scale = std::min(1.0, maximumDimension / std::max(rect.size.width, rect.size.height));
     const auto width = static_cast<std::size_t>(std::clamp(std::ceil(rect.size.width * scale), 1.0, 1024.0));
     const auto height = static_cast<std::size_t>(std::clamp(std::ceil(rect.size.height * scale), 1.0, 1024.0));
     const auto selected = _model->selection(_identifier);
     const LandscapeKey key{selected, bool(_showsLandscapeImage),
-        {viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom}, width, height};
+        {viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend}, width, height};
     if (!_image || !_key || !(*_key == key)) {
         const auto* definition = selected ? &_model->definitions().landscapes()[*selected].definition : nullptr;
         const auto* texture = selected && _showsLandscapeImage ? _model->image(*selected) : nullptr;

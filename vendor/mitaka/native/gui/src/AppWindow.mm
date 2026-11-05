@@ -149,9 +149,13 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
         button(@"着陸", self, @selector(land:)),
         button(@"離陸", self, @selector(takeOff:)),
         button(@"地球から離陸", self, @selector(takeOffFromEarth:)),
-        button(@"移動を停止", self, @selector(stopFlight:))];
+        button(@"移動を停止", self, @selector(stopFlight:)),
+        button(@"地平図から離陸", self, @selector(takeOffFromHorizon:)),
+        button(@"地平図へ降下", self, @selector(descendToHorizon:))];
     _travelButtons[1].toolTip = @"選択天体の上空へ移動して降下します。ガス惑星は基準面への接近です。";
     _travelButtons[3].toolTip = @"指定した緯度・東経の地球の地表から上昇します。";
+    _travelButtons[5].toolTip = @"地平図の観測地点と視線から地球の上空へ移動します。";
+    _travelButtons[6].toolTip = @"地球近傍の視点から降下し、地平図へ移ります。ロール付きの視点には対応していません。";
     NSStackView *travelControls = stack(@[_travelButtons[0], label(@"緯度", 12), _latitudeField,
         label(@"東経", 12), _longitudeField, _travelButtons[1], _travelButtons[2],
         _travelButtons[3], _travelButtons[4]], NSUserInterfaceLayoutOrientationHorizontal);
@@ -162,7 +166,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _resumeJourneyButton.toolTip = @"停止した視点から同じ目的地へ、新しい約24秒の経路で再出発します。";
     NSTextField *journeyHint = label(@"約24秒で離陸 → 航行 → 着陸 · 日時の進行は再生速度で設定", 11);
     journeyHint.textColor = NSColor.secondaryLabelColor;
-    NSStackView *journeyControls = stack(@[_journeyButton, _resumeJourneyButton, journeyHint], NSUserInterfaceLayoutOrientationHorizontal);
+    NSStackView *journeyControls = stack(@[_journeyButton, _resumeJourneyButton, _travelButtons[5], _travelButtons[6], journeyHint], NSUserInterfaceLayoutOrientationHorizontal);
     [journeyControls.heightAnchor constraintEqualToConstant:28].active = YES;
     _selectionLabel = [NSTextField wrappingLabelWithString:@"星や惑星をクリックすると\n座標と明るさ・距離を表示します。"];
     _selectionLabel.font = [NSFont monospacedDigitSystemFontOfSize:12 weight:NSFontWeightRegular];
@@ -175,6 +179,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _playback.stateChanged = ^{ [weakSelf updateEnabled]; };
     _playback.didStop = ^{ [weakSelf refreshOrbits]; };
     [self configurePlayback];
+    _horizon.userViewportChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf cancelHorizonProjection]; };
     _horizon.selectionChanged = ^(NSString *description) {
         AppController *controller = weakSelf;
         if (!controller) return;
@@ -201,7 +206,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
         AppController *controller = weakSelf;
         if (controller) controller->_cameraLabel.stringValue = description;
     };
-    _solar.navigationChanged = ^{ [weakSelf updateEnabled]; };
+    _solar.navigationChanged = ^{ [weakSelf surfaceNavigationChanged]; };
     _solar.overviewVisibilityChanged = ^(BOOL visible) {
         (void)visible;
         [weakSelf refreshSmallBodyOrbits];

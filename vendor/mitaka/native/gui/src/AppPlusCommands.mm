@@ -150,6 +150,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
         if (center) [_sky focusSelection];
     }
     _horizon.magnitudeLimit = _sky.magnitudeLimit;
+    [_solar setSurfaceMagnitudeLimit:_sky.magnitudeLimit];
     _magnitudeSlider.doubleValue = _sky.magnitudeLimit;
     _magnitudeLabel.stringValue = [NSString stringWithFormat:@"V 等級 ≤ %.1f", _sky.magnitudeLimit];
     [self refresh];

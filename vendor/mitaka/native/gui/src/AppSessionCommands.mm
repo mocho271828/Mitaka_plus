@@ -73,6 +73,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         }
         [_scripts cancel];
         [_starBrightness cancel];
+        [self stopScriptCameraAnimation];
         if (![self setDate:state.julian_date]) return NO;
         [_playback setSimulationRate:state.simulation_rate];
         auto restored_time = state.plus_time;
@@ -89,6 +90,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         [_sky setViewport:state.sky_viewport];
         [_horizon setViewport:state.horizon_viewport];
         _sky.magnitudeLimit = _horizon.magnitudeLimit = state.magnitude_limit;
+        [_solar setSurfaceMagnitudeLimit:state.magnitude_limit];
         _magnitudeSlider.minValue = std::min(_magnitudeSlider.minValue, state.magnitude_limit);
         _magnitudeSlider.maxValue = std::max(_magnitudeSlider.maxValue, state.magnitude_limit);
         _magnitudeSlider.doubleValue = state.magnitude_limit;

@@ -21,24 +21,24 @@ namespace {
 struct BackgroundKey {
     const SkyBackgrounds* model;
     MilkyWayMode mode;
-    std::array<double, 6> observationViewport;
+    std::array<double, 7> observationViewport;
     std::size_t width, height;
     bool operator==(const BackgroundKey& other) const {
         return model == other.model && mode == other.mode && observationViewport == other.observationViewport
             && width == other.width && height == other.height;
     }
 };
-// 既存の円筒投影・操作を再利用し、方位だけ右向きに反転する。
+// 共通の投影座標系では、方位を右向きにするため経度を反転する。
 SkyViewport skyViewport(HorizonViewport viewport) {
-    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom};
+    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend};
 }
 HorizonViewport horizonViewport(SkyViewport viewport) {
-    viewport = normalize_sky_viewport(viewport);
-    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.zoom};
+    viewport = normalize_sky_viewport(viewport, true);
+    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend};
 }
 std::optional<ScreenPoint> projectHorizontal(HorizontalCoordinates coordinates,
                                              HorizonViewport viewport, NSSize size) {
-    return project_sky({360 - coordinates.azimuth_deg, coordinates.altitude_deg},
+    return project_horizon({360 - coordinates.azimuth_deg, coordinates.altitude_deg},
                        skyViewport(viewport), size.width, size.height);
 }
 void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size, const RendererDisplayOptions& quality) {
@@ -122,7 +122,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (BOOL)isFlipped { return YES; }
 - (BOOL)isOpaque { return YES; }
 - (BOOL)acceptsFirstResponder { return YES; }
-- (NSRect)mapRect { return NSInsetRect(self.bounds, 42, 34); }
+- (NSRect)mapRect {
+    const double blend = _viewport.perspective_blend;
+    return NSInsetRect(self.bounds, 42 - 24 * blend, 34 + 6 * blend);
+}
 - (RendererDisplayOptions)rendererDisplayOptions { return _rendererDisplayOptions; }
 - (void)setRendererDisplayOptions:(RendererDisplayOptions)options {
     _rendererDisplayOptions = options;
@@ -361,11 +364,15 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     self.needsDisplay = YES;
     if (self.viewportChanged) self.viewportChanged();
 }
-- (void)resetView { [self setViewport:{}]; }
+- (void)resetView {
+    if (self.userViewportChange) self.userViewportChange();
+    [self setViewport:{}];
+}
 - (void)zoomBy:(double)factor atPoint:(NSPoint)point {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
-    [self setViewport:horizonViewport(zoom_sky(skyViewport(_viewport), factor,
+    if (self.userViewportChange) self.userViewportChange();
+    [self setViewport:horizonViewport(zoom_horizon(skyViewport(_viewport), factor,
         {point.x - map.origin.x, point.y - map.origin.y}, map.size.width, map.size.height))];
 }
 - (void)zoomIn { [self zoomBy:1.5 atPoint:NSMakePoint(NSMidX(self.bounds), NSMidY(self.bounds))]; }
@@ -380,7 +387,45 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto* moving = [self selectedMovingObject];
     if (!_selection && !moving) return;
     const auto coordinates = _frame->to_horizontal(moving ? moving->coordinates : [self selectionCoordinates]);
+    if (self.userViewportChange) self.userViewportChange();
     [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::max(4.0, _viewport.zoom)}];
+}
+- (BOOL)lookAtBody:(Body)body {
+    HorizonViewport target;
+    if (![self viewportForBody:body result:&target]) return NO;
+    [self setViewport:target];
+    return YES;
+}
+- (BOOL)viewportForBody:(Body)body result:(HorizonViewport *)result {
+    if (!_model || !_frame) return NO;
+    const auto found = std::find_if(_bodies.begin(), _bodies.end(), [body](const auto& candidate) { return candidate.id == body; });
+    if (found == _bodies.end()) return NO;
+    const auto coordinates = _frame->to_horizontal(found->coordinates);
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    return YES;
+}
+- (BOOL)lookAtStarHIP:(int32_t)hip {
+    HorizonViewport target;
+    if (![self viewportForStarHIP:hip result:&target]) return NO;
+    [self setViewport:target];
+    return YES;
+}
+- (BOOL)viewportForStarHIP:(int32_t)hip result:(HorizonViewport *)result {
+    if (!_model || !_frame) return NO;
+    const auto index = _model->star_index(hip);
+    if (!index) return NO;
+    const auto& star = _model->stars()[*index];
+    const auto coordinates = _frame->to_horizontal({star.right_ascension_degrees, star.declination_degrees});
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    return YES;
+}
+- (BOOL)viewportForHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
+    if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition);
+    if (!equatorial) return NO;
+    const auto coordinates = _frame->to_horizontal(*equatorial);
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    return YES;
 }
 - (void)selectBody:(NSUInteger)index {
     if (!_model || index >= _bodies.size()) return;
@@ -461,8 +506,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
     _dragging = _dragging || std::hypot(point.x - _mouseDownPoint.x, point.y - _mouseDownPoint.y) > 3;
-    if (_dragging) [self setViewport:horizonViewport(pan_sky(skyViewport(_viewport),
-        point.x - _lastDragPoint.x, point.y - _lastDragPoint.y, map.size.width, map.size.height))];
+    if (_dragging) {
+        if (self.userViewportChange) self.userViewportChange();
+        [self setViewport:horizonViewport(pan_sky(skyViewport(_viewport),
+            point.x - _lastDragPoint.x, point.y - _lastDragPoint.y, map.size.width, map.size.height, true))];
+    }
     _lastDragPoint = point;
 }
 - (void)mouseUp:(NSEvent *)event {
@@ -520,10 +568,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (void)scrollWheel:(NSEvent *)event {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
-    if (event.hasPreciseScrollingDeltas)
+    if (event.hasPreciseScrollingDeltas) {
+        if (self.userViewportChange) self.userViewportChange();
         [self setViewport:horizonViewport(pan_sky(skyViewport(_viewport), event.scrollingDeltaX,
-            event.scrollingDeltaY, map.size.width, map.size.height))];
-    else [self zoomBy:std::exp(std::clamp(event.scrollingDeltaY * 0.08, -2.0, 2.0))
+            event.scrollingDeltaY, map.size.width, map.size.height, true))];
+    } else [self zoomBy:std::exp(std::clamp(event.scrollingDeltaY * 0.08, -2.0, 2.0))
              atPoint:[self convertPoint:event.locationInWindow fromView:nil]];
 }
 - (void)magnifyWithEvent:(NSEvent *)event {
@@ -541,12 +590,14 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (void)drawSkyBackgroundInRect:(NSRect)map {
     const auto* texture = _backgrounds ? _backgrounds->image(_milkyWayMode) : nullptr;
     if (!texture) return;
-    const double scale = std::min(1.0, 1024 / std::max(map.size.width, map.size.height));
-    const auto width = static_cast<std::size_t>(std::clamp(std::ceil(map.size.width * scale), 1.0, 1024.0));
-    const auto height = static_cast<std::size_t>(std::clamp(std::ceil(map.size.height * scale), 1.0, 1024.0));
+    const double limit = _viewport.perspective_blend > 0 && _viewport.perspective_blend < 1 ? 512 : 1024;
+    const double scale = std::min(1.0, limit / std::max(map.size.width, map.size.height));
+    const auto width = static_cast<std::size_t>(std::clamp(std::ceil(map.size.width * scale), 1.0, limit));
+    const auto height = static_cast<std::size_t>(std::clamp(std::ceil(map.size.height * scale), 1.0, limit));
     const BackgroundKey key{_backgrounds.get(), _milkyWayMode,
         {_site.latitude_deg, _site.longitude_deg, _julianDate,
-         _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.zoom}, width, height};
+         _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.zoom,
+         _viewport.perspective_blend}, width, height};
     // 非表示中の日時更新は描画まで評価しない。同一 JD の天体更新も画像を再生成しない。
     if (!_backgroundImage || !_backgroundKey || !(*_backgroundKey == key)) {
         const auto pixels = render_horizon_background(*texture, _viewport, *_frame, width, height);
@@ -568,12 +619,58 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         fraction:1 respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
 }
 - (void)drawGrid:(CGContextRef)context inRect:(NSRect)map {
-    // 高度0の線が画面外でも、下半球の背景を正しく塗る。
-    const double horizonY = NSMidY(map) + _viewport.center_altitude_deg / (180 / _viewport.zoom) * map.size.height;
-    const double groundY = std::clamp(horizonY, static_cast<double>(NSMinY(map)), static_cast<double>(NSMaxY(map)));
-    if (!_landscapeRenderer.hasModel) {
+    if (!_landscapeRenderer.hasModel && _viewport.perspective_blend > 0) {
+        // 投影の変形中も、画素の逆投影で地平線の上下を判定する。
+        const int columns = std::max(1, static_cast<int>(std::ceil(map.size.width)));
+        const int rows = 64;
+        const auto viewport = skyViewport(_viewport);
         CGContextSetRGBFillColor(context, 0.11, 0.10, 0.09, 1);
-        CGContextFillRect(context, CGRectMake(map.origin.x, groundY, map.size.width, NSMaxY(map) - groundY));
+        CGContextBeginPath(context);
+        for (int x = 0; x < columns; ++x) {
+            const double px = (x + 0.5) * map.size.width / columns;
+            auto altitude = [&](double y) {
+                return unproject_horizon({px, y}, viewport, map.size.width, map.size.height).declination_deg;
+            };
+            double y0 = 0, a0 = altitude(0);
+            for (int row = 1; row <= rows; ++row) {
+                const double y1 = row * map.size.height / rows;
+                const double a1 = altitude(y1);
+                double boundary = y1;
+                if ((a0 < 0) != (a1 < 0)) {
+                    double low = y0, high = y1;
+                    for (int i = 0; i < 12; ++i) {
+                        const double mid = (low + high) / 2;
+                        if ((altitude(mid) < 0) == (a0 < 0)) low = mid; else high = mid;
+                    }
+                    boundary = (low + high) / 2;
+                }
+                if (a0 < 0) CGContextAddRect(context, CGRectMake(NSMinX(map) + x * map.size.width / columns,
+                    NSMinY(map) + y0, map.size.width / columns + 0.1, boundary - y0));
+                if (a1 < 0 && boundary < y1) CGContextAddRect(context, CGRectMake(NSMinX(map) + x * map.size.width / columns,
+                    NSMinY(map) + boundary, map.size.width / columns + 0.1, y1 - boundary));
+                y0 = y1; a0 = a1;
+            }
+        }
+        CGContextFillPath(context);
+    } else if (!_landscapeRenderer.hasModel) {
+        // 球面回転後の地平線は一般に曲線になる。
+        constexpr double radians = 3.14159265358979323846 / 180;
+        const double tilt = _viewport.center_altitude_deg * radians;
+        const int columns = std::max(1, static_cast<int>(std::ceil(map.size.width)));
+        CGContextSetRGBFillColor(context, 0.11, 0.10, 0.09, 1);
+        CGContextBeginPath(context);
+        CGContextMoveToPoint(context, NSMinX(map), NSMaxY(map));
+        for (int i = 0; i <= columns; ++i) {
+            const double fraction = static_cast<double>(i) / columns;
+            const double longitude = (0.5 - fraction) * 360 / _viewport.zoom * radians;
+            const double latitude = std::atan2(-std::cos(longitude) * std::sin(tilt), std::cos(tilt));
+            const double y = std::clamp(NSMidY(map) - latitude / radians / 180 * _viewport.zoom * map.size.height,
+                                        static_cast<double>(NSMinY(map)), static_cast<double>(NSMaxY(map)));
+            CGContextAddLineToPoint(context, NSMinX(map) + fraction * map.size.width, y);
+        }
+        CGContextAddLineToPoint(context, NSMaxX(map), NSMaxY(map));
+        CGContextClosePath(context);
+        CGContextFillPath(context);
     }
     draw_sky_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, true, _rendererDisplayOptions);
 }

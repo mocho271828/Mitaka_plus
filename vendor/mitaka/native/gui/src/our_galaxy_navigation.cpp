@@ -77,6 +77,7 @@ bool hit_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera,
     direction_camera.yaw_deg = camera.yaw_deg;
     direction_camera.pitch_deg = camera.pitch_deg;
     direction_camera.frame = camera.frame;
+    direction_camera.roll_deg = camera.roll_deg;
     const auto axes = solar_camera_basis(direction_camera);
     const Vec3 delta = sub({camera.target.x_pc,camera.target.y_pc,camera.target.z_pc},
                            {center.x_pc,center.y_pc,center.z_pc});

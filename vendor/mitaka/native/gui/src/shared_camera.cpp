@@ -13,6 +13,8 @@ SolarCamera direction_camera(const SharedCamera& camera) {
     direction.yaw_deg = camera.yaw_deg;
     direction.pitch_deg = camera.pitch_deg;
     direction.frame = camera.frame;
+    direction.roll_deg = camera.roll_deg;
+    direction.frame_is_orbit = camera.frame_is_orbit;
     return direction;
 }
 
@@ -33,6 +35,7 @@ void SharedCamera::orbit(double dx_points, double dy_points) {
     yaw_deg = direction.yaw_deg;
     pitch_deg = direction.pitch_deg;
     frame = direction.frame;
+    roll_deg = direction.roll_deg;
 }
 
 void SharedCamera::pan(double dx_points, double dy_points, double width, double height) {
@@ -64,7 +67,7 @@ void SharedCamera::zoom(double logarithmic_delta) {
 
 SharedCamera shared_camera_from_solar(const SolarCamera& camera) {
     (void)solar_camera_basis(camera);
-    SharedCamera result{camera.target, camera.yaw_deg, camera.pitch_deg, camera.distance_au, camera.frame};
+    SharedCamera result{camera.target, camera.yaw_deg, camera.pitch_deg, camera.distance_au, camera.frame, camera.roll_deg, camera.frame_is_orbit};
     validate(result);
     return result;
 }
@@ -75,13 +78,13 @@ SharedCamera shared_camera_from_galaxy(const GalaxyCameraPc& camera) {
              camera.target.y_pc * astronomical_units_per_parsec,
              camera.target.z_pc * astronomical_units_per_parsec},
             camera.yaw_deg, camera.pitch_deg, camera.distance_pc * astronomical_units_per_parsec,
-            camera.frame};
+            camera.frame, camera.roll_deg, camera.frame_is_orbit};
 }
 
 SolarCamera solar_camera_from_shared(const SharedCamera& camera) {
     validate(camera);
     SolarCamera result{camera.target_au, camera.yaw_deg, camera.pitch_deg,
-                       camera.distance_au, camera.frame};
+                       camera.distance_au, camera.frame, camera.roll_deg, camera.frame_is_orbit};
     (void)solar_camera_basis(result);
     return result;
 }
@@ -92,7 +95,7 @@ GalaxyCameraPc galaxy_camera_from_shared(const SharedCamera& camera) {
     return checked_galaxy_camera({{camera.target_au.x / scale, camera.target_au.y / scale,
                                    camera.target_au.z / scale},
                                   camera.yaw_deg, camera.pitch_deg, camera.distance_au / scale,
-                                  camera.frame});
+                                  camera.frame, camera.roll_deg, camera.frame_is_orbit});
 }
 
 } // namespace mitaka::gui

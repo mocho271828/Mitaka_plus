@@ -25,7 +25,7 @@ private:
     mutable std::optional<CoordinateGrid> horizontal_;
 };
 
-// horizontal_projection は方位右向き・高度上向きの既存円筒投影を使う。
+// horizontal_projection は視野中心に合わせて球面を回転した地平図投影を使う。
 // viewport は SkyViewport の表現（center_ra = 360 - azimuth）に統一する。
 void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     const GridDisplayOptions& options, const GridGeometryCache& cache,

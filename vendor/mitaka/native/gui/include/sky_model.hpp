@@ -85,18 +85,20 @@ struct SkyViewport {
     double center_ra_deg = 180;
     double center_dec_deg = 0;
     double zoom = 1;
+    double perspective_blend = 0;
 };
 
 struct ScreenPoint { double x, y; };
 struct ScreenSegment { ScreenPoint start, end; };
 
-// 操作時は赤経を正規化し、極を越えて描画領域が空白にならないよう赤緯を制限する。
+// 操作時は赤経を正規化する。通常は極の外に空白が出ない範囲に、
+// allow_pole_center が true の場合は中心を極まで許容する。
 // 倍率は1〜180。非有限値、倍率<=0、無効な寸法は invalid_argument。
-SkyViewport normalize_sky_viewport(SkyViewport viewport);
+SkyViewport normalize_sky_viewport(SkyViewport viewport, bool allow_pole_center = false);
 SkyViewport pan_sky(SkyViewport viewport, double delta_x, double delta_y,
-                    double width, double height);
+                    double width, double height, bool allow_pole_center = false);
 SkyViewport zoom_sky(SkyViewport viewport, double factor, ScreenPoint anchor,
-                     double width, double height);
+                     double width, double height, bool allow_pole_center = false);
 
 // 左上原点、赤経は左向き、赤緯は上向き。幅360/zoom度、高さ180/zoom度。
 // RA は360度周期。全天の継ぎ目は右端に置く。範囲外は nullopt。
@@ -110,6 +112,37 @@ std::vector<ScreenSegment> project_sky_segment(EquatorialCoordinates start,
                                               EquatorialCoordinates end,
                                               const SkyViewport& viewport,
                                               double width, double height);
+
+// 地平図用。合成赤経 = 360 - 方位、高度を視野中心に合わせて球面回転し、
+// perspective_blend = 0 は全天図と同じ経緯度投影、1 は縦視野角45度の透視投影。
+// 中間値では各画素が指す経度と緯度を補間する。逆変換も同じ座標系を返す。
+EquatorialCoordinates rotate_horizon(EquatorialCoordinates coordinates, const SkyViewport& viewport);
+std::optional<ScreenPoint> project_horizon(EquatorialCoordinates coordinates,
+                                         const SkyViewport& viewport,
+                                         double width, double height);
+EquatorialCoordinates unproject_horizon(ScreenPoint point, const SkyViewport& viewport,
+                                        double width, double height);
+// ラスターの画素中心を逆変換する。各軸と視野の計算を画像ごとに共有する。
+class HorizonRasterProjection {
+public:
+    HorizonRasterProjection(const SkyViewport& viewport, std::size_t width, std::size_t height);
+    // x < width、y < height が必要。
+    EquatorialCoordinates direction(std::size_t x, std::size_t y) const;
+
+private:
+    double center_ra_deg_;
+    double cos_tilt_;
+    double sin_tilt_;
+    double perspective_blend_;
+    double zoom_;
+    std::vector<std::array<double, 2>> longitudes_;
+    std::vector<std::array<double, 2>> latitudes_;
+    std::vector<double> perspective_denominators_;
+    std::vector<double> vertical_coordinates_;
+};
+// 可能な範囲でポインター下の方向を維持して拡大する。
+SkyViewport zoom_horizon(SkyViewport viewport, double factor, ScreenPoint anchor,
+                         double width, double height);
 
 enum class ObjectKind { star, body };
 struct Selection { ObjectKind kind; std::size_t index; };

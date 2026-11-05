@@ -87,7 +87,7 @@ void test_site_contract() {
     for (const double latitude : {-90.001, 90.001}) {
         auto candidate = before; candidate.latitude_deg = latitude; invalid(candidate);
     }
-    for (const double elevation : {-89.001, 89.001}) {
+    for (const double elevation : {-90.001, 90.001}) {
         auto candidate = before; candidate.elevation_deg = elevation; invalid(candidate);
     }
     for (const double height : {0.0, 0.001, 1e9 + 1}) {
@@ -152,6 +152,23 @@ void test_surface_frames() {
     same(eye(rotated), {2, 3 + radius, -4}, 2e-12);
     bodies[3].position_au = j2000_ecliptic_to_equatorial({-7, 4, 2});
     same(eye(navigation.camera(bodies)), {-7, 4 + radius, 2}, 2e-12);
+
+    // 地表固定カメラから地上地点を復元し、降下開始時の視点が跳ばないことを確かめる。
+    navigation.set_site({3, 35.68, 139.76, 1000, 125, -30});
+    const auto before = navigation.camera(bodies);
+    const auto recovered = surface_site_from_camera(before, bodies, 3);
+    navigation.set_site(recovered);
+    const auto after = navigation.camera(bodies);
+    same(eye(after), eye(before), 2e-12);
+    same(solar_camera_basis(after).outward, solar_camera_basis(before).outward, 2e-11);
+    same(solar_camera_basis(after).up, solar_camera_basis(before).up, 2e-11);
+    for (const double elevation : {-90.0, 90.0}) {
+        navigation.set_site({3, 35.68, 139.76, 1000, 125, elevation});
+        const auto vertical = navigation.camera(bodies);
+        navigation.set_site(surface_site_from_camera(vertical, bodies, 3));
+        const auto recovered_camera = navigation.camera(bodies);
+        same(solar_camera_basis(recovered_camera).up, solar_camera_basis(vertical).up, 2e-8);
+    }
 }
 
 void test_flights() {

@@ -19,6 +19,8 @@ struct SharedCamera {
     double pitch_deg;
     double distance_au;
     std::optional<SolarCameraBasis> frame;
+    double roll_deg = 0;
+    bool frame_is_orbit = false;
 
     // 値域は 1e-12 AU から 1e40 pc 相当。無効な値や操作は invalid_argument。
     // 各描画系への変換時にはその描画系固有の距離制限が別途適用される。

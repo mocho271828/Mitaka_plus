@@ -215,11 +215,10 @@ void horizon_mapping_tests() {
     const auto rendered = render_horizon_background(texture, viewport, frame, 17, 13);
     for (std::size_t y = 0; y < rendered.height; ++y) {
         for (std::size_t x = 0; x < rendered.width; ++x) {
-            const HorizontalCoordinates horizontal{
-                viewport.center_azimuth_deg + ((x + 0.5) / rendered.width - 0.5) * 360 / viewport.zoom,
-                viewport.center_altitude_deg + (0.5 - (y + 0.5) / rendered.height) * 180 / viewport.zoom};
-            const auto projected = project_sky({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
-                {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom}, 17, 13);
+            const SkyViewport projection{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom};
+            const auto direction = unproject_horizon({x + 0.5, y + 0.5}, projection, 17, 13);
+            const HorizontalCoordinates horizontal{360 - direction.right_ascension_deg, direction.declination_deg};
+            const auto projected = project_horizon(direction, projection, 17, 13);
             expect(projected.has_value(), "background direction must be in the same horizon star viewport");
             near(projected->x, x + 0.5, 1e-10, "background azimuth must increase rightwards");
             near(projected->y, y + 0.5, 1e-10, "background altitude must increase upwards");
@@ -250,7 +249,7 @@ void horizon_mapping_tests() {
     for (auto invalid : {TextureImage{}, TextureImage{1, 1, {1, 2, 3}}, TextureImage{1025, 1, {}}})
         rejects([&] { render_horizon_background(invalid, {}, frame, 1, 1); });
     expect(render_horizon_background(texture, {725, 90, 0.5}, frame, 11, 7).rgba
-        == render_horizon_background(texture, {5, 0, 1}, frame, 11, 7).rgba,
+        == render_horizon_background(texture, {5, 90, 1}, frame, 11, 7).rgba,
         "horizon viewport normalization must match the view's native bounds");
 }
 

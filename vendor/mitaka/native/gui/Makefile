@@ -34,6 +34,7 @@ GALAXY_OBJECTS = $(addprefix $(BUILD_DIR)/,galaxy_camera.o shared_camera.o galax
 TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o terrain_snapshot.o terrain_source_lease.o)
 OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS) $(BUILD_DIR)/GalaxyOverlay.o $(BUILD_DIR)/OurGalaxyRenderer.o $(BUILD_DIR)/OurGalaxyRadiativeRenderer.o $(BUILD_DIR)/HipSpatialRenderer.o $(BUILD_DIR)/our_galaxy_navigation.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
+OBJECTS += $(BUILD_DIR)/SolarScriptTarget.o $(BUILD_DIR)/SolarScriptOrientation.o
 
 ifneq ($(ARCH),)
 CXXFLAGS += -arch $(ARCH)
@@ -83,8 +84,8 @@ $(BUILD_DIR)/test_grid_geometry: tests/test_grid_geometry.cpp $(BUILD_DIR)/grid_
 $(BUILD_DIR)/test_distance_scales: tests/test_distance_scales.cpp $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/solar_camera.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/solar_camera.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
-$(BUILD_DIR)/test_grid_renderer: tests/test_grid_renderer.mm $(BUILD_DIR)/GridRenderer.o $(BUILD_DIR)/RendererQuality.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o core
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/GridRenderer.o $(BUILD_DIR)/RendererQuality.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_grid_renderer: tests/test_grid_renderer.mm $(BUILD_DIR)/GridRenderer.o $(BUILD_DIR)/horizon_segments.o $(BUILD_DIR)/RendererQuality.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/GridRenderer.o $(BUILD_DIR)/horizon_segments.o $(BUILD_DIR)/RendererQuality.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/distance_scales.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
 
 $(BUILD_DIR)/test_renderer_quality: tests/test_renderer_quality.mm $(BUILD_DIR)/RendererQuality.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"

@@ -22,6 +22,7 @@ static double monotonicSeconds() {
 - (void)interruptFlight {
     const BOOL flying = self.flightAnimating;
     _navigation.interrupt();
+    _exitSurfaceAfterAscent = NO;
     if (_journeyActive) _journey.interrupt();
     [self invalidateFlightTimer];
     if (flying) {
@@ -31,10 +32,13 @@ static double monotonicSeconds() {
     }
 }
 - (void)leaveNavigation {
+    [self stopScriptTargetTransition];
+    [self stopScriptOrientation];
     [self interruptFlight];
     _journey = InterplanetaryFlight{};
     _journeyActive = NO;
     _surfaceActive = NO;
+    _physicalSpaceActive = NO;
     _surfacePreview = NO;
     _earthMoonMode = NO;
     _earthMoonFollowing = NO;
@@ -75,6 +79,11 @@ static double monotonicSeconds() {
         _lastFlightTime = time;
         _camera = _navigation.camera(_bodies);
         if (!_navigation.flying()) {
+            if (_exitSurfaceAfterAscent && !interrupted) {
+                _physicalSpaceActive = YES;
+                _surfaceActive = NO;
+            }
+            _exitSurfaceAfterAscent = NO;
             [self invalidateFlightTimer];
             _flightNotice = interrupted ? @"飛行を中断（時間の空白）" : @"飛行完了";
             if (self.navigationChanged) self.navigationChanged();
@@ -96,21 +105,28 @@ static double monotonicSeconds() {
     }];
     [[NSRunLoop mainRunLoop] addTimer:_flightTimer forMode:NSRunLoopCommonModes];
 }
-- (void)beginFlightAtSite:(SurfaceSite)site ascending:(BOOL)ascending {
-    if (!_hasData || _journeyActive) return;
+- (BOOL)beginFlightAtSite:(SurfaceSite)site ascending:(BOOL)ascending preserveLook:(BOOL)preserveLook duration:(double)duration error:(NSString **)error {
+    if (!_hasData || _journeyActive) return NO;
     try {
         SurfaceNavigation next;
         next.set_site(site);
-        const SolarCamera camera = next.camera(_bodies);
         const double time = monotonicSeconds();
-        if (ascending) next.begin_ascent(time); else next.begin_descent(time);
+        if (ascending) next.begin_ascent(time, duration);
+        else if (preserveLook) next.begin_descent_preserving_look(time, duration);
+        else next.begin_descent(time, duration);
+        const SolarCamera camera = next.camera(_bodies);
+        [self stopScriptOrientation];
         [self invalidateFlightTimer];
         _navigation = next;
         _camera = camera;
         _lastFlightTime = time;
         _surfaceActive = YES;
+        _physicalSpaceActive = NO;
+        _exitSurfaceAfterAscent = NO;
         _surfacePreview = NO;
         _earthMoonMode = _earthMoonFollowing = _following = NO;
+        // 地形の非同期取得を待つ間も、以前の模式視点を表示しない。
+        [self cancelTerrain];
         _selection = site.body_index;
         _smallBodySelection.reset();
         _satelliteSelection.reset(); _spacecraftSelection.reset();
@@ -120,7 +136,58 @@ static double monotonicSeconds() {
         [self notifySelection];
         [self notifyCamera];
         self.needsDisplay = YES;
-    } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
+        return YES;
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        else [self reportNavigationError:exception.what()];
+        return NO;
+    }
+}
+- (BOOL)takeOffFromHorizon:(SurfaceSite)site error:(NSString **)error {
+    return [self takeOffFromHorizon:site duration:3 error:error];
+}
+- (BOOL)takeOffFromHorizon:(SurfaceSite)site duration:(double)duration error:(NSString **)error {
+    if (![self beginFlightAtSite:site ascending:YES preserveLook:YES duration:duration error:error]) return NO;
+    // 完了後は同じカメラを宇宙側へ渡し、地表専用操作に固定されないようにする。
+    if (_navigation.flying()) _exitSurfaceAfterAscent = YES;
+    else {
+        _physicalSpaceActive = YES; _surfaceActive = NO;
+        if (self.navigationChanged) self.navigationChanged();
+        [self notifyCamera];
+    }
+    return YES;
+}
+- (BOOL)descendToHorizon:(NSString **)error {
+    return [self descendToHorizonWithDuration:3 error:error];
+}
+- (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error {
+    if (!_hasData || _journeyActive) return NO;
+    try {
+        const auto site = _surfaceActive && _navigation.site().body_index == 3
+            ? _navigation.site() : surface_site_from_camera(_camera, _bodies, 3);
+        if (site.height_km > 8 * surface_body_info(3).radius_km + 1e-6)
+            throw std::invalid_argument("地球の近くに移動してください。");
+        return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
+}
+- (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error {
+    if (!_hasData || _journeyActive || !_surfaceActive || _navigation.site().body_index != 3) return NO;
+    if (![self beginFlightAtSite:_navigation.site() ascending:YES preserveLook:YES duration:duration error:error]) return NO;
+    if (_navigation.flying()) _exitSurfaceAfterAscent = YES;
+    else {
+        _physicalSpaceActive = YES; _surfaceActive = NO;
+        if (self.navigationChanged) self.navigationChanged();
+        [self notifyCamera];
+    }
+    return YES;
+}
+- (BOOL)earthSurfaceSite:(SurfaceSite *)site {
+    if (!_surfaceActive || _navigation.site().body_index != 3) return NO;
+    if (site) *site = _navigation.site();
+    return YES;
 }
 - (void)landAtLatitude:(double)latitude longitude:(double)longitude {
     if ([self rejectSmallBodySurfaceNavigation] || [self rejectSatelliteSurfaceNavigation] || [self rejectSpacecraftSurfaceNavigation]) return;
@@ -133,22 +200,22 @@ static double monotonicSeconds() {
     site.body_index = body;
     site.latitude_deg = latitude;
     site.longitude_deg = longitude;
-    [self beginFlightAtSite:site ascending:NO];
+    [self beginFlightAtSite:site ascending:NO preserveLook:NO duration:3 error:nil];
 }
 - (void)takeOffFromEarthAtLatitude:(double)latitude longitude:(double)longitude {
     SurfaceSite site;
     site.latitude_deg = latitude;
     site.longitude_deg = longitude;
-    [self beginFlightAtSite:site ascending:YES];
+    [self beginFlightAtSite:site ascending:YES preserveLook:NO duration:3 error:nil];
 }
 - (void)takeOff {
     if ([self rejectSmallBodySurfaceNavigation] || [self rejectSatelliteSurfaceNavigation] || [self rejectSpacecraftSurfaceNavigation]) return;
     if (!_hasData) return;
-    if (_surfaceActive) { [self beginFlightAtSite:_navigation.site() ascending:YES]; return; }
+    if (_surfaceActive) { [self beginFlightAtSite:_navigation.site() ascending:YES preserveLook:NO duration:3 error:nil]; return; }
     SurfaceSite site;
     site.body_index = _selection.value_or(3);
     if (site.body_index == 0) { if (self.cameraChanged) self.cameraChanged(@"太陽は離陸対象ではありません。"); return; }
-    [self beginFlightAtSite:site ascending:YES];
+    [self beginFlightAtSite:site ascending:YES preserveLook:NO duration:3 error:nil];
 }
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom {
     [self interruptFlight];
@@ -201,12 +268,15 @@ static double monotonicSeconds() {
         const double time = monotonicSeconds();
         InterplanetaryFlight next;
         next.begin(departure, destination, _bodies, time);
+        [self stopScriptOrientation];
         [self invalidateFlightTimer];
         _navigation.interrupt();
+        _exitSurfaceAfterAscent = NO;
         _journey = std::move(next);
         _camera = _journey.camera();
         _journeyActive = YES;
         _surfaceActive = _surfacePreview = NO;
+        _physicalSpaceActive = NO;
         _earthMoonMode = _earthMoonFollowing = _following = NO;
         _lastFlightTime = time;
         _flightNotice = nil;

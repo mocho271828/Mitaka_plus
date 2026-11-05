@@ -208,6 +208,11 @@ int main(int argc, const char *argv[]) {
                     case ScriptActionKind::set_distant_galaxies: state.distant_galaxies = action.enabled; break;
                     case ScriptActionKind::set_quasars: state.quasars = action.enabled; break;
                     case ScriptActionKind::set_camera_azimuth: state.camera_azimuth_deg = std::remainder(action.number, 360); break;
+                    case ScriptActionKind::set_camera_altitude: state.camera_altitude_deg = action.number; break;
+                    case ScriptActionKind::look_target: break;
+                    case ScriptActionKind::set_camera_duration: state.camera_duration = action.number; break;
+                    case ScriptActionKind::animate_camera_azimuth: state.camera_azimuth_deg = action.number; break;
+                    case ScriptActionKind::animate_camera_altitude: state.camera_altitude_deg = action.number; break;
                     case ScriptActionKind::set_target_browser: state.target_browser = action.enabled; break;
                     case ScriptActionKind::set_time_setting: state.time_setting = action.enabled; break;
                     case ScriptActionKind::set_place_setting: state.place_setting = action.enabled; break;
@@ -248,6 +253,10 @@ int main(int argc, const char *argv[]) {
                 Galaxies:toggleQSOs(); assert(not Galaxies.quasars)
                 Galaxies.QSOs=true; Galaxies:toggleQuasars(); assert(not Galaxies.QSOs)
                 Camera.azimuth=-90; assert(Camera.azimuth==-90)
+                Camera.altitude=30; assert(Camera.altitude==30)
+                Camera.duration=2; assert(Camera.duration==2)
+                Camera:setAzimuthTo(45); assert(Camera.azimuth==45)
+                Camera:setAltitudeTo(60,1,false); assert(Camera.altitude==60)
                 for _, window in ipairs({'targetBrowser','timeSetting','placeSetting','scriptOutput'}) do
                     GUI[window]=true; assert(GUI[window])
                     GUI[window]=false; assert(not GUI[window])

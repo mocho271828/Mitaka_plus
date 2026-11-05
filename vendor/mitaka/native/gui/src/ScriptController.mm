@@ -58,6 +58,10 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     validate_radius_scale_mode(state.radius_scale_mode);
     if (!std::isfinite(state.julian_date) || !std::isfinite(state.rate_seconds_per_second) ||
         !std::isfinite(state.camera_distance_au) || !std::isfinite(state.camera_azimuth_deg) ||
+        !std::isfinite(state.camera_altitude_deg) ||
+        !std::isfinite(state.camera_mode_duration) || state.camera_mode_duration < 0 ||
+        (state.camera_mode && *state.camera_mode != 0 && *state.camera_mode != 1) ||
+        (state.camera_duration && (!std::isfinite(*state.camera_duration) || *state.camera_duration < 0)) ||
         state.atmosphere_mode < 0 || state.atmosphere_mode > 2)
         throw std::runtime_error("Invalid host snapshot");
     NSString *target = [NSString stringWithUTF8String:state.target.c_str()];
@@ -70,6 +74,16 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     for (const auto hip : state.selected_star_names) {
         if (hip <= 0) throw std::runtime_error("Invalid host star selection");
         [selectedNames addObject:@(hip)];
+    }
+    NSMutableArray<NSNumber *> *orientation = [NSMutableArray array];
+    if (state.camera_orientation) for (const double value : *state.camera_orientation) {
+        if (!std::isfinite(value)) throw std::runtime_error("Invalid camera orientation");
+        [orientation addObject:@(value)];
+    }
+    NSMutableArray<NSNumber *> *euler = [NSMutableArray array];
+    if (state.camera_euler) for (const double value : *state.camera_euler) {
+        if (!std::isfinite(value)) throw std::runtime_error("Invalid camera Euler angles");
+        [euler addObject:@(value)];
     }
     return @{@"ok":@YES, @"jd":@(state.julian_date), @"rate":@(state.rate_seconds_per_second),
         @"playing":@(state.playing), @"realtime":@(state.clock_tracking), @"timeInfo":@(state.time_info),
@@ -117,7 +131,11 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         @"satellites_orbits":@(state.satellites.orbits),
         @"satellites_selectedOnly":@(state.satellites.selected_only),
         @"fullScreen":@(state.full_screen), @"nebulae":@(state.nebulae), @"galaxies":@(state.distant_galaxies), @"quasars":@(state.quasars),
-        @"azimuth":@(state.camera_azimuth_deg), @"targetBrowser":@(state.target_browser),
+        @"azimuth":@(state.camera_azimuth_deg), @"altitude":@(state.camera_altitude_deg),
+        @"cameraDuration":state.camera_duration ? (id)@(*state.camera_duration) : (id)NSNull.null,
+        @"cameraMode":state.camera_mode ? (id)@(*state.camera_mode) : (id)NSNull.null,
+        @"cameraModeDuration":@(state.camera_mode_duration), @"targetBrowser":@(state.target_browser),
+        @"cameraOrientation":orientation, @"cameraEuler":euler,
         @"timeSetting":@(state.time_setting), @"placeSetting":@(state.place_setting),
         @"scriptOutput":@(state.script_output), @"dualScreen":@(state.dual_screen)};
 }
@@ -275,7 +293,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             ![message[@"enabled"] isKindOfClass:NSNumber.class] || ![message[@"text"] isKindOfClass:NSString.class])
             throw std::runtime_error("Invalid script action");
         const double kind = [message[@"kind"] doubleValue];
-        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_radius_scale_mode))
+        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_camera_mode_duration))
             throw std::runtime_error("Unknown script action");
         if (![message[@"hips"] isKindOfClass:NSArray.class] || [message[@"hips"] count] > 2048)
             throw std::runtime_error("Invalid star identifier list");
@@ -294,6 +312,18 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             [message[@"number"] doubleValue], static_cast<bool>([message[@"enabled"] boolValue]),
             std::string([message[@"text"] UTF8String]), [message[@"duration"] doubleValue], std::move(hips),
             TerrainAmplification::x1, {}, RadiusScaleMode::keep_orbit};
+        NSArray *orientation = message[@"orientation"];
+        const bool quaternion = action.kind == ScriptActionKind::set_camera_orientation || action.kind == ScriptActionKind::animate_camera_orientation;
+        const bool euler = action.kind == ScriptActionKind::set_camera_euler || action.kind == ScriptActionKind::add_camera_euler ||
+            action.kind == ScriptActionKind::animate_camera_euler || action.kind == ScriptActionKind::animate_add_camera_euler;
+        if (![orientation isKindOfClass:NSArray.class] || orientation.count != (quaternion ? 4u : euler ? 3u : 0u))
+            throw std::runtime_error("Invalid camera orientation payload");
+        for (NSUInteger index = 0; index < orientation.count; ++index) {
+            id value = orientation[index];
+            if (!isNumber(value) || CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID())
+                throw std::runtime_error("Invalid camera orientation value");
+            action.orientation[index] = [value doubleValue];
+        }
         NSArray *radiusScale = message[@"radiusScale"];
         if (![radiusScale isKindOfClass:NSArray.class] ||
             radiusScale.count != (action.kind == ScriptActionKind::set_radius_scale ? 4u : 0u))

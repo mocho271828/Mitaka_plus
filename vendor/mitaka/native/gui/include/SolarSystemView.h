@@ -1,6 +1,8 @@
 #import <AppKit/AppKit.h>
 #include "sky_model.hpp"
 #include "solar_camera.hpp"
+#include "plus_camera_orientation.hpp"
+#include "surface_navigation.hpp"
 #include "planet_textures.hpp"
 #include "small_body_model.hpp"
 #include "satellite_browser_model.hpp"
@@ -9,13 +11,19 @@
 #include "satellite_display.hpp"
 #include "satellite_scene_update.hpp"
 #include "display_options.hpp"
+#include "extended_catalogs.hpp"
 #include "radius_display.hpp"
 #include "renderer_options.hpp"
 #include "atmosphere_renderer.hpp"
 #include "eclipse_display.hpp"
 #include "terrain_amplification.hpp"
+#include "constellation_display.hpp"
+#include "constellation_art_model.hpp"
+#include "sky_background.hpp"
+#include "galaxy_spatial_scene.hpp"
 #include "mitaka/observation.hpp"
 #include <memory>
+#include <set>
 namespace mitaka { struct OurGalaxyModel; }
 namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; struct GalaxySpatialVisibility; class GalaxySpatialModel; struct HipSpatialModel; }
 
@@ -49,6 +57,15 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setGalaxyModel:(std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model;
 - (void)setGalaxyVisibility:(mitaka::gui::GalaxySpatialVisibility)visibility;
 - (void)setHipVisible:(BOOL)visible;
+- (void)setSurfaceStarModel:(std::shared_ptr<const mitaka::gui::SkyModel>)model
+                  catalogs:(std::shared_ptr<const mitaka::gui::ExtendedCatalogs>)catalogs;
+- (void)setSurfaceStarDisplayOptions:(mitaka::gui::StarDisplayOptions)options;
+@property(nonatomic) mitaka::gui::ConstellationDisplayOptions surfaceConstellationDisplayOptions;
+- (void)setSurfaceConstellationArt:(std::shared_ptr<const mitaka::gui::ConstellationArtModel>)art;
+@property(nonatomic) mitaka::gui::MilkyWayMode surfaceMilkyWayMode;
+- (void)setSurfaceSkyBackgrounds:(std::shared_ptr<const mitaka::gui::SkyBackgrounds>)backgrounds;
+- (void)setSurfaceMagnitudeLimit:(double)limit;
+- (void)setSurfaceSelectedStarNameHIPs:(const std::set<std::int32_t>&)hips;
 - (void)setOurGalaxyVisible:(BOOL)visible;
 - (void)setTextures:(std::shared_ptr<const mitaka::gui::PlanetTextures>)textures;
 - (void)setBodies:(const mitaka::gui::SolarBodies&)bodies;
@@ -71,6 +88,17 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setCameraState:(const mitaka::gui::SolarCamera&)camera;
 // 検証に失敗した場合は、視点・追従・飛行状態を変更しない。
 - (BOOL)applyCameraState:(const mitaka::gui::SolarCamera&)camera error:(NSString **)error;
+@end
+
+@interface SolarSystemView (ScriptTargets)
+- (void)stopScriptTargetTransition;
+- (void)animateScriptTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
+- (BOOL)selectScriptStarTarget:(const std::string&)target error:(NSString **)error;
+- (std::optional<std::int32_t>)selectedScriptStarHIP;
+- (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedScriptGalaxyRecord;
+- (BOOL)isScriptOurGalaxySelected;
+- (BOOL)selectScriptGalaxyRecord:(mitaka::gui::GalaxySpatialRecordId)record error:(NSString **)error;
+- (BOOL)selectScriptOurGalaxyOverview:(BOOL)overview error:(NSString **)error;
 @end
 
 @interface SolarSystemView (SmallBodies)
@@ -114,6 +142,12 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)landAtLatitude:(double)latitude longitude:(double)longitude;
 - (void)takeOff;
 - (void)takeOffFromEarthAtLatitude:(double)latitude longitude:(double)longitude;
+- (BOOL)takeOffFromHorizon:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
+- (BOOL)takeOffFromHorizon:(mitaka::gui::SurfaceSite)site duration:(double)duration error:(NSString **)error;
+- (BOOL)descendToHorizon:(NSString **)error;
+- (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error;
+- (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error;
+- (BOOL)earthSurfaceSite:(mitaka::gui::SurfaceSite *)site;
 - (void)interruptFlight;
 @end
 
@@ -129,4 +163,12 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setTerrainDataDirectory:(NSString *)directory;
 - (void)cancelTerrain;
 - (void)reloadTerrain;
+@end
+
+@interface SolarSystemView (ScriptOrientation)
+- (void)stopScriptOrientation;
+- (BOOL)scriptCameraOrientationAvailable;
+- (mitaka::gui::PlusOrientationQuaternion)scriptCameraOrientation;
+- (BOOL)scriptSetCameraOrientation:(mitaka::gui::PlusOrientationQuaternion)orientation duration:(double)duration smooth:(BOOL)smooth error:(NSString **)error;
+- (BOOL)scriptSetCameraEuler:(mitaka::gui::PlusOrientationEuler)euler relative:(BOOL)relative duration:(double)duration smooth:(BOOL)smooth error:(NSString **)error;
 @end

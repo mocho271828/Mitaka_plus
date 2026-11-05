@@ -72,10 +72,10 @@ Vec3 vector_field(NSDictionary *object, NSString *key) {
 
 NSArray *vector_json(Vec3 value) { return @[@(value.x), @(value.y), @(value.z)]; }
 
-void validate_viewport(double horizontal, double vertical, double zoom, NSString *field) {
+void validate_viewport(double horizontal, double vertical, double zoom, double maximum_vertical, NSString *field) {
     if (!std::isfinite(horizontal) || horizontal < 0 || horizontal >= 360 ||
         !std::isfinite(vertical) || !std::isfinite(zoom) || zoom < 1 || zoom > 180 ||
-        std::abs(vertical) > 90 - 90 / zoom) invalid(field);
+        std::abs(vertical) > maximum_vertical) invalid(field);
 }
 
 void validate(const SessionState& state) {
@@ -97,9 +97,9 @@ void validate(const SessionState& state) {
     const int background = static_cast<int>(state.milky_way_mode);
     if (background < 0 || background > 3) invalid(@"milky_way_mode");
     const auto& sky = state.sky_viewport;
-    validate_viewport(sky.center_ra_deg, sky.center_dec_deg, sky.zoom, @"sky_viewport");
+    validate_viewport(sky.center_ra_deg, sky.center_dec_deg, sky.zoom, 90 - 90 / sky.zoom, @"sky_viewport");
     const auto& horizon = state.horizon_viewport;
-    validate_viewport(horizon.center_azimuth_deg, horizon.center_altitude_deg, horizon.zoom, @"horizon_viewport");
+    validate_viewport(horizon.center_azimuth_deg, horizon.center_altitude_deg, horizon.zoom, 90, @"horizon_viewport");
     // 保存状態のカメラも描画時と同じ基底・距離の契約を通す。
     (void)solar_camera_basis(state.solar_camera);
     const int selected = static_cast<int>(state.selected_body);
@@ -140,6 +140,8 @@ SessionState decode_session_state(std::string_view json) {
         state.solar_camera.yaw_deg = numeric_field(camera, @"yaw_deg");
         state.solar_camera.pitch_deg = numeric_field(camera, @"pitch_deg");
         state.solar_camera.distance_au = numeric_field(camera, @"distance_au");
+        if (camera[@"roll_deg"]) state.solar_camera.roll_deg = numeric_field(camera, @"roll_deg");
+        if (camera[@"frame_is_orbit"]) state.solar_camera.frame_is_orbit = boolean_field(camera, @"frame_is_orbit");
         id frame = required(camera, @"frame");
         if (frame != NSNull.null) {
             NSDictionary *axes = dictionary(frame, @"frame");
@@ -244,7 +246,8 @@ std::string encode_session_state(const SessionState& state) {
             @"horizon_viewport": @{@"center_azimuth_deg": @(horizon.center_azimuth_deg),
                 @"center_altitude_deg": @(horizon.center_altitude_deg), @"zoom": @(horizon.zoom)},
             @"solar_camera": @{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
-                               @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame},
+                               @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
+                               @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)},
             @"selected_body": @(static_cast<int>(state.selected_body)),
             @"sky_selected_body": state.sky_selected_body ? @(static_cast<int>(*state.sky_selected_body)) : NSNull.null,
             @"horizon_selected_body": state.horizon_selected_body ? @(static_cast<int>(*state.horizon_selected_body)) : NSNull.null,

@@ -2,6 +2,7 @@
 #import "GridRenderer.h"
 #import "SolarSceneRenderer.h"
 #include "distance_scales.hpp"
+#include "horizon_segments.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -141,26 +142,26 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
     RendererQualityScope lines(context, quality, RendererPrimitive::line);
     CGContextClipToRect(context, map);
     CGContextSetLineWidth(context, 0.6);
-    const auto convert = [&](EquatorialCoordinates coordinates) {
-        if (!horizontal_projection) return coordinates;
-        const auto horizontal = cache.frame().to_horizontal(coordinates);
-        return EquatorialCoordinates{360 - horizontal.azimuth_deg, horizontal.altitude_deg};
-    };
     for (const auto system : systems) {
         if (!enabled(options, system)) continue;
         CGContextSetStrokeColorWithColor(context, color(system).CGColor);
         for (const auto& line : cache.grid(system)) {
-            auto previous = convert(line.front());
+            auto previous = line.front();
             for (std::size_t index = 1; index < line.size(); ++index) {
-                const auto current = convert(line[index]);
+                const auto current = line[index];
                 auto start = previous, end = current;
-                // 円筒投影の極では経度・方位が未定義になる。隣接点の値を引き継ぎ、
-                // 天頂・天底から任意の 0 度方向へ伸びる偽の斜線を防ぐ。
+                // 天球図の極では赤経が未定義なので、隣接点の値を引き継ぐ。
+                // 地平図は適応分割器が回転後の極を処理する。
                 if (std::abs(std::abs(start.declination_deg) - 90) < 1e-8)
                     start.right_ascension_deg = end.right_ascension_deg;
                 if (std::abs(std::abs(end.declination_deg) - 90) < 1e-8)
                     end.right_ascension_deg = start.right_ascension_deg;
-                for (const auto& segment : project_sky_segment(start, end, viewport, map.size.width, map.size.height)) {
+                const auto segments = horizontal_projection
+                    ? project_equatorial_segment_to_horizon(line[index - 1], line[index], cache.frame(),
+                        {360 - viewport.center_ra_deg, viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend},
+                        map.size.width, map.size.height).segments
+                    : project_sky_segment(start, end, viewport, map.size.width, map.size.height);
+                for (const auto& segment : segments) {
                     CGContextMoveToPoint(context, map.origin.x + segment.start.x, map.origin.y + segment.start.y);
                     CGContextAddLineToPoint(context, map.origin.x + segment.end.x, map.origin.y + segment.end.y);
                 }
@@ -172,15 +173,21 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
     // 投影軸の読み取り値は、その座標格子を表示している場合だけ添える。
     if (horizontal_projection ? options.horizontal : options.equatorial) {
         for (int latitude = -75; latitude <= 75; latitude += 15) {
-            const auto point = project_sky({viewport.center_ra_deg, static_cast<double>(latitude)}, viewport, map.size.width, map.size.height);
-            if (point) text([NSString stringWithFormat:@"%+d°", latitude], NSMakePoint(NSMinX(map) + 3, NSMinY(map) + point->y + 1), NSColor.secondaryLabelColor, quality);
+            const EquatorialCoordinates coordinate{viewport.center_ra_deg, static_cast<double>(latitude)};
+            const auto point = horizontal_projection
+                ? project_horizon(coordinate, viewport, map.size.width, map.size.height)
+                : project_sky(coordinate, viewport, map.size.width, map.size.height);
+            if (point) text([NSString stringWithFormat:@"%+d°", latitude], NSMakePoint(horizontal_projection ? NSMinX(map) + point->x + 3 : NSMinX(map) + 3, NSMinY(map) + point->y + 1), NSColor.secondaryLabelColor, quality);
         }
         for (int longitude = 0; longitude < 360; longitude += horizontal_projection ? 45 : 30) {
-            const auto point = project_sky({static_cast<double>(horizontal_projection ? 360 - longitude : longitude), viewport.center_dec_deg}, viewport, map.size.width, map.size.height);
+            const EquatorialCoordinates coordinate{static_cast<double>(horizontal_projection ? 360 - longitude : longitude), horizontal_projection ? 0.0 : viewport.center_dec_deg};
+            const auto point = horizontal_projection
+                ? project_horizon(coordinate, viewport, map.size.width, map.size.height)
+                : project_sky(coordinate, viewport, map.size.width, map.size.height);
             if (!point) continue;
             NSString *label = horizontal_projection ? [NSString stringWithFormat:@"%@ %d°", @[@"北", @"北東", @"東", @"南東", @"南", @"南西", @"西", @"北西"][longitude / 45], longitude]
                                                    : [NSString stringWithFormat:@"%dh", longitude / 15];
-            text(label, NSMakePoint(NSMinX(map) + point->x + 2, NSMaxY(map) - 15), NSColor.secondaryLabelColor, quality);
+            text(label, NSMakePoint(NSMinX(map) + point->x + 2, horizontal_projection ? NSMinY(map) + point->y + 2 : NSMaxY(map) - 15), NSColor.secondaryLabelColor, quality);
         }
     }
     legend(map, options, quality);

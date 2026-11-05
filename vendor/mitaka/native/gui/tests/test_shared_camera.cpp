@@ -33,6 +33,7 @@ void conversion_and_projection() {
     for (bool rolled : {false, true}) {
         SolarCamera solar{{3, -2, 5}, 20, -30, 10};
         if (rolled) solar.frame = SolarCameraBasis{{1, 0, 0}, {0, 0, 1}, {0, -1, 0}};
+        else solar.roll(37);
         const auto shared = shared_camera_from_solar(solar);
         const auto galaxy = galaxy_camera_from_shared(shared);
         const auto roundtrip = solar_camera_from_shared(shared_camera_from_galaxy(galaxy));

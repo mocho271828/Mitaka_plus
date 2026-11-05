@@ -56,15 +56,17 @@ TextureImage render_horizon_landscape(const TextureImage* texture, const PlaceLa
             throw std::invalid_argument("invalid landscape texture");
         LandscapeImageMesh validated(*landscape);
     }
-    const auto normalized = normalize_sky_viewport({viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom});
+    const auto normalized = normalize_sky_viewport({360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
+        viewport.zoom, viewport.perspective_blend}, true);
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
+    // 風景画像がないときは、既に暗く描いた地平線下の天体を覆わない。
+    if (!texture) return result;
+    const HorizonRasterProjection projection(normalized, width, height);
     for (std::size_t y = 0; y < height; ++y) {
-        const double altitude = normalized.center_dec_deg + (0.5 - (y + 0.5) / height) * 180 / normalized.zoom;
         for (std::size_t x = 0; x < width; ++x) {
+            const auto direction = projection.direction(x, y);
             auto* pixel = &result.rgba[(y * width + x) * 4];
-            if (!texture) { pixel[3] = altitude < 0 ? 255 : 0; continue; }
-            const double azimuth = normalized.center_ra_deg + ((x + 0.5) / width - 0.5) * 360 / normalized.zoom;
-            sample(*texture, image_uv(*landscape, {azimuth, altitude}), pixel);
+            sample(*texture, image_uv(*landscape, {360 - direction.right_ascension_deg, direction.declination_deg}), pixel);
         }
     }
     return result;

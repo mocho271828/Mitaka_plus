@@ -48,6 +48,18 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
     return date;
 }
 
+struct ScriptCameraAnimation {
+    double start, target, start_time, duration;
+    bool smooth;
+};
+
+struct ScriptLookTarget {
+    enum class Kind { body, star, small_body, spacecraft, constellation, satellite, galaxy, our_galaxy } kind;
+    std::size_t index;
+    std::shared_ptr<const mitaka::gui::SkyModel> constellation_model{};
+    std::shared_ptr<const mitaka::gui::GalaxySpatialModel> galaxy_model{};
+};
+
 @interface AppController () {
     NSWindow *_window;
     WindowPresentationController *_windowPresentation;
@@ -58,6 +70,11 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
     NSSegmentedControl *_mode;
     NSArray<NSButton *> *_cameraButtons, *_travelButtons;
     NSButton *_journeyButton, *_resumeJourneyButton;
+    BOOL _pendingEarthDescent;
+    NSTimer *_horizonProjectionTimer;
+    double _horizonProjectionStartTime, _horizonProjectionDuration;
+    double _horizonProjectionStart, _horizonProjectionTarget, _horizonAscentDuration;
+    double _earthDescentProjectionDuration;
     NSTextField *_latitudeField, *_longitudeField;
     NSTextField *_cameraLabel, *_note;
     NSString *_skySelection, *_solarSelection, *_horizonSelection;
@@ -75,6 +92,23 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
     BOOL _galaxyUsesPlusCatalogs;
     DisplayOutputController *_displayOutput;
     ScriptController *_scripts;
+    NSTimer *_scriptCameraTimer;
+    std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;
+    std::optional<ScriptLookTarget> _scriptLookTarget;
+    std::shared_ptr<const SmallBodySnapshot> _scriptLookSmallBodySnapshot;
+    std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
+    std::optional<double> _scriptCameraDuration;
+    std::optional<double> _scriptCameraModeDuration;
+    std::optional<std::int32_t> _scriptStarHIP;
+    std::string _scriptStarTarget;
+    std::optional<std::size_t> _scriptSmallBodyIndex;
+    std::string _scriptSmallBodyTarget;
+    std::optional<std::size_t> _scriptSpacecraftIndex;
+    std::string _scriptSpacecraftTarget;
+    std::optional<mitaka::gui::GalaxySpatialRecordId> _scriptGalaxyRecord;
+    std::shared_ptr<const mitaka::gui::GalaxySpatialModel> _scriptGalaxyModel;
+    std::string _scriptGalaxyTarget;
+    std::string _scriptOurGalaxyTarget;
     StarBrightnessController *_starBrightness;
     RadiusDisplayController *_radiusDisplayController;
     RadiusDisplayOptions _radiusDisplayOptions;
@@ -139,6 +173,11 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (BOOL)updateDate:(double)jd refreshOrbits:(BOOL)refreshOrbits;
 - (void)showError:(NSString *)message;
 - (void)changeMode:(id)sender;
+- (void)surfaceNavigationChanged;
+- (void)cancelHorizonProjection;
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error;
+- (void)takeOffFromHorizon:(id)sender;
+- (void)descendToHorizon:(id)sender;
 - (void)stepHour:(NSButton *)sender;
 - (NSOpenPanel *)dataPanel;
 - (void)loadData:(NSString *)path;
@@ -317,6 +356,7 @@ inline mitaka::GregorianDateTime displayDate(double jd) {
 - (void)showScriptConsole:(id)sender;
 - (void)cancelScript:(id)sender;
 - (void)configureScripts;
+- (void)stopScriptCameraAnimation;
 - (BOOL)applyScriptAction:(const mitaka::gui::ScriptAction&)action error:(NSString **)error;
 @end
 

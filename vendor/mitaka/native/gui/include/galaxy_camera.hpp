@@ -16,7 +16,10 @@ struct GalaxyCameraPc {
     double yaw_deg = 35, pitch_deg = 35, distance_pc = 10000;
     // 地表などの任意姿勢を pc 空間でも失わず維持する。
     std::optional<SolarCameraBasis> frame = std::nullopt;
+    double roll_deg = 0;
+    bool frame_is_orbit = false;
     void orbit(double dx_points, double dy_points);
+    void roll(double degrees);
     void pan(double dx_points, double dy_points, double width, double height);
     void zoom(double logarithmic_delta);
 };

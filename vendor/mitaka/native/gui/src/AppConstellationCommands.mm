@@ -10,6 +10,7 @@
     }
     _sky.constellationDisplayOptions = options;
     _horizon.constellationDisplayOptions = options;
+    _solar.surfaceConstellationDisplayOptions = options;
     [_browser refreshConstellationVisibility];
     [NSApp.mainMenu update];
 }
@@ -69,6 +70,7 @@
         if (center) {
             const mitaka::ObservationFrame frame(_horizon.observerSite, _horizon.julianDate);
             const auto point = frame.to_horizontal({record.right_ascension_degrees, record.declination_degrees});
+            [self stopScriptCameraAnimation];
             [_horizon setViewport:{point.azimuth_deg, point.altitude_deg, std::max(3.0, _horizon.viewport.zoom)}];
         }
     } else {

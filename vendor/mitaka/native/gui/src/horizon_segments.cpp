@@ -1,4 +1,5 @@
 #include "horizon_segments.hpp"
+#include "horizon_morph_segments.hpp"
 
 #include <algorithm>
 #include <array>
@@ -41,7 +42,7 @@ private:
         ++result_.evaluations;
         const auto horizontal = frame_.to_horizontal({start_.right_ascension_deg + fraction * delta_.right_ascension_deg,
             start_.declination_deg + fraction * delta_.declination_deg});
-        return {360 - horizontal.azimuth_deg, horizontal.altitude_deg};
+        return rotate_horizon({360 - horizontal.azimuth_deg, horizontal.altitude_deg}, viewport_);
     }
 
     bool accepted(std::array<EquatorialCoordinates, 5>& points, double fraction_span) const {
@@ -85,9 +86,19 @@ private:
         if (std::all_of(points.begin(), points.end(), [&](const auto& point) {
                 return pole(point) && point.declination_deg * first.declination_deg > 0;
             })) return;
+        if (viewport_.perspective_blend > 0) {
+            const auto decision = project_morph_interval(points, viewport_, width_, height_,
+                (end - begin) * std::max(std::abs(delta_.right_ascension_deg), std::abs(delta_.declination_deg)),
+                limits_, result_);
+            if (decision != HorizonMorphDecision::subdivide) return;
+            if (depth == limits_.max_depth) return;
+            subdivide(begin, midpoint, first, points[1], middle, depth + 1);
+            subdivide(midpoint, end, middle, points[3], last, depth + 1);
+            return;
+        }
         auto adjusted = points;
         if (accepted(adjusted, end - begin)) {
-            const auto segments = project_sky_segment(adjusted.front(), adjusted.back(), viewport_, width_, height_);
+            const auto segments = project_sky_segment(adjusted.front(), adjusted.back(), {0, 0, viewport_.zoom}, width_, height_);
             result_.segments.insert(result_.segments.end(), segments.begin(), segments.end());
             return;
         }
@@ -114,6 +125,7 @@ HorizonSegmentProjection project_equatorial_segment_to_horizon(
     if (!std::isfinite(viewport.center_azimuth_deg) || !std::isfinite(viewport.center_altitude_deg)
         || std::abs(viewport.center_altitude_deg) > 90 || !std::isfinite(viewport.zoom)
         || viewport.zoom < 1 || viewport.zoom > 180
+        || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0 || viewport.perspective_blend > 1
         || !std::isfinite(width) || width <= 0 || !std::isfinite(height) || height <= 0
         || !std::isfinite(width * viewport.zoom) || !std::isfinite(height * viewport.zoom)
         || !std::isfinite(limits.max_source_step_deg) || limits.max_source_step_deg <= 0 || limits.max_source_step_deg > 2
@@ -126,10 +138,11 @@ HorizonSegmentProjection project_equatorial_segment_to_horizon(
     const auto last = frame.to_horizontal(end);
     start.right_ascension_deg = positive_degrees(start.right_ascension_deg);
     end.right_ascension_deg = positive_degrees(end.right_ascension_deg);
-    return Sampler(start, end, frame,
-        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom},
-        width, height, limits).run({360 - first.azimuth_deg, first.altitude_deg},
-                                  {360 - last.azimuth_deg, last.altitude_deg});
+    const SkyViewport sky_viewport{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
+        viewport.zoom, viewport.perspective_blend};
+    return Sampler(start, end, frame, sky_viewport, width, height, limits).run(
+        rotate_horizon({360 - first.azimuth_deg, first.altitude_deg}, sky_viewport),
+        rotate_horizon({360 - last.azimuth_deg, last.altitude_deg}, sky_viewport));
 }
 
 } // namespace mitaka::gui
