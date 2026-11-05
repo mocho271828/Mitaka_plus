@@ -121,6 +121,46 @@ static mitaka::gui::GalaxySpatialRecordId resolveScriptGlobularCluster(
     return *match;
 }
 
+static mitaka::gui::GalaxySpatialRecordId resolveScriptNearbyGalaxy(
+    const std::string& target, NSString *dataPath, const mitaka::gui::GalaxySpatialModel& model) {
+    const auto name = target.substr(7);
+    if (name.empty()) throw std::invalid_argument("Empty galaxy target");
+    if (!dataPath) throw std::invalid_argument("Galaxy-name catalog is unavailable");
+    const auto path = std::filesystem::path(dataPath.fileSystemRepresentation) / "nearby_galaxies_name.dat";
+    std::optional<mitaka::gui::GalaxySpatialRecordId> match;
+    for (const auto& line : mitaka::load_galaxy_name_table(path).lines) {
+        if (line.kind != mitaka::GalaxyNameLineKind::entry || line.key_bytes.size() < 2) continue;
+        // 英語名の後ろには間隔を置いて CP932 の日本語名が続く。
+        auto end = line.payload_bytes.find("  ");
+        const auto nonAscii = std::find_if(line.payload_bytes.begin(), line.payload_bytes.end(),
+                                           [](unsigned char ch) { return ch >= 0x80; });
+        end = std::min(end, static_cast<std::size_t>(nonAscii - line.payload_bytes.begin()));
+        auto candidate = line.payload_bytes.substr(0, end);
+        const auto last = candidate.find_last_not_of(" \t\r");
+        if (last == std::string::npos) continue;
+        candidate.resize(last + 1);
+        if (candidate != name) continue;
+        std::int32_t number = 0;
+        const char *first = line.key_bytes.data() + 1, *lastKey = line.key_bytes.data() + line.key_bytes.size();
+        const auto parsed = std::from_chars(first, lastKey, number);
+        if (parsed.ec != std::errc{} || parsed.ptr != lastKey || number <= 0) continue;
+        for (std::size_t source = 0; source < model.sources().size(); ++source) {
+            const auto* catalog = std::get_if<mitaka::PlusNearbyGalaxyCatalog>(&model.sources()[source]);
+            if (!catalog) continue;
+            for (std::size_t ordinal = 0; ordinal < catalog->records.size(); ++ordinal) {
+                const auto& record = catalog->records[ordinal];
+                if (record.catalog_code != static_cast<unsigned char>(line.key_bytes.front()) ||
+                    record.catalog_number != number) continue;
+                const mitaka::gui::GalaxySpatialRecordId id{mitaka::gui::GalaxySpatialFamily::nearby_galaxy, source, ordinal};
+                if (match && !(*match == id)) throw std::invalid_argument("Ambiguous galaxy target: " + target);
+                match = id;
+            }
+        }
+    }
+    if (!match) throw std::invalid_argument("Unknown galaxy target: " + target);
+    return *match;
+}
+
 static std::size_t resolveScriptConstellation(const std::string& target, const mitaka::gui::SkyModel& model) {
     const auto name = target.substr(8);
     std::optional<std::size_t> match;
@@ -490,9 +530,11 @@ static NSString *const scriptCompatibilityNote =
                     if (action.enabled) [_solar animateScriptTargetFrom:initial duration:action.duration_seconds];
                     break;
                 }
-                if (action.text.compare(0, 3, "GC.") == 0) {
+                if (action.text.compare(0, 3, "GC.") == 0 || action.text.compare(0, 7, "Galaxy.") == 0) {
                     if (!_galaxyModel || _galaxyLoading) throw std::invalid_argument("Galaxy catalog is unavailable");
-                    const auto id = resolveScriptGlobularCluster(action.text, *_galaxyModel);
+                    const auto id = action.text.compare(0, 3, "GC.") == 0
+                        ? resolveScriptGlobularCluster(action.text, *_galaxyModel)
+                        : resolveScriptNearbyGalaxy(action.text, _activePath, *_galaxyModel);
                     if (![_solar selectScriptGalaxyRecord:id error:error]) return NO;
                     _scriptGalaxyRecord = id;
                     _scriptGalaxyModel = _galaxyModel;
@@ -589,9 +631,11 @@ static NSString *const scriptCompatibilityNote =
                 HorizonViewport target;
                 if (action.text == "Other.OurGalaxyCenter" || action.text == "Other.OurGalaxy") {
                     look = ScriptLookTarget{ScriptLookTarget::Kind::our_galaxy, 0};
-                } else if (action.text.compare(0, 3, "GC.") == 0) {
+                } else if (action.text.compare(0, 3, "GC.") == 0 || action.text.compare(0, 7, "Galaxy.") == 0) {
                     if (!_galaxyModel || _galaxyLoading) throw std::invalid_argument("Galaxy catalog is unavailable");
-                    const auto id = resolveScriptGlobularCluster(action.text, *_galaxyModel);
+                    const auto id = action.text.compare(0, 3, "GC.") == 0
+                        ? resolveScriptGlobularCluster(action.text, *_galaxyModel)
+                        : resolveScriptNearbyGalaxy(action.text, _activePath, *_galaxyModel);
                     look = ScriptLookTarget{ScriptLookTarget::Kind::galaxy, _galaxyModel->row_index(id), {}, _galaxyModel};
                 } else if (action.text.compare(0, 5, "Star.") == 0) {
                     const auto starTarget = resolveScriptStarTarget(action.text, _activePath);

@@ -23,7 +23,7 @@
 | `Time.realtime` / `Time:toggleRealtime()` | OS 時計への継続追従を取得・設定・切替。開始に失敗すると Lua エラーを返す |
 | `Time.timeInfo` / `Time:toggleTimeInfo()` | 主画面の日付欄と地平・太陽系の日時情報表示。日時・再生・時計追従は変更しない |
 | `Time:prevStep()` / `nextStep()` | 列挙値だけを変更し、`stepValue` を保持。prev は `max(step−1,0)`、next は原版の `min(step+1,9)` |
-| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.<名前>`、`Star.<HIP番号または英語固有名>`、`Asteroids.<番号または名前>`、`TNO.<番号または名前>`、`Comet.<名前>`、`Spacecraft.<名前>`、`GC.<名前>`、`Other.OurGalaxyCenter`、`Other.OurGalaxy` を選択。一意に解決でき、位置を計算できる対象に対応。探査機は原本の DisplayName または Name に一致させる |
+| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.<名前>`、`Star.<HIP番号または英語固有名>`、`Asteroids.<番号または名前>`、`TNO.<番号または名前>`、`Comet.<名前>`、`Spacecraft.<名前>`、`GC.<名前>`、`Galaxy.<名前>`、`Other.OurGalaxyCenter`、`Other.OurGalaxy` を選択。一意に解決でき、位置を計算できる対象に対応。探査機は原本の DisplayName または Name に一致させる |
 | `Camera:setTargetTo(target[,duration])` | 同じ対象へ非同期に移動する。省略時は `Camera.duration` 秒。移動中も惑星・月・小天体・探査機の位置を更新し、完了後は追従する |
 | `Camera:look(target)` | 地平図で太陽、地球以外の惑星、衛星、恒星、小天体、探査機、球状星団、銀河系中心、星座を視野中央へ向ける。星座は `Constel.<正式英語名>` または `Constel.<略号>`、その他は `Camera.target` と同じ指定方法を使う。地点・ズーム・選択対象を維持する |
 | `Camera:lookTo(target[,duration])` | 同じ対象へ方位と高度を非同期補間する。秒数の省略時は `Camera.duration`。補間中は現在日時の対象方向を終点に使い、完了後の継続追従はしない |
@@ -96,7 +96,7 @@
 
 恒星の `Camera.target` は `star_names_HIP.dat` の英語名を大文字小文字を区別して完全一致で解決し、複数の HIP に一致する名前は拒否する。スクリプトで指定した恒星を選択中は指定した文字列を返し、それ以外の恒星は `Star.<HIP番号>` を返す。距離は現在の 3D 恒星表示と同じく正の視差から推定し、固有運動は含まない。位置が得られない恒星は移動できない。
 
-球状星団の `GC.<名前>` は同梱カタログの英語名を大文字小文字を区別して完全一致させる（例: `GC.Terzan 1`）。複数行に一致する名前や位置がない対象は拒否する。`Other.OurGalaxyCenter` は銀河系中心、`Other.OurGalaxy` は銀河系全体を表示し、注視時はいずれも中心を向く。中心位置と全体表示には現在の native 版の近似を使い、旧 Plus の配置や倍率との一致は未確認。`Galaxy.<名前>` と `Other.M31` などは名前とカタログの対応が未確認のため未対応。
+球状星団の `GC.<名前>` は同梱カタログの英語名を大文字小文字を区別して完全一致させる（例: `GC.Terzan 1`）。銀河の `Galaxy.<名前>` は旧資料が指定する `nearby_galaxies_name.dat` の英語名と `NBG.dat` のカタログ種別・番号を照合する（例: `Galaxy.Andromeda Galaxy`、`Galaxy.Small Magellanic Cloud`）。複数の対象に一致する名前や位置がない対象は拒否する。名前表にあっても、`M62` は対応する NBG レコードがないため指定できない。旧実行ファイルが参照する別の名前表との優先順位は未確認。`Other.OurGalaxyCenter` は銀河系中心、`Other.OurGalaxy` は銀河系全体を表示し、注視時はいずれも中心を向く。中心位置と全体表示には現在の native 版の近似を使い、旧 Plus の配置や倍率との一致は未確認。`Other.M31` などは対象との対応が未確認のため未対応。
 
 星座の `Camera:look` / `lookTo` は、一覧と同じ星座中心の赤経・赤緯を観測地点と現在日時の地平座標へ変換する。正式英語名または略号は大文字小文字を区別して完全一致させ、複数行に一致する場合は拒否する。星座への `Camera.target` は未対応。
 

@@ -107,8 +107,13 @@ GalaxySpatialRow GalaxySpatialModel::row(GalaxySpatialRecordId id) const {
                     GalaxyIssueDomain::sdss, row.issues};
         } else {
             const auto& record = source.records.at(id.ordinal);
+            auto declination = record.declination_degrees;
+            if constexpr (std::is_same_v<std::decay_t<decltype(source)>, PlusNearbyGalaxyCatalog>) {
+                // Plus NBG.dat は南天の赤緯を 270〜360 度で保持する。
+                if (declination >= 270 && declination < 360) declination -= 360;
+            }
             const auto result = evaluate_galaxy_position_pc(record.right_ascension_degrees,
-                record.declination_degrees, record.distance_pc);
+                declination, record.distance_pc);
             std::optional<NativeEclipticPositionPc> position;
             if (result.position) {
                 const auto& p = result.position->native_ecliptic;
