@@ -50,6 +50,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
 
 @implementation SolarSystemView (SmokeTests)
 
+- (NSString *)flightNoticeForSmokeTest { return _flightNotice; }
+
 - (BOOL)rejectsInvalidCameraStatesWithoutChanges {
     const auto camera = _camera;
     const BOOL following = _following, surface = _surfaceActive, journey = _journeyActive;

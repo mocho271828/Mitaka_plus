@@ -397,3 +397,8 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 `Camera:getOrient()` の読み戻しで内部 quaternion を単精度に丸めず、内部の倍精度を保つ。Lua の任意姿勢を補間途中に再指定し、読み戻しと銀河 overlay の表示済みフレームの基底を照合する smoke を追加した。旧 Plus との精度や動作の比較、手動 GUI による画面確認は未実施。新規依存・原データ・全体方針の変更はない。
 
 基点 `f27914c` の隔離 checkout で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -C vendor/mitaka/native/gui plus-camera-orientation-test`、`make -C vendor/mitaka/native/gui script-test` が成功。LFS 実体が隔離 checkout に揃わないため、データ検証では共有 checkout の `resources/data` を `DATA_ROOT` に指定し、読み取り専用で使用した。同じ `DATA_ROOT` を用いた `make smoke` も成功し、Lua の読み戻しと銀河 overlay の表示済みフレームの基底を確認した。
+## 2026-11-07: 飛行 smoke の完了待機
+
+再開後の飛行完了を最大 8 秒、同じ run loop のタイマーで待つ。成功には飛行の停止、地表状態、既存の完了通知、有限な期待半径をすべて要求し、時間空白による中断や半径不一致を成功扱いしない。失敗時は経過時間、飛行・地表状態、通知、実際と期待の距離を出力する。飛行本体の 1 秒の安全閾値は変更しない。従来の間欠的な失敗は原因が特定できておらず、待機変更で解決したとはまだ判断できない。
+
+隔離 worktree、基点 `35a32c7`、共有 checkout の `resources/data` を読み取り専用に指定して `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` は成功。GUI smoke は競合回避の実行枠待ちで未実施であり、実タイマーによる新判定は未検証。新規依存・原データ・全体方針の変更はない。

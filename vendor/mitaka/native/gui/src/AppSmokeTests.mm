@@ -5,6 +5,8 @@
 #include "surface_navigation.hpp"
 #include "satellite_scene.hpp"
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -336,16 +338,29 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
                     paused.target.x, paused.target.y, paused.target.z, current.target.x, current.target.y, current.target.z]]; return;
             }
             [self->_solar takeOff];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3400 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-                const double expectedDistance = 9 * surface_body_info(3).radius_km / astronomical_unit_km;
-                if (self->_solar.flightAnimating || !self->_solar.surfaceNavigationActive ||
-                    std::abs([self->_solar cameraState].distance_au - expectedDistance) > 1e-12) {
-                    [self showError:@"smoke: flight did not complete"]; return;
+            const auto started = std::chrono::steady_clock::now();
+            const double expectedDistance = 9 * surface_body_info(3).radius_km / astronomical_unit_km;
+            // 完了と同じ run loop のタイマーを待ち、期限や中断を成功扱いしない。
+            NSTimer *completion = [NSTimer timerWithTimeInterval:0.05 repeats:YES block:^(NSTimer *timer) {
+                const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+                const BOOL flying = self->_solar.flightAnimating;
+                const BOOL surface = self->_solar.surfaceNavigationActive;
+                const double distance = [self->_solar cameraState].distance_au;
+                NSString *notice = [self->_solar flightNoticeForSmokeTest];
+                if (surface && flying && elapsed < 8) return;
+                [timer invalidate];
+                if (elapsed >= 8 || flying || !surface || ![notice isEqualToString:@"飛行完了"] ||
+                    !std::isfinite(distance) || std::abs(distance - expectedDistance) > 1e-12) {
+                    [self showError:[NSString stringWithFormat:
+                        @"smoke: flight did not complete (elapsed=%.3fs, surface=%d, flying=%d, notice=%@, distance=%.17g, expected=%.17g)",
+                        elapsed, surface, flying, notice ? notice : @"(none)", distance, expectedDistance]];
+                    return;
                 }
                 std::printf("Moon/travel AppKit smoke passed: Moon orbit/spin, landing targets, real flight timer, interruption, completion\n");
                 [self->_solar setTerrainDataDirectory:savedTerrainDirectory];
                 [self runContinuousFlightSmokeTest];
-            });
+            }];
+            [NSRunLoop.mainRunLoop addTimer:completion forMode:NSRunLoopCommonModes];
         });
     }];
     [NSRunLoop.mainRunLoop addTimer:progress forMode:NSRunLoopCommonModes];

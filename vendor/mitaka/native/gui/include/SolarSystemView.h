@@ -183,6 +183,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @end
 
 @interface SolarSystemView (SmokeTests)
+- (NSString *)flightNoticeForSmokeTest;
 - (BOOL)runContinuousFlightSmokeTest;
 - (BOOL)runSurfaceNavigationSmokeTest;
 - (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion;
