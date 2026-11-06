@@ -181,8 +181,8 @@ TerrainSurfaceFrame render_terrain_surface(const TerrainSurfaceBinding& binding,
         throw std::invalid_argument("terrain frame memory limit exceeded");
     result.samples.resize(count);
     // 投影と同じ視野角係数を使用。camera frame の丸めを仮定しない。
-    const double horizontal=solar_camera_tangent_half_fov*width/height;
-    const double vertical=solar_camera_tangent_half_fov;
+    const double vertical=solar_camera_tangent(camera);
+    const double horizontal=vertical*width/height;
     const auto forward=scale(axes.outward,-1);
     const std::array<Vec3,4> planes{
         add(axes.right,scale(forward,horizontal)),

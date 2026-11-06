@@ -62,6 +62,29 @@ void tests() {
     const auto midpoint = boundarySegments[boundarySegments.size()/2].start;
     check(pick_horizon_constellation({boundary},lookup,options,frame,viewport,800,600,midpoint,1,visible).has_value(),
           "displayed boundary must be selectable");
+    // 実際の線分と選択に同じ透視画角を使用し、画角変更前の線を拾わない。
+    const auto left = frame.to_equatorial({46, 38});
+    const auto right = frame.to_equatorial({54, 38});
+    const auto fovLookup = [&](std::int32_t hip) -> std::optional<EquatorialCoordinates> {
+        if (hip == 1) return left;
+        if (hip == 2) return right;
+        return std::nullopt;
+    };
+    options.lines = true; options.boundaries = false;
+    std::optional<ScreenPoint> previous;
+    for (const double fov : {20., 45., 90.}) {
+        const HorizonViewport current{50,35,180,1,18,fov};
+        const auto projected = project_equatorial_segment_to_horizon(left,right,frame,current,800,600).segments;
+        check(!projected.empty(), "FOV constellation line missing");
+        const auto& middle = projected[projected.size() / 2];
+        const ScreenPoint point{(middle.start.x + middle.end.x) / 2, (middle.start.y + middle.end.y) / 2};
+        check(pick_horizon_constellation(records,fovLookup,options,frame,current,800,600,point,2,visible).has_value(),
+              "drawn constellation line not selectable at FOV");
+        if (previous)
+            check(!pick_horizon_constellation(records,fovLookup,options,frame,current,800,600,*previous,2,visible),
+                  "old FOV constellation line incorrectly selectable");
+        previous = point;
+    }
 }
 }
 int main() {

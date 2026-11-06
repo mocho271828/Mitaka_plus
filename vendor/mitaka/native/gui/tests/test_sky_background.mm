@@ -80,6 +80,7 @@ void solar_mapping_tests() {
     const auto texture = gradient();
     SolarCamera camera;
     for (int mode = 0; mode < 3; ++mode) {
+        camera.vertical_fov_deg = mode == 0 ? 10 : (mode == 1 ? 45 : 90);
         if (mode == 1) { camera.orbit(83, -39); camera.roll(32); }
         if (mode == 2) { camera.frame = solar_camera_basis(camera); camera.frame_is_orbit = true; }
         const auto image = render_solar_background(texture, camera, 13, 9);

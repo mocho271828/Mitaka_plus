@@ -59,7 +59,9 @@ bool sameLandingSite(const LandingKey& a, const LandingKey& b) {
     const auto useReferenceSurface = [&] {
         if (!_surfaceActive || _journeyActive || _navigation.site().terrain_offset_km == 0) return;
         _navigation.update_terrain_offset(0);
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         if (_navigation.flying()) [self restoreFlightOrientation];
         [self notifyCamera];
     };
@@ -141,7 +143,9 @@ bool sameLandingSite(const LandingKey& a, const LandingKey& b) {
         return;
     }
     if (previousOffset != offset) {
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         if (_navigation.flying()) [self restoreFlightOrientation];
         [self notifyCamera];
     }

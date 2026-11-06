@@ -80,7 +80,9 @@ static double monotonicSeconds() {
         const BOOL interrupted = !std::isfinite(time) || time < _lastFlightTime || time-_lastFlightTime > 1;
         _navigation.advance(time);
         _lastFlightTime = time;
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         [self restoreFlightOrientation];
         if (!_navigation.flying()) {
             if (_exitSurfaceAfterAscent && !interrupted) {
@@ -119,7 +121,8 @@ static double monotonicSeconds() {
         if (ascending) next.begin_ascent(time, duration);
         else if (preserveLook) next.begin_descent_preserving_look(time, duration);
         else next.begin_descent(time, duration);
-        const SolarCamera camera = next.camera(_bodies);
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
         [self stopScriptTargetTransition];
         [self stopScriptOrientation];
         _flightOrientation.reset();
@@ -236,7 +239,9 @@ static double monotonicSeconds() {
     site.heading_deg = azimuth;
     site.elevation_deg = altitude;
     _navigation.set_site(site);
+    const double fov = _camera.vertical_fov_deg;
     _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = fov;
     [self notifyCamera];
     self.needsDisplay = YES;
     return YES;
@@ -301,7 +306,9 @@ static double monotonicSeconds() {
         }
         if (_surfaceActive) {
             [self interruptFlight];
+            const double fov = _camera.vertical_fov_deg;
             _camera = _navigation.camera(_bodies);
+            _camera.vertical_fov_deg = fov;
             _surfaceActive = NO;
             _physicalSpaceActive = YES;
             _flightOrientation.reset();
@@ -373,7 +380,8 @@ static double monotonicSeconds() {
         auto next = _navigation;
         if (dx != 0 || dy != 0) next.look(dx, dy);
         if (zoom != 0) next.zoom(zoom);
-        const auto camera = next.camera(_bodies);
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
         _navigation = next;
         _camera = camera;
         [self notifyCamera];
@@ -385,7 +393,9 @@ static double monotonicSeconds() {
     if (!_journeyActive || !_journey.flying()) { [self invalidateFlightTimer]; return; }
     _journey.advance(time, _bodies);
     _lastFlightTime = time;
+    const double fov = _camera.vertical_fov_deg;
     _camera = _journey.camera();
+    _camera.vertical_fov_deg = fov;
     if (_journey.flying()) { [self restoreFlightOrientation]; return; }
     [self invalidateFlightTimer];
     if (_journey.completed()) {
@@ -425,7 +435,9 @@ static double monotonicSeconds() {
         _navigation.interrupt();
         _exitSurfaceAfterAscent = NO;
         _journey = std::move(next);
+        const double fov = _camera.vertical_fov_deg;
         _camera = _journey.camera();
+        _camera.vertical_fov_deg = fov;
         _journeyActive = YES;
         _surfaceActive = _surfacePreview = NO;
         _physicalSpaceActive = NO;

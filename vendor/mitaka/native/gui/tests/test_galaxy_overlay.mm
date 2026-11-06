@@ -106,6 +106,19 @@ void asynchronousRedrawDoesNotInvalidateScene() {
     waitFor([&] { draw(overlay, panned); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "pan residual did not produce a complete image");
     check(!stale->called, "pan residual did not invalidate an old pick");
+    const auto oldFovPick = std::make_shared<PickResult>();
+    [overlay pickAtPoint:NSMakePoint(256, 256) camera:panned completion:^(std::optional<GalaxySpatialRecordId> selection) {
+        oldFovPick->picked = selection; oldFovPick->called = true;
+    }];
+    auto wider = panned;
+    wider.vertical_fov_deg = 90;
+    draw(overlay, wider);
+    diagnostics = [overlay diagnostics];
+    check(diagnostics.requested && diagnostics.requested->camera.vertical_fov_deg == 90 &&
+          diagnostics.display == GalaxyOverlayDisplay::preview, "FOV reused the previous image");
+    waitFor([&] { draw(overlay, wider); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "FOV did not produce a complete image");
+    check(!oldFovPick->called, "FOV change did not invalidate an old pick");
 
     OrdinaryTestView *plainView = [[OrdinaryTestView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
     GalaxyOverlay *plainOverlay = [[GalaxyOverlay alloc] initWithView:plainView];

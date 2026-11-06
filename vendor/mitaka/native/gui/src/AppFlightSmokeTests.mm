@@ -70,6 +70,31 @@ bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 if (!(self->_jd > startJD + 0.5)) {
                     [self showError:@"smoke: continuous flight did not retain date playback"]; return;
                 }
+                ScriptAction fov{};
+                fov.kind = ScriptActionKind::animate_camera_fov;
+                fov.number = 90;
+                fov.duration_seconds = 10;
+                NSString *fovError = nil;
+                BOOL fovOK = [self applyScriptAction:fov error:&fovError] && self->_scriptFovAnimation.has_value();
+                if (self->_scriptFovAnimation) {
+                    self->_scriptFovAnimation->start_time -= 5;
+                    [self updateScriptFovAnimation];
+                    const double midpoint = [self->_solar cameraState].vertical_fov_deg;
+                    fovOK = midpoint > 45 && midpoint < 90 && fovOK;
+                    fov.number = 0;
+                    fovOK = ![self applyScriptAction:fov error:&fovError] && self->_scriptFovAnimation.has_value() && fovOK;
+                    fov.number = 30;
+                    fovOK = [self applyScriptAction:fov error:&fovError] && self->_scriptFovAnimation.has_value() &&
+                        self->_scriptFovAnimation->start >= midpoint && self->_scriptFovAnimation->start < 90 && fovOK;
+                    [self->_solar scriptSetSurfaceAzimuth:35 altitude:20];
+                    fovOK = [self->_solar cameraState].vertical_fov_deg >= midpoint && fovOK;
+                    self->_scriptFovAnimation->start_time -= 11;
+                    [self updateScriptFovAnimation];
+                    fovOK = !self->_scriptFovAnimation && [self->_solar cameraState].vertical_fov_deg == 30 && fovOK;
+                }
+                [self resetViewAngle:nil];
+                fovOK = [self->_solar cameraState].vertical_fov_deg == 45 && fovOK;
+                if (!fovOK) { [self showError:@"smoke: surface FOV animation failed"]; return; }
                 std::printf("Continuous flight AppKit smoke passed: real timer, moving Moon, stop, restart, fixed destination, surface arrival\n");
                 [NSApp terminate:nil];
             });

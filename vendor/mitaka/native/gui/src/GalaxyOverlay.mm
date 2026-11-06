@@ -27,6 +27,7 @@ bool sameRequest(const GalaxyOverlayRequest& a, const GalaxyOverlayRequest& b) {
         a.camera.target_offset_au.y == b.camera.target_offset_au.y &&
         a.camera.target_offset_au.z == b.camera.target_offset_au.z && a.camera.distance_pc == b.camera.distance_pc &&
         a.camera.yaw_deg == b.camera.yaw_deg && a.camera.pitch_deg == b.camera.pitch_deg && a.camera.roll_deg == b.camera.roll_deg &&
+        a.camera.vertical_fov_deg == b.camera.vertical_fov_deg && a.camera.frame_is_orbit == b.camera.frame_is_orbit &&
         sameFrame(a.camera.frame, b.camera.frame) && NSEqualSizes(a.size, b.size) && a.scale == b.scale &&
         a.quality.antialias == b.quality.antialias && a.quality.point_smoothing == b.quality.point_smoothing &&
         a.quality.line_smoothing == b.quality.line_smoothing && a.quality.text_smoothing == b.quality.text_smoothing &&

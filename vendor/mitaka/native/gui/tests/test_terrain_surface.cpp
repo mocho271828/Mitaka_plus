@@ -166,6 +166,23 @@ void rendering_tests(Temporary& temp) {
         }
     }
     expect(covered>100,"nonempty negative terrain");
+    for (double fov : {10., 90.}) {
+        auto adjusted=view; adjusted.vertical_fov_deg=fov;
+        const auto rendered=render_terrain_surface(binding,adjusted,33,33);
+        for (int y=0;y<33;++y) for (int x=0;x<33;++x) {
+            const auto ray=solar_camera_ray(adjusted,x+.5,y+.5,33,33);
+            double expected=INFINITY;
+            for (std::size_t t=0;t<mesh.triangle_count();++t) {
+                const auto id=mesh.triangle(t);
+                expected=std::min(expected,triangle_hit({.003,0,0},ray,mul(mesh.vertices()[id[0]].position,.001),
+                    mul(mesh.vertices()[id[1]].position,.001),mul(mesh.vertices()[id[2]].position,.001)));
+            }
+            const auto depth=rendered.samples[y*33+x].distance_au;
+            expect(std::isfinite(depth)==std::isfinite(expected),"FOV terrain oracle coverage");
+            if (std::isfinite(expected)) near(depth,expected,2e-14,"FOV terrain oracle depth");
+        }
+    }
+
     auto displaced=view; displaced.target={123,-3,5}; binding.center_au=displaced.target;
     const auto translated=render_terrain_surface(binding,displaced,65,65);
     near(translated.samples[32*65+32].distance_au,center.distance_au,1e-15,"large world translation invariant");

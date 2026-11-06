@@ -36,7 +36,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (a.precise_target.has_value() != b.precise_target.has_value() ||
         (a.precise_target && (!sameVector(a.precise_target->anchor_pc, b.precise_target->anchor_pc) ||
                               !sameVector(a.precise_target->offset_au, b.precise_target->offset_au))) ||
-        !sameVector(a.target, b.target) || a.distance_au != b.distance_au || a.frame_is_orbit != b.frame_is_orbit) return false;
+        !sameVector(a.target, b.target) || a.distance_au != b.distance_au || a.frame_is_orbit != b.frame_is_orbit ||
+        a.vertical_fov_deg != b.vertical_fov_deg) return false;
     const auto x = solar_camera_basis(a), y = solar_camera_basis(b);
     return sameVector(x.outward, y.outward) && sameVector(x.right, y.right) && sameVector(x.up, y.up);
 }
@@ -123,6 +124,13 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (BOOL)scriptPlanetariumMode {
     return _surfaceActive && !_navigation.flying()
         && _navigation.site().height_km <= minimum_surface_height_km + 1e-9;
+}
+- (BOOL)setScriptSurfaceFov:(double)degrees {
+    if (![self scriptPlanetariumMode] || !std::isfinite(degrees) || degrees <= 0 || degrees > 90) return NO;
+    _camera.vertical_fov_deg = degrees;
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
 }
 - (BOOL)journeyActive { return _journeyActive; }
 - (BOOL)flightAnimating { return _navigation.flying() || (_journeyActive && _journey.flying()); }
@@ -304,7 +312,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (_journeyActive) {
         if (_journey.flying()) [self updateJourneyAtTime:_lastFlightTime];
     } else if (_surfaceActive) {
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         if (_navigation.flying()) [self restoreFlightOrientation];
     }
     else if (_earthMoonMode && _earthMoonFollowing) {
@@ -776,7 +786,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 const auto site = surface_sky_site_from_camera(skyScene.camera, skyScene.bodies, *skyScene.surface_body);
                 const ObservationFrame observation({site.latitude_deg, site.longitude_deg},
                                                    skyScene.bodies[site.body_index].orientation);
-                const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
+                const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg, skyScene.camera.vertical_fov_deg};
                 const auto result = pick_horizon_constellation(_surfaceSkyPickModel->constellations(),
                     [&](std::int32_t hip) -> std::optional<EquatorialCoordinates> {
                         const auto index = _surfaceSkyPickModel->star_index(hip);
@@ -902,10 +912,10 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 const auto height = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.height * scale), 1.0, maximumDimension));
                 const auto axes = solar_camera_basis(frame.camera);
                 const auto stable = [](double value) { return std::round(value * 1e10) / 1e10; };
-                const std::array<double, 11> key{stable(axes.outward.x), stable(axes.outward.y), stable(axes.outward.z),
+                const std::array<double, 12> key{stable(axes.outward.x), stable(axes.outward.y), stable(axes.outward.z),
                     stable(axes.right.x), stable(axes.right.y), stable(axes.right.z),
                     stable(axes.up.x), stable(axes.up.y), stable(axes.up.z),
-                    static_cast<double>(width), static_cast<double>(height)};
+                    static_cast<double>(width), static_cast<double>(height), frame.camera.vertical_fov_deg};
                 if (!_surfaceBackgroundKey || *_surfaceBackgroundKey != key) {
                     const auto pixels = render_solar_background(*texture, frame.camera, width, height);
                     NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
@@ -943,7 +953,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             const auto& site = *skySite;
             const ObservationFrame observation({site.latitude_deg, site.longitude_deg},
                                                frame.bodies[site.body_index].orientation);
-            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
+            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg, frame.camera.vertical_fov_deg};
             if (_surfaceConstellationArt)
                 draw_horizon_constellation_art(context, *_surfaceConstellationArt, _surfaceConstellationOptions,
                     frame.renderer_display, observation, viewport, frame.map);

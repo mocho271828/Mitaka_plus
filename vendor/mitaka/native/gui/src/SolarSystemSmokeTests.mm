@@ -10,6 +10,7 @@ using namespace mitaka::gui;
 
 @interface SolarSystemView (PrecisionSmokeInternal)
 - (void)advanceScriptTargetTransition;
+- (void)advanceScriptOrientation;
 @end
 
 static bool sameFlightCamera(const SolarCamera& a, const SolarCamera& b) {
@@ -149,14 +150,25 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         moon.set_site(moonSite);
         const BOOL completed = !self.journeyActive && !self.flightAnimating && self.surfaceNavigationActive
             && [self scene].physical_navigation && sameFlightCamera(landed, moon.camera(_bodies));
-        // 現在の月面から次の惑星へ進む場合も、開始フレームを飛ばさない。
+        // 地表で設定した射影は、出発・中断・再開・着陸を通して維持する。
+        const BOOL fovSet = [self setScriptSurfaceFov:30];
         [self selectBody:4];
         [self startJourneyAtLatitude:-15 longitude:70];
         const BOOL chained = self.journeyActive && self.flightAnimating && sameFlightCamera(landed, _camera)
-            && _journey.destination().body_index == 4;
+            && _journey.destination().body_index == 4 && _camera.vertical_fov_deg == 30;
+        [self advanceFlightAtTime:_lastFlightTime+0.5];
+        BOOL journeyFov = _camera.vertical_fov_deg == 30;
         [self interruptFlight];
+        [self resumeJourney];
+        journeyFov = journeyFov && _camera.vertical_fov_deg == 30;
+        const double chainedStartTime = _lastFlightTime;
+        for (int step = 1; step <= 96; ++step) {
+            [self advanceFlightAtTime:chainedStartTime + step*0.25];
+            journeyFov = journeyFov && _camera.vertical_fov_deg == 30;
+        }
+        journeyFov = journeyFov && !self.journeyActive && self.surfaceNavigationActive;
         [self resetCamera];
-        passed = started && invalidCameraRejected && locked && tracked && frozen && resumed && gapStopped && invalidStopped && completed && chained;
+        passed = started && invalidCameraRejected && locked && tracked && frozen && resumed && gapStopped && invalidStopped && completed && fovSet && chained && journeyFov;
         if (!passed) NSLog(@"CONTINUOUS_VIEW failed start=%d camera=%d lock=%d track=%d freeze=%d resume=%d gap=%d invalid=%d complete=%d chain=%d",
             started, invalidCameraRejected, locked, tracked, frozen, resumed, gapStopped, invalidStopped, completed, chained);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
@@ -237,11 +249,25 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         for (int step = 1; step <= 6; ++step) [self advanceFlightAtTime:landingStart + step*0.5];
         const BOOL landed = _surfaceActive && !self.flightAnimating && _camera.frame
             && _navigation.site().body_index == 10 && _navigation.site().height_km == minimum_surface_height_km;
+        const BOOL fovSet = [self setScriptSurfaceFov:30] && _camera.vertical_fov_deg == 30;
+        const BOOL fovInvalid = ![self setScriptSurfaceFov:0] && _camera.vertical_fov_deg == 30;
+        [self scriptSetSurfaceAzimuth:30 altitude:15];
+        const BOOL fovLook = _camera.vertical_fov_deg == 30;
+        NSString *fovError = nil;
+        const BOOL orientationStarted = [self scriptSetCameraEuler:{15, 20, 5} relative:NO duration:10 smooth:NO error:&fovError];
+        if (_orientationAnimation) _orientationAnimation->start_time -= 5;
+        [self advanceScriptOrientation];
+        const BOOL orientationInterpolated = orientationStarted && _camera.vertical_fov_deg == 30;
+        const BOOL orientationRetargeted = [self scriptSetCameraEuler:{-20, 10, 0} relative:YES duration:0 smooth:NO error:&fovError]
+            && !_orientationAnimation && _camera.vertical_fov_deg == 30;
+        const BOOL surfaceMoved = [self moveScriptSurfaceBody:10 latitude:25 longitude:-40] && _camera.vertical_fov_deg == 30;
+        const BOOL surfacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:YES error:&fovError]
+            && _camera.vertical_fov_deg == 30;
         const auto beforeTracking = _camera;
         auto moved = _bodies;
         moved[10].position_au.x += 0.01;
         [self setBodies:moved];
-        const BOOL tracked = std::abs(_camera.target.x-beforeTracking.target.x-0.01) < 1e-10;
+        const BOOL tracked = std::abs(_camera.target.x-beforeTracking.target.x-0.01) < 1e-10 && _camera.vertical_fov_deg == 30;
         [self setBodies:bodies];
         const auto beforeLook = _navigation.site();
         [self orbitByX:20 y:10];
@@ -276,7 +302,10 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         [self advanceFlightAtTime:_lastFlightTime + 0.5];
         const BOOL interrupted = !self.flightAnimating && _camera.distance_au == beforeInterrupt.distance_au
             && _camera.target.x == beforeInterrupt.target.x;
-        passed = pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
+        _camera.vertical_fov_deg = 30;
+        const BOOL spacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:NO error:&fovError]
+            && _camera.vertical_fov_deg == 30;
+        passed = fovSet && fovInvalid && fovLook && orientationInterpolated && orientationRetargeted && surfaceMoved && spacePlace && surfacePlace && pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
             failedPreservesPoint && selectedEarth && ascended && focusedEarth && interrupted;
         if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
             pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint,
@@ -517,6 +546,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self selectBody:3];
     SurfaceSite site{3, 82.2, -84.7, minimum_surface_height_km, 0, 0};
     _navigation.set_site(site); _surfaceActive = YES; _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = 30;
     [self refreshTerrain];
     __block BOOL passed = _landingSuppressedBody == 3;
     __block int phase = 0;
@@ -534,12 +564,12 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         }
         if (phase == 0) {
             firstOffset = self->_navigation.site().terrain_offset_km;
-            passed = passed && !self->_landingSuppressedBody && firstOffset > 1;
+            passed = passed && !self->_landingSuppressedBody && firstOffset > 1 && self->_camera.vertical_fov_deg == 30;
             self.terrainAmplification = TerrainAmplification::x20;
             [self refreshTerrain];
             passed = passed && self->_landingSuppressedBody == 3 &&
                 self->_navigation.site().terrain_offset_km == 0 &&
-                self->_navigation.site().height_km == minimum_surface_height_km;
+                self->_navigation.site().height_km == minimum_surface_height_km && self->_camera.vertical_fov_deg == 30;
             NSString *error = nil;
             const BOOL selected = [self selectScriptEarthPlaceLatitude:82.2 longitude:-84.7 surface:YES error:&error];
             passed = passed && selected;
@@ -549,7 +579,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         }
         if (phase == 1) {
             passed = passed && !self->_landingSuppressedBody && self->_landingKey &&
-                self->_landingKey->factor == 2 && self->_navigation.site().terrain_offset_km > firstOffset;
+                self->_landingKey->factor == 2 && self->_navigation.site().terrain_offset_km > firstOffset &&
+                self->_camera.vertical_fov_deg == 30;
             self.terrainAmplification = TerrainAmplification::x1;
             [self selectBody:4];
             [self startJourneyAtLatitude:49.625 longitude:-81.6875];

@@ -392,36 +392,45 @@ static NSString *const scriptCompatibilityNote =
     [_scriptFovTimer invalidate];
     _scriptFovTimer = nil;
 }
+- (BOOL)scriptFovAvailable {
+    return (_mode.selectedSegment == 1 && [_solar scriptPlanetariumMode]) ||
+        (_mode.selectedSegment == 2 && !_horizonProjectionTimer && [_horizon viewport].perspective_blend == 0);
+}
+- (double)scriptFovValue {
+    return _mode.selectedSegment == 1 ? [_solar cameraState].vertical_fov_deg : [_horizon viewport].vertical_fov_deg;
+}
+- (void)setScriptFovValue:(double)value {
+    if (_mode.selectedSegment == 1) {
+        [_solar setScriptSurfaceFov:value];
+    } else {
+        auto viewport = [_horizon viewport];
+        viewport.vertical_fov_deg = value;
+        [_horizon setViewport:viewport];
+    }
+}
 - (void)updateScriptFovAnimation {
     if (!_scriptFovAnimation) return;
-    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0) {
-        [self stopScriptFovAnimation];
-        return;
-    }
+    if (_mode.selectedSegment != _scriptFovMode || ![self scriptFovAvailable]) { [self stopScriptFovAnimation]; return; }
     const auto animation = *_scriptFovAnimation;
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     const double t = std::clamp((now - animation.start_time) / animation.duration, 0.0, 1.0);
-    auto viewport = [_horizon viewport];
-    viewport.vertical_fov_deg = t >= 1 ? animation.target : animation.start + (animation.target - animation.start) * t;
-    [_horizon setViewport:viewport];
+    [self setScriptFovValue:t >= 1 ? animation.target : animation.start + (animation.target - animation.start) * t];
     if (t >= 1) [self stopScriptFovAnimation];
 }
 - (BOOL)animateScriptFovTo:(double)target duration:(double)duration error:(NSString **)error {
-    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0 ||
-        !std::isfinite(target) || target <= 0 || target > 90 || !std::isfinite(duration) || duration < 0) {
-        if (error) *error = @"視野角は地平図で 0 より大きく 90 度以下、時間は 0 秒以上にしてください。";
+    if (![self scriptFovAvailable] || !std::isfinite(target) || target <= 0 || target > 90 || !std::isfinite(duration) || duration < 0) {
+        if (error) *error = @"視野角はプラネタリウムで 0 より大きく 90 度以下、時間は 0 秒以上にしてください。";
         return NO;
     }
     if (_scriptFovAnimation) [self updateScriptFovAnimation];
-    const double initial = [_horizon viewport].vertical_fov_deg;
+    const double initial = [self scriptFovValue];
     [self stopScriptFovAnimation];
     if (duration == 0 || initial == target) {
-        auto viewport = [_horizon viewport];
-        viewport.vertical_fov_deg = target;
-        [_horizon setViewport:viewport];
+        [self setScriptFovValue:target];
         return YES;
     }
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    _scriptFovMode = _mode.selectedSegment;
     _scriptFovAnimation = ScriptCameraAnimation{initial, target, now, duration, false};
     __weak AppController *weakSelf = self;
     _scriptFovTimer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
@@ -535,9 +544,7 @@ static NSString *const scriptCompatibilityNote =
         const double azimuth = scriptViewport.center_azimuth_deg;
         state.camera_azimuth_deg = azimuth > 180 ? azimuth - 360 : azimuth;
         state.camera_altitude_deg = scriptViewport.center_altitude_deg;
-        if (controller->_mode.selectedSegment == 2 && !controller->_horizonProjectionTimer &&
-            [controller->_horizon viewport].perspective_blend == 0)
-            state.camera_fov = [controller->_horizon viewport].vertical_fov_deg;
+        if ([controller scriptFovAvailable]) state.camera_fov = [controller scriptFovValue];
         state.camera_duration = controller->_scriptCameraDuration;
         state.camera_zoom_mode = controller->_scriptCameraZoomMode;
         if (controller->_mode.selectedSegment == 1)

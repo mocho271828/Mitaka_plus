@@ -61,7 +61,9 @@ static SurfaceSite surfaceSiteWithOrientation(const SurfaceNavigation& navigatio
         if (_journeyActive || (_surfaceActive && _navigation.flying())) _flightOrientation = normalized;
     } else if (_surfaceActive) {
         _navigation.set_site(surfaceSiteWithOrientation(_navigation, _bodies, basis));
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
     } else {
         _camera.frame = basis;
         _camera.frame_is_orbit = true;

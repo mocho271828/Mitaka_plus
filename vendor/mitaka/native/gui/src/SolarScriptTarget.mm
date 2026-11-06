@@ -60,7 +60,9 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     site.latitude_deg = latitude;
     site.longitude_deg = longitude;
     _navigation.set_site(site);
+    const double fov = _camera.vertical_fov_deg;
     _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = fov;
     [self notifyCamera];
     self.needsDisplay = YES;
     return YES;
@@ -221,7 +223,8 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
             site.longitude_deg = longitude;
             SurfaceNavigation next;
             next.set_site(site);
-            const auto camera = next.camera(_bodies);
+            auto camera = next.camera(_bodies);
+            camera.vertical_fov_deg = _camera.vertical_fov_deg;
             [self interruptFlight];
             _navigation = next;
             _camera = camera;
@@ -231,6 +234,7 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
             SurfaceNavigation next;
             next.set_site(site);
             auto camera = next.camera(_bodies);
+            camera.vertical_fov_deg = _camera.vertical_fov_deg;
             camera.distance_au = _camera.distance_au;
             camera.frame_is_orbit = true;
             [self leaveNavigation];

@@ -147,6 +147,7 @@ HorizonSegmentProjection project_equatorial_segment_to_horizon(
     if (!std::isfinite(viewport.center_azimuth_deg) || !std::isfinite(viewport.center_altitude_deg)
         || std::abs(viewport.center_altitude_deg) > 90 || !std::isfinite(viewport.vertical_fov_deg)
         || viewport.vertical_fov_deg <= 0 || viewport.vertical_fov_deg > 180
+        || !std::isfinite(viewport.perspective_fov_deg) || viewport.perspective_fov_deg <= 0 || viewport.perspective_fov_deg > 90
         || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0 || viewport.perspective_blend > 1
         || !std::isfinite(viewport.roll_deg)
         || !std::isfinite(width) || width <= 0 || !std::isfinite(height) || height <= 0
@@ -163,7 +164,7 @@ HorizonSegmentProjection project_equatorial_segment_to_horizon(
     start.right_ascension_deg = positive_degrees(start.right_ascension_deg);
     end.right_ascension_deg = positive_degrees(end.right_ascension_deg);
     const HorizonProjectionViewport sky_viewport{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-        viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+        viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg};
     return Sampler(start, end, frame, sky_viewport, width, height, limits).run(
         rotate_horizon({360 - first.azimuth_deg, first.altitude_deg}, sky_viewport),
         rotate_horizon({360 - last.azimuth_deg, last.altitude_deg}, sky_viewport));

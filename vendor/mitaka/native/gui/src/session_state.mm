@@ -156,6 +156,7 @@ SessionState decode_session_state(std::string_view json) {
         state.solar_camera.yaw_deg = numeric_field(camera, @"yaw_deg");
         state.solar_camera.pitch_deg = numeric_field(camera, @"pitch_deg");
         state.solar_camera.distance_au = numeric_field(camera, @"distance_au");
+        if (camera[@"fov_deg"]) state.solar_camera.vertical_fov_deg = numeric_field(camera, @"fov_deg");
         if (camera[@"roll_deg"]) state.solar_camera.roll_deg = numeric_field(camera, @"roll_deg");
         if (camera[@"frame_is_orbit"]) state.solar_camera.frame_is_orbit = boolean_field(camera, @"frame_is_orbit");
         id frame = required(camera, @"frame");
@@ -255,7 +256,8 @@ std::string encode_session_state(const SessionState& state) {
                                    @"right": vector_json(camera.frame->right), @"up": vector_json(camera.frame->up)};
         NSMutableDictionary *camera_object = [@{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
             @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
-            @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)} mutableCopy];
+            @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit),
+            @"fov_deg": @(camera.vertical_fov_deg)} mutableCopy];
         if (camera.precise_target) {
             camera_object[@"precise_target"] = @{@"anchor_pc": vector_json(camera.precise_target->anchor_pc),
                                                  @"offset_au": vector_json(camera.precise_target->offset_au)};

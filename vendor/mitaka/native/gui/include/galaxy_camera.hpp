@@ -20,6 +20,7 @@ struct GalaxyCameraPc {
     bool frame_is_orbit = false;
     // target は pc の基準点。小さな移動は AU の差分として保持する。
     Vec3 target_offset_au{0, 0, 0};
+    double vertical_fov_deg = 45;
     void orbit(double dx_points, double dy_points);
     void roll(double degrees);
     void pan(double dx_points, double dy_points, double width, double height);
@@ -33,7 +34,7 @@ GalaxyCameraPc checked_galaxy_camera(GalaxyCameraPc camera);
 struct GalaxyProjectionPc { double x, y, depth_pc; };
 
 // 基底/viewport を一度検証して、全原行の投影で共有する。
-// 左上原点、垂直視野角45度、near = distance_pc * 1e-4。
+// 左上原点、垂直視野角はカメラの設定値、near = distance_pc * 1e-4。
 // 位置は native J2000 黄道 pc。finite でない位置は拒否、near 手前は nullopt。
 // viewport は (0,1e7] point。画面外も返すため描画時に clip が必要。
 class GalaxyProjector {
@@ -44,7 +45,7 @@ public:
 private:
     GalaxyCameraPc camera_;
     SolarCameraBasis basis_;
-    double width_, height_;
+    double width_, height_, tangent_;
 };
 
 } // namespace mitaka::gui

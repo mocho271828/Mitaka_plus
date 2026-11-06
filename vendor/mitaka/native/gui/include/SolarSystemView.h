@@ -87,6 +87,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)showOurGalaxyOverview;
 - (void)showSurface;
 - (NSString *)cameraStateDescription;
+- (BOOL)setScriptSurfaceFov:(double)degrees;
 - (mitaka::gui::SolarCamera)cameraState;
 - (void)setCameraState:(const mitaka::gui::SolarCamera&)camera;
 // 検証に失敗した場合は、視点・追従・飛行状態を変更しない。

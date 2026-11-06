@@ -6,7 +6,6 @@
 
 namespace mitaka::gui {
 namespace {
-constexpr double tangent_half_fov = 0.41421356237309504880;
 
 void position_valid(NativeEclipticPositionPc position) {
     for (double value : {position.x_pc, position.y_pc, position.z_pc})
@@ -30,6 +29,7 @@ SolarCamera direction_camera(const GalaxyCameraPc& camera) {
     direction.frame = camera.frame;
     direction.roll_deg = camera.roll_deg;
     direction.frame_is_orbit = camera.frame_is_orbit;
+    direction.vertical_fov_deg = camera.vertical_fov_deg;
     return direction;
 }
 double dot(NativeEclipticPositionPc value, Vec3 axis) {
@@ -81,7 +81,7 @@ void GalaxyCameraPc::pan(double dx, double dy, double width, double height) {
     dimensions(width, height);
     deltas(dx, dy);
     const auto axes = solar_camera_basis(direction_camera(*this));
-    const double scale = 2 * distance_pc * astronomical_units_per_parsec * tangent_half_fov / height;
+    const double scale = 2 * distance_pc * astronomical_units_per_parsec * solar_camera_tangent(direction_camera(*this)) / height;
     const double horizontal = dx * scale, vertical = dy * scale;
     auto next = normalized_camera(*this);
     next.target_offset_au = {
@@ -103,7 +103,8 @@ void GalaxyCameraPc::zoom(double delta) {
 
 GalaxyProjector::GalaxyProjector(GalaxyCameraPc camera, double width, double height)
     : camera_(normalized_camera(checked_galaxy_camera(camera))),
-      basis_(solar_camera_basis(direction_camera(camera_))), width_(width), height_(height) {
+      basis_(solar_camera_basis(direction_camera(camera_))), width_(width), height_(height),
+      tangent_(solar_camera_tangent(direction_camera(camera_))) {
     dimensions(width, height);
 }
 
@@ -115,7 +116,7 @@ std::optional<GalaxyProjectionPc> GalaxyProjector::project(NativeEclipticPositio
         (position.z_pc - camera_.target.z_pc) - camera_.target_offset_au.z / astronomical_units_per_parsec};
     const double depth_pc = camera_.distance_pc - dot(relative, basis_.outward);
     if (depth_pc < camera_.distance_pc * 1e-4) return std::nullopt;
-    const double scale = (height_ / 2) / tangent_half_fov / depth_pc;
+    const double scale = (height_ / 2) / tangent_ / depth_pc;
     const double x = width_ / 2 + dot(relative, basis_.right) * scale;
     const double y = height_ / 2 - dot(relative, basis_.up) * scale;
     if (!std::isfinite(x) || !std::isfinite(y)) return std::nullopt;

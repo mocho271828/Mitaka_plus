@@ -111,6 +111,7 @@ struct ScriptLookTarget {
     NSTimer *_scriptCameraTimer;
     NSTimer *_scriptFovTimer;
     std::optional<ScriptCameraAnimation> _scriptFovAnimation;
+    NSInteger _scriptFovMode;
     NSTimer *_scriptPlaceTimer;
     std::optional<ScriptPlaceTransition> _scriptPlaceTransition;
     std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;

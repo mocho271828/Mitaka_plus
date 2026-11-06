@@ -138,7 +138,7 @@ TextureImage render_horizon_background(const TextureImage& texture, HorizonViewp
     if (!width || !height || width > maximum_dimension || height > maximum_dimension)
         throw std::invalid_argument("invalid horizon background output dimensions");
     const auto normalized = normalize_horizon_viewport(
-        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg});
+        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg});
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
     const HorizonRasterProjection projection(normalized, width, height);
     for (std::size_t y = 0; y < height; ++y) {
@@ -161,10 +161,11 @@ TextureImage render_solar_background(const TextureImage& texture, const SolarCam
     const Vec3 right = j2000_ecliptic_to_equatorial(axes.right);
     const Vec3 up = j2000_ecliptic_to_equatorial(axes.up);
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
+    const double tangent = solar_camera_tangent(camera);
     for (std::size_t y = 0; y < height; ++y) {
-        const double vertical = ((height / 2.0 - (y + 0.5)) / height) * (2 * solar_camera_tangent_half_fov);
+        const double vertical = ((height / 2.0 - (y + 0.5)) / height) * (2 * tangent);
         for (std::size_t x = 0; x < width; ++x) {
-            const double horizontal = (((x + 0.5) - width / 2.0) / height) * (2 * solar_camera_tangent_half_fov);
+            const double horizontal = (((x + 0.5) - width / 2.0) / height) * (2 * tangent);
             const Vec3 direction{-outward.x + horizontal * right.x + vertical * up.x,
                                  -outward.y + horizontal * right.y + vertical * up.y,
                                  -outward.z + horizontal * right.z + vertical * up.z};

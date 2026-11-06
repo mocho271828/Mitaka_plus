@@ -633,7 +633,8 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         [self stopScriptPlaceTransition];
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
-    if (_mode.selectedSegment != 2) { [self stopScriptCameraAnimation]; [self stopScriptFovAnimation]; }
+    if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
+    if (_scriptFovAnimation && _scriptFovMode != _mode.selectedSegment) [self stopScriptFovAnimation];
     if (!solar) { [_solar invalidatePendingGalaxyPicks]; [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
@@ -860,6 +861,10 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         return YES;
     }
     _horizonAscentDuration = duration * 0.6;
+    // 宇宙側の同じ射影に繋ぐ。平面地平図の画角とは別の値を使う。
+    auto viewport = [_horizon viewport];
+    viewport.perspective_fov_deg = [_solar cameraState].vertical_fov_deg;
+    [_horizon setViewport:viewport];
     [self startHorizonProjectionTo:1 duration:duration * 0.4];
     return YES;
 }
@@ -892,7 +897,8 @@ static bool finishDatePresentation(const char *name, Action&& action) {
             if (!samePlace) [_horizon setObserverPlaceIdentifier:std::string{}];
             [_sky setObservationSite:{site.latitude_deg, site.longitude_deg} julianDate:_jd];
             [self stopScriptCameraAnimation];
-            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].vertical_fov_deg, 1, site.roll_deg}];
+            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].vertical_fov_deg,
+                1, site.roll_deg, [_solar cameraState].vertical_fov_deg}];
             _mode.selectedSegment = 2;
             [self changeMode:nil];
             [self startHorizonProjectionTo:0 duration:_earthDescentProjectionDuration];

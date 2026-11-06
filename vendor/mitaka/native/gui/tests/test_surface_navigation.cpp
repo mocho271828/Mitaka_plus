@@ -87,6 +87,23 @@ void test_surface_star_pick() {
     check(!pick_surface_star(stars,camera,800,600,groundClick,true,2,ground), "occluded click selected adjacent visible star");
     check(!pick_surface_star(stars,camera,800,600,{point->x+9,point->y},true,2,visible), "distant star selected");
     check(!pick_surface_star(stars,camera,800,600,{-1,0},true,2,visible), "outside click selected");
+    const auto offAxis = observation.to_equatorial({45, 25});
+    stars[0].right_ascension_degrees = offAxis.right_ascension_deg;
+    stars[0].declination_degrees = offAxis.declination_deg;
+    std::optional<ScreenPoint> previous;
+    for (const double fov : {20., 45., 90.}) {
+        auto adjusted = camera;
+        adjusted.vertical_fov_deg = fov;
+        const auto projected = project_surface_star(offAxis,adjusted,800,600);
+        check(projected.has_value(), "FOV star missing");
+        const ScreenPoint position{projected->x, projected->y};
+        check(pick_surface_star(stars,adjusted,800,600,position,true,2,visible) == 0,
+              "drawn star not selectable at FOV");
+        if (previous)
+            check(!pick_surface_star(stars,adjusted,800,600,*previous,true,2,visible),
+                  "old FOV star incorrectly selectable");
+        previous = position;
+    }
 }
 
 void test_surface_sky_below_datum() {
@@ -503,6 +520,22 @@ void test_camera_rays() {
         check(projected.has_value(), "forward ray point must project");
         near(projected->x, pixel[0]); near(projected->y, pixel[1]);
     }
+    for (double fov : {1e-300, 1e-9, 10.0, 45.0, 90.0}) {
+        camera.vertical_fov_deg = fov;
+        const auto ray = solar_camera_ray(camera, 600, 60, 640, 480);
+        const auto projected = project_solar(add(eye(camera), scaled(ray, 3)), camera, 640, 480);
+        check(projected.has_value(), "field-of-view ray must project");
+        const double tolerance = fov < 1e-8 ? 0.01 : 1e-7;
+        check(std::abs(projected->x - 600) < tolerance && std::abs(projected->y - 60) < tolerance,
+              "projection and ray must use the same field of view");
+    }
+    for (double fov : {0.0, -1.0, 90.01, std::numeric_limits<double>::infinity(),
+                       std::numeric_limits<double>::quiet_NaN()}) {
+        camera.vertical_fov_deg = fov;
+        rejects([&] { solar_camera_ray(camera, 1, 1, 640, 480); });
+        rejects([&] { project_solar({}, camera, 640, 480); });
+    }
+    camera.vertical_fov_deg = 45;
     for (const auto& invalid : std::array<SolarCameraBasis, 4>{{
             {{0, 0, 1}, {2, 0, 0}, {0, 1, 0}},
             {{0, 0, 1}, {1, 0, 0}, {0, -1, 0}},
