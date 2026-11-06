@@ -27,6 +27,7 @@ struct GalaxyOverlaySelection {
     std::optional<GalaxySpatialRecordId> galaxy;
     std::optional<std::size_t> hip;
     bool our_galaxy = false;
+    std::optional<OurGalaxyPointId> our_galaxy_point;
 };
 }
 
@@ -45,6 +46,8 @@ struct GalaxyOverlaySelection {
 // 前回描画の可視性・抽出条件・投影を満たす行か照会する。
 - (BOOL)isRecordDisplayed:(mitaka::gui::GalaxySpatialRecordId)record;
 - (BOOL)isHipDisplayed:(std::size_t)index;
+- (std::optional<mitaka::gui::NativeEclipticPositionPc>)ourGalaxyPointPosition:(mitaka::gui::OurGalaxyPointId)point;
+- (std::optional<mitaka::gui::NativeEclipticPositionPc>)displayedOurGalaxyPointPosition:(mitaka::gui::OurGalaxyPointId)point;
 // point は drawInRect の矩形左上からの座標。要求や表示モードが変われば結果を破棄する。
 - (void)pickAtPoint:(NSPoint)point camera:(const mitaka::gui::GalaxyCameraPc&)camera
          completion:(void (^)(std::optional<mitaka::gui::GalaxySpatialRecordId>))completion;

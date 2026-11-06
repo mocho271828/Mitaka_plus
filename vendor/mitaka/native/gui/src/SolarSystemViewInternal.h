@@ -62,6 +62,7 @@ struct ScriptTargetAnimation {
     BOOL _hipVisible;
     std::optional<mitaka::gui::GalaxySpatialRecordId> _galaxySelection;
     std::optional<std::size_t> _hipSelection;
+    std::optional<mitaka::gui::OurGalaxyPointId> _ourGalaxyPointSelection;
     BOOL _ourGalaxySelected;
     std::vector<mitaka::Vec3> _lunarOrbit;
     mitaka::gui::SurfaceNavigation _navigation;
@@ -152,6 +153,7 @@ struct ScriptTargetAnimation {
 - (void)clearGalaxySelection;
 - (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedGalaxyRecord;
 - (std::optional<std::size_t>)selectedHipIndex;
+- (std::optional<mitaka::gui::OurGalaxyPointId>)selectedOurGalaxyPoint;
 - (BOOL)isOurGalaxySelected;
 - (mitaka::gui::GalaxyOverlayDiagnostics)galaxyOverlayDiagnostics;
 - (void)reportNavigationError:(const char *)message;

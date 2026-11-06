@@ -25,7 +25,7 @@
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
 - 公開状態: 最初の 6 行が `submitted-now` の予定、以降は `local-only`。投稿操作そのものの承認・実行状態ではない。
-- 実装状態: 第 1 単位は `implemented`、第 2 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
+- 実装状態: 第 1・第 2 単位は `implemented`、第 3 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
 - 独立レビュー: 全行とも、親までの差分を前提に、その行に書いた機能と限定検証だけで判断可能かを着手時に確認する。以下の `yes*` は計画上の判定であり、実コードを調査した上で要件が満たされなければ branch を作らず行を修正する。
 - 対象 seam: 対応機能の domain・描画・GUI/Lua 契約およびその回帰試験。各行に関連する境界だけを変更し、他機能の機械的変更は必要最小限に留める。
@@ -35,7 +35,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `codex/mitaka-01-camera-zoom` | `main` | P1-1: CAM-03 | ScriptWorker / ScriptController / AppScripting と距離アニメーションを通してズーム補間を表示へ接続する | pc 単位、時間省略時 Camera.duration、線形・対数中点、非有限値・距離境界、途中再指定、太陽系・銀河の描画接続 | `submitted-now` | `implemented` | yes* |
 | 2 | `codex/mitaka-02-camera-fov` | `codex/mitaka-01-camera-zoom` | P1-1: CAM-03 | 地平図の画角・補間・45°復帰を投影と選択に整合させる | 0°拒否、90°、再指定、投影・選択・モード往復 | `submitted-now` | `implemented` | yes* |
-| 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | 銀河点群を出典内 ID で個別選択する | 実データの描画点と選択、重複、復元、旧版比較 | `submitted-now` | `not-started` | yes* |
+| 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | OurGalaxy 描画点を出典内 ID で個別選択し、注視追従する | 群・原順、preview/complete と可視性、重複・選択順位、取消・モデル交換、透明、追従解除、実データ、旧版比較 | `submitted-now` | `implemented` | yes* |
 | 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-02, GAL-03 | 銀河・SDSS/QSO の共有視点と実描画の残存差を解消する | 太陽系・恒星・天の川・SDSS/QSO の往復、位置・縮尺・選択の連続性と表示復帰、色・座標・測光の実データおよび可能な範囲の旧版比較 | `submitted-now` | `not-started` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04-large-scale-view` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `submitted-now` | `not-started` | yes* |
 | 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `submitted-now` | `not-started` | yes* |
@@ -120,6 +120,14 @@
 - 独立検証: **YES**。線形・対数補間の中点と終点、距離・時間の境界と不正入力、`Camera.duration` 省略、進行中の再指定と現在位置からの継続、太陽系・銀河の描画への反映を試験し、Lua/controller と対象カメラ試験で確認する。
 - 親依存の明確さ: **YES**。`main` 上の既存共有カメラとスクリプト経路を親として用いる。
 - 作業都合のみの分割ではない: **YES**。距離の補間契約は投影画角の FOV 契約と独立して検証できる。
+
+## 第 3 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。OurGalaxy の描画点を個別に選択し、その位置へ注視・追従する。P1-1 全体の描画・縮尺や旧版比較は第 4 単位以降にも残る。
+- named seam: **YES**。`OurGalaxyRenderer` の出典モデル内の群・原順 ordinal と描画条件、`GalaxyOverlay` の表示済み request・候補選択、`SolarSystemView` の選択・追従と `AppController` の情報表示。点群に名前キーはなく、位置の近さによる既存天体名の結合は行わない。
+- 独立検証: **YES**。renderer と overlay の対象テストで原順・重複、preview 間引き、complete 変換・可視性、画面距離・深度の順位、無効入力、取消、画像生成失敗、透明とモデル交換を検証。太陽系 view の選択・追従解除と統合を対象テストで確認する。実データ操作と旧 Plus 比較は未実施で、全体検証は進行中。
+- 親依存の明確さ: **YES**。第 2 単位までの共有カメラと既存の太陽系・銀河選択を利用する。実 branch は `codex/mitaka-03-galaxy-selection`、計画上の親は第 2 単位。
+- 作業都合のみの分割ではない: **YES**。点の ID と表示に一致する選択は、大規模構造の描画・尺度の照合とは独立した機能契約である。選択は session v9 に保存しない。
 
 ## 対象ファイルと依存
 

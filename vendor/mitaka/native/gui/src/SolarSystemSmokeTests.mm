@@ -174,6 +174,13 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     const auto bodies = _bodies;
     const auto navigation = _navigation;
     const auto selection = _selection;
+    const auto galaxySelection = _galaxySelection;
+    const auto hipSelection = _hipSelection;
+    const auto pointSelection = _ourGalaxyPointSelection;
+    const BOOL ourGalaxySelected = _ourGalaxySelected;
+    const auto scriptOverviewTarget = _scriptOverviewTarget;
+    const auto scriptEarthPlaceTarget = _scriptEarthPlaceTarget;
+    const auto scriptSpacePlace = _scriptSpacePlace;
     const auto smallSelection = _smallBodySelection;
     const BOOL smallVisible = _smallBodiesVisible;
     _smallBodySelection.reset(); _smallBodiesVisible = NO;
@@ -238,11 +245,26 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         const BOOL movedSurface = _navigation.site().heading_deg != beforeLook.heading_deg
             && _navigation.site().elevation_deg != beforeLook.elevation_deg
             && _navigation.site().height_km > minimum_surface_height_km;
+        // 無効な地表地点は選択を保ち、離陸が成功したときだけ地球へ切り替える。
+        const OurGalaxyPointId point{OurGalaxyPointGroup::disk1, 0};
+        _selection.reset(); _ourGalaxyPointSelection = point;
+        SurfaceSite invalidSite;
+        invalidSite.latitude_deg = std::numeric_limits<double>::quiet_NaN();
+        NSString *invalidError = nil;
+        const auto beforeInvalidFlight = _camera;
+        const BOOL failedPreservesPoint = ![self beginFlightAtSite:invalidSite ascending:YES preserveLook:NO duration:3 error:&invalidError]
+            && invalidError.length && !_selection && _ourGalaxyPointSelection && *_ourGalaxyPointSelection == point
+            && sameFlightCamera(beforeInvalidFlight, _camera);
         [self takeOffFromEarthAtLatitude:35 longitude:135];
+        const BOOL selectedEarth = _selection && *_selection == 3 && !_ourGalaxyPointSelection;
         const double ascentStart = _lastFlightTime;
         for (int step = 1; step <= 6; ++step) [self advanceFlightAtTime:ascentStart + step*0.5];
         const BOOL ascended = !self.flightAnimating && _navigation.site().body_index == 3
             && std::abs(_navigation.site().height_km - 8*surface_body_info(3).radius_km) < 1e-6;
+        [self focusSelection];
+        const auto earthPosition = [self displayPosition:3];
+        const BOOL focusedEarth = std::hypot(_camera.target.x-earthPosition.x, _camera.target.y-earthPosition.y,
+                                             _camera.target.z-earthPosition.z) < 1e-10;
         [self landAtLatitude:35 longitude:135];
         [self advanceFlightAtTime:_lastFlightTime + 0.5];
         const auto beforeInterrupt = _camera;
@@ -250,12 +272,18 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         [self advanceFlightAtTime:_lastFlightTime + 0.5];
         const BOOL interrupted = !self.flightAnimating && _camera.distance_au == beforeInterrupt.distance_au
             && _camera.target.x == beforeInterrupt.target.x;
-        passed = pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface && ascended && interrupted;
-        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d ascended=%d interrupted=%d",
-            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, ascended, interrupted);
+        passed = pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
+            failedPreservesPoint && selectedEarth && ascended && focusedEarth && interrupted;
+        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
+            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint,
+            selectedEarth, ascended, focusedEarth, interrupted);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
     [self invalidateFlightTimer];
     _camera = camera; _bodies = bodies; _navigation = navigation; _selection = selection;
+    _galaxySelection = galaxySelection; _hipSelection = hipSelection;
+    _ourGalaxyPointSelection = pointSelection; _ourGalaxySelected = ourGalaxySelected;
+    _scriptOverviewTarget = scriptOverviewTarget; _scriptEarthPlaceTarget = scriptEarthPlaceTarget;
+    _scriptSpacePlace = scriptSpacePlace;
     _flightNotice = notice; _surfaceActive = surface; _earthMoonMode = earthMoon; _surfacePreview = preview;
     _earthMoonFollowing = earthMoonFollowing; _following = following;
     _smallBodySelection = smallSelection; _smallBodiesVisible = smallVisible;

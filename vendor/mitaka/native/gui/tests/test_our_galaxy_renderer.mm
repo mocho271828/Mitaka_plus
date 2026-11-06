@@ -113,6 +113,78 @@ void point_absorption() {
     rejects([&] { (void)render_our_galaxy_points(model, config, viewpoint, {}, 128, 128, 1,
                                                 {}, &radiative, -1); });
 }
+void point_selection() {
+    const auto preview = OurGalaxyPointDisplay::preview;
+    const auto complete = OurGalaxyPointDisplay::complete;
+    const auto transform = settings().transform;
+    const auto nan = std::numeric_limits<float>::quiet_NaN();
+    check(our_galaxy_preview_step(0) == 1 && our_galaxy_preview_step(1500) == 1 &&
+          our_galaxy_preview_step(1501) == 2 && our_galaxy_preview_step(3001) == 3,
+          "preview sampling boundaries");
+
+    OurGalaxyModel model;
+    model.groups[0].positions = {{nan, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    model.groups[1].positions = {{0, 0, 0}};
+    const OurGalaxyPointId first{OurGalaxyPointGroup::disk1, 1};
+    auto pick = pick_our_galaxy_point(model, transform, preview, camera, 128, 128, 64, 64, 1);
+    check(pick && pick->id == first, "same-position tie uses group and original ordinal");
+    model.groups[1].positions[0] = {1, 0, 0};
+    pick = pick_our_galaxy_point(model, transform, preview, camera, 128, 128, 64, 64, 1);
+    check(pick && pick->id == OurGalaxyPointId{OurGalaxyPointGroup::disk2, 0},
+          "same-position tie prefers smaller depth");
+    model.groups[1].positions[0] = {11, 0, 0};
+    pick = pick_our_galaxy_point(model, transform, preview, camera, 128, 128, 64, 64, 1);
+    check(pick && pick->id == first, "point behind camera is not selectable");
+    check(!our_galaxy_point_position(model, {OurGalaxyPointGroup::disk1, 0}, preview, transform) &&
+          !our_galaxy_point_position(model, {OurGalaxyPointGroup::disk1, 3}, preview, transform) &&
+          !our_galaxy_point_position(model, {static_cast<OurGalaxyPointGroup>(100), 0}, preview, transform),
+          "invalid positions, ordinals and groups are rejected");
+
+    OurGalaxyModel sampled;
+    sampled.groups[0].positions.resize(1501, {nan, 0, 0});
+    sampled.groups[0].positions[1] = {0, 0, 0};
+    check(!our_galaxy_point_position(sampled, first, preview, transform) &&
+          our_galaxy_point_position(sampled, first, complete, transform),
+          "preview skips ordinal while complete retains it");
+    check(!pick_our_galaxy_point(sampled, transform, preview, camera, 128, 128, 64, 64, 8),
+          "preview cannot pick omitted point");
+    for (auto& map : sampled.maps) {
+        map.width = 512; map.height = 512; map.values.assign(512 * 512, 0);
+    }
+    const auto transformed = our_galaxy_point_position(sampled, first, complete, transform);
+    const auto projected = GalaxyProjector(camera, 128, 128).project(*transformed);
+    check(projected.has_value(), "complete point projects");
+    pick = pick_our_galaxy_point(sampled, transform, complete, camera, 128, 128,
+                                 projected->x, projected->y, 1);
+    check(pick && pick->id == first, "complete selection retains original ordinal");
+    OurGalaxyRadiativeModel radiative(sampled);
+    check(our_galaxy_point_visible(sampled, first, transform, complete, camera, 128, 128, &radiative) &&
+          !our_galaxy_point_visible(sampled, first, transform, complete, camera, 128, 128, nullptr) &&
+          !our_galaxy_point_visible(sampled, first, transform, preview, camera, 128, 128, nullptr),
+          "visibility follows mode and available radiative model");
+
+    OurGalaxyModel coordinates;
+    coordinates.groups[0].positions.push_back({0, 1, -1});
+    const OurGalaxyPointId id{OurGalaxyPointGroup::disk1, 0};
+    const auto raw = our_galaxy_point_position(coordinates, id, preview, transform);
+    const auto converted = our_galaxy_point_position(coordinates, id, complete, transform);
+    check(raw && converted && raw->y_pc == 1 && raw->z_pc == -1 &&
+          std::abs(converted->y_pc + 0.7) < 1e-9 && converted->z_pc == 1,
+          "preview uses raw position and complete uses transformed position");
+    check(!pick_our_galaxy_point(model, transform, preview, camera, 128, 128, -1, 64, 8),
+          "click outside viewport is ignored");
+    rejects([&] { (void)pick_our_galaxy_point(model, transform, preview, camera, 128, 128, nan, 64, 8); });
+    rejects([&] { (void)pick_our_galaxy_point(model, transform, preview, camera, 128, 128, 64, 64, -1); });
+    rejects([&] { (void)pick_our_galaxy_point(model, transform, static_cast<OurGalaxyPointDisplay>(99),
+                                               camera, 128, 128, 64, 64, 8); });
+    check(!pick_our_galaxy_point(model, transform, preview, camera, 128, 128, 64, 64, 8,
+                                 [] { return true; }), "early cancellation returns no selection");
+    sampled.groups[0].positions.assign(1000, {0, 0, 0});
+    int calls = 0;
+    check(!pick_our_galaxy_point(sampled, transform, preview, camera, 128, 128, 64, 64, 8,
+                                 [&] { return ++calls >= 3; }),
+          "cancellation while scanning discards candidates");
+}
 void real_model(const char* path) {
     const auto model = load_our_galaxy_model(path);
     const auto bitmap = render_our_galaxy_points(model, settings(),
@@ -123,7 +195,7 @@ void real_model(const char* path) {
 }
 }
 int main(int argc, char** argv) {
-    try { transform_and_render(); invalid_and_cancel(); point_absorption(); if (argc > 1) real_model(argv[1]); }
+    try { transform_and_render(); invalid_and_cancel(); point_absorption(); point_selection(); if (argc > 1) real_model(argv[1]); }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     std::cout << "OurGalaxy renderer: " << checks << " checks passed\n";
 }
