@@ -25,7 +25,7 @@
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
 - 公開状態: 最初の 6 行が `submitted-now` の予定、以降は `local-only`。投稿操作そのものの承認・実行状態ではない。
-- 実装状態: 第 1・第 2 単位は `implemented`、第 3 単位は `implemented`、第 4 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
+- 実装状態: `implemented` は行の範囲を実装・検証済み、`partial` は一部を実装済みで行の受入条件が残る、`in-progress` は現在統合中、`not-started` は今回の作業未着手を表す。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
 - 独立レビュー: 全行とも、親までの差分を前提に、その行に書いた機能と限定検証だけで判断可能かを着手時に確認する。以下の `yes*` は計画上の判定であり、実コードを調査した上で要件が満たされなければ branch を作らず行を修正する。
 - 対象 seam: 対応機能の domain・描画・GUI/Lua 契約およびその回帰試験。各行に関連する境界だけを変更し、他機能の機械的変更は必要最小限に留める。
@@ -38,11 +38,11 @@
 | 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | OurGalaxy 描画点を出典内 ID で個別選択し、注視追従する | 群・原順、preview/complete と可視性、重複・選択順位、取消・モデル交換、透明、追従解除、実データ、旧版比較 | `submitted-now` | `implemented` | yes* |
 | 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-03 | 同梱通常版原典に基づく SDSS 銀河の分類色を preview と完成画像へ反映する | eClass 境界・無効値、原典参照色、描画画素、実データ分布 | `submitted-now` | `implemented` | yes* |
 | 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `implemented` | yes* |
-| 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `in-progress` | yes* |
-| 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `in-progress` | yes* |
-| 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `in-progress` | yes* |
-| 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `not-started` | yes* |
-| 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `not-started` | yes* |
+| 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `partial` | yes* |
+| 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `partial` | yes* |
+| 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `partial` | yes* |
+| 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `partial` | yes* |
+| 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `partial` | yes* |
 | 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `not-started` | yes* |
 | 7 | `codex/mitaka-07-small-body-orbits` | `codex/mitaka-06-terrain-continuity` | P1-4: OBJ-09, OBJ-10 | 37 byte 原記録の隔離・調査と、根拠のある形式の小惑星・TNO 軌道描画 | 36/37 byte の区別、不正長・全原行・重複保持、37 byte の採用根拠が確認できるまで位置評価しない、36 byte の位置・選択・軌道・標本上限と実データ | `local-only` | `not-started` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `not-started` | yes* |
@@ -191,3 +191,12 @@
 - テスト可能: **YES**。半径境界、raw ID と名前表の衝突、曖昧 ID、実データ、Lua 対象と選択を検証する。
 - 作業都合のみの分割ではない: **YES**。銀河系点群の可視性とは独立したカタログ識別契約である。
 - 対象外: atlas と形態コードの根拠不明の画像対応、旧 Plus との未比較部分。第 4e 全体の完成とは扱わない。
+
+## 第 4f 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。遠方銀河点群の描画順と、その順序に対応する選択を揃える。
+- named seam: **YES**。`GalaxyOverlay` と銀河点群の投影・選択。
+- 依存: **YES**。第 4e 単位までの共通視点と描画を使用する。
+- 独立検証: **YES**。preview と完成後のレイヤー順、重なる点の可視性・描画順・選択を検証する。
+- 作業都合のみの分割ではない: **YES**。近傍銀河の対象 ID や天の川の透明度とは別の描画と選択の契約である。
+- 対象外: 同一 pixel 内の異なる投影位置、アンチエイリアス、異なるレイヤー間の完全な可視性一致。

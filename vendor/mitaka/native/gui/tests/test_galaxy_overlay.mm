@@ -122,52 +122,82 @@ NSPoint position(const GalaxySpatialModel& model, GalaxySpatialRecordId id, cons
     return NSMakePoint(point->x, point->y);
 }
 void previewAndCompleteUseSameSdssColor() {
+    for (bool reverse : {false, true}) {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        auto snapshot = evaluate_sdss_spatial_snapshot(std::make_shared<const SdssSpatialModel>(
+            std::vector<SdssSpatialSource>{{SdssKind::galaxy, "colors", {
+                {{0, 0}, reverse ? 2.0f : 1.0f, reverse ? -0.26f : 0.42f},
+                {{0, 0}, reverse ? 1.0f : 2.0f, reverse ? 0.42f : -0.26f},
+                {{0, 0}, 1, std::numeric_limits<float>::quiet_NaN()},
+                {{0, 0}, 1, std::numeric_limits<float>::infinity()},
+                {{0, 0}, 1, -std::numeric_limits<float>::infinity()}}}}));
+        const auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{GalaxySdssSource{snapshot, 0}});
+        [overlay setModel:model];
+        const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+        const GalaxySpatialRecordId id{GalaxySpatialFamily::sdss_galaxy, 0, 0};
+        const NSPoint point = position(*model, id, camera);
+        const auto visibleColor = galaxy_point_color(*model, {GalaxySpatialFamily::sdss_galaxy, 0, 1});
+        const auto checkPick = [&] {
+            const auto picked = std::make_shared<PickResult>();
+            [overlay pickAtPoint:point camera:camera completion:^(std::optional<GalaxySpatialRecordId> selection) {
+                picked->picked = selection; picked->called = true;
+            }];
+            waitFor([&] { return picked->called; }, "color fixture pick did not finish");
+            check(picked->picked && picked->picked->ordinal == 1, "visible overlapping eClass row must be selected");
+        };
+        const auto matchingPixel = [&](NSBitmapImageRep *image) {
+            for (int y = int(point.y) - 2; y <= int(point.y) + 2; ++y)
+                for (int x = int(point.x) - 2; x <= int(point.x) + 2; ++x) {
+                    NSColor *pixel = [[image colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+                    if (pixel.alphaComponent > 0.95 && std::abs(pixel.redComponent - visibleColor.red) < 0.02 &&
+                        std::abs(pixel.greenComponent - visibleColor.green) < 0.02 &&
+                        std::abs(pixel.blueComponent - visibleColor.blue) < 0.02) return true;
+                }
+            return false;
+        };
+        NSBitmapImageRep *preview = drawImage(overlay, camera);
+        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview && matchingPixel(preview),
+              "preview must draw the last overlapping eClass color");
+        for (std::size_t i = 2; i < 5; ++i)
+            check(![overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, i}],
+                  "nonfinite eClass must not appear in preview");
+        checkPick();
+        waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+                "color image did not complete");
+        check(matchingPixel(drawImage(overlay, camera)), "complete image must match preview overlapping eClass color");
+        for (std::size_t i = 2; i < 5; ++i)
+            check(![overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, i}],
+                  "nonfinite eClass must not appear in complete image or be selectable");
+        check([overlay diagnostics].displayed_drawn == 2, "nonfinite eClass must not prevent valid rows rendering");
+        checkPick();
+    }
+}
+void previewAndCompleteLayerOrder() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
     GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
     auto snapshot = evaluate_sdss_spatial_snapshot(std::make_shared<const SdssSpatialModel>(
-        std::vector<SdssSpatialSource>{{SdssKind::galaxy, "colors", {
-            {{0, 0}, 1, 0.42f}, {{0, 0}, 1, -0.26f},
-            {{0, 0}, 1, std::numeric_limits<float>::quiet_NaN()},
-            {{0, 0}, 1, std::numeric_limits<float>::infinity()},
-            {{0, 0}, 1, -std::numeric_limits<float>::infinity()}}}}));
-    const auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{GalaxySdssSource{snapshot, 0}});
+        std::vector<SdssSpatialSource>{{SdssKind::galaxy, "layer", {{{0, 0}, 1, -0.26f}}}}));
+    auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{GalaxySdssSource{snapshot, 0}});
+    auto hip = std::make_shared<HipSpatialModel>();
+    hip->points.push_back({0, 1, {0, 0, 0}});
     [overlay setModel:model];
+    [overlay setHipModel:hip];
     const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
-    const GalaxySpatialRecordId id{GalaxySpatialFamily::sdss_galaxy, 0, 0};
-    const NSPoint point = position(*model, id, camera);
-    const auto checkPick = [&] {
-        const auto picked = std::make_shared<PickResult>();
-        [overlay pickAtPoint:point camera:camera completion:^(std::optional<GalaxySpatialRecordId> selection) {
-            picked->picked = selection; picked->called = true;
-        }];
-        waitFor([&] { return picked->called; }, "color fixture pick did not finish");
-        check(picked->picked && picked->picked->ordinal < 2, "nonfinite eClass must not be selected");
+    const auto blueAtCenter = [](NSBitmapImageRep *image) {
+        double blue = 0;
+        for (int y = 254; y <= 258; ++y) for (int x = 254; x <= 258; ++x) {
+            NSColor *pixel = [[image colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+            if (pixel.alphaComponent > .95) blue = std::max(blue, double(pixel.blueComponent));
+        }
+        return blue;
     };
-    const auto matchingPixel = [&](NSBitmapImageRep *image) {
-        for (int y = int(point.y) - 2; y <= int(point.y) + 2; ++y)
-            for (int x = int(point.x) - 2; x <= int(point.x) + 2; ++x) {
-                NSColor *pixel = [[image colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
-                if (pixel.alphaComponent > 0.95 && std::abs(pixel.redComponent - 1.0) < 0.02 &&
-                    std::abs(pixel.greenComponent - 0.864829004) < 0.02 &&
-                    std::abs(pixel.blueComponent - 0.444727212) < 0.02) return true;
-            }
-        return false;
-    };
-    NSBitmapImageRep *preview = drawImage(overlay, camera);
-    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview && matchingPixel(preview),
-          "preview must draw the last overlapping eClass color");
-    for (std::size_t i = 2; i < 5; ++i)
-        check(![overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, i}],
-              "nonfinite eClass must not appear in preview");
-    checkPick();
+    auto preview = drawImage(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "must inspect preview layer order");
+    check(blueAtCenter(preview) > .65, "preview HIP must blend over the galaxy layer");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
-            "color image did not complete");
-    check(matchingPixel(drawImage(overlay, camera)), "complete image must match preview overlapping eClass color");
-    for (std::size_t i = 2; i < 5; ++i)
-        check(![overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, i}],
-              "nonfinite eClass must not appear in complete image or be selectable");
-    check([overlay diagnostics].displayed_drawn == 2, "nonfinite eClass must not prevent valid rows rendering");
-    checkPick();
+            "layer fixture did not complete");
+    check(blueAtCenter(drawImage(overlay, camera)) > .55, "complete HIP must blend over the galaxy layer");
 }
 void radiativeFailureKeepsOtherLayers() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -511,7 +541,7 @@ void tests() {
     check(state.preview_rows > 0 && state.preview_rows <= 6000, "preview row budget");
     check(state.displayed_drawn > 0, "preview drawn count");
 
-    for (GalaxySpatialRecordId id : {GalaxySpatialRecordId{GalaxySpatialFamily::sdss_galaxy, 0, 0},
+    for (GalaxySpatialRecordId id : {GalaxySpatialRecordId{GalaxySpatialFamily::sdss_galaxy, 0, 11997},
              {GalaxySpatialFamily::sdss_quasar, 1, 0}, {GalaxySpatialFamily::globular_cluster, 2, 0},
              {GalaxySpatialFamily::nearby_galaxy, 3, 0}}) {
         check([overlay isRecordDisplayed:id], "sampled source must be displayed");
@@ -582,6 +612,7 @@ void tests() {
     check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "new model must not reuse old image");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "replacement model did not converge");
+    previewAndCompleteLayerOrder();
     radiativeFailureKeepsOtherLayers();
     visibilityControls();
     transparentOurGalaxyIsNotSelectable();

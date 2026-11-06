@@ -153,8 +153,42 @@ void pick_and_selection_tests() {
         if (mask == 0) check(!selected, "no visible family cannot pick");
         else {
             const std::size_t expected = mask & 8 ? 3 : mask & 4 ? 2 : mask & 2 ? 1 : 0;
-            check(selected && selected->source_index == expected && selected->ordinal == 0,
-                  "family flags, nearest depth, original tie order");
+            check(selected && selected->source_index == expected &&
+                  selected->ordinal == (expected == 2 ? 1u : 0u),
+                  "family flags, nearest depth, last overlapping row");
+        }
+    }
+    const auto overlap = snapshot({
+        {SdssKind::galaxy, "galaxy", {sdss()}},
+        {SdssKind::quasar, "quasar", {sdss()}}});
+    const GalaxySpatialModel overlapping({GalaxySdssSource{overlap, 0}, GalaxySdssSource{overlap, 1}});
+    const auto top = pick_galaxy_spatial_row(overlapping, projector, {}, 400, 300, 0);
+    check(top && top->family == GalaxySpatialFamily::sdss_quasar && top->ordinal == 0,
+          "exact overlap selects the last visible source");
+    const auto hiddenTop = pick_galaxy_spatial_row(overlapping, projector, {true, false, true, true}, 400, 300, 0);
+    check(hiddenTop && hiddenTop->family == GalaxySpatialFamily::sdss_galaxy && hiddenTop->ordinal == 0,
+          "hidden overlapping source does not replace visible source");
+    // 同じ視線上の異なる深度の点は、前後にかかわらず後描きが画面に残る。
+    for (bool reverse : {false, true}) {
+        const auto depths = snapshot({
+            {SdssKind::galaxy, "depth", {sdss(0, 0, reverse ? 2 : 1), sdss(0, 0, reverse ? 1 : 2)}},
+            {SdssKind::quasar, "depth-quasar", {sdss(0, 0, reverse ? 2 : 1)}}});
+        const GalaxySpatialModel same_source({GalaxySdssSource{depths, 0}});
+        const GalaxySpatialModel cross_source({GalaxySdssSource{depths, 0}, GalaxySdssSource{depths, 1}});
+        const auto first = projector.project(*same_source.row({GalaxySpatialFamily::sdss_galaxy, 0, 0}).position);
+        const auto second = projector.project(*same_source.row({GalaxySpatialFamily::sdss_galaxy, 0, 1}).position);
+        check(first && second && first->x == second->x && first->y == second->y && first->depth_pc != second->depth_pc,
+              "fixture has exact projected overlap and different depths");
+        for (double offset : {0.0, 4.0}) {
+            const auto row = pick_galaxy_spatial_row(same_source, projector, {}, 400 + offset, 300, 8);
+            check(row && row->ordinal == 1, "last overlapping row selected regardless of depth");
+            const auto source = pick_galaxy_spatial_row(cross_source, projector, {}, 400 + offset, 300, 8);
+            check(source && source->family == GalaxySpatialFamily::sdss_quasar,
+                  "last overlapping source selected regardless of depth");
+            const auto hidden = pick_galaxy_spatial_row(cross_source, projector,
+                {true, false, true, true}, 400 + offset, 300, 8);
+            check(hidden && hidden->family == GalaxySpatialFamily::sdss_galaxy && hidden->ordinal == 1,
+                  "hidden source cannot replace visible overlapping row");
         }
     }
     check(!pick_galaxy_spatial_row(*model, projector, {}, 500, 300, 1), "outside pick radius");
@@ -168,7 +202,7 @@ void pick_and_selection_tests() {
     calls = 0;
     const auto complete = pick_galaxy_spatial_row(many, projector, {}, 400, 300, 1,
         [&] { ++calls; return false; });
-    check(complete && complete->ordinal == 0 && calls == 7, "pick checks all batches and completion");
+    check(complete && complete->ordinal == 1024 && calls == 7, "pick checks all batches and completion");
     calls = 0;
     check(!pick_galaxy_spatial_row(many, projector, {}, 400, 300, 1,
         [&] { return ++calls == 7; }), "pick discards completed candidate when cancelled");

@@ -143,6 +143,7 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     if (!projector.contains({x, y, 0})) return std::nullopt;
     std::optional<GalaxySpatialRecordId> nearest;
     double nearest_distance = radius, nearest_depth = std::numeric_limits<double>::infinity();
+    double nearest_x = 0, nearest_y = 0;
     for (std::size_t source = 0; source < model.sources().size(); ++source) {
         if (should_cancel && should_cancel()) return std::nullopt;
         const auto family = model.family(source);
@@ -157,10 +158,12 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
             if (!point || !projector.contains(*point)) continue;
             const double distance = std::hypot(point->x - x, point->y - y);
             if (distance > nearest_distance || (nearest && distance == nearest_distance &&
-                point->depth_pc >= nearest_depth)) continue;
+                point->depth_pc >= nearest_depth &&
+                (point->x != nearest_x || point->y != nearest_y))) continue;
             nearest = id;
             nearest_distance = distance;
             nearest_depth = point->depth_pc;
+            nearest_x = point->x; nearest_y = point->y;
         }
     }
     return should_cancel && should_cancel() ? std::nullopt : nearest;

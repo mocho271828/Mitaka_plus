@@ -321,6 +321,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 selected.galaxy = pick_galaxy_spatial_row(*model, projector, request.visibility, point.x, point.y, 8, cancelled);
             } else if (model && galaxyDisplayed && projector.contains({point.x, point.y, 0})) {
                 double best = 8, depth = std::numeric_limits<double>::infinity();
+                double bestX = 0, bestY = 0;
                 forPreviewRows(*model, request.visibility, [&](GalaxySpatialRecordId id) {
                     if (cancelled()) return false;
                     const auto row = model->row(id);
@@ -328,8 +329,10 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     const auto projected = projector.project(*row.position);
                     if (!projected || !projector.contains(*projected)) return true;
                     const double distance = std::hypot(projected->x - point.x, projected->y - point.y);
-                    if (distance <= best && (!selected.galaxy || distance < best || projected->depth_pc < depth)) {
+                    if (distance <= best && (!selected.galaxy || distance < best || projected->depth_pc < depth ||
+                        (projected->x == bestX && projected->y == bestY))) {
                         selected.galaxy = id; best = distance; depth = projected->depth_pc;
+                        bestX = projected->x; bestY = projected->y;
                     }
                     return true;
                 });
@@ -431,6 +434,32 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         // 完成画像が古い視点を指す間は、現在のカメラで間引いた位置を即時投影する。
         // 完成画像をそのまま残すと移動中の天体位置が実際の視点と一致しない。
         const GalaxyProjector projector(camera, rect.size.width, rect.size.height);
+        std::array<GalaxyPointColor, 8> cachedPointColors{};
+        __strong NSColor *cachedNativeColors[8] = {};
+        std::size_t cachedColorCount = 0;
+        if (_model) forPreviewRows(*_model, _visibility, [&](GalaxySpatialRecordId id) {
+            ++_diagnostics.preview_rows;
+            const auto row = _model->row(id);
+            if (!row.position) return true;
+            const auto point = projector.project(*row.position);
+            if (point && projector.contains(*point)) {
+                const auto color = galaxy_point_color(*_model, id);
+                std::size_t index = 0;
+                while (index < cachedColorCount && (cachedPointColors[index].red != color.red ||
+                       cachedPointColors[index].green != color.green || cachedPointColors[index].blue != color.blue)) ++index;
+                if (index == cachedColorCount && index < cachedPointColors.size()) {
+                    cachedPointColors[index] = color;
+                    cachedNativeColors[index] = [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
+                    ++cachedColorCount;
+                }
+                NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
+                    : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
+                [nativeColor setFill];
+                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
+                ++_diagnostics.displayed_drawn;
+            }
+            return true;
+        });
         const float previewOurAlpha = _ourGalaxyModel && _ourGalaxyVisible ? previewOurGalaxyAlpha(camera) : 0;
         if (previewOurAlpha > 0) {
             [NSGraphicsContext saveGraphicsState];
@@ -464,37 +493,12 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             for (std::size_t index = 0; index < points.size(); index += step) {
                 const auto point = projector.project(points[index].position);
                 if (point && projector.contains(*point)) {
-                    NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
+                    NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5),
+                                             NSCompositingOperationSourceOver);
                     ++_diagnostics.hip_drawn;
                 }
             }
         }
-        std::array<GalaxyPointColor, 8> cachedPointColors{};
-        __strong NSColor *cachedNativeColors[8] = {};
-        std::size_t cachedColorCount = 0;
-        if (_model) forPreviewRows(*_model, _visibility, [&](GalaxySpatialRecordId id) {
-            ++_diagnostics.preview_rows;
-            const auto row = _model->row(id);
-            if (!row.position) return true;
-            const auto point = projector.project(*row.position);
-            if (point && projector.contains(*point)) {
-                const auto color = galaxy_point_color(*_model, id);
-                std::size_t index = 0;
-                while (index < cachedColorCount && (cachedPointColors[index].red != color.red ||
-                       cachedPointColors[index].green != color.green || cachedPointColors[index].blue != color.blue)) ++index;
-                if (index == cachedColorCount && index < cachedPointColors.size()) {
-                    cachedPointColors[index] = color;
-                    cachedNativeColors[index] = [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
-                    ++cachedColorCount;
-                }
-                NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
-                    : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
-                [nativeColor setFill];
-                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
-                ++_diagnostics.displayed_drawn;
-            }
-            return true;
-        });
         if (!_status) _status = @"銀河: 移動中の間引き表示（全件を描画中）";
         _diagnostics.displayed = *_requested;
         _diagnostics.display = GalaxyOverlayDisplay::preview;
