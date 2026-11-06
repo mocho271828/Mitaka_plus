@@ -11,6 +11,19 @@ NSString *string(const std::string& value) {
 }
 }
 
+@interface CatalogBrowserTableView : NSTableView
+@end
+
+@implementation CatalogBrowserTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    const NSInteger row = [self rowAtPoint:point];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return self.menu;
+}
+@end
+
 @implementation CatalogBrowserEntry
 @end
 
@@ -52,7 +65,7 @@ NSString *string(const std::string& value) {
         _kind.action = @selector(filter:);
         NSStackView *filters = [NSStackView stackViewWithViews:@[_search, _kind]];
         filters.spacing = 10;
-        _table = [[NSTableView alloc] init];
+        _table = [[CatalogBrowserTableView alloc] init];
         for (NSString *identifier in @[@"title", @"details"]) {
             NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:identifier];
             column.title = [identifier isEqualToString:@"title"] ? @"天体" : @"座標・分類";
@@ -71,6 +84,11 @@ NSString *string(const std::string& value) {
         _table.delegate = self;
         _table.target = self;
         _table.doubleAction = @selector(center:);
+        NSMenu *contextMenu = [[NSMenu alloc] initWithTitle:@"天体"];
+        NSMenuItem *selectItem = [contextMenu addItemWithTitle:@"選択" action:@selector(select:) keyEquivalent:@""];
+        NSMenuItem *centerItem = [contextMenu addItemWithTitle:@"選択して中央に表示" action:@selector(center:) keyEquivalent:@""];
+        selectItem.target = centerItem.target = self;
+        _table.menu = contextMenu;
         _table.usesAlternatingRowBackgroundColors = YES;
         _table.rowHeight = 24;
         _table.allowsMultipleSelection = NO;

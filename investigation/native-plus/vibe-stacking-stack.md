@@ -67,8 +67,8 @@
 | 8e | `codex/mitaka-p13-integration` | `codex/mitaka-05b-horizon-integrated` | P1-3: OBJ-06 | 基準球の外縁で画素描画と選択・遮蔽を一致させる | 内外画素・画素端クリック、既存地形選択、実データと 5 種の make | `local-only` | `implemented` | yes* |
 | 8f | `codex/mitaka-surface-session-p13` | `codex/mitaka-p13-integration` | P1-1: CAM-03, P3: STATE-01 | 停止中の地表位置・姿勢と画角を状態保存と復元に接続する | JSON v9 の往復と旧状態、異常値の事前拒否、実データ、描画と地形更新 | `local-only` | `partial` | yes* |
 | 7c | `codex/mitaka-p14-format-integration` | `cab9b90` | P1-4: OBJ-09, OBJ-10 | 同梱個別形式の a 指定楕円軌道を評価・描画し、既存の離心近点角による標本化と統合する | 全実データ・両形式の高離心率・大きな平均近点角・地上選択、37 byte 拒否、旧版差異 | `local-only` | `partial` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-surface-session-p13` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
-| 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-surface-session-p13` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `partial` | yes* |
+| 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `partial` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |
 | 16 | `codex/mitaka-16-surface-click` | `codex/mitaka-15-home-navigation` | P2: CAM-12 | 地表ダブルクリックによる地点移動を実現する | 球面端・極、非地球、クリックと移動先の一致 | `local-only` | `not-started` | yes* |
@@ -319,3 +319,9 @@
 - 依存と範囲: **YES**。AppKit と既存 Lua helper を利用し、新規ライブラリは不要。
 - 作業都合のみの分割ではない: **YES**。座標 API は含めない。統合後は地表 3D の選択にも反映する。
 - 状態: `local-only`、CAM-07 は `partial`。座標 API と旧版比較は残る。
+
+## CAM-08 天体ブラウザ右クリックの独立単位
+
+- レビュー対象は天体ブラウザ検索結果のコンテキストメニューとその選択操作で、既存の選択・中央表示処理に委譲する。統一階層や別ブラウザは含まない。
+- 並行作業のため基点は `a8b4a65`。統合作業の親は `cab9b90`。統合基点の build・test・data-test・reference-test・smoke は成功。
+- 右クリック行、空白、古い検索結果と二つの操作を対象試験で検証する。旧版比較と実画面での対話確認は未実施。

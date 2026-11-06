@@ -84,12 +84,36 @@ void runTests() {
     require(table.numberOfRows == 2, "source replacement invalidates work referencing the previous catalog");
     title = [controller tableView:table objectValueForTableColumn:table.tableColumns.firstObject row:0];
     require([title isEqualToString:@"SDSS QSO 1"], "display references resolve against the active shared source");
+    __block unsigned contextActions = 0;
+    controller.chooseObject = ^(CatalogBrowserEntry *entry, BOOL centered) {
+        require(entry.kind == CatalogObjectQuasar && entry.identifier == 1, "context action lost clicked row identity");
+        selectedID = entry.identifier; didCenter = centered; ++contextActions;
+    };
+    [controller.window.contentView layoutSubtreeIfNeeded];
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    NSRect secondRow = [table rectOfRow:1];
+    NSPoint windowPoint = [table convertPoint:NSMakePoint(NSMidX(secondRow), NSMidY(secondRow)) toView:nil];
+    NSEvent *rightClick = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
+        modifierFlags:0 timestamp:0 windowNumber:controller.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
+    NSMenu *menu = [table menuForEvent:rightClick];
+    require(menu.numberOfItems == 2 && table.selectedRow == 1 && contextActions == 0,
+        "context menu must select clicked row without running an action");
+    NSMenuItem *selectMenuItem = [menu itemAtIndex:0], *centerMenuItem = [menu itemAtIndex:1];
+    [NSApp sendAction:selectMenuItem.action to:selectMenuItem.target from:selectMenuItem];
+    require(contextActions == 1 && selectedID == 1 && !didCenter, "context select failed");
+    [NSApp sendAction:centerMenuItem.action to:centerMenuItem.target from:centerMenuItem];
+    require(contextActions == 2 && didCenter, "context center failed");
+    windowPoint = [table convertPoint:NSMakePoint(-5, -5) toView:nil];
+    rightClick = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
+        modifierFlags:0 timestamp:0 windowNumber:controller.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
+    require([table menuForEvent:rightClick] == nil && table.selectedRow == 1, "empty-space context click changed selection");
     [controller setModel:{} extendedCatalogs:{}];
+    [NSApp sendAction:centerMenuItem.action to:centerMenuItem.target from:centerMenuItem];
+    require(contextActions == 2, "obsolete menu acted on a cleared search result");
     waitForResult(count);
     require(table.numberOfRows == 0 && !next.enabled && !select.enabled, "empty data clears results and selection");
     [controller setModel:{} extendedCatalogs:catalogs];
     waitForResult(count);
-    [controller showWindow:nil];
     [controller.window.contentView layoutSubtreeIfNeeded];
     [controller.window displayIfNeeded];
     [controller close];
