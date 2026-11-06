@@ -157,6 +157,10 @@ static double monotonicSeconds() {
     }
     return YES;
 }
+- (BOOL)forceSpaceFromHorizon:(SurfaceSite)site error:(NSString **)error {
+    if (![self beginFlightAtSite:site ascending:NO preserveLook:YES duration:0 error:error]) return NO;
+    return [self forceSurfaceMode:NO bodyIndex:nullptr error:error];
+}
 - (BOOL)descendToHorizon:(NSString **)error {
     return [self descendToHorizonWithDuration:3 error:error];
 }
@@ -175,6 +179,10 @@ static double monotonicSeconds() {
 }
 - (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error {
     if (!_hasData || _journeyActive || !_surfaceActive || _navigation.site().body_index != 3) return NO;
+    return [self ascendFromSurfaceWithDuration:duration error:error];
+}
+- (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error {
+    if (!_hasData || _journeyActive || !_surfaceActive) return NO;
     if (![self beginFlightAtSite:_navigation.site() ascending:YES preserveLook:YES duration:duration error:error]) return NO;
     if (_navigation.flying()) _exitSurfaceAfterAscent = YES;
     else {
@@ -188,6 +196,109 @@ static double monotonicSeconds() {
     if (!_surfaceActive || _navigation.site().body_index != 3) return NO;
     if (site) *site = _navigation.site();
     return YES;
+}
+- (BOOL)scriptSurfaceSite:(SurfaceSite *)site {
+    if (![self scriptPlanetariumMode]) return NO;
+    if (site) *site = _navigation.site();
+    return YES;
+}
+- (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude {
+    SurfaceSite site;
+    if (![self scriptSurfaceSite:&site]) return NO;
+    site.heading_deg = azimuth;
+    site.elevation_deg = altitude;
+    _navigation.set_site(site);
+    _camera = _navigation.camera(_bodies);
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
+}
+- (BOOL)scriptBodyEclipticPosition:(NSUInteger)index result:(Vec3 *)result {
+    if (!_hasData || index >= _bodies.size() || !result) return NO;
+    *result = j2000_equatorial_to_ecliptic(_bodies[index].position_au);
+    return YES;
+}
+- (BOOL)scriptSurfaceLookVector:(Vec3)vector position:(BOOL)isPosition result:(SurfaceSite *)result {
+    SurfaceSite site;
+    if (![self scriptSurfaceSite:&site] || !result) return NO;
+    const auto basis = solar_camera_basis(_camera);
+    if (isPosition) {
+        vector.x -= _camera.target.x + basis.outward.x * _camera.distance_au;
+        vector.y -= _camera.target.y + basis.outward.y * _camera.distance_au;
+        vector.z -= _camera.target.z + basis.outward.z * _camera.distance_au;
+    }
+    const double length = std::hypot(vector.x, vector.y, vector.z);
+    if (!std::isfinite(length) || length <= 1e-15) return NO;
+    constexpr double radians = 3.14159265358979323846 / 180.0;
+    const double h = site.heading_deg * radians, e = site.elevation_deg * radians;
+    const Vec3 forward{-basis.outward.x, -basis.outward.y, -basis.outward.z};
+    const auto combine = [](Vec3 a, double x, Vec3 b, double y) {
+        return Vec3{a.x * x + b.x * y, a.y * x + b.y * y, a.z * x + b.z * y};
+    };
+    const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
+    const Vec3 up = combine(forward, std::sin(e), basis.up, std::cos(e));
+    const Vec3 horizontal = combine(forward, std::cos(e), basis.up, -std::sin(e));
+    const Vec3 north = combine(horizontal, std::cos(h), basis.right, -std::sin(h));
+    const Vec3 east = combine(horizontal, std::sin(h), basis.right, std::cos(h));
+    const double northward = dot(vector, north), eastward = dot(vector, east);
+    // 天頂・天底は方位を決められないため現在の方位を維持する。
+    if (std::hypot(northward, eastward) > length * 1e-12)
+        site.heading_deg = std::atan2(eastward, northward) / radians;
+    site.elevation_deg = std::asin(std::clamp(dot(vector, up) / length, -1.0, 1.0)) / radians;
+    *result = site;
+    return YES;
+}
+- (BOOL)forceSurfaceMode:(BOOL)surface bodyIndex:(NSUInteger *)bodyIndex error:(NSString **)error {
+    if (!_hasData) {
+        if (error) *error = @"データ未読込のため強制切替できません。";
+        return NO;
+    }
+    if (!surface) {
+        [self stopScriptTargetTransition];
+        [self stopScriptOrientation];
+        if (_journeyActive) {
+            [self interruptFlight];
+            _journeyActive = NO;
+            _journey = InterplanetaryFlight{};
+            _physicalSpaceActive = YES;
+            [self notifyCamera];
+            if (self.navigationChanged) self.navigationChanged();
+            self.needsDisplay = YES;
+        }
+        if (_surfaceActive) {
+            [self interruptFlight];
+            _camera = _navigation.camera(_bodies);
+            _surfaceActive = NO;
+            _physicalSpaceActive = YES;
+            [self notifyCamera];
+            if (self.navigationChanged) self.navigationChanged();
+            self.needsDisplay = YES;
+        }
+        return YES;
+    }
+    if (!_selection || *_selection == 0 || _smallBodySelection || _satelliteSelection ||
+        _spacecraftSelection || _galaxySelection || _hipSelection) {
+        if (error) *error = @"強制着陸には惑星または月を対象に選択してください。";
+        return NO;
+    }
+    try {
+        const auto body = *_selection;
+        auto site = _surfaceActive && _navigation.site().body_index == body
+            ? _navigation.site() : forced_surface_site_from_camera(_camera, _bodies, body);
+        site.height_km = minimum_surface_height_km;
+        if (_journeyActive) {
+            [self interruptFlight];
+            _journeyActive = NO;
+            _journey = InterplanetaryFlight{};
+        }
+        if (![self beginFlightAtSite:site ascending:NO preserveLook:YES duration:0 error:error]) return NO;
+        [self stopScriptTargetTransition];
+        if (bodyIndex) *bodyIndex = body;
+        return YES;
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
 }
 - (void)landAtLatitude:(double)latitude longitude:(double)longitude {
     if ([self rejectSmallBodySurfaceNavigation] || [self rejectSatelliteSurfaceNavigation] || [self rejectSpacecraftSurfaceNavigation]) return;

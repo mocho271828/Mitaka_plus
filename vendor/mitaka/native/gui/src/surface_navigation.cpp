@@ -72,6 +72,41 @@ SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodie
     return candidate.site();
 }
 
+SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
+                                            std::size_t body_index) {
+    surface_body_info(body_index);
+    const auto& body = bodies.at(body_index);
+    const auto basis = solar_camera_basis(camera);
+    const auto center = j2000_equatorial_to_ecliptic(body.position_au);
+    const Vec3 offset{camera.target.x + basis.outward.x * camera.distance_au - center.x,
+                      camera.target.y + basis.outward.y * camera.distance_au - center.y,
+                      camera.target.z + basis.outward.z * camera.distance_au - center.z};
+    const double distance = std::hypot(offset.x, offset.y, offset.z);
+    if (!std::isfinite(distance)) throw std::invalid_argument("invalid camera position");
+    // 中心にいる場合は経度・緯度 0 を基準とする。
+    const Vec3 up = distance > 1e-15 ? Vec3{offset.x / distance, offset.y / distance, offset.z / distance}
+                                     : body.orientation.x_axis;
+    const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
+    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
+    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double clat = std::cos(latitude), slat = std::sin(latitude);
+    const double clon = std::cos(longitude), slon = std::sin(longitude);
+    const auto east = transform({-slon, clon, 0}, body.orientation);
+    const auto north = transform({-slat * clon, -slat * slon, clat}, body.orientation);
+    const Vec3 forward{-basis.outward.x, -basis.outward.y, -basis.outward.z};
+    const double elevation = std::asin(std::clamp(dot(forward, up), -1.0, 1.0)) / radians_per_degree;
+    const double northward = dot(forward, north), eastward = dot(forward, east);
+    // 天頂・天底では方位が定まらないので、元の右方向を用いる。
+    const double azimuth = std::hypot(northward, eastward) > 1e-12
+        ? std::atan2(eastward, northward) / radians_per_degree
+        : std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
+    SurfaceSite site{body_index, latitude / radians_per_degree, longitude / radians_per_degree,
+                     minimum_surface_height_km, azimuth, elevation};
+    SurfaceNavigation candidate;
+    candidate.set_site(site);
+    return candidate.site();
+}
+
 void SurfaceNavigation::set_site(SurfaceSite site) {
     surface_body_info(site.body_index);
     if (!std::isfinite(site.latitude_deg) || std::abs(site.latitude_deg) > 90

@@ -134,6 +134,7 @@ struct ScriptTargetAnimation {
 - (void)updateTrackedCamera;
 - (void)notifySelection;
 - (void)notifyCamera;
+- (void)changeCamera:(void (^)(mitaka::gui::SolarCamera&))change;
 - (void)zoomBy:(double)delta;
 - (void)orbitByX:(double)dx y:(double)dy;
 - (void)panByX:(double)dx y:(double)dy;

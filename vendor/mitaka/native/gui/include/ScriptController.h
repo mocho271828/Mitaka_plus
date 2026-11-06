@@ -56,6 +56,7 @@ struct ScriptSnapshot {
     std::optional<double> camera_duration;
     std::optional<int> camera_mode;
     double camera_mode_duration = 7.1;
+    int camera_zoom_mode = 2; // 同梱 option.lua は ZOOM_ALWAYS を指定する。
     std::optional<std::array<double, 4>> camera_orientation;
     std::optional<std::array<double, 3>> camera_euler;
     bool target_browser = false;
@@ -95,12 +96,12 @@ enum class ScriptActionKind {
     set_camera_duration, animate_camera_azimuth, animate_camera_altitude,
     set_camera_orientation, set_camera_euler, add_camera_euler,
     animate_camera_orientation, animate_camera_euler, animate_add_camera_euler,
-    set_camera_mode, set_camera_mode_duration
+    set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode
 };
 struct ScriptAction {
     ScriptActionKind kind;
     double number = 0;
-    bool enabled = false;
+    bool enabled = false; // set_camera_mode では距離制限を無視する force を表す。
     std::string text;
     double duration_seconds = 0;
     std::vector<std::int32_t> hips{};

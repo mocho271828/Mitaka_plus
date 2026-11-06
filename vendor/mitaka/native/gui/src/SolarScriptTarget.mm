@@ -13,6 +13,37 @@ using namespace mitaka;
 using namespace mitaka::gui;
 
 @implementation SolarSystemView (ScriptTargets)
+- (std::optional<double>)scriptTargetRadiusAU {
+    if (_selection) {
+        const auto index = *_selection;
+        const double radius = index == 0 ? 696000.0 : surface_body_info(index).radius_km;
+        return radius / astronomical_unit_km;
+    }
+    if (_ourGalaxySelected) return 15000.0 * astronomical_units_per_parsec;
+    const auto model = [_galaxyOverlay model];
+    if (!_galaxySelection || !model) return std::nullopt;
+    const auto id = *_galaxySelection;
+    const auto& source = model->sources().at(id.source_index);
+    double radius = 0;
+    if (const auto* catalog = std::get_if<PlusGlobularClusterCatalog>(&source)) {
+        radius = catalog->records.at(id.ordinal).half_light_radius_pc;
+    } else if (const auto* catalog = std::get_if<PlusNearbyGalaxyCatalog>(&source)) {
+        const auto& record = catalog->records.at(id.ordinal);
+        constexpr double pi = 3.14159265358979323846;
+        const double angle = record.angular_diameter_arcminutes * pi / 43200.0;
+        if (angle > 0 && angle < pi / 2) radius = record.distance_pc * std::tan(angle);
+    }
+    if (!std::isfinite(radius) || radius <= 0) return std::nullopt;
+    return radius * astronomical_units_per_parsec;
+}
+- (void)applyScriptZoomMode:(int)mode previousRadius:(std::optional<double>)previousRadius initialDistance:(double)initialDistance {
+    const auto radius = [self scriptTargetRadiusAU];
+    double distance = initialDistance;
+    if (mode == 2 && radius) distance = 9.0 * *radius;
+    else if (mode == 1 && radius && previousRadius && *radius > *previousRadius) distance = 9.0 * *radius;
+    // 星など大きさ不明の場合は、推測した極端なズームを避け距離を維持する。
+    [self changeCamera:^(SolarCamera& next) { next.distance_au = std::clamp(distance, 0.000005, maximum_solar_distance_au); }];
+}
 - (void)stopScriptTargetTransition {
     [_targetTimer invalidate];
     _targetTimer = nil;

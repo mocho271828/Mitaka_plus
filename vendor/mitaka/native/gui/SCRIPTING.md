@@ -23,19 +23,20 @@
 | `Time.realtime` / `Time:toggleRealtime()` | OS 時計への継続追従を取得・設定・切替。開始に失敗すると Lua エラーを返す |
 | `Time.timeInfo` / `Time:toggleTimeInfo()` | 主画面の日付欄と地平・太陽系の日時情報表示。日時・再生・時計追従は変更しない |
 | `Time:prevStep()` / `nextStep()` | 列挙値だけを変更し、`stepValue` を保持。prev は `max(step−1,0)`、next は原版の `min(step+1,9)` |
-| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.<名前>`、`Star.<HIP番号または英語固有名>`、`Asteroids.<番号または名前>`、`TNO.<番号または名前>`、`Comet.<名前>`、`Spacecraft.<名前>`、`GC.<名前>`、`Galaxy.<名前>`、`Other.OurGalaxyCenter`、`Other.OurGalaxy` を選択。一意に解決でき、位置を計算できる対象に対応。探査機は原本の DisplayName または Name に一致させる |
+| `Camera.target` | `Sun`、`Planet.Mercury`〜`Planet.Pluto`、`Satellite.<名前>`、`Star.<HIP番号または英語固有名>`、`Asteroids.<番号または名前>`、`TNO.<番号または名前>`、`Comet.<名前>`、`Spacecraft.<名前>`、`GC.<名前>`、`Galaxy.<名前>`、`Other.OurGalaxyCenter`、`Other.OurGalaxy`、`Other.M31`、`Other.M13`、`Other.M87` を選択。一意に解決でき、位置を計算できる対象に対応。探査機は原本の DisplayName または Name に一致させる |
 | `Camera:setTargetTo(target[,duration])` | 同じ対象へ非同期に移動する。省略時は `Camera.duration` 秒。移動中も惑星・月・小天体・探査機の位置を更新し、完了後は追従する |
-| `Camera:look(target)` | 地平図で太陽、地球以外の惑星、衛星、恒星、小天体、探査機、球状星団、銀河系中心、星座を視野中央へ向ける。星座は `Constel.<正式英語名>` または `Constel.<略号>`、その他は `Camera.target` と同じ指定方法を使う。地点・ズーム・選択対象を維持する |
+| `Camera:look(target)` | 地球の地平図または非地球の 3D 地表から太陽、惑星、衛星、恒星、小天体、探査機、球状星団、近傍銀河、銀河系中心、星座を視野中央へ向ける。地球の地平図から地球自身は注視できない。星座は `Constel.<正式英語名>` または `Constel.<略号>`、その他は `Camera.target` と同じ指定方法を使う。地点・ズーム・選択対象を維持する |
 | `Camera:lookTo(target[,duration])` | 同じ対象へ方位と高度を非同期補間する。秒数の省略時は `Camera.duration`。補間中は現在日時の対象方向を終点に使い、完了後の継続追従はしない |
 | `Camera.mode` / `toggleMode()` / `setModeTo(mode[, duration])` / `toggleModeTo([duration])` | `mtk.PLANETARIUM` (0) と `mtk.HIPPARCOS` (1) を切り替える。地球近傍と地平図の間に限定 |
 | `Camera.modeDuration` | モード移行の秒数。通常起動時の初期値は 7.1 秒 |
-| `Camera:getOrient()` / `setOrient(x,y,z,w)` / `setOrientTo(x,y,z,w[,duration[,smooth]])` | 太陽系の通常視点で quaternion の姿勢を取得・設定・補間する |
-| `Camera:getEuler()` / `setEuler(h,p,r)` / `addEuler(h,p,r)` と各 `To` | 太陽系の通常視点で heading・pitch・roll の取得・設定・加算・補間を行う。角度は度単位 |
+| `Camera:getOrient()` / `setOrient(x,y,z,w)` / `setOrientTo(x,y,z,w[,duration[,smooth]])` | 主画面の宇宙通常視点で quaternion の姿勢を取得・設定・補間する |
+| `Camera:getEuler()` / `setEuler(h,p,r)` / `addEuler(h,p,r)` と各 `To` | 主画面の宇宙通常視点で heading・pitch・roll の取得・設定・加算・補間を行う。角度は度単位 |
+| `Camera.zoomMode` | 対象切替時の距離調整。`mtk.ZOOM_NONE`、`ZOOM_AUTO`、`ZOOM_ALWAYS` を指定する |
 | `Camera.zoom` | ターゲットまでの距離を **パーセク** で取得・設定。GUI の AU と変換する |
-| `Camera.azimuth` | 地平ビューの中心方位を度で取得・設定。北0・東90・西−90。設定時は地平ビューへ切り替え、拡大率を維持する |
+| `Camera.azimuth` | 地表視点の中心方位を度で取得・設定。北0・東90・西−90。非地球の 3D 地表でも利用できる |
 | `Camera.duration` | カメラ補間の秒数。通常起動時の初期値は 9 秒 |
 | `Camera:setAzimuthTo(value, duration, smooth)` / `setAltitudeTo` | 方位・高度を非同期補間。`duration` 省略時は `Camera.duration`、`smooth` 省略時は true。方位は最短経路への補正をしない |
-| `Camera.altitude` | 地平ビューの中心高度を度で取得・設定。水平0・天頂90。指定範囲は −90〜90 度で、範囲外はエラーとする。設定時は地平ビューへ切り替え、拡大率を維持する |
+| `Camera.altitude` | 地表視点の中心高度を度で取得・設定。水平0・天頂90。指定範囲は −90〜90 度で、範囲外はエラーとする。非地球の 3D 地表でも利用できる |
 | `Constels.lines/bounds/labels/illusts` | 全天図・地平図の星座線・境界線・名称・2D 星座絵の真偽値 |
 | `Constels:toggleLines()` / `toggleBounds()` / `toggleLabels()` / `toggleIllusts()` | 対応する表示を切り替える |
 | `Stars.visible/labels/bayerLabels/flamsteedLabels/hipLabels` | 全天図・地平図の恒星、固有名、バイエル符号、フラムスティード番号、HIP 番号の表示。`toggle()` / `toggleLabels()` / `toggleBayerLabels()` / `toggleFlamsteedLabels()` / `toggleHipLabels()` も利用可 |
@@ -96,11 +97,15 @@
 
 恒星の `Camera.target` は `star_names_HIP.dat` の英語名を大文字小文字を区別して完全一致で解決し、複数の HIP に一致する名前は拒否する。スクリプトで指定した恒星を選択中は指定した文字列を返し、それ以外の恒星は `Star.<HIP番号>` を返す。距離は現在の 3D 恒星表示と同じく正の視差から推定し、固有運動は含まない。位置が得られない恒星は移動できない。
 
-球状星団の `GC.<名前>` は同梱カタログの英語名を大文字小文字を区別して完全一致させる（例: `GC.Terzan 1`）。銀河の `Galaxy.<名前>` は旧資料が指定する `nearby_galaxies_name.dat` の英語名と `NBG.dat` のカタログ種別・番号を照合する（例: `Galaxy.Andromeda Galaxy`、`Galaxy.Small Magellanic Cloud`）。複数の対象に一致する名前や位置がない対象は拒否する。名前表にあっても、`M62` は対応する NBG レコードがないため指定できない。旧実行ファイルが参照する別の名前表との優先順位は未確認。`Other.OurGalaxyCenter` は銀河系中心、`Other.OurGalaxy` は銀河系全体を表示し、注視時はいずれも中心を向く。中心位置と全体表示には現在の native 版の近似を使い、旧 Plus の配置や倍率との一致は未確認。`Other.M31` などは対象との対応が未確認のため未対応。
+球状星団の `GC.<名前>` は同梱カタログの英語名を大文字小文字を区別して完全一致させる（例: `GC.Terzan 1`）。銀河の `Galaxy.<名前>` は旧資料が指定する `nearby_galaxies_name.dat` の英語名と `NBG.dat` のカタログ種別・番号を照合する（例: `Galaxy.Andromeda Galaxy`、`Galaxy.Small Magellanic Cloud`）。複数の対象に一致する名前や位置がない対象は拒否する。名前表にあっても、`M62` は対応する NBG レコードがないため指定できない。旧実行ファイルが参照する別の名前表との優先順位は未確認。`Other.OurGalaxyCenter` は銀河系中心、`Other.OurGalaxy` は銀河系全体を表示し、注視時はいずれも中心を向く。中心位置と全体表示には現在の native 版の近似を使い、旧 Plus の配置や倍率との一致は未確認。`Other.M31` は NGC 224（アンドロメダ銀河）、`Other.M13` は NGC 6205（球状星団 M13）、`Other.M87` は NGC 4486（M87）へ対応付ける。旧 GUI の M87 は「おとめ座銀河団」と表示しており、中心銀河で近似している。`Other.LSS` は未対応。
+
+`Camera.zoomMode` は `ZOOM_NONE` で切替前の距離を維持し、`ZOOM_AUTO` で新旧両方の半径が判明していて新対象が大きい場合だけ距離を変更し、`ZOOM_ALWAYS` で新対象の半径が判明していれば常に距離を変更する。変更後の距離は半径の 9 倍とし、惑星・月と太陽は既存半径、球状星団は半光半径、近傍銀河はカタログの角直径と距離、銀河系は 15000 pc の仮定を使う。恒星・小天体・衛星・探査機などで大きさが不明なら距離を維持し、AUTO で旧対象の大きさが不明でも距離を維持する。旧版の距離計算式と列挙値は不明のため、距離と `NONE=0`、`AUTO=1`、`ALWAYS=2` は仮定であり、初期値 ALWAYS は同梱 option.lua に基づく。
 
 星座の `Camera:look` / `lookTo` は、一覧と同じ星座中心の赤経・赤緯を観測地点と現在日時の地平座標へ変換する。正式英語名または略号は大文字小文字を区別して完全一致させ、複数行に一致する場合は拒否する。星座への `Camera.target` は未対応。
 
-`Camera.mode` の取得・切替は地平図と太陽系表示に対応し、全天図ではエラーとなる。地表移行は地球近傍のみで、ほかの天体と `forceMode` は未対応。移行途中の表示モードは実際の画面に従うため、降下中の `toggleMode(To)` は遷移先ではなく表示中のモードを反転する。姿勢 API は太陽系の通常視点に限定し、地平図・全天図・地表・飛行中は未対応。`Camera:lookTo` の対象追従や補間方法の旧版との一致は未確認。`Camera:setTargetTo` は画面切替・手動視点操作・対象変更で停止する。天の川銀河の対象指定では即時指定時の姿勢へ補間し、それ以外の移動中は開始時の姿勢を保つ。移動距離は即時の `Camera.target` と同じ規則を用いる。旧版の `Camera.zoomMode` と移動経路の互換性は未対応・未確認である。
+非地球の 3D 地表では、`look` / `lookTo` の方向を現在の地表視点と天体固定基底から求める。星と星座は無限遠にある固定方向として扱い、天頂・天底で方位が定まらない場合は元の方位を維持する。時間補間の完了後は継続追尾しない。旧版との一致と実画面での動作は未確認。
+
+`Camera.mode` の取得・切替は地平図と太陽系表示に対応し、全天図ではエラーとなる。通常の地平図への降下は地球近傍のみ。`Camera:forceMode(mode)` は即時切替で、選択した水星〜冥王星・月に距離を問わず強制着陸できる。旧版の詳細が不明なため、着陸地点は天体中心から現在の視点に向かう方向、視線は現在の方向、ロールは地表水平を基準にする。中心の場合は緯度・経度 0 度を使う。太陽、小天体、選択可能な月以外の衛星、探査機、恒星、銀河には強制着陸できない。強制切替は進行中の移動を中断する。地球以外では太陽系の 3D 地表表示を用い、地表での Lua 方位・高度の取得・設定・時間補間に対応する。各天体の地平図は未対応。着陸中は `Camera.mode` を PLANETARIUM として返す。移行途中の表示モードは実際の画面に従うため、降下中の `toggleMode(To)` は遷移先ではなく表示中のモードを反転する。姿勢 API は主画面の宇宙通常視点に対応し、銀河表示も同じカメラを使用する。独立した銀河ブラウザ、地平図・全天図・地表・飛行中は未対応。銀河表示への姿勢反映はコード経路を確認したが、Lua 操作による実行確認と旧版との比較は未実施。`Camera:lookTo` の対象追従や補間方法の旧版との一致は未確認。`Camera:setTargetTo` は画面切替・手動視点操作・対象変更で停止する。天の川銀河の対象指定では即時指定時の姿勢へ補間し、それ以外の移動中は開始時の姿勢を保つ。移動距離は即時の `Camera.target` と同じ規則を用いる。移動経路の旧版との一致は未確認。
 
 GUI の表示プロパティはウィンドウを閉じた操作も反映する。画像保存パネルは非同期で、Lua は次の行へ進む。関数の正常終了はパネル開始までを意味し、保存・取消の結果を返さない。出力先は通常 GUI と同じ原本保護を通す。投影専用のポインタ・黒フェードは画像へ含まれない。
 

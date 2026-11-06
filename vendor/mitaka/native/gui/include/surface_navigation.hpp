@@ -32,6 +32,10 @@ struct SurfaceSite {
 SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
                                      std::size_t body_index);
 
+// 遠距離等からの強制着陸は天体中心から見た視点方向に着陸し、ロールを捨てる。
+SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
+                                            std::size_t body_index);
+
 class SurfaceNavigation {
 public:
     const SurfaceSite& site() const noexcept { return site_; }

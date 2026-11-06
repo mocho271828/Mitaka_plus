@@ -1,5 +1,15 @@
 # 検証記録
 
+## 2026-11-06: P1-5〜P1-8 の追加実装
+
+地球以外の天体でも Lua の強制的な地表・宇宙切替、地表での方位・高度の設定と補間、太陽系天体や恒星などへの注視を扱えるようにした。`Other.M31`、`Other.M13`、`Other.M87` の対象指定と、対象選択時の `zoomMode` にも対応した。M87 をおとめ座銀河団の中心として扱うこと、半径からズーム距離を求める方法、遠方からの着陸位置などは旧版での動作を確認できていないため仮定である。
+
+独立した銀河ブラウザーのカメラ、未解決の対象種別、注視完了後の継続追尾など、旧版との対応には残りがある。[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)に対応範囲を記載した。旧版との動作・描画一致は未確認。
+
+`make -j4 build` は成功した。GUI から一時 Lua を一度実行し、`ZOOM_ALWAYS` で火星を選択した際の距離調整、火星地表への `forceMode`、方位 45 度・高度 20 度の設定と読み戻し、太陽への注視と地表・選択状態の維持を確認した。火星地形は `mars_topo.dat: terrain triangle limit exceeded` の警告が出て基準球面で表示されたため、地形表示は確認できていない。他天体、時間補間、宇宙への復帰は今回未確認。
+
+ユーザーの指示に沿い、失敗注入を含む `make test` と全体の `make data-test`・`make reference-test` は実施していない。[今回の policy gate 判定](temp_gates/2026-11-06-16-32-34/)では検証 gate が NO であり、全 gate 通過ではない。新規ライブラリ依存はない。`/simplifier-lai` は利用可能な skill に存在せず、LobbyAI 専用の `simplify-lai` は適用対象外。リポジトリ全体の方針変更はなく、`IMPLEMENTATION_POLICY.md` と `policy_gates/` の原本は更新していない。
+
 ## 2026-11-05: P1-5〜P1-8 の途中実装
 
 地球の地上・宇宙間の移動と Lua mode API、投影の補間、太陽系・銀河のロール、太陽系通常視点の姿勢 API、地平図の方位・高度設定と補間を追加した。Lua 対象と地平図の注視には、恒星の HIP 番号・英語名、一意に解決でき位置を評価できる小天体・探査機・衛星・球状星団、天の川銀河などを追加した。星座の正式英語名・略号による注視にも対応する。各項目の残りは[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)を参照する。P1-5〜P1-8 の全機能の完成や旧版との一致は主張しない。

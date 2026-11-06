@@ -98,6 +98,7 @@ struct ScriptLookTarget {
     std::shared_ptr<const SmallBodySnapshot> _scriptLookSmallBodySnapshot;
     std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
     std::optional<double> _scriptCameraDuration;
+    int _scriptCameraZoomMode;
     std::optional<double> _scriptCameraModeDuration;
     std::optional<std::int32_t> _scriptStarHIP;
     std::string _scriptStarTarget;
@@ -176,6 +177,7 @@ struct ScriptLookTarget {
 - (void)surfaceNavigationChanged;
 - (void)cancelHorizonProjection;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error;
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error;
 - (void)takeOffFromHorizon:(id)sender;
 - (void)descendToHorizon:(id)sender;
 - (void)stepHour:(NSButton *)sender;

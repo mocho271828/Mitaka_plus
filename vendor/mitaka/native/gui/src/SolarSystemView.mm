@@ -111,6 +111,10 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)dealloc { [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
+- (BOOL)scriptPlanetariumMode {
+    return _surfaceActive && !_navigation.flying()
+        && _navigation.site().height_km <= minimum_surface_height_km + 1e-9;
+}
 - (BOOL)journeyActive { return _journeyActive; }
 - (BOOL)flightAnimating { return _navigation.flying() || (_journeyActive && _journey.flying()); }
 - (BOOL)showsTimeInfo { return _showsTimeInfo; }

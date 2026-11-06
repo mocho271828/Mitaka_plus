@@ -50,7 +50,7 @@ enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTi
               setTimeString, getTimeString, setLocalTime, getLocalTime, setTimeTo, setLocalTimeTo, setJDTo,
               getLocalComponentBase = 40, setLocalComponentBase = 50,
               setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, lookTarget, animateAzimuth, animateAltitude,
-              setModeTo, toggleMode, toggleModeTo, getOrient, getEuler, setOrient, setEuler, addEuler,
+              setModeTo, toggleMode, toggleModeTo, forceMode, getOrient, getEuler, setOrient, setEuler, addEuler,
               setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, toggleFlagBase = 100 };
 struct LocalTimeBinding {
     const char *property;
@@ -352,6 +352,7 @@ Reply readProperty(int object, const std::string& key) {
         if (key == "setModeTo") return method(setModeTo);
         if (key == "toggleMode") return method(toggleMode);
         if (key == "toggleModeTo") return method(toggleModeTo);
+        if (key == "forceMode") return method(forceMode);
         if (key == "getOrient") return method(getOrient);
         if (key == "getEuler") return method(getEuler);
         if (key == "setOrient") return method(setOrient);
@@ -366,6 +367,7 @@ Reply readProperty(int object, const std::string& key) {
             return numeric([current[@"cameraMode"] intValue]);
         }
         if (key == "modeDuration") return numeric([current[@"cameraModeDuration"] doubleValue]);
+        if (key == "zoomMode") return numeric([current[@"cameraZoomMode"] intValue]);
         if (key == "duration") {
             if (current[@"cameraDuration"] == NSNull.null) throw std::runtime_error("Camera.duration is not set");
             return numeric([current[@"cameraDuration"] doubleValue]);
@@ -462,6 +464,11 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         const double mode = numberAt(state, 3);
         if (mode != 0 && mode != 1) throw std::invalid_argument("Invalid Camera.mode");
         apply(ScriptActionKind::set_camera_mode, mode); return;
+    }
+    if (object == cameraObject && key == "zoomMode") {
+        const double mode = numberAt(state, 3);
+        if (mode != 0 && mode != 1 && mode != 2) throw std::invalid_argument("Invalid Camera.zoomMode");
+        apply(ScriptActionKind::set_camera_zoom_mode, mode); return;
     }
     if (object == cameraObject && key == "zoom") {
         const double distance = numberAt(state, 3) * auPerParsec;
@@ -575,11 +582,12 @@ Reply invoke(lua_State *state, int operation) {
             operation == setOrientTo ? ScriptActionKind::animate_camera_orientation :
             operation == setEulerTo ? ScriptActionKind::animate_camera_euler : ScriptActionKind::animate_add_camera_euler;
         apply(kind, 0, smooth, "", duration, {}, @[], values);
-    } else if (operation == setModeTo || operation == toggleMode || operation == toggleModeTo) {
+    } else if (operation == setModeTo || operation == toggleMode || operation == toggleModeTo || operation == forceMode) {
         if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
         const int count = lua_gettop(state) - offset;
-        const bool toggle = operation != setModeTo;
-        if ((!toggle && (count < 1 || count > 2)) || (toggle && count > (operation == toggleMode ? 0 : 1)))
+        const bool toggle = operation == toggleMode || operation == toggleModeTo;
+        if ((operation == forceMode && count != 1) || (operation == setModeTo && (count < 1 || count > 2)) ||
+            (toggle && count > (operation == toggleMode ? 0 : 1)))
             throw std::invalid_argument("Invalid Camera mode arguments");
         NSDictionary *current = snapshot();
         double mode;
@@ -589,9 +597,9 @@ Reply invoke(lua_State *state, int operation) {
         } else mode = numberAt(state, offset + 1);
         if (mode != 0 && mode != 1) throw std::invalid_argument("Invalid Camera.mode");
         const int durationIndex = offset + (toggle ? 1 : 2);
-        const double duration = operation == toggleMode ? 0 : (count >= (toggle ? 1 : 2) ? numberAt(state, durationIndex) : [current[@"cameraModeDuration"] doubleValue]);
+        const double duration = operation == toggleMode || operation == forceMode ? 0 : (count >= (toggle ? 1 : 2) ? numberAt(state, durationIndex) : [current[@"cameraModeDuration"] doubleValue]);
         if (duration < 0) throw std::invalid_argument("Camera mode duration must be nonnegative");
-        apply(ScriptActionKind::set_camera_mode, mode, false, "", duration);
+        apply(ScriptActionKind::set_camera_mode, mode, operation == forceMode, "", duration);
     } else if (operation == animateAzimuth || operation == animateAltitude) {
         if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
         const int count = lua_gettop(state) - offset;
@@ -832,6 +840,10 @@ void install(lua_State *state) {
     lua_pushinteger(state, 1); lua_setfield(state, -2, "KEEP_ORBIT");
     lua_pushinteger(state, 0); lua_setfield(state, -2, "PLANETARIUM");
     lua_pushinteger(state, 1); lua_setfield(state, -2, "HIPPARCOS");
+    // 旧定数の数値は資料にないため、識別できるよう連番を割り当てる。
+    lua_pushinteger(state, 0); lua_setfield(state, -2, "ZOOM_NONE");
+    lua_pushinteger(state, 1); lua_setfield(state, -2, "ZOOM_AUTO");
+    lua_pushinteger(state, 2); lua_setfield(state, -2, "ZOOM_ALWAYS");
     lua_setglobal(state, "mtk");
     lua_sethook(state, instructionHook, LUA_MASKCOUNT, 1000);
 }

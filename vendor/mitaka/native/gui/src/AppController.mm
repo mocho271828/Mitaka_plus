@@ -32,6 +32,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         _jd = 2451545.0;
         _timeInfoVisible = YES;
         _scriptCameraDuration = 9.0;
+        _scriptCameraZoomMode = 2;
         _radiusScaleMode = RadiusScaleMode::keep_orbit;
         _observerLatitude = 35.68;
         _observerLongitude = 139.76;
@@ -749,11 +750,30 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [self updateEnabled];
 }
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error {
+    return [self setEarthSurfaceMode:surface duration:duration force:NO error:error];
+}
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error {
     if (!std::isfinite(duration) || duration < 0) {
         if (error) *error = @"移動時間は 0 以上の有限数で指定してください。";
         return NO;
     }
+    if (force && _mode.selectedSegment == 1) {
+        NSUInteger body = NSNotFound;
+        const BOOL pending = _pendingEarthDescent;
+        _pendingEarthDescent = NO;
+        if (![_solar forceSurfaceMode:surface bodyIndex:&body error:error]) {
+            _pendingEarthDescent = pending;
+            return NO;
+        }
+        _pendingEarthDescent = surface && body == 3;
+        if (_pendingEarthDescent) {
+            _earthDescentProjectionDuration = 0;
+            [self surfaceNavigationChanged];
+        }
+        return YES;
+    }
     if (surface) {
+        if (_mode.selectedSegment == 1 && _solar.scriptPlanetariumMode) return YES;
         if (_mode.selectedSegment == 2) {
             if (_horizonProjectionTimer) [self startHorizonProjectionTo:0 duration:duration];
             return YES;
@@ -769,7 +789,11 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         return YES;
     }
     if (_mode.selectedSegment == 1) {
-        if (!_pendingEarthDescent) return YES;
+        if (!_pendingEarthDescent) {
+            if (_solar.scriptPlanetariumMode)
+                return [_solar ascendFromSurfaceWithDuration:duration error:error];
+            return YES;
+        }
         if (![_solar ascendFromEarthWithDuration:duration error:error]) return NO;
         _pendingEarthDescent = NO;
         return YES;
@@ -789,7 +813,9 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         site.longitude_deg = _observerLongitude;
         site.heading_deg = viewport.center_azimuth_deg;
         site.elevation_deg = viewport.center_altitude_deg;
-        if (![_solar takeOffFromHorizon:site duration:0 error:error]) return NO;
+        if (force) {
+            if (![_solar forceSpaceFromHorizon:site error:error]) return NO;
+        } else if (![_solar takeOffFromHorizon:site duration:0 error:error]) return NO;
         [self cancelHorizonProjection];
         _mode.selectedSegment = 1;
         [self changeMode:nil];

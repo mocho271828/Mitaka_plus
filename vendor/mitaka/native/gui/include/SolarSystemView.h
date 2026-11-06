@@ -44,6 +44,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @property(nonatomic, readonly) NSUInteger visibleBodyCount;
 @property(nonatomic, readonly) NSUInteger selectedBodyIndex;
 @property(nonatomic, readonly) BOOL surfaceNavigationActive;
+@property(nonatomic, readonly) BOOL scriptPlanetariumMode;
 @property(nonatomic, readonly) BOOL journeyActive;
 @property(nonatomic, readonly) BOOL flightAnimating;
 @property(nonatomic) BOOL showsTimeInfo;
@@ -91,6 +92,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @end
 
 @interface SolarSystemView (ScriptTargets)
+- (std::optional<double>)scriptTargetRadiusAU;
+- (void)applyScriptZoomMode:(int)mode previousRadius:(std::optional<double>)previousRadius initialDistance:(double)initialDistance;
 - (void)stopScriptTargetTransition;
 - (void)animateScriptTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
 - (BOOL)selectScriptStarTarget:(const std::string&)target error:(NSString **)error;
@@ -144,10 +147,17 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)takeOffFromEarthAtLatitude:(double)latitude longitude:(double)longitude;
 - (BOOL)takeOffFromHorizon:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)takeOffFromHorizon:(mitaka::gui::SurfaceSite)site duration:(double)duration error:(NSString **)error;
+- (BOOL)forceSpaceFromHorizon:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)descendToHorizon:(NSString **)error;
 - (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error;
+- (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)earthSurfaceSite:(mitaka::gui::SurfaceSite *)site;
+- (BOOL)scriptSurfaceSite:(mitaka::gui::SurfaceSite *)site;
+- (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude;
+- (BOOL)scriptBodyEclipticPosition:(NSUInteger)index result:(mitaka::Vec3 *)result;
+- (BOOL)scriptSurfaceLookVector:(mitaka::Vec3)vector position:(BOOL)isPosition result:(mitaka::gui::SurfaceSite *)result;
+- (BOOL)forceSurfaceMode:(BOOL)surface bodyIndex:(NSUInteger *)bodyIndex error:(NSString **)error;
 - (void)interruptFlight;
 @end
 
