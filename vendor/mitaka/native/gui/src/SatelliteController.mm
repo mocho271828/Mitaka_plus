@@ -13,6 +13,20 @@ NSString *string(const std::string& text) {
 }
 }
 
+@interface SatelliteTableView : NSTableView
+@property(nonatomic, copy) NSMenu *(^menuForRow)(NSInteger row);
+@end
+
+@implementation SatelliteTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    const NSInteger row = [self rowAtPoint:point];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return self.menuForRow ? self.menuForRow(row) : nil;
+}
+@end
+
 @implementation SatelliteController {
     std::shared_ptr<const SatelliteBrowserModel> _model;
     std::shared_ptr<const SatelliteSnapshot> _snapshot;
@@ -70,7 +84,10 @@ NSString *string(const std::string& text) {
         _summary = [NSTextField labelWithString:@"データ未読込"];
         _summary.font = [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular];
         _summary.accessibilityIdentifier = @"satellite-summary";
-        _table = [[NSTableView alloc] init];
+        SatelliteTableView *table = [[SatelliteTableView alloc] init];
+        __weak SatelliteController *weakSelf = self;
+        table.menuForRow = ^NSMenu *(NSInteger row) { return [weakSelf contextMenuForRow:row]; };
+        _table = table;
         NSArray<NSString *> *identifiers = @[@"name", @"parent", @"source", @"state", @"member"];
         NSArray<NSString *> *titles = @[@"衛星名", @"親天体", @"出典と原本内の順番", @"位置の評価", @"表示集合"];
         for (NSUInteger index = 0; index < identifiers.count; ++index) {
@@ -291,6 +308,29 @@ NSString *string(const std::string& text) {
     const NSInteger row = _table.selectedRow;
     return row >= 0 && static_cast<std::size_t>(row) < _page.rows.size() ? std::optional<std::size_t>(_page.rows[row]) : std::nullopt;
 }
+- (NSMenu *)contextMenuForRow:(NSInteger)row {
+    if (!_model || row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return nil;
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"衛星"];
+    NSMenuItem *selectItem = [menu addItemWithTitle:_select.title action:@selector(select:) keyEquivalent:@""];
+    NSMenuItem *centerItem = [menu addItemWithTitle:_center.title action:@selector(center:) keyEquivalent:@""];
+    for (NSMenuItem *item in @[selectItem, centerItem]) {
+        item.target = self;
+        item.tag = static_cast<NSInteger>(_page.rows[row]);
+        item.representedObject = @(_generation->load(std::memory_order_relaxed));
+    }
+    return menu;
+}
+- (std::optional<std::size_t>)selectedIndexForSender:(id)sender {
+    const auto index = [self selectedIndex];
+    if (![sender isKindOfClass:NSMenuItem.class]) return index;
+    NSMenuItem *item = sender;
+    // 検索・出典・選択の変更後に残ったメニューを別の衛星へ適用しない。
+    if (!index || item.tag < 0 || static_cast<std::size_t>(item.tag) != *index ||
+        ![item.representedObject isKindOfClass:NSNumber.class] ||
+        [item.representedObject unsignedLongLongValue] != _generation->load(std::memory_order_relaxed))
+        return std::nullopt;
+    return index;
+}
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)column row:(NSInteger)row {
     (void)tableView;
     if (!_model || row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return @"";
@@ -325,7 +365,10 @@ NSString *string(const std::string& text) {
     [self refreshDisplayControls];
     [self updateDetails];
 }
-- (void)choose:(BOOL)center { const auto index = [self selectedIndex]; if (index && self.chooseObject) self.chooseObject(*index, center); }
-- (void)select:(id)sender { (void)sender; [self choose:NO]; }
-- (void)center:(id)sender { (void)sender; [self choose:YES]; }
+- (void)choose:(BOOL)center sender:(id)sender {
+    const auto index = [self selectedIndexForSender:sender];
+    if (index && self.chooseObject) self.chooseObject(*index, center);
+}
+- (void)select:(id)sender { [self choose:NO sender:sender]; }
+- (void)center:(id)sender { [self choose:YES sender:sender]; }
 @end

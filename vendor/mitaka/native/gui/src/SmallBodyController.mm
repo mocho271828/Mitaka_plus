@@ -14,6 +14,20 @@ NSString *string(const std::string& text) {
 }
 }
 
+@interface SmallBodyTableView : NSTableView
+@property(nonatomic, copy) NSMenu *(^menuForRow)(NSInteger row);
+@end
+
+@implementation SmallBodyTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    const NSInteger row = [self rowAtPoint:point];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return self.menuForRow ? self.menuForRow(row) : nil;
+}
+@end
+
 @implementation SmallBodyController {
     std::shared_ptr<const SmallBodyModel> _model;
     std::shared_ptr<const SmallBodySnapshot> _snapshot;
@@ -58,7 +72,10 @@ NSString *string(const std::string& text) {
         _summary = [NSTextField labelWithString:@"データ未読込"];
         _summary.font = [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular];
         _summary.accessibilityIdentifier = @"small-body-summary";
-        _table = [[NSTableView alloc] init];
+        SmallBodyTableView *table = [[SmallBodyTableView alloc] init];
+        __weak SmallBodyController *weakSelf = self;
+        table.menuForRow = ^NSMenu *(NSInteger row) { return [weakSelf contextMenuForRow:row]; };
+        _table = table;
         NSArray<NSString *> *identifiers = @[@"name", @"source", @"state", @"member"];
         NSArray<NSString *> *titles = @[@"名称・原番号", @"出典と原本内の順番", @"位置の評価", @"表示集合"];
         for (NSUInteger index = 0; index < identifiers.count; ++index) {
@@ -359,7 +376,30 @@ NSString *string(const std::string& text) {
     _add.enabled = _remove.enabled = _display && _table.numberOfSelectedRows > 0;
     [self updateDetails];
 }
-- (void)choose:(BOOL)center { const auto index = [self selectedIndex]; if (index && self.chooseObject) self.chooseObject(*index, center); }
-- (void)select:(id)sender { (void)sender; [self choose:NO]; }
-- (void)center:(id)sender { (void)sender; [self choose:YES]; }
+- (NSMenu *)contextMenuForRow:(NSInteger)row {
+    if (row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return nil;
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"小天体"];
+    NSMenuItem *select = [menu addItemWithTitle:_select.title action:@selector(select:) keyEquivalent:@""];
+    NSMenuItem *center = [menu addItemWithTitle:_center.title action:@selector(center:) keyEquivalent:@""];
+    for (NSMenuItem *item in @[select, center]) {
+        item.target = self;
+        item.tag = static_cast<NSInteger>(_page.rows[row]);
+        item.representedObject = @(_generation->load(std::memory_order_relaxed));
+    }
+    return menu;
+}
+- (void)choose:(BOOL)center sender:(id)sender {
+    const auto index = [self selectedIndex];
+    if (!index || !self.chooseObject) return;
+    if ([sender isKindOfClass:NSMenuItem.class]) {
+        NSMenuItem *item = sender;
+        // 検索・原本の差し替え後に残った項目を、別の行へ解決しない。
+        if (![item.representedObject isKindOfClass:NSNumber.class]
+            || [item.representedObject unsignedLongLongValue] != _generation->load(std::memory_order_relaxed)
+            || item.tag != static_cast<NSInteger>(*index)) return;
+    }
+    self.chooseObject(*index, center);
+}
+- (void)select:(id)sender { [self choose:NO sender:sender]; }
+- (void)center:(id)sender { [self choose:YES sender:sender]; }
 @end

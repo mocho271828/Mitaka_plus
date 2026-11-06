@@ -23,6 +23,16 @@ NSButton *button(NSView *root, NSString *title) {
 void action(NSControl *control) {
     [NSApp sendAction:control.action to:control.target from:control];
 }
+void menuAction(NSMenuItem *item) {
+    [NSApp sendAction:item.action to:item.target from:item];
+}
+NSMenu *contextMenu(NSTableView *table, NSInteger row) {
+    const NSRect rect = [table rectOfRow:row];
+    const NSPoint point = [table convertPoint:NSMakePoint(NSMidX(rect), NSMidY(rect)) toView:nil];
+    NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:point
+        modifierFlags:0 timestamp:0 windowNumber:table.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
+    return [table menuForEvent:event];
+}
 void waitForResult(NSTextField *label) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
     while ([label.stringValue containsString:@"検索中"] && deadline.timeIntervalSinceNow > 0)
@@ -91,29 +101,71 @@ void runTests() {
     };
     [controller.window.contentView layoutSubtreeIfNeeded];
     [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
-    NSRect secondRow = [table rectOfRow:1];
-    NSPoint windowPoint = [table convertPoint:NSMakePoint(NSMidX(secondRow), NSMidY(secondRow)) toView:nil];
-    NSEvent *rightClick = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
-        modifierFlags:0 timestamp:0 windowNumber:controller.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
-    NSMenu *menu = [table menuForEvent:rightClick];
+    NSMenu *menu = contextMenu(table, 1);
     require(menu.numberOfItems == 2 && table.selectedRow == 1 && contextActions == 0,
         "context menu must select clicked row without running an action");
     NSMenuItem *selectMenuItem = [menu itemAtIndex:0], *centerMenuItem = [menu itemAtIndex:1];
-    [NSApp sendAction:selectMenuItem.action to:selectMenuItem.target from:selectMenuItem];
+    menuAction(selectMenuItem);
     require(contextActions == 1 && selectedID == 1 && !didCenter, "context select failed");
-    [NSApp sendAction:centerMenuItem.action to:centerMenuItem.target from:centerMenuItem];
+    menuAction(centerMenuItem);
     require(contextActions == 2 && didCenter, "context center failed");
-    windowPoint = [table convertPoint:NSMakePoint(-5, -5) toView:nil];
-    rightClick = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
+    NSPoint windowPoint = [table convertPoint:NSMakePoint(-5, -5) toView:nil];
+    NSEvent *rightClick = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
         modifierFlags:0 timestamp:0 windowNumber:controller.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
     require([table menuForEvent:rightClick] == nil && table.selectedRow == 1, "empty-space context click changed selection");
+
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(selectMenuItem); menuAction(centerMenuItem);
+    require(contextActions == 2, "old context menu acted on another selected source row");
+    (void)contextMenu(table, 0);
+    menuAction(selectMenuItem);
+    require(contextActions == 2, "opening another menu retargeted an old menu item");
+
+    search.stringValue = @"SDSS QSO 2"; action(search);
+    menuAction(centerMenuItem);
+    require(contextActions == 2, "context menu acted while replacement search was pending");
+    waitForResult(count);
+    require(table.numberOfRows == 1, "context regression search did not retain the clicked source");
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(selectMenuItem); menuAction(centerMenuItem);
+    require(contextActions == 2, "old context menu survived a new search for the same source row");
+    NSMenuItem *filteredCenter = [contextMenu(table, 0) itemAtIndex:1];
+    menuAction(filteredCenter);
+    require(contextActions == 3 && didCenter, "fresh filtered menu lost the original source identity");
+
+    auto reloaded = std::make_shared<ExtendedCatalogs>();
+    reloaded->quasars.resize(2);
+    [controller setModel:{} extendedCatalogs:reloaded];
+    waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(filteredCenter);
+    require(contextActions == 3, "old context menu survived a model reload with identical source indices");
+
+    auto mixed = std::make_shared<ExtendedCatalogs>();
+    mixed->galaxies.resize(2);
+    mixed->quasars.resize(2);
+    search.stringValue = @"";
+    [controller setModel:{} extendedCatalogs:mixed];
+    waitForResult(count);
+    require(table.numberOfRows == 4, "mixed catalog context fixture lost source rows");
+    NSMenuItem *galaxySelect = [contextMenu(table, 1) itemAtIndex:0];
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:3] byExtendingSelection:NO];
+    menuAction(galaxySelect);
+    require(contextActions == 3, "old context menu accepted another kind with the same source index");
+    menuAction([contextMenu(table, 3) itemAtIndex:0]);
+    require(contextActions == 4 && selectedID == 1 && !didCenter, "fresh mixed catalog menu failed");
     [controller setModel:{} extendedCatalogs:{}];
-    [NSApp sendAction:centerMenuItem.action to:centerMenuItem.target from:centerMenuItem];
-    require(contextActions == 2, "obsolete menu acted on a cleared search result");
+    menuAction(centerMenuItem);
+    require(contextActions == 4, "obsolete menu acted on a cleared search result");
     waitForResult(count);
     require(table.numberOfRows == 0 && !next.enabled && !select.enabled, "empty data clears results and selection");
     [controller setModel:{} extendedCatalogs:catalogs];
     waitForResult(count);
+    NSMenuItem *firstPageSelect = [contextMenu(table, 0) itemAtIndex:0];
+    action(next); waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(firstPageSelect);
+    require(contextActions == 4, "old context menu acted on a different page");
     [controller.window.contentView layoutSubtreeIfNeeded];
     [controller.window displayIfNeeded];
     [controller close];

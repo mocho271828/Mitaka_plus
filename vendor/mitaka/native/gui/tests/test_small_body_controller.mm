@@ -16,6 +16,15 @@ NSButton *button(NSView *root, NSString *title) {
     });
 }
 void action(NSControl *control) { [NSApp sendAction:control.action to:control.target from:control]; }
+NSMenu *contextMenu(NSTableView *table, NSInteger row) {
+    const NSRect bounds = [table rectOfRow:row];
+    const NSPoint point = row < 0 ? NSMakePoint(-5, -5) : NSMakePoint(NSMidX(bounds), NSMidY(bounds));
+    NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+        location:[table convertPoint:point toView:nil] modifierFlags:0 timestamp:0
+        windowNumber:table.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
+    return [table menuForEvent:event];
+}
+void menuAction(NSMenuItem *item) { [NSApp sendAction:item.action to:item.target from:item]; }
 void waitForResult(NSTextField *label) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
     while ([label.stringValue containsString:@"検索中"] && deadline.timeIntervalSinceNow > 0)
@@ -192,9 +201,64 @@ void tests() {
         "sampling inputs retain readable width at the minimum window size");
     require(add.bounds.size.width > 80 && remove.bounds.size.width > 80,
         "membership action labels are not collapsed by the sampling inputs");
+    search.stringValue = @""; action(search); waitForResult(count);
+    __block unsigned contextActions = 0;
+    controller.chooseObject = ^(NSUInteger index, BOOL centerView) {
+        selected = index; centered = centerView; ++contextActions;
+    };
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(2, 2)] byExtendingSelection:NO];
+    NSMenu *menu = contextMenu(table, 1);
+    require(menu.numberOfItems == 2 && table.selectedRow == 1 && table.numberOfSelectedRows == 1
+        && contextActions == 0, "context menu replaces an older multiple selection with only the clicked row");
+    NSMenuItem *selectItem = [menu itemAtIndex:0], *centerItem = [menu itemAtIndex:1];
+    require([selectItem.title isEqualToString:select.title] && [centerItem.title isEqualToString:center.title],
+        "context actions match the existing selection and centering controls");
+    menuAction(selectItem);
+    require(contextActions == 1 && selected == 1 && !centered,
+        "context select identifies the clicked unresolved source row");
+    menuAction(centerItem);
+    require(contextActions == 2 && selected == 1 && centered
+        && [details.string containsString:@"座標系・時系・軌道要素が未確定"],
+        "unevaluated context centering retains diagnostics and uses the guarded existing delegate");
+    require(contextMenu(table, -1) == nil && table.selectedRow == 1 && contextActions == 2,
+        "blank-space context clicks do not reuse the previous selection");
+    [table deselectAll:nil];
+    menuAction(centerItem);
+    require(contextActions == 2, "context action without a selected row is inert");
+    menu = contextMenu(table, 0);
+    selectItem = [menu itemAtIndex:0];
+    menuAction(selectItem);
+    require(contextActions == 3 && selected == 0 && !centered,
+        "right click selects a row when there was no previous selection");
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:4] byExtendingSelection:NO];
+    menuAction(selectItem);
+    require(contextActions == 3, "an old context action cannot act on a subsequently selected row");
+    menu = contextMenu(table, 5);
+    centerItem = [menu itemAtIndex:1];
+    search.stringValue = @"Object 1"; action(search);
+    menuAction(centerItem);
+    require(contextActions == 3 && table.numberOfRows == 0,
+        "a context action cannot reuse rows while a replacement search is pending");
+    waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(centerItem);
+    require(contextActions == 3, "filtered rows do not revive an obsolete context action");
+    menu = contextMenu(table, 0);
+    selectItem = [menu itemAtIndex:0];
+    menuAction(selectItem);
+    require(contextActions == 4 && selected == 1 && !centered,
+        "a new filtered context action resolves the current source index");
+    [controller setModel:model snapshot:frame];
+    waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(selectItem);
+    require(contextActions == 4, "source reload invalidates a menu even when the source index is unchanged");
     auto replacement = std::make_shared<SmallBodyModel>(std::make_shared<SmallBodyDataset>());
     [controller setModel:replacement snapshot:evaluate_small_body_snapshot(replacement, 2451545)];
     waitForResult(count);
+    menuAction(selectItem);
+    require(contextActions == 4 && contextMenu(table, 0) == nil,
+        "empty replacement cannot act on an old context menu or offer a new one");
     require(table.numberOfRows == 0 && !select.enabled, "visible source replacement clears old high-index selection before new dataset");
     [controller setModel:model snapshot:frame];
     [controller setDisplayModel:display];
