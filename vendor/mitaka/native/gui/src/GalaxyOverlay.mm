@@ -2,6 +2,7 @@
 #include "OurGalaxyRadiativeRenderer.h"
 #include "our_galaxy_navigation.hpp"
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <exception>
@@ -449,13 +450,27 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 }
             }
         }
-        [[NSColor colorWithSRGBRed:0.72 green:0.78 blue:0.95 alpha:0.75] setFill];
+        std::array<GalaxyPointColor, 8> cachedPointColors{};
+        __strong NSColor *cachedNativeColors[8] = {};
+        std::size_t cachedColorCount = 0;
         if (_model) forPreviewRows(*_model, _visibility, [&](GalaxySpatialRecordId id) {
             ++_diagnostics.preview_rows;
             const auto row = _model->row(id);
             if (!row.position) return true;
             const auto point = projector.project(*row.position);
             if (point && projector.contains(*point)) {
+                const auto color = galaxy_point_color(*_model, id);
+                std::size_t index = 0;
+                while (index < cachedColorCount && (cachedPointColors[index].red != color.red ||
+                       cachedPointColors[index].green != color.green || cachedPointColors[index].blue != color.blue)) ++index;
+                if (index == cachedColorCount && index < cachedPointColors.size()) {
+                    cachedPointColors[index] = color;
+                    cachedNativeColors[index] = [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
+                    ++cachedColorCount;
+                }
+                NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
+                    : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
+                [nativeColor setFill];
                 NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
                 ++_diagnostics.displayed_drawn;
             }
