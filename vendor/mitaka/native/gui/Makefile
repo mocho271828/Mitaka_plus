@@ -570,3 +570,11 @@ terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_
 	"$(BUILD_DIR)/test_terrain_landing_controller" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_render" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_generation" "$${DATA_ROOT:?Set DATA_ROOT}"
+
+$(BUILD_DIR)/test_plus_camera_orientation: tests/test_plus_camera_orientation.cpp include/plus_camera_orientation.hpp
+	mkdir -p "$(BUILD_DIR)"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(LDFLAGS) -o "$@"
+.PHONY: plus-camera-orientation-test
+plus-camera-orientation-test: $(BUILD_DIR)/test_plus_camera_orientation
+	"$(BUILD_DIR)/test_plus_camera_orientation"
+test: plus-camera-orientation-test

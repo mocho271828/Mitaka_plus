@@ -1222,6 +1222,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 auto viewport = [self scriptCameraViewport];
                 double start = azimuth ? viewport.center_azimuth_deg : viewport.center_altitude_deg;
@@ -1250,6 +1252,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 _scriptAzimuthAnimation.reset();
                 auto viewport = [self scriptCameraViewport];
@@ -1270,6 +1274,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 _scriptAltitudeAnimation.reset();
                 auto viewport = [self scriptCameraViewport];

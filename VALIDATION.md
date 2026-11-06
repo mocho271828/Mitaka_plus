@@ -300,3 +300,9 @@ gate は `temp_gates/` にコピーし、判定条件をチェックして YES �
 負標高の地球・火星から宇宙に出て同じ地点へ戻る際、保存した地形高を再利用し、地形の再取得中も基準球への一時的な跳ねを防ぐ。天体・データルート・倍率が一致し、地点の単位球上の差が 2e-11 以下の場合に同一地点とみなす。極付近は緯度を atan2 と hypot で復元し、経度が不定でも位置の一致を扱う。異なる地点には古い地形高を流用しない。隔離環境の AppKit 統合試験では実データの通常復帰、強制復帰、取得待ちと地点変更を確認した。地球以外の地平図、風景・遮蔽の遷移、手動 GUI と旧 Plus との比較は未検証。新規依存・原データ・全体方針の変更はない。
 
 同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -C vendor/mitaka/native/gui terrain-real-data-test`、`make smoke` は成功。
+
+## 2026-11-07: P1-6・P1-7 姿勢と方位・高度の再指定
+
+有限な quaternion は最大成分で先に縮尺を揃えてから正規化し、最大値および非正規化浮動小数点でも有限な姿勢を得る。ゼロ・無限大・NaN は拒否する。方位・高度の補間または対象追尾中に再指定された場合は、直近の timer tick ではなく現在時刻まで姿勢を更新してから新たな補間を始める。隔離環境の姿勢テスト、Lua script 試験および全体ビルドは成功した。全天図と独立銀河ブラウザの姿勢 API、旧 Plus との比較は未対応・未実施。新規依存・原データ・全体方針の変更はない。
+
+同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -C vendor/mitaka/native/gui plus-camera-orientation-test`、`make smoke` は成功。手動 GUI と旧 Plus 比較は未実施。

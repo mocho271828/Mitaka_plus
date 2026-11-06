@@ -52,7 +52,7 @@
 | 4h | `codex/mitaka-04h-ground-galaxy` | `codex/mitaka-06c-negative-terrain` | P1-1: GAL-02 | 全天図・地平図から明示読込した Plus 銀河へ安全に遷移する | 実データ、成功・失敗・取消・モード変更、実画面 | `local-only` | `partial` | yes* |
 | 7b | `codex/mitaka-07b-small-body-orbits` | `codex/mitaka-04h-ground-galaxy` | P1-4: OBJ-09, OBJ-10 | 根拠のある 36 byte の小惑星・TNO 軌道描画と標本化 | 位置・選択・軌道・標本上限と実データ、旧版標本規則と時系の区別 | `local-only` | `partial` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07b-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `partial` | yes* |
-| 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `not-started` | yes* |
+| 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02、P1-7: CAM-04 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `partial` | yes* |
 | 10 | `codex/mitaka-10-ground-direction` | `codex/mitaka-09-camera-orientation` | P1-7: CAM-04 | 地上方位・高度の設定と補間を仕上げる | 極越え、角度境界、再指定、地球・非地球 | `local-only` | `not-started` | yes* |
 | 11 | `codex/mitaka-11-target-navigation` | `codex/mitaka-10-ground-direction` | P1-8: CAM-06 | 全対象種別の名前・ID・観測地接尾辞解決と、注視・移動・追従を統合する | 名前と ID の往復、重複名・複数出典・未評価行・不明値、地上・非地球地表・宇宙での移動と中断、対象追従、Lua | `local-only` | `not-started` | yes* |
 | 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-11-target-navigation` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |

@@ -201,6 +201,73 @@
         [self showError:@"smoke: real galaxy target fixture unavailable"];
         return;
     }
+    // timer が遅れても、方位・高度の再指定は現在時刻まで進めた位置から始まる。
+    _mode.selectedSegment = 2;
+    [self changeMode:nil];
+    auto retargetViewport = [_horizon viewport];
+    retargetViewport.center_azimuth_deg = 0;
+    retargetViewport.center_altitude_deg = 0;
+    [_horizon setViewport:retargetViewport];
+    ScriptAction retarget{};
+    retarget.kind = ScriptActionKind::animate_camera_azimuth;
+    retarget.number = 100;
+    retarget.duration_seconds = 10;
+    NSString *retargetError = nil;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAzimuthAnimation) {
+        [self showError:@"smoke: azimuth retarget setup failed"]; return;
+    }
+    _scriptAzimuthAnimation->start_time -= 5;
+    retarget.number = 150;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAzimuthAnimation ||
+        _scriptAzimuthAnimation->start < 49.9 || _scriptAzimuthAnimation->start > 55.0) {
+        [self showError:[NSString stringWithFormat:@"smoke: azimuth retarget start=%f", _scriptAzimuthAnimation ? _scriptAzimuthAnimation->start : -999.0]]; return;
+    }
+    [self stopScriptCameraAnimation];
+    retarget.kind = ScriptActionKind::animate_camera_altitude;
+    retarget.number = 80;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAltitudeAnimation) {
+        [self showError:@"smoke: altitude retarget setup failed"]; return;
+    }
+    _scriptAltitudeAnimation->start_time -= 5;
+    retarget.number = -30;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAltitudeAnimation ||
+        _scriptAltitudeAnimation->start < 39.9 || _scriptAltitudeAnimation->start > 44.0) {
+        [self showError:@"smoke: altitude retarget did not advance to current position"]; return;
+    }
+    [self stopScriptCameraAnimation];
+    // 補間完了後に追跡だけが残っていても、操作時に対象の現在位置を反映する。
+    for (const auto kind : {ScriptActionKind::animate_camera_azimuth,
+                            ScriptActionKind::set_camera_azimuth,
+                            ScriptActionKind::set_camera_altitude}) {
+        HorizonViewport target;
+        if (![_horizon viewportForBody:Body::sun result:&target]) {
+            [self showError:@"smoke: tracking target unavailable"]; return;
+        }
+        auto stale = target;
+        stale.center_azimuth_deg = std::remainder(target.center_azimuth_deg + 30, 360.0);
+        stale.center_altitude_deg = std::clamp(target.center_altitude_deg + 20, -90.0, 90.0);
+        [_horizon setViewport:stale];
+        _scriptLookTarget = ScriptLookTarget{ScriptLookTarget::Kind::body, 0};
+        retarget.kind = kind;
+        retarget.number = 10;
+        retarget.duration_seconds = 10;
+        if (![self applyScriptAction:retarget error:&retargetError] || _scriptLookTarget ||
+            (kind == ScriptActionKind::animate_camera_azimuth && !_scriptAzimuthAnimation)) {
+            [self showError:@"smoke: tracking retarget failed"]; return;
+        }
+        const auto current = [_horizon viewport];
+        const double actualAzimuth = kind == ScriptActionKind::animate_camera_azimuth
+            ? _scriptAzimuthAnimation->start : current.center_azimuth_deg;
+        const bool azimuthCorrect = kind == ScriptActionKind::set_camera_azimuth ||
+            std::abs(std::remainder(actualAzimuth - target.center_azimuth_deg, 360.0)) < 1e-6;
+        const bool altitudeCorrect = kind == ScriptActionKind::set_camera_altitude ||
+            std::abs(current.center_altitude_deg - target.center_altitude_deg) < 1e-6;
+        if (!azimuthCorrect || !altitudeCorrect) {
+            [self showError:@"smoke: tracking retarget used stale viewport"]; return;
+        }
+        [self stopScriptCameraAnimation];
+    }
+    if (![self applySessionState:original]) return;
     const auto range = _model->time_range();
     auto date = mitaka::gregorian_date_time((range.first + range.second) / 2);
     date.hour = 12; date.minute = 34; date.second = 56;
