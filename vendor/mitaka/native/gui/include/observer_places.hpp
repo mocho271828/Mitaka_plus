@@ -30,6 +30,10 @@ ObserverPlaces load_observer_places(const std::filesystem::path& data_directory,
                                    CatalogLoadLimits limits = {},
                                    ObserverPlacesLanguage language = ObserverPlacesLanguage::japanese);
 
+// 地上移動に対応する正規の地球・火星・月の地点だけを天体インデックスに解決する。
+// 対応外の天体や不完全な地点IDは解決しない。
+std::optional<std::size_t> observer_place_body_index(const PlaceRecord& place);
+
 // 地点IDはPlanet.Earth.*。似た別ターゲットを地球上の地点として扱わない。
 bool observer_place_is_earth(const PlaceRecord& place);
 

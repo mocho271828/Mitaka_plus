@@ -351,7 +351,7 @@ struct PreparedSolarDate {
             const auto earth = solar_display_position(next, 3), moon = solar_display_position(next, 10);
             p->camera.set_target_au({(earth.x + moon.x)/2, (earth.y + moon.y)/2, (earth.z + moon.z)/2});
         } else if (p->following && _selection) {
-            p->camera.set_target_au(_scriptSpacePlace && *_selection == 3
+            p->camera.set_target_au(_scriptSpacePlace && *_selection == _scriptSpacePlace->body_index
                 ? [self scriptSpacePlacePositionForBodies:p->bodies] : solar_display_position(next, *_selection));
         }
         else if (p->following && p->small_selection && p->small) {

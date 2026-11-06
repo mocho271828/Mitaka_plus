@@ -104,6 +104,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)stopScriptTargetTransition;
 - (void)animateScriptTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
 - (void)animateScriptPlaceTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
+- (BOOL)selectScriptPlaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error;
+- (BOOL)moveScriptSurfaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude;
 - (BOOL)selectScriptEarthPlaceLatitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error;
 - (BOOL)moveScriptEarthSurfaceLatitude:(double)latitude longitude:(double)longitude;
 - (void)setScriptEarthPlaceTarget:(const std::string&)target;

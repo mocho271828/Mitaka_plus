@@ -603,3 +603,11 @@ script-object-lua-test: $(BUILD_DIR)/test_script_object_lua $(SCRIPT_HELPER)
 controller-test: script-object-lua-test
 
 .PHONY: script-object-identity-test script-object-identity-data-test script-object-lua-test
+
+$(BUILD_DIR)/test_script_place_controller: tests/test_script_place_controller.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
+
+script-place-controller-test: $(BUILD_DIR)/test_script_place_controller $(SCRIPT_HELPER)
+	"$(BUILD_DIR)/test_script_place_controller" "$(abspath $(SCRIPT_HELPER))" "$${DATA_ROOT:?Set DATA_ROOT}"
+.PHONY: script-place-controller-test
+data-test: script-place-controller-test

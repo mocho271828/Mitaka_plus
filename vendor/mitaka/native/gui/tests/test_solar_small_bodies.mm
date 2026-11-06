@@ -14,6 +14,7 @@ using namespace mitaka::gui;
 @interface SolarSystemView (SmallBodyPickingTests)
 - (BOOL)zoomNavigationRegression;
 - (BOOL)zoomCollisionRegression;
+- (BOOL)scriptOtherBodyPlaceRegression;
 @end
 @implementation SolarSystemView (SmallBodyPickingTests)
 - (BOOL)zoomNavigationRegression {
@@ -42,6 +43,35 @@ using namespace mitaka::gui;
         && _surfaceActive && _camera.distance_au == 2 && error.length > 0;
     _surfaceActive = NO;
     return rejectedInitial && rejectedTarget && preserved && rejectedSurface;
+}
+- (BOOL)scriptOtherBodyPlaceRegression {
+    NSString *error = nil;
+    for (const std::size_t body : {std::size_t(4), std::size_t(10)}) {
+        if (![self selectScriptPlaceBody:body latitude:17 longitude:23 surface:NO error:&error]
+            || !_scriptSpacePlace || _scriptSpacePlace->body_index != body || !_following) return NO;
+        const auto oldTarget = _camera.target;
+        auto moved = _bodies;
+        moved[body].position_au.x += 1;
+        [self setBodies:moved];
+        if (std::abs(_camera.target.x - oldTarget.x - 1) > 1e-9) return NO;
+        _navigation.set_site(SurfaceSite{body, 4, 6, minimum_surface_height_km, 0, 0});
+        _surfaceActive = YES;
+        _camera = _navigation.camera(_bodies);
+        if (![self selectScriptPlaceBody:body latitude:-8 longitude:179 surface:YES error:&error]) return NO;
+        SurfaceSite result;
+        if (![self scriptSurfaceSite:&result] || result.body_index != body
+            || result.latitude_deg != -8 || result.longitude_deg != 179) return NO;
+        if ([self selectScriptPlaceBody:3 latitude:0 longitude:0 surface:YES error:&error]) return NO;
+        SurfaceSite after;
+        if (![self scriptSurfaceSite:&after] || after.body_index != body || after.latitude_deg != -8) return NO;
+        if (![self moveScriptSurfaceBody:body latitude:10 longitude:-179]) return NO;
+        if ([self moveScriptSurfaceBody:3 latitude:20 longitude:0]) return NO;
+        if (![self scriptSurfaceSite:&after] || after.latitude_deg != 10 || after.longitude_deg != -179) return NO;
+        if ([self selectScriptPlaceBody:body latitude:91 longitude:0 surface:YES error:&error]) return NO;
+        if (![self scriptSurfaceSite:&after] || after.latitude_deg != 10) return NO;
+        _surfaceActive = NO;
+    }
+    return YES;
 }
 - (BOOL)zoomCollisionRegression {
     _earthMoonMode = YES;
@@ -255,6 +285,8 @@ void tests() {
     for (std::size_t index = 0; index < bodies.size(); ++index) bodies[index].position_au = {20 * double(index), 0, 0};
     [view setBodies:bodies];
     SolarSystemView *zoomFixture = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [zoomFixture setBodies:bodies];
+    require([zoomFixture scriptOtherBodyPlaceRegression], "Mars and Moon places track their body and reject invalid surface moves");
     [zoomFixture setBodies:bodies];
     require([zoomFixture zoomNavigationRegression], "zoom validates the post-navigation frame and preserves state on rejection");
     require([zoomFixture zoomCollisionRegression], "instant and animated zoom stay outside Earth");

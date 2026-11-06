@@ -57,6 +57,7 @@ struct ScriptPlaceTransition {
     mitaka::Vec3 start, tangent;
     double angle, start_time, duration, latitude, longitude;
     NSInteger mode;
+    std::size_t body_index;
     std::string target;
 };
 

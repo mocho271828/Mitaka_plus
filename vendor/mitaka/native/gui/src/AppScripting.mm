@@ -157,23 +157,25 @@ static NSString *const scriptCompatibilityNote =
         state.start.z * std::cos(angle) + state.tangent.z * std::sin(angle)};
     const double latitude = progress >= 1 ? state.latitude : std::atan2(position.z, std::hypot(position.x, position.y)) * 180 / pi;
     const double longitude = progress >= 1 ? state.longitude : std::atan2(position.y, position.x) * 180 / pi;
-    if (state.mode == 1 && ![_solar moveScriptEarthSurfaceLatitude:latitude longitude:longitude]) {
+    if (state.mode == 1 && ![_solar moveScriptSurfaceBody:state.body_index latitude:latitude longitude:longitude]) {
         [self stopScriptPlaceTransition];
         return;
     }
-    _observerLatitude = latitude;
-    _observerLongitude = longitude;
-    [_horizon setObserverSite:{latitude, longitude}];
-    [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
-    [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+    if (state.body_index == 3) {
+        _observerLatitude = latitude;
+        _observerLongitude = longitude;
+        [_horizon setObserverSite:{latitude, longitude}];
+        [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
+        [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+    }
     if (progress >= 1) {
-        [_horizon setObserverPlaceIdentifier:state.target];
+        if (state.body_index == 3) [_horizon setObserverPlaceIdentifier:state.target];
         _scriptPlaceTransition.reset();
         [self stopScriptPlaceTransition];
     }
 }
 - (void)startScriptPlaceTransitionToLatitude:(double)latitude longitude:(double)longitude
-                                  duration:(double)duration target:(const std::string&)target {
+                                  duration:(double)duration body:(std::size_t)body target:(const std::string&)target {
     [self stopScriptPlaceTransition];
     auto unit = [](double lat, double lon) {
         constexpr double r = 3.14159265358979323846 / 180;
@@ -196,8 +198,8 @@ static NSString *const scriptCompatibilityNote =
     }
     tangent = {tangent.x / length, tangent.y / length, tangent.z / length};
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    _scriptPlaceTransition = ScriptPlaceTransition{start, tangent, std::acos(dot), now, duration, latitude, longitude, _mode.selectedSegment, target};
-    [_horizon setObserverPlaceIdentifier:std::string{}];
+    _scriptPlaceTransition = ScriptPlaceTransition{start, tangent, std::acos(dot), now, duration, latitude, longitude, _mode.selectedSegment, body, target};
+    if (body == 3) [_horizon setObserverPlaceIdentifier:std::string{}];
     __weak AppController *weakSelf = self;
     _scriptPlaceTimer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
         AppController *controller = weakSelf;
@@ -447,7 +449,7 @@ static NSString *const scriptCompatibilityNote =
         const NSUInteger selected = controller->_solar.selectedBodyIndex;
         if (![controller->_solar scriptOverviewTarget].empty())
             state.target = [controller->_solar scriptOverviewTarget];
-        else if (selected == 3 && ![controller->_solar scriptEarthPlaceTarget].empty())
+        else if (selected < scriptBodyNames.size() && ![controller->_solar scriptEarthPlaceTarget].empty())
             state.target = [controller->_solar scriptEarthPlaceTarget];
         else if (selected < scriptBodyNames.size()) state.target = scriptBodyNames[selected];
         else if (const auto hip = [controller->_solar selectedScriptStarHIP]) {
@@ -708,37 +710,49 @@ static NSString *const scriptCompatibilityNote =
                     throw std::invalid_argument("Camera target duration must be finite and nonnegative");
                 const auto initial = [_solar cameraState];
                 const auto previousRadius = [_solar scriptTargetRadiusAU];
-                if (action.text.compare(0, 13, "Planet.Earth.") == 0) {
+                const bool placeTarget = action.text.compare(0, 13, "Planet.Earth.") == 0
+                    || action.text.compare(0, 12, "Planet.Mars.") == 0
+                    || action.text.compare(0, 15, "Satellite.Moon.") == 0;
+                if (placeTarget) {
                     if (!_observerPlaces) throw std::invalid_argument("Observer place catalog is unavailable");
                     const auto place = std::find_if(_observerPlaces->places.begin(), _observerPlaces->places.end(),
-                        [&](const auto& candidate) { return candidate.target_name == action.text && observer_place_is_earth(candidate); });
-                    if (place == _observerPlaces->places.end()) throw std::invalid_argument("Unknown Earth place: " + action.text);
+                        [&](const auto& candidate) { return candidate.target_name == action.text && observer_place_body_index(candidate).has_value(); });
+                    if (place == _observerPlaces->places.end()) throw std::invalid_argument("Unknown place: " + action.text);
+                    const std::size_t body = *observer_place_body_index(*place);
                     const bool horizon = _mode.selectedSegment == 2;
                     const bool surface = _mode.selectedSegment == 1 && [_solar scriptPlanetariumMode];
                     const double latitude = place->latitude_degrees;
                     const double longitude = std::remainder(place->longitude_degrees, 360.0);
+                    if (!std::isfinite(latitude) || std::abs(latitude) > 90 || !std::isfinite(longitude))
+                        throw std::invalid_argument("Invalid place coordinates: " + action.text);
+                    if (horizon && body != 3)
+                        throw std::invalid_argument("Place selection requires an observer on the same body");
+                    SurfaceSite site;
+                    if (surface && (![_solar scriptSurfaceSite:&site] || site.body_index != body))
+                        throw std::invalid_argument("Place selection requires an observer on the same body");
+                    // 再指定時は現在時刻の補間位置を確定してから新しい遷移を始める。
+                    if (_scriptPlaceTransition) [self advanceScriptPlaceTransition];
                     if ((horizon || surface) && action.enabled && action.duration_seconds > 0) {
-                        SurfaceSite site;
-                        if (surface && (![_solar scriptSurfaceSite:&site] || site.body_index != 3))
-                            throw std::invalid_argument("Animated Earth place selection requires an Earth observer");
                         [self stopScriptPlaceTransition];
                         if (horizon) [_solar selectBody:3];
                         [_solar setScriptEarthPlaceTarget:action.text];
-                        [self startScriptPlaceTransitionToLatitude:latitude longitude:longitude duration:action.duration_seconds target:action.text];
+                        [self startScriptPlaceTransitionToLatitude:latitude longitude:longitude duration:action.duration_seconds body:body target:action.text];
                         break;
                     }
                     [self stopScriptPlaceTransition];
                     if (horizon) {
                         [_solar selectBody:3];
-                    } else if (![_solar selectScriptEarthPlaceLatitude:latitude longitude:longitude surface:surface error:error]) {
+                    } else if (![_solar selectScriptPlaceBody:body latitude:latitude longitude:longitude surface:surface error:error]) {
                         return NO;
                     }
-                    _observerLatitude = latitude;
-                    _observerLongitude = longitude;
-                    [_horizon setObserverSite:{latitude, longitude}];
-                    [_horizon setObserverPlaceIdentifier:action.text];
-                    [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
-                    [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+                    if (body == 3) {
+                        _observerLatitude = latitude;
+                        _observerLongitude = longitude;
+                        [_horizon setObserverSite:{latitude, longitude}];
+                        [_horizon setObserverPlaceIdentifier:action.text];
+                        [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
+                        [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+                    }
                     if (!horizon && !surface) {
                         _mode.selectedSegment = 1;
                         [self changeMode:nil];

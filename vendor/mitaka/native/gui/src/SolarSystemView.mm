@@ -303,7 +303,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         const Vec3 earth = [self displayPosition:3], moon = [self displayPosition:10];
         _camera.set_target_au({(earth.x + moon.x) / 2, (earth.y + moon.y) / 2, (earth.z + moon.z) / 2});
     } else if (_following && _selection) {
-        _camera.set_target_au(_scriptSpacePlace && *_selection == 3
+        _camera.set_target_au(_scriptSpacePlace && *_selection == _scriptSpacePlace->body_index
             ? [self scriptSpacePlacePositionForBodies:_bodies] : [self displayPosition:*_selection]);
     }
     else if (_following && _smallBodySelection && _smallBodySnapshot) {
