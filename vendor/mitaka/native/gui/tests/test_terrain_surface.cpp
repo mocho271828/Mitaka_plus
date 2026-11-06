@@ -358,7 +358,17 @@ void landing_radius_tests(Temporary& temp) {
     expect(!terrain_landing_radius_km(source,0,180,1000,1),"outside mesh has no landing surface");
     rejects([&]{terrain_landing_radius_km(source,91,0,1000,1);},"invalid landing latitude");
     rejects([&]{terrain_landing_radius_km(source,0,0,1000,-1);},"invalid landing factor");
-    rejects<std::runtime_error>([&]{terrain_landing_radius_km(source,0,0,1000,1,[]{return true;});},"landing cancellation");
+    rejects<TerrainSurfaceCancelled>([&]{terrain_landing_radius_km(source,0,0,1000,1,[]{return true;});},"landing cancellation");
+    unsigned mesh_polls=0;
+    rejects<TerrainSurfaceCancelled>([&]{make_terrain_patch_mesh(source,0,0,1,8*1024*1024,[&]{
+        return ++mesh_polls==3;
+    });},"mesh generation observes cancellation within its rows");
+    unsigned landing_polls=0;
+    // 最初の 2 LOD を終え、3 LOD 目の三角形 256 個を走査した後で中断する。
+    rejects<TerrainSurfaceCancelled>([&]{terrain_landing_radius_km(source,0,0,1000,1,[&]{
+        return ++landing_polls==39;
+    });},"landing triangle traversal observes cancellation");
+    expect(landing_polls==39,"landing cancellation occurs after mesh generation");
     auto seam=TerrainFile::open(temp.write("landing_seam.dat",fixture({{350,370,90,75,2}},10)));
     const auto a=terrain_landing_radius_km(seam,80,0,1000,1);
     const auto b=terrain_landing_radius_km(seam,80,360,1000,1);

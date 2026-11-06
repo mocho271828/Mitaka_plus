@@ -60,7 +60,8 @@ std::array<std::size_t,3> TerrainPatchMesh::triangle(std::size_t ordinal) const 
 }
 
 TerrainPatchMesh make_terrain_patch_mesh(TerrainFile& source, std::size_t patch_index,
-    std::size_t level_index, double elevation_factor, std::size_t max_working_bytes) {
+    std::size_t level_index, double elevation_factor, std::size_t max_working_bytes,
+    const std::function<bool()>& cancelled) {
     if (!std::isfinite(elevation_factor) || elevation_factor<0)
         throw std::invalid_argument("terrain elevation factor must be finite and nonnegative");
     const auto& grid=source.read_grid(patch_index,level_index);
@@ -94,6 +95,7 @@ TerrainPatchMesh make_terrain_patch_mesh(TerrainFile& source, std::size_t patch_
     };
     fill(halo[0],-1); fill(halo[1],0); fill(halo[2],1);
     for (std::size_t row=0;row<=rows;++row) {
+        if (cancelled && cancelled()) throw TerrainSurfaceCancelled();
         const double lat=patch.latitude_begin_deg+dlat*double(row)/double(rows);
         for (std::size_t column=0;column<=columns;++column) {
             const double lon=patch.longitude_begin_deg+dlon*double(column)/double(columns);
@@ -186,8 +188,11 @@ std::optional<double> terrain_landing_radius_km(TerrainFile& source,
         }
         // LOD切替の直前・直後のどちらでも地形の内側に入らないよう全levelを調べる。
         for (int level=0; level<=patch.maximum_level_index; ++level) {
-            const auto mesh=make_terrain_patch_mesh(source,i,static_cast<std::size_t>(level),factor);
+            if (cancelled && cancelled()) throw TerrainSurfaceCancelled();
+            const auto mesh=make_terrain_patch_mesh(source,i,static_cast<std::size_t>(level),factor,
+                8 * 1024 * 1024,cancelled);
             for (std::size_t triangle=0;triangle<mesh.triangle_count();++triangle) {
+                if (triangle%256==0 && cancelled && cancelled()) throw TerrainSurfaceCancelled();
                 const auto indices=mesh.triangle(triangle);
                 auto hit=radial_intersection(ray,mesh.vertices()[indices[0]].position,
                     mesh.vertices()[indices[1]].position,mesh.vertices()[indices[2]].position);
