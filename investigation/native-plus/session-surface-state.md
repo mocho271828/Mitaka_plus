@@ -12,4 +12,4 @@ JSON v9 に任意の `surface_site` を加え、停止中の地表の天体、�
 
 この単位は 地表 FOV 実装および Lua 姿勢・地点指定や地形更新時に画角を維持する修正を含む `a8b4a65` に依存する。`SolarSystemNavigation.mm`、`session_state.mm`、`SolarSystemView.h` は前段と接するため、前段を確定してから適用する。
 
-`a8b4a65` 上の隔離環境で `make build`、`make test`、`make data-test`、`make reference-test` は成功。セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功した。AppKit smoke では地表セッションの保存・復元と従来状態への復帰の検証が成功したが、同じ `make smoke` の後続 flight 試験がタイムアウトしたため smoke 全体は失敗であり、再検証が必要。原因は未確定。旧 Plus との比較と手動での実画面確認は未実施。
+`a8b4a65` 上の隔離環境で `make build`、`make test`、`make data-test`、`make reference-test` は成功。セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功した。AppKit smoke では地表セッションの保存・復元と従来状態への復帰の検証が成功したが、同じ `make smoke` の後続 flight 試験が初回タイムアウトした。原因は未確定だが、他の GUI 試験終了後の再実行では flight を含む `make smoke` 全体が成功した。旧 Plus との比較と手動での実画面確認は未実施。
