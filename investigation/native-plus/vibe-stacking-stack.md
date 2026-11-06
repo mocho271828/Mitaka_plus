@@ -64,7 +64,8 @@
 | 4k | `codex/mitaka-04k-our-galaxy-integrated` | `codex/mitaka-08d-surface-fov` | P1-1: Galaxy picking | 天の川点群の同一レイヤー内で描画順に選択する | preview・complete の描画形状と原順 | `local-only` | `partial` | yes* |
 | 5b | `codex/mitaka-05b-horizon-integrated` | `codex/mitaka-04k-our-galaxy-integrated` | P1-2: OBJ-15 | 不透明な地平風景に隠れた天体のクリック選択を抑止する | 透明・半透明・不透明、欠損、非表示、fallback と境界の描画選択 | `local-only` | `partial` | yes* |
 | 8e | `codex/mitaka-p13-integration` | `codex/mitaka-05b-horizon-integrated` | P1-3: OBJ-06 | 基準球の外縁で画素描画と選択・遮蔽を一致させる | 内外画素・画素端クリック、既存地形選択、実データと 5 種の make | `local-only` | `implemented` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-p13-integration` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
+| 8f | `codex/mitaka-surface-session-p13` | `codex/mitaka-p13-integration` | P1-1: CAM-03, P3: STATE-01 | 停止中の地表位置・姿勢と画角を状態保存と復元に接続する | JSON v9 の往復と旧状態、異常値の事前拒否、実データ、描画と地形更新 | `local-only` | `partial` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-surface-session-p13` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |
@@ -273,3 +274,10 @@
 
 - 基準球外縁修正の独立作業 `98c4f90` は親 `e5d34fc`、統合は `62bbc36` を親とする `codex/mitaka-p13-integration`。独立作業の検証と FOV を含む統合後の検証は `VALIDATION.md` で区別する。
 - 共有 checkout への統合は、地平風景の選択遮蔽を含む `a5be624` を親とする `codex/mitaka-06d-surface-edge-integrated`。隔離統合 smoke の初回失敗・再試行と共有 checkout の検証結果も `VALIDATION.md` に記録する。
+
+
+## 第 8e 単位の branch admission 判定
+
+- レビュー理由と seam: **YES**。地表の停止状態を JSON v9 と地表 navigation の境界で保存・復元し、画角も保存する。
+- 依存と検証: **YES**。独立作業では第 8d の FOV (`a8b4a65`) を親とし、統合では `62bbc36` を親とする。前段の FOV は共通祖先に含まれ、、旧 v9、正負の地形高さ、不正値の事前拒否、アプリ上の復元を確認する。
+- 分割理由: 地表投影と独立した保存契約であり、既存の JSON と地表操作を繋ぐ単一の検証可能な単位である。P3 の State API 全体は未対応のままとする。旧版比較と飛行途中の復元は対象外。

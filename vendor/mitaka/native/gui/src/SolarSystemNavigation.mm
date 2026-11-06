@@ -233,6 +233,30 @@ static double monotonicSeconds() {
     if (site) *site = _navigation.site();
     return YES;
 }
+- (BOOL)restoreSurfaceSite:(SurfaceSite)site error:(NSString **)error {
+    if (!_hasData) return NO;
+    try {
+        SurfaceNavigation next;
+        next.set_site(site);
+        if (site.height_km > minimum_surface_height_km + 1e-9)
+            throw std::invalid_argument("surface restore requires a stationary surface site");
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
+        [self leaveNavigation];
+        [self cancelTerrain];
+        _navigation = next;
+        _camera = camera;
+        _surfaceActive = YES;
+        _following = NO;
+        if (self.navigationChanged) self.navigationChanged();
+        [self notifyCamera];
+        self.needsDisplay = YES;
+        return YES;
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
+}
 - (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude {
     SurfaceSite site;
     if (![self scriptSurfaceSite:&site]) return NO;

@@ -106,6 +106,11 @@ void validate(const SessionState& state) {
     if (!std::isfinite(horizon.roll_deg)) invalid(@"horizon_viewport.roll_deg");
     // 保存状態のカメラも描画時と同じ基底・距離の契約を通す。
     (void)solar_camera_basis(state.solar_camera);
+    if (state.surface_site) {
+        SurfaceNavigation navigation;
+        navigation.set_site(*state.surface_site);
+        if (state.surface_site->height_km > minimum_surface_height_km + 1e-9) invalid(@"surface_site.height_km");
+    }
     const int selected = static_cast<int>(state.selected_body);
     if (selected < 0 || selected > static_cast<int>(Body::moon)) invalid(@"selected_body");
     for (const auto body : {state.sky_selected_body, state.horizon_selected_body})
@@ -164,6 +169,19 @@ SessionState decode_session_state(std::string_view json) {
             NSDictionary *axes = dictionary(frame, @"frame");
             state.solar_camera.frame = SolarCameraBasis{vector_field(axes, @"outward"),
                 vector_field(axes, @"right"), vector_field(axes, @"up")};
+        }
+        if (id raw_site = object[@"surface_site"]) {
+            NSDictionary *site = dictionary(raw_site, @"surface_site");
+            SurfaceSite value;
+            value.body_index = integer_field(site, @"body_index", 1, 10);
+            value.latitude_deg = numeric_field(site, @"latitude_deg");
+            value.longitude_deg = numeric_field(site, @"longitude_deg");
+            value.height_km = numeric_field(site, @"height_km");
+            value.heading_deg = numeric_field(site, @"heading_deg");
+            value.elevation_deg = numeric_field(site, @"elevation_deg");
+            value.roll_deg = numeric_field(site, @"roll_deg");
+            value.terrain_offset_km = numeric_field(site, @"terrain_offset_km");
+            state.surface_site = value;
         }
         state.selected_body = static_cast<Body>(integer_field(object, @"selected_body", 0,
                                                                static_cast<int>(Body::moon)));
@@ -318,6 +336,13 @@ std::string encode_session_state(const SessionState& state) {
             @"observer_latitude_deg": @(state.observer_latitude_deg),
             @"observer_longitude_deg": @(state.observer_longitude_deg)
         } mutableCopy];
+        if (state.surface_site) {
+            const auto& site = *state.surface_site;
+            object[@"surface_site"] = @{@"body_index": @(site.body_index), @"latitude_deg": @(site.latitude_deg),
+                @"longitude_deg": @(site.longitude_deg), @"height_km": @(site.height_km),
+                @"heading_deg": @(site.heading_deg), @"elevation_deg": @(site.elevation_deg),
+                @"roll_deg": @(site.roll_deg), @"terrain_offset_km": @(site.terrain_offset_km)};
+        }
         [object addEntriesFromDictionary:encode_session_layers(state)];
         NSError *error = nil;
         NSData *data = [NSJSONSerialization dataWithJSONObject:object

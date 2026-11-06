@@ -163,6 +163,7 @@ $(BUILD_DIR)/test_sky_catalog_index: tests/test_sky_catalog_index.cpp $(BUILD_DI
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/sky_catalog_index.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
 SESSION_TEST_OBJECTS = $(BUILD_DIR)/session_state.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/playback_clock.o $(BUILD_DIR)/calendar_time.o $(BUILD_DIR)/session_layers.o $(BUILD_DIR)/session_layers_json.o $(BUILD_DIR)/small_body_display.o $(BUILD_DIR)/satellite_display.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/atmosphere_renderer.o $(BUILD_DIR)/planet_surface.o $(BUILD_DIR)/earth_layers.o
+SESSION_TEST_OBJECTS += $(BUILD_DIR)/surface_navigation.o
 SESSION_TEST_OBJECTS += $(BUILD_DIR)/eclipse_surface.o $(BUILD_DIR)/surface_depth.o $(BUILD_DIR)/radius_display.o
 
 $(BUILD_DIR)/test_session_state: tests/test_session_state.mm $(SESSION_TEST_OBJECTS) core

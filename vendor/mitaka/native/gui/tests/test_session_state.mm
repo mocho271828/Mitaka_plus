@@ -44,6 +44,28 @@ void rejects_field(NSString *field, id value) {
     rejects([&] { decode_session_state(json_bytes(object)); });
 }
 
+void test_surface_session() {
+    SessionState state;
+    check(!decode_session_state(encode_session_state(state)).surface_site, "old session acquired surface state");
+    state.surface_site = SurfaceSite{4, -35, 139, minimum_surface_height_km, 210, -30, 42, -3};
+    const auto json = encode_session_state(state);
+    const auto restored = decode_session_state(json);
+    check(restored.surface_site && restored.surface_site->body_index == 4 &&
+          restored.surface_site->terrain_offset_km == -3 && restored.surface_site->roll_deg == 42 &&
+          encode_session_state(restored) == json, "surface site did not roundtrip");
+    for (const auto bad : {SurfaceSite{0}, SurfaceSite{11}, SurfaceSite{4, 91},
+                           SurfaceSite{4, 0, 0, 0.1}, SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 91},
+                           SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 0, 0, -4000}}) {
+        state.surface_site = bad;
+        rejects([&] { encode_session_state(state); });
+    }
+    auto object = session_object();
+    object[@"surface_site"] = NSNull.null;
+    rejects([&] { decode_session_state(json_bytes(object)); });
+    object[@"surface_site"] = @{@"body_index": @4};
+    rejects([&] { decode_session_state(json_bytes(object)); });
+}
+
 void test_roundtrip() {
     SessionState state;
     auto json = encode_session_state(state);
@@ -614,6 +636,7 @@ void test_layer_roundtrip_and_boundaries() {
 int main() {
     @autoreleasepool {
         try {
+            test_surface_session();
             test_roundtrip();
             test_missing_null_and_types();
             test_ranges_and_camera();

@@ -172,6 +172,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)earthSurfaceSite:(mitaka::gui::SurfaceSite *)site;
 - (BOOL)scriptSurfaceSite:(mitaka::gui::SurfaceSite *)site;
+// 読込済みの同一 JD の天体位置を使い、検証済み地表視点を停止状態で復元する。
+- (BOOL)restoreSurfaceSite:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude;
 - (BOOL)scriptBodyEclipticPosition:(NSUInteger)index result:(mitaka::Vec3 *)result;
 - (BOOL)scriptSurfaceLookVector:(mitaka::Vec3)vector position:(BOOL)isPosition result:(mitaka::gui::SurfaceSite *)result;
