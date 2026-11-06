@@ -33,6 +33,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         _timeInfoVisible = YES;
         _scriptCameraDuration = 9.0;
         _scriptCameraZoomMode = 2;
+        _scriptTargetSelectionMode = 2;
         _radiusScaleMode = RadiusScaleMode::keep_orbit;
         _observerLatitude = 35.68;
         _observerLongitude = 139.76;

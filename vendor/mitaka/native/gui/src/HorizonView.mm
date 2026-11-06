@@ -103,8 +103,34 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     BOOL _dragging, _showsTimeInfo;
 }
 
+- (void)setTargetSelectionMode:(NSInteger)mode {
+    if (_targetSelectionMode == mode) return;
+    _targetSelectionMode = mode;
+    [self updateTrackingAreas];
+}
+- (void)updateTrackingAreas {
+    if (_targetSelectionTrackingArea) [self removeTrackingArea:_targetSelectionTrackingArea];
+    _targetSelectionTrackingArea = nil;
+    if (_targetSelectionMode == 1) {
+        _targetSelectionTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+            options:NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect owner:self userInfo:nil];
+        [self addTrackingArea:_targetSelectionTrackingArea];
+        self.window.acceptsMouseMovedEvents = YES;
+    }
+    [super updateTrackingAreas];
+}
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (_targetSelectionMode == 1) self.window.acceptsMouseMovedEvents = YES;
+}
+- (void)mouseMoved:(NSEvent *)event {
+    if (_targetSelectionMode == 1 && !self.hidden)
+        [self pickTargetAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _targetSelectionMode = 2;
         _earthPosition = {};
         _earthJulianDate = std::numeric_limits<double>::quiet_NaN();
         _smallBodiesVisible = _spacecraftVisible = YES;
@@ -539,8 +565,14 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     _lastDragPoint = point;
 }
 - (void)mouseUp:(NSEvent *)event {
-    if (!_model || _dragging) return;
+    if (!_model || _dragging || _targetSelectionMode != 2) return;
     const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    if (!NSPointInRect(point, [self mapRect])) return;
+    [self pickTargetAtPoint:point];
+    if (event.clickCount == 2) [self focusSelection];
+}
+- (void)pickTargetAtPoint:(NSPoint)point {
+    if (!_model) return;
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0 || !NSPointInRect(point, map)) return;
     _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection.reset();
@@ -597,7 +629,6 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     }
     [self notifySelection];
     self.needsDisplay = YES;
-    if (event.clickCount == 2) [self focusSelection];
 }
 - (void)scrollWheel:(NSEvent *)event {
     const NSRect map = [self mapRect];

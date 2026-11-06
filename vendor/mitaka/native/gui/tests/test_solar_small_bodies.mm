@@ -305,6 +305,26 @@ void tests() {
     const auto viewPoints = visible_small_bodies(*frame, *display, camera, viewMap);
     require(viewPoints.size() == 1, "click fixture has a visible small body");
     const auto click = NSMakePoint(viewPoints[0].point.x, viewPoints[0].point.y);
+    const NSPoint eventPoint = [view convertPoint:click toView:nil];
+    NSEvent *clickEvent = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:eventPoint modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:1 pressure:0];
+    NSEvent *hoverEvent = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:eventPoint modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:0 pressure:0];
+    [view selectBody:1];
+    view.targetSelectionMode = 0;
+    [view mouseUp:clickEvent]; [view mouseMoved:hoverEvent];
+    require(view.selectedBodyIndex == 1, "none mode ignores click and hover");
+    view.targetSelectionMode = 1;
+    [view mouseUp:clickEvent];
+    require(view.selectedBodyIndex == 1, "hover mode ignores click");
+    [view mouseMoved:hoverEvent];
+    require(view.selectedSmallBodyIndex == 0, "hover mode selects the displayed small body");
+    [view selectBody:1];
+    view.targetSelectionMode = 2;
+    [view mouseMoved:hoverEvent];
+    require(view.selectedBodyIndex == 1, "click mode ignores hover");
+    [view mouseUp:clickEvent];
+    require(view.selectedSmallBodyIndex == 0, "click mode selects the same displayed small body");
     [view pickBodyAtPoint:click];
     require(view.selectedSmallBodyIndex == 0, "visible small body is selected through the view");
     view.smallBodiesVisible = NO;

@@ -177,7 +177,7 @@ NSData *rendered_bitmap(HorizonView *view) {
 }
 
 // 描画と同じ投影の位置を通常のマウス操作で選択する。
-void click_object(HorizonView *view, EquatorialCoordinates coordinates, double jd, double dx = 0, double dy = 0) {
+void click_object(HorizonView *view, EquatorialCoordinates coordinates, double jd, double dx = 0, double dy = 0, bool hover = false) {
     const auto horizontal = ObservationFrame([view observerSite], jd).to_horizontal(coordinates);
     [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 45}];
     const auto viewport = [view viewport];
@@ -191,8 +191,14 @@ void click_object(HorizonView *view, EquatorialCoordinates coordinates, double j
         modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:1 clickCount:1 pressure:1];
     NSEvent *up = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:location
         modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:2 clickCount:1 pressure:0];
-    [view mouseDown:down];
-    [view mouseUp:up];
+    if (hover) {
+        NSEvent *move = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:location
+            modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:3 clickCount:0 pressure:0];
+        [view mouseMoved:move];
+    } else {
+        [view mouseDown:down];
+        [view mouseUp:up];
+    }
 }
 
 void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const SkyBodies& bodies, double jd) {
@@ -423,6 +429,12 @@ void test_landscape_selection(HorizonView *view, const SkyModel& model, const Sk
         [view setEarthLandscapes:std::make_shared<const EarthLandscapes>(EarthLandscapes::load(root / "data", places))];
         view.showsLandscapeImage = YES;
         const bool opaque = file == "255.tga";
+        view.targetSelectionMode = 1;
+        click_object(view, objects[0].coordinates, jd, 0, 0, true);
+        check((view.selectedSmallBodyIndex == NSNotFound) == opaque, "hover small body landscape selection mismatch");
+        click_object(view, probes[0].coordinates, jd, 0, 0, true);
+        check((view.selectedSpacecraftIndex == NSNotFound) == opaque, "hover spacecraft landscape selection mismatch");
+        view.targetSelectionMode = 2;
         click_object(view, objects[0].coordinates, jd);
         check((view.selectedSmallBodyIndex == NSNotFound) == opaque, "small body landscape selection mismatch");
         click_object(view, probes[0].coordinates, jd);
@@ -492,6 +504,11 @@ void test_landscape_selection(HorizonView *view, const SkyModel& model, const Sk
     click_object(view, objects[0].coordinates, jd, clearOffset);
     check(view.selectedSmallBodyIndex == NSNotFound && view.selectedSpacecraftIndex == NSNotFound,
           "transparent click selected moving objects hidden by landscape");
+    view.targetSelectionMode = 1;
+    click_object(view, objects[0].coordinates, jd, clearOffset, 0, true);
+    check(view.selectedSmallBodyIndex == NSNotFound && view.selectedSpacecraftIndex == NSNotFound,
+          "transparent hover selected moving objects hidden by landscape");
+    view.targetSelectionMode = 2;
     // 隠れた候補が距離の順位を占有せず、近くの見える候補を選べる。
     auto separated = std::make_shared<SmallBodySnapshot>(*overlapping.frame);
     const auto viewport = [view viewport];
@@ -698,11 +715,40 @@ void test_data(HorizonView *view, const char *directory) {
     const auto bodies = model->bodies(jd);
     [view setModel:model bodies:bodies];
     [view setBodies:bodies julianDate:jd];
+    const auto sun = ObservationFrame([view observerSite], jd).to_horizontal(bodies[0].coordinates);
+    [view setViewport:{sun.azimuth_deg, sun.altitude_deg, 45}];
+    const NSPoint center = NSMakePoint(NSMidX(view.bounds), NSMidY(view.bounds));
+    NSEvent *click = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:center modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:1 pressure:0];
+    NSEvent *hover = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:center modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:0 pressure:0];
+    [view selectBody:1];
+    view.targetSelectionMode = 0;
+    [view mouseUp:click]; [view mouseMoved:hover];
+    check(view.selectedBodyIndex == 1, "horizon none mode ignores pointer events");
+    view.targetSelectionMode = 1;
+    [view mouseUp:click];
+    check(view.selectedBodyIndex == 1, "horizon hover mode ignores clicks");
+    [view mouseMoved:hover];
+    check(view.selectedBodyIndex == 0, "horizon hover mode selects drawn Sun");
+    [view selectBody:1];
+    view.targetSelectionMode = 2;
+    [view mouseMoved:hover];
+    check(view.selectedBodyIndex == 1, "horizon click mode ignores hover");
+    [view mouseUp:click];
+    check(view.selectedBodyIndex == 0, "horizon click mode selects drawn Sun");
+    [view resetView];
     const auto count = view.visibleStarCount;
     check(count > 1000 && count < model->stars().size(), "full sky magnitude filter failed");
     __block NSString *description;
     view.selectionChanged = ^(NSString *text) { description = text; };
     check([view selectStarHIP:32349], "Sirius HIP could not be selected");
+    const auto viewportBeforeOutsideClick = [view viewport];
+    NSEvent *outsideDoubleClick = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:NSMakePoint(0, 0)
+        modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:2 pressure:0];
+    [view mouseUp:outsideDoubleClick];
+    check([view viewport].vertical_fov_deg == viewportBeforeOutsideClick.vertical_fov_deg,
+          "double click outside map must not focus the previous selection");
     check([description containsString:@"HIP 32349"] && [description containsString:@"高度"], "selection description missing horizon coordinates");
     [view focusSelection];
     check([view viewport].vertical_fov_deg <= 45 && view.visibleStarCount < count, "focus did not reduce sky extent");

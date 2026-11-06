@@ -146,8 +146,12 @@ int main(int argc, const char *argv[]) {
                 local ok=pcall(function() Camera.target='Planet.Earth.NorthPole' end)
                 assert(not ok); assert(Camera.target=='Satellite.Moon.SouthPole')
             )lua");
+            run(scripts, @"Targets.selectMode=mtk.SELECT_MOUSEOVER");
             const auto selectedHIP = [app fixtureSkySelection:1];
-            run(scripts, [NSString stringWithFormat:@"assert(Camera.target=='Star.%d')", selectedHIP]);
+            run(scripts, [NSString stringWithFormat:@"assert(Camera.target=='Star.%d'); "
+                 "Targets.selectMode=mtk.SELECT_NONE; assert(Camera.target=='Star.%d'); "
+                 "Targets.selectMode=mtk.SELECT_MOUSECLICK; assert(Camera.target=='Star.%d')",
+                 selectedHIP, selectedHIP, selectedHIP]);
             [app fixtureSkySelection:2];
             run(scripts, @R"lua(
                 assert(Camera.target=='Constel.And')

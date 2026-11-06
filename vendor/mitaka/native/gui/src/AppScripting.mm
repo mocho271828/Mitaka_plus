@@ -562,6 +562,7 @@ static NSString *const scriptCompatibilityNote =
         if ([controller scriptFovAvailable]) state.camera_fov = [controller scriptFovValue];
         state.camera_duration = controller->_scriptCameraDuration;
         state.camera_zoom_mode = controller->_scriptCameraZoomMode;
+        state.target_selection_mode = controller->_scriptTargetSelectionMode;
         if (controller->_mode.selectedSegment == 1)
             state.camera_mode = controller->_solar.scriptPlanetariumMode ? 0 : 1;
         else if (controller->_mode.selectedSegment == 2) state.camera_mode = 0;
@@ -1167,6 +1168,12 @@ static NSString *const scriptCompatibilityNote =
             case ScriptActionKind::set_nebulae: _sky.showsNebulae = action.enabled; break;
             case ScriptActionKind::set_distant_galaxies: _sky.showsGalaxies = action.enabled; break;
             case ScriptActionKind::set_quasars: _sky.showsQuasars = action.enabled; break;
+            case ScriptActionKind::set_target_selection_mode:
+                _scriptTargetSelectionMode = static_cast<int>(action.number);
+                _sky.targetSelectionMode = _scriptTargetSelectionMode;
+                _horizon.targetSelectionMode = _scriptTargetSelectionMode;
+                _solar.targetSelectionMode = _scriptTargetSelectionMode;
+                break;
             case ScriptActionKind::set_camera_zoom_mode:
                 _scriptCameraZoomMode = static_cast<int>(action.number);
                 break;

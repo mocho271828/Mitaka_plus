@@ -44,8 +44,40 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 
 @implementation SolarSystemView
 
+- (void)setTargetSelectionMode:(NSInteger)mode {
+    if (_targetSelectionMode == mode) return;
+    _targetSelectionMode = mode;
+    [_galaxyOverlay invalidatePendingPicks];
+    [self updateTrackingAreas];
+}
+- (void)updateTrackingAreas {
+    if (_targetSelectionTrackingArea) [self removeTrackingArea:_targetSelectionTrackingArea];
+    _targetSelectionTrackingArea = nil;
+    if (_targetSelectionMode == 1) {
+        _targetSelectionTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+            options:NSTrackingMouseMoved | NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect owner:self userInfo:nil];
+        [self addTrackingArea:_targetSelectionTrackingArea];
+        self.window.acceptsMouseMovedEvents = YES;
+    }
+    [super updateTrackingAreas];
+}
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (_targetSelectionMode == 1) self.window.acceptsMouseMovedEvents = YES;
+}
+- (void)mouseMoved:(NSEvent *)event {
+    if (_targetSelectionMode == 1 && !self.hidden)
+        [self pickBodyAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+}
+
+- (void)mouseExited:(NSEvent *)event {
+    (void)event;
+    if (_targetSelectionMode == 1) [_galaxyOverlay invalidatePendingPicks];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _targetSelectionMode = 2;
         _galaxyOverlay = [[GalaxyOverlay alloc] initWithView:self];
         _hipVisible = YES;
         _surfaceMagnitudeLimit = 6;
@@ -750,7 +782,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)rotateWithEvent:(NSEvent *)event { [self rollByDegrees:event.rotation]; }
 - (void)mouseUp:(NSEvent *)event {
     if (_dragged) { _dragged = NO; self.needsDisplay = YES; return; }
-    if (!_hasData) return;
+    if (!_hasData || _targetSelectionMode != 2) return;
     [self pickBodyAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
 }
 - (void)applySurfaceSkyStar:(std::optional<std::size_t>)star constellation:(std::optional<std::size_t>)constellation {
@@ -763,8 +795,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     [self notifySelection]; [self notifyCamera]; self.needsDisplay = YES;
 }
 - (void)pickBodyAtPoint:(NSPoint)click {
-    if (!_hasData || !NSPointInRect(click, [self mapRect])) return;
+    // 矩形外へのホバーも直前の非同期選択より新しい操作として扱う。
     [_galaxyOverlay invalidatePendingPicks];
+    if (!_hasData || !NSPointInRect(click, [self mapRect])) return;
     try {
         const auto displayedOwner = _publishedScene;
         const auto scene = displayedOwner ? displayedOwner->scene() : [self scene];

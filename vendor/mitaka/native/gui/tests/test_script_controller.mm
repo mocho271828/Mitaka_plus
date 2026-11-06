@@ -8,6 +8,10 @@
 #include <string>
 
 using namespace mitaka::gui;
+
+@interface ScriptController (TestMessages)
+- (NSDictionary *)handleMessage:(NSDictionary *)message;
+@end
 namespace {
 void check(bool condition, const char *message) { if (!condition) throw std::runtime_error(message); }
 struct Outcome { bool succeeded; std::string message; };
@@ -96,6 +100,7 @@ int main(int argc, const char *argv[]) {
                     *error = @"Time update unavailable"; return NO;
                 }
                 switch (action.kind) {
+                    case ScriptActionKind::set_target_selection_mode: state.target_selection_mode = static_cast<int>(action.number); break;
                     case ScriptActionKind::set_radius_scale:
                         if (rejectRadius) { *error = @"Radius unavailable"; return NO; }
                         state.radius_display = action.radius_display; break;
@@ -256,6 +261,22 @@ int main(int argc, const char *argv[]) {
                 return YES;
             };
             controller.output = ^(NSString *text) { check(NSThread.isMainThread, "output thread"); [logs addObject:text]; };
+            NSDictionary *badSelectionMode = @{@"op":@"apply", @"kind":@(static_cast<int>(ScriptActionKind::set_target_selection_mode)),
+                @"number":@YES, @"duration":@0, @"enabled":@NO, @"text":@"", @"hips":@[]};
+            const int beforeBadMode = applied;
+            check(![[controller handleMessage:badSelectionMode][@"ok"] boolValue] && applied == beforeBadMode,
+                  "IPC rejects boolean selection mode without applying it");
+            auto selectionOutcome = run(controller, file, @R"lua(
+                assert(Targets.selectMode==mtk.SELECT_MOUSECLICK)
+                Targets.selectMode=mtk.SELECT_NONE; assert(Targets.selectMode==mtk.SELECT_NONE)
+                Targets.selectMode=mtk.SELECT_MOUSEOVER; assert(Targets.selectMode==mtk.SELECT_MOUSEOVER)
+                for _,x in ipairs({-1,3,0.5,math.huge,'1',true}) do
+                    assert(not pcall(function() Targets.selectMode=x end))
+                    assert(Targets.selectMode==mtk.SELECT_MOUSEOVER)
+                end
+                Targets.selectMode=mtk.SELECT_MOUSECLICK; assert(Targets.selectMode==mtk.SELECT_MOUSECLICK)
+            )lua");
+            check(selectionOutcome.succeeded, selectionOutcome.message.c_str());
             auto outcome = run(controller, file, @R"lua(
                 Time:setTime(2009,7,22,0,30,0)
                 local y,m,d,h,n,s=Time:getTime()

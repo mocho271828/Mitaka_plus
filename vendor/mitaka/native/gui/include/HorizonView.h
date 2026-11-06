@@ -35,6 +35,8 @@ struct HorizonPreparedDate {
 }
 
 @interface HorizonView : NSView
+@property(nonatomic) NSInteger targetSelectionMode;
+@property(nonatomic, strong) NSTrackingArea *targetSelectionTrackingArea;
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
 @property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;

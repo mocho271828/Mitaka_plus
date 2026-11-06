@@ -28,6 +28,8 @@ namespace mitaka { struct OurGalaxyModel; }
 namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; struct GalaxySpatialVisibility; class GalaxySpatialModel; struct HipSpatialModel; }
 
 @interface SolarSystemView : NSView
+@property(nonatomic) NSInteger targetSelectionMode;
+@property(nonatomic, strong) NSTrackingArea *targetSelectionTrackingArea;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
 @property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
 @property(nonatomic) mitaka::gui::TerrainAmplification terrainAmplification;

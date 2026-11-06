@@ -121,6 +121,7 @@ struct ScriptLookTarget {
     std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
     std::optional<double> _scriptCameraDuration;
     int _scriptCameraZoomMode;
+    int _scriptTargetSelectionMode;
     std::optional<double> _scriptCameraModeDuration;
     std::optional<std::int32_t> _scriptStarHIP;
     std::string _scriptStarTarget;

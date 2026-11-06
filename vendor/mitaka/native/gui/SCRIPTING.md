@@ -31,6 +31,7 @@
 | `Camera.modeDuration` | モード移行の秒数。通常起動時の初期値は 7.1 秒 |
 | `Camera:getOrient()` / `setOrient(x,y,z,w)` / `setOrientTo(x,y,z,w[,duration[,smooth]])` | 主画面の宇宙通常視点で quaternion の姿勢を取得・設定・補間する |
 | `Camera:getEuler()` / `setEuler(h,p,r)` / `addEuler(h,p,r)` と各 `To` | 主画面の宇宙通常視点で heading・pitch・roll の取得・設定・加算・補間を行う。角度は度単位 |
+| `Targets.selectMode` | `mtk.SELECT_NONE`（0）/ `mtk.SELECT_MOUSEOVER`（1）/ `mtk.SELECT_MOUSECLICK`（2）。主画面の全天図・地平図・宇宙図で選択操作を切り替える。標準はクリック。定数値は旧版未確認であり仮定。非同期の銀河選択は切替時に破棄する。地表 3D の恒星・星座にも適用。座標選択 API は未対応 |
 | `Camera.zoomMode` | 対象切替時の距離調整。`mtk.ZOOM_NONE`、`ZOOM_AUTO`、`ZOOM_ALWAYS` を指定する |
 | `Camera.zoom` | ターゲットまでの距離を **パーセク** で取得・設定。GUI の AU と変換する |
 | `Camera.azimuth` | 地表視点の中心方位を度で取得・設定。北0・東90・西−90。非地球の 3D 地表でも利用できる |
