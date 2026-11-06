@@ -43,7 +43,7 @@
 | 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `partial` | yes* |
 | 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `partial` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `partial` | yes* |
-| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `not-started` | yes* |
+| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `in-progress` | yes* |
 | 7 | `codex/mitaka-07-small-body-orbits` | `codex/mitaka-06-terrain-continuity` | P1-4: OBJ-09, OBJ-10 | 37 byte 原記録の隔離・調査と、根拠のある形式の小惑星・TNO 軌道描画 | 36/37 byte の区別、不正長・全原行・重複保持、37 byte の採用根拠が確認できるまで位置評価しない、36 byte の位置・選択・軌道・標本上限と実データ | `local-only` | `not-started` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `not-started` | yes* |
 | 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `not-started` | yes* |
@@ -200,3 +200,12 @@
 - 独立検証: **YES**。preview と完成後のレイヤー順、重なる点の可視性・描画順・選択を検証する。
 - 作業都合のみの分割ではない: **YES**。近傍銀河の対象 ID や天の川の透明度とは別の描画と選択の契約である。
 - 対象外: 同一 pixel 内の異なる投影位置、アンチエイリアス、異なるレイヤー間の完全な可視性一致。
+
+## 第 5 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。地球地上から見た小天体・探査機に観測地点の視差を適用する。
+- named seam: **YES**。`HorizonObject` と地球観測フレームの座標変換。
+- 依存: **YES**。第 4f 単位の共有カメラと描画の基盤を引き継ぐ。
+- 独立検証: **YES**。実データの小天体と PTH を複数の日時・地点で独立した計算と照合し、描画・選択・注視の共通位置を検証する。
+- 作業都合のみの分割ではない: **YES**。銀河の描画順とは独立した観測位置の計算契約である。
+- 対象外: PPI の形式や意味の推定、地表高度・旧 Plus 実画面との一致。

@@ -3,6 +3,8 @@
 #include "small_body_display.hpp"
 #include "spacecraft_browser_model.hpp"
 #include "horizon_objects.hpp"
+#include "surface_navigation.hpp"
+#include "mitaka/rotation.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -87,7 +89,7 @@ struct HorizonFixture {
     std::shared_ptr<SmallBodyDisplayModel> display;
     std::shared_ptr<const SmallBodySnapshot> frame;
     std::shared_ptr<const SpacecraftSnapshot> spacecraft;
-    HorizonFixture() {
+    explicit HorizonFixture(std::optional<Vec3> probe_position = std::nullopt) {
         SmallBodyRecord record;
         record.id = {"fixture.dat", 0};
         record.name_bytes = "Test comet";
@@ -112,7 +114,8 @@ struct HorizonFixture {
         frame = positions;
 
         SpacecraftDataset spacecraft_data;
-        const std::vector<SpacecraftPathSample> samples{{2451545, {1, 0.2, 0.1}},
+        const auto probe = probe_position.value_or(Vec3{1, 0.2, 0.1});
+        const std::vector<SpacecraftPathSample> samples{{2451545, {probe.x, probe.y, probe.z}},
                                                         {2451546, {1, 0.5, 0.2}}};
         std::string bytes;
         const auto append_double = [&](double value) {
@@ -187,7 +190,133 @@ void click_object(HorizonView *view, EquatorialCoordinates coordinates, double j
     [view mouseUp:up];
 }
 
+void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const SkyBodies& bodies, double jd) {
+    HorizonFixture fixture;
+    const auto savedStars = view.starDisplayOptions;
+    const auto savedPlanets = view.planetDisplayOptions;
+    const auto savedSelectionChanged = view.selectionChanged;
+    const ObserverSite first{0, 0};
+    const auto earth = model.solar_bodies(jd)[3].position_au;
+    const ObservationFrame frame(first, jd);
+    const auto up = equatorial_direction(frame.to_equatorial({0, 90}));
+    const auto east = equatorial_direction(frame.to_equatorial({90, 0}));
+    const double radius = earth_reference_radius_km / astronomical_unit_km;
+    // 独立に地心座標を作る: 測心では真東・高度45°、地心では高度約63°。
+    const Vec3 equatorial{earth.x + radius * (2 * up.x + east.x),
+                          earth.y + radius * (2 * up.y + east.y),
+                          earth.z + radius * (2 * up.z + east.z)};
+    auto snapshot = std::make_shared<SmallBodySnapshot>(*fixture.frame);
+    snapshot->positions[0] = j2000_equatorial_to_ecliptic(equatorial);
+    snapshot->positions[1] = std::nullopt;
+    [view setObservationSite:first julianDate:jd];
+    [view setBodies:bodies julianDate:jd earthPosition:earth smallBodies:snapshot
+        smallBodyDisplay:fixture.display spacecraft:fixture.spacecraft];
+    view.smallBodiesVisible = YES;
+    view.spacecraftVisible = NO;
+    auto stars = view.starDisplayOptions; stars.visible = false; view.starDisplayOptions = stars;
+    auto planets = view.planetDisplayOptions; planets.visible = false; view.planetDisplayOptions = planets;
+    const auto expected = frame.to_equatorial({90, 45});
+    click_object(view, expected, jd);
+    check(view.selectedSmallBodyIndex == 0, "near object not clickable at topocentric position");
+    [view focusSelection];
+    auto focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg - 90) < 1e-7 && std::abs(focused.center_altitude_deg - 45) < 1e-7,
+          "focus does not match topocentric drawing");
+    HorizonViewport scripted{};
+    check([view viewportForTopocentricHeliocentricPosition:*snapshot->positions[0] julianDate:jd result:&scripted],
+          "topocentric script target unavailable");
+    check(std::abs(scripted.center_azimuth_deg - 90) < 1e-7 && std::abs(scripted.center_altitude_deg - 45) < 1e-7,
+          "script target differs from topocentric drawing");
+    HorizonViewport geocentric{};
+    check([view viewportForHeliocentricPosition:*snapshot->positions[0] julianDate:jd result:&geocentric] &&
+          std::abs(geocentric.center_altitude_deg - scripted.center_altitude_deg) > 10,
+          "geocentric targets unexpectedly changed or parallax absent");
+    // 同じ地心位置を PTH の生サンプルとして通し、選択・注視を照合する。
+    HorizonFixture probeFixture(*snapshot->positions[0]);
+    [view setSpacecraftSnapshot:probeFixture.spacecraft];
+    [view clearSelection];
+    view.smallBodiesVisible = NO;
+    view.spacecraftVisible = YES;
+    click_object(view, expected, jd);
+    check(view.selectedSpacecraftIndex == 0, "near PTH object not clickable at topocentric position");
+    [view focusSelection];
+    focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg-90) < 1e-7 && std::abs(focused.center_altitude_deg-45) < 1e-7,
+          "near PTH focus differs from topocentric position");
+    check([view viewportForTopocentricHeliocentricPosition:*probeFixture.spacecraft->positions[0] julianDate:jd result:&scripted] &&
+          std::abs(scripted.center_azimuth_deg-focused.center_azimuth_deg) < 1e-7 &&
+          std::abs(scripted.center_altitude_deg-focused.center_altitude_deg) < 1e-7,
+          "near PTH script viewport differs from focus");
+    [view clearSelection];
+    const auto withProbe = rendered_bitmap(view);
+    view.spacecraftVisible = NO;
+    const auto withoutProbe = rendered_bitmap(view);
+    check(![withProbe isEqualToData:withoutProbe], "near PTH object was not rendered");
+    // 1 km の測心距離がゼロ表示に丸められないことを実際の選択通知で確認する。
+    const double kilometer = 1 / astronomical_unit_km;
+    const Vec3 closeEquatorial{earth.x + radius*up.x + kilometer*east.x,
+                                earth.y + radius*up.y + kilometer*east.y,
+                                earth.z + radius*up.z + kilometer*east.z};
+    HorizonFixture closeProbe(j2000_equatorial_to_ecliptic(closeEquatorial));
+    [view setSpacecraftSnapshot:closeProbe.spacecraft];
+    view.spacecraftVisible = YES;
+    __block NSString *closeDescription = nil;
+    view.selectionChanged = ^(NSString *value) { closeDescription = value; };
+    click_object(view, frame.to_equatorial({90, 0}), jd);
+    check(view.selectedSpacecraftIndex == 0 && [closeDescription containsString:@"距離 1 km"],
+          "one-kilometer PTH distance was not displayed accurately");
+    view.selectionChanged = savedSelectionChanged;
+    view.spacecraftVisible = NO;
+    view.smallBodiesVisible = YES;
+    [view setSpacecraftSnapshot:fixture.spacecraft];
+    const ObserverSite second{0, 30};
+    [view setObservationSite:second julianDate:jd];
+    const ObservationFrame secondFrame(second, jd);
+    const auto secondUp = equatorial_direction(secondFrame.to_equatorial({0, 90}));
+    const Vec3 relative{equatorial.x-earth.x-radius*secondUp.x, equatorial.y-earth.y-radius*secondUp.y,
+                        equatorial.z-earth.z-radius*secondUp.z};
+    const auto secondExpected = equatorial_coordinates(relative);
+    [view clearSelection];
+    click_object(view, expected, jd);
+    check(view.selectedSmallBodyIndex == NSNotFound, "site change left stale click position active");
+    click_object(view, secondExpected, jd);
+    check(view.selectedSmallBodyIndex == 0, "site change did not rebuild object position");
+    [view focusSelection];
+    const auto horizontal = secondFrame.to_horizontal(secondExpected);
+    focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg-horizontal.azimuth_deg) < 1e-7 &&
+          std::abs(focused.center_altitude_deg-horizontal.altitude_deg) < 1e-7,
+          "focus after site change did not follow object");
+    // 同じ物体・地心のまま時刻だけ変え、地球固定地点の自転を追跡する。
+    const double later = jd + 0.25;
+    const auto earthAxis = j2000_ecliptic_to_equatorial(planet_orientation(Planet::earth, later).x_axis);
+    const Vec3 laterRelative{equatorial.x-earth.x-radius*earthAxis.x,
+                             equatorial.y-earth.y-radius*earthAxis.y,
+                             equatorial.z-earth.z-radius*earthAxis.z};
+    const auto laterExpected = equatorial_coordinates(laterRelative);
+    auto laterSnapshot = std::make_shared<SmallBodySnapshot>(*snapshot);
+    laterSnapshot->julian_date = later;
+    [view setObservationSite:first julianDate:later];
+    [view setBodies:bodies julianDate:later earthPosition:earth smallBodies:laterSnapshot
+        smallBodyDisplay:fixture.display spacecraft:nullptr];
+    [view clearSelection];
+    click_object(view, expected, later);
+    check(view.selectedSmallBodyIndex == NSNotFound, "date change left stale object position");
+    click_object(view, laterExpected, later);
+    check(view.selectedSmallBodyIndex == 0, "date change did not rotate observer position");
+    [view focusSelection];
+    const auto laterHorizontal = ObservationFrame(first, later).to_horizontal(laterExpected);
+    focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg-laterHorizontal.azimuth_deg) < 1e-7 &&
+          std::abs(focused.center_altitude_deg-laterHorizontal.altitude_deg) < 1e-7,
+          "focus after date change did not follow object");
+    [view setObserverSite:{35.68, 139.76}];
+    view.starDisplayOptions = savedStars;
+    view.planetDisplayOptions = savedPlanets;
+}
+
 void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodies& bodies, double jd) {
+    test_nearby_object_parallax(view, model, bodies, jd);
     HorizonFixture fixture;
     check(jd == fixture.frame->julian_date, "fixture requires J2000 in the ephemeris range");
     const auto earth = model.solar_bodies(jd)[3].position_au;
@@ -201,7 +330,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     view.spacecraftVisible = NO;
     __block NSString *description;
     view.selectionChanged = ^(NSString *text) { description = text; };
-    const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth);
+    const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth, horizon_observer_position(ObservationFrame([view observerSite], jd)));
     check(objects.size() == 2, "small body fixture did not yield both objects");
     click_object(view, objects[0].coordinates, jd);
     check(view.selectedSmallBodyIndex == 0 && view.selectedSpacecraftIndex == NSNotFound &&
@@ -237,13 +366,13 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     fresh->julian_date = jd + 1;
     [view setSmallBodySnapshot:fresh];
     const auto freshObjects = horizon_small_body_objects(*fresh, *fixture.display, jd + 1,
-                                                         model.solar_bodies(jd + 1)[3].position_au);
+                                                         model.solar_bodies(jd + 1)[3].position_au, horizon_observer_position(ObservationFrame([view observerSite], jd + 1)));
     click_object(view, freshObjects[0].coordinates, jd + 1);
     check(view.selectedSmallBodyIndex == 0, "updated small body snapshot was not clickable");
     [view setBodies:bodies julianDate:jd earthPosition:earth];
     view.smallBodiesVisible = NO;
     view.spacecraftVisible = YES;
-    const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, spacecraft_scene_position);
+    const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, horizon_observer_position(ObservationFrame([view observerSite], jd)), spacecraft_scene_position);
     check(probes.size() == 1, "spacecraft fixture did not yield probe");
     click_object(view, probes[0].coordinates, jd);
     check(view.selectedSpacecraftIndex == 0 && view.selectedSmallBodyIndex == NSNotFound &&
@@ -273,7 +402,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     const auto freshProbe = evaluate_spacecraft_snapshot(fixture.spacecraft->model, jd + 1);
     [view setSpacecraftSnapshot:freshProbe];
     const auto freshProbes = horizon_spacecraft_objects(*freshProbe, true, false, jd + 1,
-        model.solar_bodies(jd + 1)[3].position_au, spacecraft_scene_position);
+        model.solar_bodies(jd + 1)[3].position_au, horizon_observer_position(ObservationFrame([view observerSite], jd + 1)), spacecraft_scene_position);
     check(freshProbes.size() == 1, "updated spacecraft fixture missing");
     click_object(view, freshProbes[0].coordinates, jd + 1);
     check(view.selectedSpacecraftIndex == 0 && [description containsString:@"Test probe"],
@@ -290,7 +419,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
         const auto sample = evaluate_spacecraft_snapshot(fixture.spacecraft->model, date);
         [view setSpacecraftSnapshot:sample];
         const auto targets = horizon_spacecraft_objects(*sample, true, false, date, position,
-                                                         spacecraft_scene_position);
+                                                         horizon_observer_position(ObservationFrame([view observerSite], date)), spacecraft_scene_position);
         check(targets.size() == 1, "spacecraft sampling fixture missing");
         click_object(view, targets[0].coordinates, date);
         check(view.selectedSpacecraftIndex == 0 && [description containsString:samplingCase.second],
@@ -324,7 +453,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
         earthPosition:model.solar_bodies(nextDate)[3].position_au smallBodies:nextSmall
         smallBodyDisplay:fixture.display spacecraft:nextProbe];
     check(notifications == 1 && !sawUnavailable && view.selectedSmallBodyIndex == 0 &&
-          [description containsString:@"Test comet"] && [description containsString:@"地心距離"],
+          [description containsString:@"Test comet"] && [description containsString:@"観測地点からの距離"],
           "combined update exposed a stale small body position to selection callback");
     [view selectSpacecraft:0];
     [view selectBody:0];

@@ -627,7 +627,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _magnitudeLabel.textColor = solar ? NSColor.disabledControlTextColor : NSColor.labelColor;
     _note.stringValue = solar ? @"太陽中心 / J2000 黄道\n再生中は飛行先も公転・自転\n\n天体と着陸地点を選び「選択天体へ飛行」。地表・上空の現在地から連続移動します。\n「着陸」は上空への即時移動と降下です。\n地表ではドラッグで見回し、スクロールで高度変更。\nガス惑星は基準面。地形・大気・重力航法は未対応。" :
         @"地球中心からの概略位置\nJ2000 赤道座標 / 距離 AU\n\n固有運動・光行差・光行時間・歳差章動の補正は含みません。円の大きさは模式表示です。";
-    if (_mode.selectedSegment == 2) _note.stringValue = @"観測地点から見た方位・高度\n北0° / 東90°、地平線は高度0°\n\n地球の姿勢と指定した緯度・東経から計算します。大気差・日周視差は補正していません。\nドラッグで見回し、スクロールで拡大します。";
+    if (_mode.selectedSegment == 2) _note.stringValue = @"観測地点から見た方位・高度\n北0° / 東90°、地平線は高度0°\n\n地球の姿勢と指定した緯度・東経から計算します。小天体・PTH 探査機は日周視差を補正します。他の天体の視差と大気差は未補正です。\nドラッグで見回し、スクロールで拡大します。";
     NSString *description = solar ? _solarSelection : _mode.selectedSegment == 0 ? _skySelection : _horizonSelection;
     _selectionLabel.stringValue = description ? description : @"天体をクリックして選択できます。";
     _cameraLabel.stringValue = [_solar cameraStateDescription];

@@ -329,8 +329,10 @@ static NSString *const scriptCompatibilityNote =
         if (_scriptLookSpacecraftSnapshot) position = spacecraft_scene_position(*_scriptLookSpacecraftSnapshot, target.index);
     }
     if (!position) return NO;
-    return surface ? surfaceLook(*position, true)
-                   : [_horizon viewportForHeliocentricPosition:*position julianDate:_jd result:result];
+    if (surface) return surfaceLook(*position, true);
+    if (target.kind == ScriptLookTarget::Kind::small_body || target.kind == ScriptLookTarget::Kind::spacecraft)
+        return [_horizon viewportForTopocentricHeliocentricPosition:*position julianDate:_jd result:result];
+    return [_horizon viewportForHeliocentricPosition:*position julianDate:_jd result:result];
 }
 - (void)stopScriptCameraAnimation {
     _scriptAzimuthAnimation.reset();

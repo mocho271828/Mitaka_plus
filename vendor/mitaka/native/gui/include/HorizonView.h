@@ -100,6 +100,8 @@ struct HorizonPreparedDate {
 - (BOOL)viewportForStarHIP:(int32_t)hip result:(mitaka::gui::HorizonViewport *)result;
 - (BOOL)viewportForHeliocentricPosition:(mitaka::Vec3)position julianDate:(double)julianDate
                                   result:(mitaka::gui::HorizonViewport *)result;
+- (BOOL)viewportForTopocentricHeliocentricPosition:(mitaka::Vec3)position julianDate:(double)julianDate
+                                              result:(mitaka::gui::HorizonViewport *)result;
 - (void)focusSelection;
 - (void)resetView;
 - (void)zoomIn;

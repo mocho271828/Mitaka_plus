@@ -206,6 +206,11 @@ $(BUILD_DIR)/test_horizon_view: tests/test_horizon_view.mm $(BUILD_DIR)/HorizonV
 $(BUILD_DIR)/test_horizon_objects: tests/test_horizon_objects.cpp $(addprefix $(BUILD_DIR)/,horizon_objects.o small_body_model.o spacecraft_browser_model.o small_body_display.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
+$(BUILD_DIR)/test_horizon_real_data: tests/test_horizon_real_data.mm $(HORIZON_OBJECT_TEST_OBJECTS) $(addprefix $(BUILD_DIR)/,sky_model.o solar_camera.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+
+data-test: $(BUILD_DIR)/test_horizon_real_data
+
 $(BUILD_DIR)/test_small_body_model: tests/test_small_body_model.mm $(BUILD_DIR)/small_body_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/small_body_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
@@ -296,6 +301,7 @@ data-test: $(BUILD_DIR)/test_spacecraft_browser_model $(BUILD_DIR)/test_spacecra
 	"$(BUILD_DIR)/test_extended_catalogs" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_sky_view" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_horizon_view" "$${DATA_ROOT:?Set DATA_ROOT}"
+	"$(BUILD_DIR)/test_horizon_real_data" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_sky_model" "$${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
 	"$(BUILD_DIR)/test_solar_model" "$${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"
 	"$(BUILD_DIR)/test_planet_textures" "$${DATA_ROOT:?Set DATA_ROOT to the directory containing hip.dat and cf96.dat}"

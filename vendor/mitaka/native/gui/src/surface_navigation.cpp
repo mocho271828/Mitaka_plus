@@ -26,7 +26,7 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
     // 公式mtk_planets.cppの赤道半径。月はmtk_satellites.hの定数による球近似。
     // 木土天海の「着陸」は固体地表ではなく、この基準半径への移動を意味する。
     static constexpr std::array<SurfaceBodyInfo, 10> bodies{{
-        {2439.7, false}, {6051.8, false}, {6378.1366, false}, {3396.19, false},
+        {2439.7, false}, {6051.8, false}, {earth_reference_radius_km, false}, {3396.19, false},
         {71492, true}, {60268, true}, {25559, true}, {24764, true},
         {1185, false}, {1738.092, false}
     }};

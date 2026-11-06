@@ -7,6 +7,7 @@
 #import "GridRenderer.h"
 #import "SkyView.h"
 #include "horizon_objects.hpp"
+#include "surface_navigation.hpp"
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -275,10 +276,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     result.spacecraft = std::move(spacecraft);
     if (_smallBodiesVisible && result.smallBodies && result.smallBodyDisplay && result.smallBodies->model &&
         result.smallBodyDisplay->dataset().get() == &result.smallBodies->model->dataset())
-        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition);
+        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition, horizon_observer_position(*result.frame));
     if (_spacecraftVisible && result.spacecraft)
         result.spacecraftObjects = horizon_spacecraft_objects(*result.spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, julianDate, earthPosition, spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, julianDate, earthPosition, horizon_observer_position(*result.frame), spacecraft_scene_position);
     return result;
 }
 - (void)commitPreparedDate:(HorizonPreparedDate&&)prepared {
@@ -305,13 +306,13 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (void)rebuildMovingObjects {
     _smallBodyObjects.clear();
     _spacecraftObjects.clear();
-    if (_earthJulianDate != _julianDate) return;
+    if (_earthJulianDate != _julianDate || !_frame) return;
     if (_smallBodiesVisible && _smallBodies && _smallBodyDisplay && _smallBodies->model &&
         _smallBodyDisplay->dataset().get() == &_smallBodies->model->dataset())
-        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition);
+        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition, horizon_observer_position(*_frame));
     if (_spacecraftVisible && _spacecraft)
         _spacecraftObjects = horizon_spacecraft_objects(*_spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, horizon_observer_position(*_frame), spacecraft_scene_position);
 }
 - (void)movingObjectsChanged {
     [self rebuildMovingObjects];
@@ -434,7 +435,15 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (BOOL)viewportForHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
     if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
-    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition);
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, {0, 0, 0});
+    if (!equatorial) return NO;
+    const auto coordinates = _frame->to_horizontal(*equatorial);
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
+    return YES;
+}
+- (BOOL)viewportForTopocentricHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
+    if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, horizon_observer_position(*_frame));
     if (!equatorial) return NO;
     const auto coordinates = _frame->to_horizontal(*equatorial);
     if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
@@ -499,8 +508,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         if (!name) name = @"名称不明";
         if (object) {
             const auto horizontal = _frame->to_horizontal(object->coordinates);
-            description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n地心距離 %.6f AU",
-                name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", object->distance_au];
+            NSString *distance = object->distance_au < 0.001
+                ? [NSString stringWithFormat:@"%.6g km", object->distance_au * astronomical_unit_km]
+                : [NSString stringWithFormat:@"%.6f AU", object->distance_au];
+            description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n観測地点からの距離 %@",
+                name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", distance];
         } else description = [NSString stringWithFormat:@"%@\n現在の時刻または表示設定では位置を表示できません。", name];
         if (object && _spacecraftSelection)
             description = [description stringByAppendingFormat:@"\n%@", spacecraftSampling(*_spacecraft, *_spacecraftSelection)];
@@ -699,7 +711,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [self drawSkyBackgroundInRect:map];
     [self drawGrid:context inRect:map];
     NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · JD %.5f", _julianDate] : @"";
-    drawText([NSString stringWithFormat:@"地平座標（大気差・視差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
+    drawText([NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
         _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
     if (!_model) {
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);

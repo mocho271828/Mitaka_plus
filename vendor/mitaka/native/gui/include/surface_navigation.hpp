@@ -8,6 +8,7 @@
 namespace mitaka::gui {
 
 inline constexpr double astronomical_unit_km = 149597870.7;
+inline constexpr double earth_reference_radius_km = 6378.1366;
 inline constexpr double minimum_surface_height_km = 0.002;
 
 struct SurfaceBodyInfo {
