@@ -233,12 +233,62 @@ void previewAndCompleteLayerOrder() {
         }
         return blue;
     };
+    const auto checkHipPick = [&] {
+        const auto done = std::make_shared<bool>(false);
+        const auto selection = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selection = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "layer pick did not finish");
+        check(selection->hip && !selection->galaxy, "painted HIP must win over nearer galaxy");
+    };
     auto preview = drawImage(overlay, camera);
     check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "must inspect preview layer order");
+    checkHipPick();
     check(blueAtCenter(preview) > .65, "preview HIP must blend over the galaxy layer");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "layer fixture did not complete");
     check(blueAtCenter(drawImage(overlay, camera)) > .55, "complete HIP must blend over the galaxy layer");
+    checkHipPick();
+    [overlay setHipVisible:NO];
+    draw(overlay, camera);
+    const auto done = std::make_shared<bool>(false);
+    const auto selection = std::make_shared<GalaxyOverlaySelection>();
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+        *selection = result; *done = true;
+    }];
+    waitFor([&] { return *done; }, "hidden layer pick did not finish");
+    check(selection->galaxy && !selection->hip, "hidden HIP cannot win over visible galaxy");
+}
+void additivePreviewWinsOverPaintedGalaxy() {
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    auto snapshot = evaluate_sdss_spatial_snapshot(std::make_shared<const SdssSpatialModel>(
+        std::vector<SdssSpatialSource>{{SdssKind::galaxy, "layer", {{{0, 0}, 1, -0.26f}}}}));
+    auto galaxy = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{GalaxySdssSource{snapshot, 0}});
+    auto our = std::make_shared<OurGalaxyModel>();
+    for (auto& map : our->maps) { map.width = 512; map.height = 512; map.values.assign(512 * 512, 0); }
+    our->groups[0].positions.push_back({0, 0, 0});
+    [overlay setModel:galaxy]; [overlay setOurGalaxyModel:our];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 3000};
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview && [overlay diagnostics].our_galaxy_drawn == 1,
+          "additive fixture must display preview point");
+    const auto done = std::make_shared<bool>(false);
+    const auto selected = std::make_shared<GalaxyOverlaySelection>();
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+        *selected = result; *done = true;
+    }];
+    waitFor([&] { return *done; }, "additive preview pick did not finish");
+    check(selected->our_galaxy_point && !selected->galaxy, "additive point wins painted galaxy by layer assumption");
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "additive image did not complete");
+    *done = false; *selected = {};
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+        *selected = result; *done = true;
+    }];
+    waitFor([&] { return *done; }, "additive complete pick did not finish");
+    check(selected->our_galaxy_point && !selected->galaxy, "additive complete point wins painted galaxy");
 }
 void radiativeFailureKeepsOtherLayers() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -564,7 +614,7 @@ void ourGalaxyCompetesWithHip() {
     const auto tied = pick({0, 0, 0});
     check(tied.hip && !tied.our_galaxy_point, "existing HIP wins exact point tie");
     const auto nearer = pick({1, 0, 0});
-    check(nearer.our_galaxy_point && !nearer.hip, "nearer OurGalaxy point wins depth tie");
+    check(nearer.hip && !nearer.our_galaxy_point, "painted HIP wins over the nearer additive layer");
     const auto displaced = pick({1, 0.05, 0});
     check(displaced.hip && !displaced.our_galaxy_point, "screen distance takes precedence over depth");
 }
@@ -654,6 +704,7 @@ void tests() {
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "replacement model did not converge");
     previewAndCompleteLayerOrder();
+    additivePreviewWinsOverPaintedGalaxy();
     radiativeFailureKeepsOtherLayers();
     visibilityControls();
     transparentOurGalaxyIsNotSelectable();

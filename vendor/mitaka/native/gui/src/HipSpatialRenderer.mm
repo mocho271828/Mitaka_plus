@@ -14,13 +14,19 @@ std::size_t hip_spatial_preview_step(std::size_t count) noexcept {
     return std::max<std::size_t>(1, count / 6000 + (count % 6000 != 0));
 }
 
+bool hip_spatial_point_contains(double center_x, double center_y, double x, double y, bool preview) noexcept {
+    const auto dx = x - center_x, dy = y - center_y;
+    if (preview) return dx >= 0 && dx <= hip_spatial_preview_size && dy >= 0 && dy <= hip_spatial_preview_size;
+    return dx * dx + dy * dy <= hip_spatial_point_radius * hip_spatial_point_radius;
+}
+
 std::optional<HipSpatialPick> pick_hip_spatial_point(
     const HipSpatialModel& model, const GalaxyProjector& projector,
     double x, double y, double radius, bool preview, std::function<bool()> should_cancel) {
     if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(radius) || radius < 0 || radius > 1e7)
         throw std::invalid_argument("HIP spatial: invalid pick position or radius");
     if (!projector.contains({x, y, 0})) return std::nullopt;
-    std::optional<HipSpatialPick> nearest;
+    std::optional<HipSpatialPick> nearest, painted;
     const auto step = preview ? hip_spatial_preview_step(model.points.size()) : 1;
     std::size_t checked = 0;
     for (std::size_t index = 0; index < model.points.size(); index += step) {
@@ -28,11 +34,13 @@ std::optional<HipSpatialPick> pick_hip_spatial_point(
         const auto projected = projector.project(model.points[index].position);
         if (!projected || !projector.contains(*projected)) continue;
         const double distance = std::hypot(projected->x - x, projected->y - y);
+        if (distance <= radius && hip_spatial_point_contains(projected->x, projected->y, x, y, preview))
+            painted = HipSpatialPick{index, distance, projected->depth_pc};
         if (distance > radius || (nearest && (distance > nearest->distance_points ||
             (distance == nearest->distance_points && projected->depth_pc >= nearest->depth_pc)))) continue;
         nearest = HipSpatialPick{index, distance, projected->depth_pc};
     }
-    return should_cancel && should_cancel() ? std::nullopt : nearest;
+    return should_cancel && should_cancel() ? std::nullopt : painted ? painted : nearest;
 }
 
 std::shared_ptr<const HipSpatialModel> build_hip_spatial_model(
@@ -89,7 +97,7 @@ std::shared_ptr<const GalaxyBitmap> render_hip_spatial_bitmap(
         if (index % 256 == 0 && should_cancel && should_cancel()) return {};
         const auto point = projector.project(model.points[index].position);
         if (!point || !projector.contains(*point)) { ++counts.outside; continue; }
-        constexpr double radius = .75;
+        constexpr double radius = hip_spatial_point_radius;
         CGContextAddEllipseInRect(context.get(), CGRectMake(point->x-radius, point->y-radius, 2*radius, 2*radius));
         ++counts.drawn;
         if (++pending == 512) { CGContextFillPath(context.get()); CGContextBeginPath(context.get()); pending = 0; }

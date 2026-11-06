@@ -341,8 +341,11 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 });
                 if (painted) selected.galaxy = painted;
             }
+            const auto galaxyCandidate = selected.galaxy;
+            std::optional<HipSpatialPick> hip;
+            std::optional<OurGalaxyPointPick> ourCandidate;
             if (hipModel && hipDisplayed) {
-                const auto hip = pick_hip_spatial_point(*hipModel, projector, point.x, point.y, 8,
+                hip = pick_hip_spatial_point(*hipModel, projector, point.x, point.y, 8,
                     mode == GalaxyOverlayDisplay::preview, cancelled);
                 if (hip) {
                     bool choose = !selected.galaxy;
@@ -358,10 +361,10 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             if (ourPointsDisplayed && !cancelled()) {
                 const auto pointMode = mode == GalaxyOverlayDisplay::preview
                     ? OurGalaxyPointDisplay::preview : OurGalaxyPointDisplay::complete;
-                const auto candidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, pointMode,
+                ourCandidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, pointMode,
                     request.camera, request.size.width, request.size.height, point.x, point.y, 8, cancelled,
                     pointMode == OurGalaxyPointDisplay::complete ? ourRadiative.get() : nullptr);
-                if (candidate) {
+                if (const auto& candidate = ourCandidate) {
                     std::optional<GalaxyProjectionPc> existing;
                     if (selected.galaxy) existing = projector.project(*model->row(*selected.galaxy).position);
                     else if (selected.hip) existing = projector.project(hipModel->points[*selected.hip].position);
@@ -371,6 +374,35 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                         (candidate->distance_points == distance && candidate->depth_pc < existing->depth_pc)) {
                         selected.galaxy.reset(); selected.hip.reset(); selected.our_galaxy_point = candidate->id;
                     }
+                }
+            }
+            // 点が重なる場合は描画された図形を近傍ヒットより優先する。
+            // OurGalaxy は加算合成なので、両方が見える場合は後描き群を仮に選ぶ。
+            if (galaxyCandidate) {
+                const auto row = model->row(*galaxyCandidate);
+                const auto projected = projector.project(*row.position);
+                if (projected && galaxy_spatial_point_contains(galaxyCandidate->family, projected->x, projected->y,
+                                                               point.x, point.y, mode == GalaxyOverlayDisplay::preview)) {
+                    selected.hip.reset(); selected.our_galaxy_point.reset(); selected.galaxy = galaxyCandidate;
+                }
+            }
+            if (ourCandidate) {
+                const auto projected = projector.project(ourCandidate->position);
+                const double radius = ourSettings.styles[static_cast<std::size_t>(ourCandidate->id.group)].radius_points;
+                const double dx = projected ? point.x - projected->x : 0;
+                const double dy = projected ? point.y - projected->y : 0;
+                const bool painted = projected && (mode == GalaxyOverlayDisplay::preview
+                    ? std::abs(dx) <= .75 && std::abs(dy) <= .75 : dx * dx + dy * dy <= radius * radius);
+                if (painted) {
+                    selected.galaxy.reset(); selected.hip.reset(); selected.our_galaxy_point = ourCandidate->id;
+                }
+            }
+            // HIP は最後に SourceOver で描画する。
+            if (hip) {
+                const auto projected = projector.project(hipModel->points[hip->index].position);
+                if (projected && hip_spatial_point_contains(projected->x, projected->y, point.x, point.y,
+                                                            mode == GalaxyOverlayDisplay::preview)) {
+                    selected.galaxy.reset(); selected.our_galaxy_point.reset(); selected.hip = hip->index;
                 }
             }
             if (!selected.galaxy && !selected.hip && !selected.our_galaxy_point && ourDisplayed)
@@ -498,7 +530,8 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             for (std::size_t index = 0; index < points.size(); index += step) {
                 const auto point = projector.project(points[index].position);
                 if (point && projector.contains(*point)) {
-                    NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5),
+                    NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y,
+                                                               hip_spatial_preview_size, hip_spatial_preview_size),
                                              NSCompositingOperationSourceOver);
                     ++_diagnostics.hip_drawn;
                 }

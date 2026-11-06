@@ -67,6 +67,18 @@ void picking() {
     model.points = {{0, 1, {0,0,0}}, {1, 2, {1,0,0}}, {2, 3, {0,100,0}}};
     auto selected = pick_hip_spatial_point(model, projector, 64, 64, 8, false);
     check(selected && selected->index == 1 && near(selected->distance_points, 0), "nearer overlapping HIP selected");
+    check(hip_spatial_point_contains(64, 64, 64.7, 64, false) &&
+          !hip_spatial_point_contains(64, 64, 64.8, 64, false) &&
+          hip_spatial_point_contains(64, 64, 65.4, 65.4, true) &&
+          !hip_spatial_point_contains(64, 64, 63.9, 64, true), "drawn ellipse and preview rectangle geometry");
+    HipSpatialModel partial;
+    partial.points = {{0, 1, {0,0,0}}, {1, 2, {0,-0.01,0}}};
+    const auto first = projector.project(partial.points[0].position);
+    const auto second = projector.project(partial.points[1].position);
+    check(first && second && std::hypot(first->x-second->x, first->y-second->y) < .75 &&
+          std::hypot(first->x-second->x, first->y-second->y) > 0, "partial overlap fixture");
+    selected = pick_hip_spatial_point(partial, projector, first->x, first->y, 8, false);
+    check(selected && selected->index == 1, "last painted HIP wins over nearer HIP center");
     check(!pick_hip_spatial_point(model, projector, 0, 0, 1, false), "outside pick radius");
     check(!pick_hip_spatial_point(model, projector, -1, 64, 100, false), "outside viewport");
     check(!pick_hip_spatial_point(model, projector, 64, 64, 8, false, [] { return true; }), "pick cancellation");
