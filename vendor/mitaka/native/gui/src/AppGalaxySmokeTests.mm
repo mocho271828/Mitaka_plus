@@ -301,7 +301,31 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
     const auto expected = galaxy_camera_from_shared(shared_camera_from_solar(solar));
     return solarGalaxyFrameMatches(displayed.frame, expected.frame) && displayed.target.x_pc == expected.target.x_pc && displayed.target.y_pc == expected.target.y_pc &&
         displayed.target.z_pc == expected.target.z_pc && displayed.distance_pc == expected.distance_pc &&
-        displayed.yaw_deg == expected.yaw_deg && displayed.pitch_deg == expected.pitch_deg;
+        displayed.yaw_deg == expected.yaw_deg && displayed.pitch_deg == expected.pitch_deg &&
+        displayed.roll_deg == expected.roll_deg && displayed.frame_is_orbit == expected.frame_is_orbit &&
+        solarGalaxyVectorMatches(displayed.target_offset_au, expected.target_offset_au);
+}
+void requireCurrentTrackingFrame(SolarSystemView *view, const SolarGalaxySmokeState& state,
+                                 const char *direction) {
+    const auto camera = [view cameraState];
+    const auto diag = [view galaxyOverlayDiagnostics];
+    const auto selected = [view selectedGalaxyRecord];
+    const NSRect map = [view mapRect];
+    if (!diag.displayed || diag.display == GalaxyOverlayDisplay::none ||
+        !solarGalaxyCameraMatches(diag.displayed->camera, camera)) {
+        std::fprintf(stderr, "SDSS frame mismatch: direction=%s distance_au=%.17g display=%d\n",
+                     direction, camera.distance_au, static_cast<int>(diag.display));
+        failGalaxySmoke("SDSS displayed frame is not the current camera during zoom");
+    }
+    if (!selected || !(*selected == state.expected) ||
+        ![[view cameraStateDescription] containsString:@"選択天体を追従"])
+        failGalaxySmoke("SDSS selection or tracking was lost during zoom");
+    const GalaxyProjector projector(diag.displayed->camera, map.size.width, map.size.height);
+    const auto projected = projector.project(state.position);
+    if (!projected || !projector.contains(*projected) ||
+        std::abs(projected->x - map.size.width / 2) > 0.01 ||
+        std::abs(projected->y - map.size.height / 2) > 0.01)
+        failGalaxySmoke("tracked SDSS projection was not centered during zoom");
 }
 }
 
@@ -485,6 +509,18 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 if (!diag.displayed || !solarGalaxyCameraMatches(diag.displayed->camera, [self->_solar cameraState]) ||
                     diag.displayed_drawn == 0)
                     failGalaxySmoke("real SDSS was not rendered with the current solar camera");
+                auto stale = diag.displayed->camera;
+                stale.target_offset_au.x += 1;
+                if (solarGalaxyCameraMatches(stale, [self->_solar cameraState]))
+                    failGalaxySmoke("stale SDSS frame with different precise target was accepted");
+                stale = diag.displayed->camera;
+                stale.roll_deg += 1;
+                if (solarGalaxyCameraMatches(stale, [self->_solar cameraState]))
+                    failGalaxySmoke("stale SDSS frame with different roll was accepted");
+                stale = diag.displayed->camera;
+                stale.frame_is_orbit = !stale.frame_is_orbit;
+                if (solarGalaxyCameraMatches(stale, [self->_solar cameraState]))
+                    failGalaxySmoke("stale SDSS frame with different frame mode was accepted");
                 const NSRect map = [self->_solar mapRect];
                 const GalaxyProjector projector(diag.displayed->camera, map.size.width, map.size.height);
                 const auto projected = projector.project(state->position);
@@ -519,23 +555,26 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 for (int i = 0; i < 23; ++i) {
                     [self->_solar zoomIn];
                     [self->_solar displayIfNeeded];
+                    requireCurrentTrackingFrame(self->_solar, *state, "in");
                 }
                 if ([self->_solar cameraState].distance_au >= 1000)
                     failGalaxySmoke("zoom could not approach below 1000 AU");
                 bool overThousand = false, overParsec = false, underThousand = false, underParsec = false;
-                for (int i = 0; i < 24; ++i) {
+                for (int i = 0; i < 80 && (!overThousand || !overParsec); ++i) {
                     [self->_solar zoomOut];
                     const auto distance = [self->_solar cameraState].distance_au;
                     overThousand |= distance > 1000;
                     overParsec |= distance > astronomical_units_per_parsec;
                     [self->_solar displayIfNeeded];
+                    requireCurrentTrackingFrame(self->_solar, *state, "out");
                 }
-                for (int i = 0; i < 24; ++i) {
+                for (int i = 0; i < 80 && (!underThousand || !underParsec); ++i) {
                     [self->_solar zoomIn];
                     const auto distance = [self->_solar cameraState].distance_au;
                     underParsec |= distance < astronomical_units_per_parsec;
                     underThousand |= distance < 1000;
                     [self->_solar displayIfNeeded];
+                    requireCurrentTrackingFrame(self->_solar, *state, "in");
                 }
                 const auto followed = [self->_solar cameraState].target;
                 if (!overThousand || !overParsec || !underThousand || !underParsec)
