@@ -1,5 +1,7 @@
 #include "surface_navigation.hpp"
 #include "surface_sky_site.hpp"
+#include "mitaka/observation.hpp"
+#include "mitaka/lunar.hpp"
 
 #include <array>
 #include <cmath>
@@ -78,6 +80,43 @@ void test_surface_sky_below_datum() {
     const auto unchanged = eye(below);
     surface_sky_site_from_camera(below, bodies, 3);
     same(eye(below), unchanged);
+}
+
+void test_non_earth_sky_projection() {
+    for (const std::size_t body : {std::size_t{4},std::size_t{10}}) {
+        for (const double date : {2451545.0, 2460000.5}) {
+            auto bodies = fixture();
+            bodies[body].orientation = body == 4 ? planet_orientation(Planet::mars,date) : lunar_orientation(date);
+            for (const auto& site : {SurfaceSite{body,35,139,0.002,42,23,0,-0.25},
+                                    SurfaceSite{body,-60,-70,1,110,-12,25,0},
+                                    SurfaceSite{body,90,90,0.002,0,0,0,0}}) {
+                SurfaceNavigation nav;
+                nav.set_site(site);
+                const auto camera = nav.camera(bodies);
+                const auto recovered = surface_sky_site_from_camera(camera,bodies,body);
+                const ObservationFrame observation({recovered.latitude_deg,recovered.longitude_deg},
+                                                   bodies[body].orientation);
+                const HorizonProjectionViewport viewport{360-recovered.heading_deg,recovered.elevation_deg,
+                                                           180,1,recovered.roll_deg};
+                for (const auto angles : {HorizontalCoordinates{recovered.heading_deg,recovered.elevation_deg},
+                                          {recovered.heading_deg+5,recovered.elevation_deg+3},
+                                          {recovered.heading_deg-8,recovered.elevation_deg-5}}) {
+                    const auto equatorial = observation.to_equatorial(angles);
+                    const auto horizontal = observation.to_horizontal(equatorial);
+                    const auto projected = project_horizon({360-horizontal.azimuth_deg,horizontal.altitude_deg},
+                                                           viewport,800,600);
+                    const auto direction = j2000_equatorial_to_ecliptic(equatorial_direction(equatorial));
+                    constexpr double distance = 1e6;
+                    const Vec3 point{camera.target.x+direction.x*distance,camera.target.y+direction.y*distance,
+                                     camera.target.z+direction.z*distance};
+                    const auto solar = project_solar(point,camera,800,600);
+                    check(projected && solar, "non-Earth star and constellation must be visible");
+                    near(projected->x,solar->x,1e-5);
+                    near(projected->y,solar->y,1e-5);
+                }
+            }
+        }
+    }
 }
 
 void test_terrain_offset() {
@@ -460,7 +499,7 @@ void test_camera_rays() {
 
 int main() {
     try {
-        test_surface_sky_below_datum(); test_terrain_offset();
+        test_non_earth_sky_projection(); test_surface_sky_below_datum(); test_terrain_offset();
         test_terrain_offset_updates(); test_negative_terrain(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
         test_flight_interruptions(); test_manual_controls(); test_camera_rays();
         std::cout << "surface navigation tests passed\n";

@@ -1,5 +1,6 @@
 #include "horizon_objects.hpp"
 #include "mitaka/rotation.hpp"
+#include "mitaka/lunar.hpp"
 
 #include <cmath>
 #include "surface_navigation.hpp"
@@ -44,6 +45,23 @@ void parallax_tests() {
             }
         }
     }
+    for (double date : {jd, jd + 10}) {
+        for (const auto& orientation : {planet_orientation(Planet::mars,date), lunar_orientation(date)}) {
+            const ObservationFrame frame({0,0}, orientation);
+            const auto observer = horizon_observer_position(frame, 1737.4);
+            const auto axis = j2000_ecliptic_to_equatorial(orientation.x_axis);
+            const double scaled = 1737.4 / astronomical_unit_km;
+            require(distance(observer, {scaled*axis.x,scaled*axis.y,scaled*axis.z}) < 1e-15,
+                    "non-Earth observer follows body orientation and radius");
+        }
+    }
+    for (double invalid : {0.0, -1.0, std::numeric_limits<double>::quiet_NaN(),
+                            std::numeric_limits<double>::infinity()}) {
+        bool rejected = false;
+        try { horizon_observer_position(frame, invalid); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected, "invalid observer radius rejected");
+    }
     const auto quarter_day = horizon_observer_position(ObservationFrame({0, 0}, jd + 0.25));
     const double cosine = (observer.x*quarter_day.x + observer.y*quarter_day.y + observer.z*quarter_day.z) / (radius*radius);
     require(cosine < -0.004 && cosine > -0.005, "quarter day rotates observer by about 90.25 degrees");
@@ -58,6 +76,40 @@ void parallax_tests() {
     require(!horizon_heliocentric_coordinates({radius,0,0}, {0,0,0}, {radius,0,0}), "observer coincidence rejected");
     const double nan = std::numeric_limits<double>::quiet_NaN();
     require(!horizon_heliocentric_coordinates({1,0,0}, {0,0,0}, {nan,0,0}), "nonfinite observer rejected");
+}
+
+void other_surface_camera_tests() {
+    for (const std::size_t index : {std::size_t{4}, std::size_t{10}}) {
+        for (const double date : {2451545.0, 2460000.5}) {
+            SolarBodies bodies{};
+            const auto orientation = index == 4 ? planet_orientation(Planet::mars,date) : lunar_orientation(date);
+            bodies[index].orientation = orientation;
+            bodies[index].position_au = j2000_ecliptic_to_equatorial({1.5,-0.3,0.1});
+            for (const auto& site : {SurfaceSite{index,35,139,0.1,42,23,0,-0.25},
+                                    SurfaceSite{index,90,-180,0.002,0,0,0,0}}) {
+                SurfaceNavigation navigation;
+                navigation.set_site(site);
+                const auto camera = navigation.camera(bodies);
+                const auto basis = solar_camera_basis(camera);
+                const Vec3 camera_eye{camera.target.x+basis.outward.x*camera.distance_au,
+                                      camera.target.y+basis.outward.y*camera.distance_au,
+                                      camera.target.z+basis.outward.z*camera.distance_au};
+                const auto frame = ObservationFrame({site.latitude_deg,site.longitude_deg},orientation);
+                const auto observer = horizon_observer_position(frame, surface_body_info(index).radius_km
+                                                               + site.terrain_offset_km + site.height_km);
+                const auto offset = j2000_equatorial_to_ecliptic(observer);
+                const auto center = j2000_equatorial_to_ecliptic(bodies[index].position_au);
+                require(std::hypot(camera_eye.x-center.x-offset.x, camera_eye.y-center.y-offset.y,
+                                   camera_eye.z-center.z-offset.z) < 1e-13,
+                        "surface camera and horizon observer agree");
+                const auto look = j2000_ecliptic_to_equatorial({-basis.outward.x,-basis.outward.y,-basis.outward.z});
+                const auto horizontal = frame.to_horizontal(equatorial_coordinates(look));
+                require(std::abs(std::remainder(horizontal.azimuth_deg-site.heading_deg,360)) < 1e-8 &&
+                        std::abs(horizontal.altitude_deg-site.elevation_deg) < 1e-8,
+                        "surface camera and horizon look agree");
+            }
+        }
+    }
 }
 
 void small_body_tests() {
@@ -138,6 +190,7 @@ void spacecraft_tests() {
 int main() {
     try {
         parallax_tests();
+        other_surface_camera_tests();
         small_body_tests();
         spacecraft_tests();
         std::cout << "Horizon objects: " << checks << " checks PASS\n";

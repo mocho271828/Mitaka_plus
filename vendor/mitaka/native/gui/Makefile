@@ -137,8 +137,8 @@ $(BUILD_DIR)/test_planet_textures: tests/test_planet_textures.mm $(BUILD_DIR)/pl
 $(BUILD_DIR)/test_playback_clock: tests/test_playback_clock.cpp $(BUILD_DIR)/playback_clock.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
 
-$(BUILD_DIR)/test_surface_navigation: tests/test_surface_navigation.cpp $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o core
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_surface_navigation: tests/test_surface_navigation.cpp $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/sky_model.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
 $(BUILD_DIR)/test_interplanetary_flight: tests/test_interplanetary_flight.cpp $(BUILD_DIR)/interplanetary_flight.o $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/sky_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/interplanetary_flight.o $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
@@ -204,7 +204,7 @@ HORIZON_OBJECT_TEST_OBJECTS = $(addprefix $(BUILD_DIR)/,horizon_objects.o small_
 $(BUILD_DIR)/test_horizon_view: tests/test_horizon_view.mm $(BUILD_DIR)/HorizonView.o $(SKY_VIEW_OBJECTS) $(HORIZON_LANDSCAPE_TEST_OBJECTS) $(HORIZON_OBJECT_TEST_OBJECTS) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit $(IMAGE_FRAMEWORKS) -o "$@"
 
-$(BUILD_DIR)/test_horizon_objects: tests/test_horizon_objects.cpp $(addprefix $(BUILD_DIR)/,horizon_objects.o small_body_model.o spacecraft_browser_model.o small_body_display.o) core
+$(BUILD_DIR)/test_horizon_objects: tests/test_horizon_objects.cpp $(addprefix $(BUILD_DIR)/,horizon_objects.o small_body_model.o spacecraft_browser_model.o small_body_display.o surface_navigation.o solar_camera.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
 $(BUILD_DIR)/test_horizon_real_data: tests/test_horizon_real_data.mm $(HORIZON_OBJECT_TEST_OBJECTS) $(addprefix $(BUILD_DIR)/,sky_model.o solar_camera.o RendererQuality.o) core

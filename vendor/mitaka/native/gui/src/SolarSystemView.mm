@@ -811,20 +811,21 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
         NSString *galaxyStatus = nil;
         bool galaxyDrawn = false;
-        // 離陸完了後も、地球の局所座標で表せる間は同じ星空を維持する。
-        std::optional<SurfaceSite> earthSite;
-        if (_surfaceStarRenderer && ((frame.surface_body && *frame.surface_body == 3) ||
-                                     (_physicalSpaceActive && frame.physical_navigation && !frame.surface_body))) {
+        // 地表は同じ公開フレーム内の天体姿勢を使い、星・星座と3Dカメラを揃える。
+        // 離陸後の宇宙視点は従来どおり地球の局所座標で表せる間だけ共有する。
+        std::optional<SurfaceSite> skySite;
+        if (_surfaceStarRenderer && (frame.surface_body ||
+                                     (_physicalSpaceActive && frame.physical_navigation))) {
             try {
-                earthSite = frame.surface_body
-                    ? surface_sky_site_from_camera(frame.camera, frame.bodies, 3)
+                skySite = frame.surface_body
+                    ? surface_sky_site_from_camera(frame.camera, frame.bodies, *frame.surface_body)
                     : surface_site_from_camera(frame.camera, frame.bodies, 3);
             }
             catch (const std::invalid_argument&) {
-                // 姿勢や地球からの距離を局所座標で表せない場合は通常の銀河描画を使う。
+                // 局所座標を復元できない場合は通常の銀河描画を使う。
             }
         }
-        const bool sharedStars = earthSite.has_value();
+        const bool sharedStars = skySite.has_value();
         // 同じ全天画像を宇宙視点でも使い、銀河の 3D 描画へ徐々に引き継ぐ。
         if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
             const double opacity = solar_background_opacity(frame.camera);
@@ -873,8 +874,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         }
         if (sharedStars) {
             // 公開済みの地形フレームと同じ視点から座標を復元し、線と星のずれを避ける。
-            const auto& site = *earthSite;
-            const ObservationFrame observation({site.latitude_deg, site.longitude_deg}, frame.julian_date);
+            const auto& site = *skySite;
+            const ObservationFrame observation({site.latitude_deg, site.longitude_deg},
+                                               frame.bodies[site.body_index].orientation);
             const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
             if (_surfaceConstellationArt)
                 draw_horizon_constellation_art(context, *_surfaceConstellationArt, _surfaceConstellationOptions,
