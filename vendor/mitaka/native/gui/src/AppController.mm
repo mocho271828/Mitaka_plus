@@ -161,6 +161,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [_solar stopScriptTargetTransition];
     [_starBrightness cancel];
     [self stopScriptCameraAnimation];
+    [self stopScriptPlaceTransition];
 }
 - (void)systemDidWake:(NSNotification *)notification {
     (void)notification;
@@ -606,10 +607,12 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     }
 }
 - (void)changeMode:(id)sender {
+    if (_scriptPlaceTransition && _scriptPlaceTransition->mode != _mode.selectedSegment)
+        [self stopScriptPlaceTransition];
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
     if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
-    if (!solar) { [_solar stopScriptTargetTransition]; [_solar interruptFlight]; }
+    if (!solar) { [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
     _solar.hidden = !solar;
@@ -720,6 +723,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         site.longitude_deg = _observerLongitude;
         site.heading_deg = viewport.center_azimuth_deg;
         site.elevation_deg = viewport.center_altitude_deg;
+        site.roll_deg = viewport.roll_deg;
         NSString *error = nil;
         if (![_solar takeOffFromHorizon:site duration:_horizonAscentDuration error:&error]) {
             [self cancelHorizonProjection];
@@ -750,9 +754,12 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [self updateEnabled];
 }
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error {
-    return [self setEarthSurfaceMode:surface duration:duration force:NO error:error];
+    return [self setEarthSurfaceMode:surface duration:duration force:NO selectedSurface:NO error:error];
 }
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error {
+    return [self setEarthSurfaceMode:surface duration:duration force:force selectedSurface:YES error:error];
+}
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force selectedSurface:(BOOL)selectedSurface error:(NSString **)error {
     if (!std::isfinite(duration) || duration < 0) {
         if (error) *error = @"移動時間は 0 以上の有限数で指定してください。";
         return NO;
@@ -781,6 +788,13 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         if (_mode.selectedSegment != 1) {
             if (error) *error = @"地球付近の太陽系表示が必要です。";
             return NO;
+        }
+        const NSUInteger selectedBody = _solar.selectedBodyIndex;
+        if (selectedSurface && selectedBody != NSNotFound && selectedBody != 0 && selectedBody != 3) {
+            if (![_solar descendToSelectedSurfaceWithDuration:duration error:error]) return NO;
+            _pendingEarthDescent = NO;
+            [self surfaceNavigationChanged];
+            return YES;
         }
         _earthDescentProjectionDuration = duration * 0.4;
         if (![_solar descendToHorizonWithDuration:duration * 0.6 error:error]) return NO;
@@ -813,6 +827,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         site.longitude_deg = _observerLongitude;
         site.heading_deg = viewport.center_azimuth_deg;
         site.elevation_deg = viewport.center_altitude_deg;
+        site.roll_deg = viewport.roll_deg;
         if (force) {
             if (![_solar forceSpaceFromHorizon:site error:error]) return NO;
         } else if (![_solar takeOffFromHorizon:site duration:0 error:error]) return NO;
@@ -854,7 +869,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
             if (!samePlace) [_horizon setObserverPlaceIdentifier:std::string{}];
             [_sky setObservationSite:{site.latitude_deg, site.longitude_deg} julianDate:_jd];
             [self stopScriptCameraAnimation];
-            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].zoom, 1}];
+            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].zoom, 1, site.roll_deg}];
             _mode.selectedSegment = 2;
             [self changeMode:nil];
             [self startHorizonProjectionTo:0 duration:_earthDescentProjectionDuration];

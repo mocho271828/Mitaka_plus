@@ -120,7 +120,7 @@ HorizonSegmentProjection project_horizon_constellation_art_segment(Vec3 start, V
     const ObservationFrame& frame, const HorizonViewport& viewport,
     double width, double height, HorizonSamplingLimits limits) {
     return project(start, end, &frame, {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-        viewport.zoom, viewport.perspective_blend},
+        viewport.zoom, viewport.perspective_blend, viewport.roll_deg},
         width, height, limits);
 }
 }

@@ -138,7 +138,7 @@ TextureImage render_horizon_background(const TextureImage& texture, HorizonViewp
     if (!width || !height || width > maximum_dimension || height > maximum_dimension)
         throw std::invalid_argument("invalid horizon background output dimensions");
     const auto normalized = normalize_sky_viewport(
-        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend}, true);
+        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg}, true);
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
     const HorizonRasterProjection projection(normalized, width, height);
     for (std::size_t y = 0; y < height; ++y) {

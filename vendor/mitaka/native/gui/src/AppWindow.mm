@@ -179,7 +179,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _playback.stateChanged = ^{ [weakSelf updateEnabled]; };
     _playback.didStop = ^{ [weakSelf refreshOrbits]; };
     [self configurePlayback];
-    _horizon.userViewportChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf cancelHorizonProjection]; };
+    _horizon.userViewportChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf stopScriptPlaceTransition]; [weakSelf cancelHorizonProjection]; };
     _horizon.selectionChanged = ^(NSString *description) {
         AppController *controller = weakSelf;
         if (!controller) return;
@@ -207,6 +207,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
         if (controller) controller->_cameraLabel.stringValue = description;
     };
     _solar.navigationChanged = ^{ [weakSelf surfaceNavigationChanged]; };
+    _solar.userSurfaceViewChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf stopScriptPlaceTransition]; };
     _solar.overviewVisibilityChanged = ^(BOOL visible) {
         (void)visible;
         [weakSelf refreshSmallBodyOrbits];

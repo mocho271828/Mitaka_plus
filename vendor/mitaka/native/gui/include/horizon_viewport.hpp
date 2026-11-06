@@ -6,5 +6,6 @@ struct HorizonViewport {
     double center_altitude_deg = 0;
     double zoom = 1;
     double perspective_blend = 0;
+    double roll_deg = 0;
 };
 }

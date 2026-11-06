@@ -86,6 +86,7 @@ struct SkyViewport {
     double center_dec_deg = 0;
     double zoom = 1;
     double perspective_blend = 0;
+    double roll_deg = 0;
 };
 
 struct ScreenPoint { double x, y; };
@@ -133,6 +134,8 @@ private:
     double center_ra_deg_;
     double cos_tilt_;
     double sin_tilt_;
+    double cos_roll_;
+    double sin_roll_;
     double perspective_blend_;
     double zoom_;
     std::vector<std::array<double, 2>> longitudes_;

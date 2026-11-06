@@ -35,8 +35,8 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
     return bodies[body_index - 1];
 }
 
-SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
-                                     std::size_t body_index) {
+static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, const SolarBodies& bodies,
+                                                 std::size_t body_index, bool preserve_roll) {
     const auto info = surface_body_info(body_index);
     const auto& body = bodies.at(body_index);
     const auto basis = solar_camera_basis(camera);
@@ -61,15 +61,31 @@ SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodie
     const Vec3 forward{-basis.outward.x, -basis.outward.y, -basis.outward.z};
     const double elevation = std::asin(std::clamp(dot(forward, up), -1.0, 1.0)) / radians_per_degree;
     // 天頂・天底では視線の水平成分が消えるため、右方向から方位を復元する。
-    const double azimuth = std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
+    const double northward = dot(forward, north), eastward = dot(forward, east);
+    const double azimuth = preserve_roll && std::hypot(northward, eastward) > 1e-12
+        ? std::atan2(eastward, northward) / radians_per_degree
+        : std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
     SurfaceSite site{body_index, latitude / radians_per_degree, longitude / radians_per_degree,
                      height, azimuth, elevation};
     SurfaceNavigation candidate;
     candidate.set_site(site);
     const auto restored = solar_camera_basis(candidate.camera(bodies));
-    if (dot(restored.right, basis.right) < 1.0 - 1e-10 || dot(restored.up, basis.up) < 1.0 - 1e-10)
+    if (preserve_roll) {
+        site.roll_deg = std::atan2(dot(basis.right, restored.up), dot(basis.right, restored.right)) / radians_per_degree;
+        candidate.set_site(site);
+    } else if (dot(restored.right, basis.right) < 1.0 - 1e-10 || dot(restored.up, basis.up) < 1.0 - 1e-10)
         throw std::invalid_argument("camera roll cannot be represented by surface navigation");
     return candidate.site();
+}
+
+SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
+                                     std::size_t body_index) {
+    return surface_site_from_camera_impl(camera, bodies, body_index, false);
+}
+
+SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const SolarBodies& bodies,
+                                               std::size_t body_index) {
+    return surface_site_from_camera_impl(camera, bodies, body_index, true);
 }
 
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
@@ -112,11 +128,13 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
     if (!std::isfinite(site.latitude_deg) || std::abs(site.latitude_deg) > 90
         || !std::isfinite(site.longitude_deg) || !std::isfinite(site.heading_deg)
         || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 90
+        || !std::isfinite(site.roll_deg)
         || !std::isfinite(site.height_km) || site.height_km < minimum_surface_height_km
         || site.height_km > maximum_height_km)
         throw std::invalid_argument("invalid surface site");
     site.longitude_deg = std::remainder(site.longitude_deg, 360);
     site.heading_deg = heading(site.heading_deg);
+    site.roll_deg = std::remainder(site.roll_deg, 360);
     site_ = site;
     interrupt();
 }
@@ -141,11 +159,16 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
                           north.z * ch + east.z * sh};
     const Vec3 forward{horizontal.x * ce + up.x * se, horizontal.y * ce + up.y * se,
                        horizontal.z * ce + up.z * se};
-    const SolarCameraBasis frame{
+    SolarCameraBasis frame{
         {-forward.x, -forward.y, -forward.z},
         {east.x * ch - north.x * sh, east.y * ch - north.y * sh, east.z * ch - north.z * sh},
         {up.x * ce - horizontal.x * se, up.y * ce - horizontal.y * se, up.z * ce - horizontal.z * se}
     };
+    const double roll = site_.roll_deg * radians_per_degree;
+    const double cr = std::cos(roll), sr = std::sin(roll);
+    const auto right = frame.right, cameraUp = frame.up;
+    frame.right = {right.x * cr + cameraUp.x * sr, right.y * cr + cameraUp.y * sr, right.z * cr + cameraUp.z * sr};
+    frame.up = {cameraUp.x * cr - right.x * sr, cameraUp.y * cr - right.y * sr, cameraUp.z * cr - right.z * sr};
     const double distance = (info.radius_km + site_.height_km) / astronomical_unit_km;
     SolarCamera result;
     result.distance_au = distance;
@@ -158,33 +181,37 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
     return result;
 }
 
-void SurfaceNavigation::begin_flight(double time, double height, double elevation, double duration) {
+void SurfaceNavigation::begin_flight(double time, double height, double elevation, double roll, double duration) {
     if (!std::isfinite(time)) throw std::invalid_argument("flight time must be finite");
     if (!std::isfinite(duration) || duration < 0) throw std::invalid_argument("flight duration must be nonnegative and finite");
     if (duration == 0) {
         site_.height_km = height;
         site_.elevation_deg = elevation;
+        site_.roll_deg = roll;
         interrupt();
         return;
     }
-    if (site_.height_km == height && site_.elevation_deg == elevation) {
+    if (site_.height_km == height && site_.elevation_deg == elevation && site_.roll_deg == roll) {
         interrupt();
         return;
     }
-    flight_ = Flight{time, time, site_.height_km, height, site_.elevation_deg, elevation, duration};
+    flight_ = Flight{time, time, site_.height_km, height, site_.elevation_deg, elevation,
+                     site_.roll_deg, roll, duration};
 }
 
 void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_seconds) {
     begin_flight(monotonic_seconds, std::max(site_.height_km,
-                 surface_body_info(site_.body_index).radius_km * 8), -80, duration_seconds);
+                 surface_body_info(site_.body_index).radius_km * 8), -80, site_.roll_deg, duration_seconds);
 }
 
 void SurfaceNavigation::begin_descent(double monotonic_seconds, double duration_seconds) {
-    begin_flight(monotonic_seconds, minimum_surface_height_km, 0, duration_seconds);
+    begin_flight(monotonic_seconds, minimum_surface_height_km, 0, site_.roll_deg, duration_seconds);
 }
 
-void SurfaceNavigation::begin_descent_preserving_look(double monotonic_seconds, double duration_seconds) {
-    begin_flight(monotonic_seconds, minimum_surface_height_km, site_.elevation_deg, duration_seconds);
+void SurfaceNavigation::begin_descent_preserving_look(double monotonic_seconds, double duration_seconds,
+                                                      bool level_roll) {
+    begin_flight(monotonic_seconds, minimum_surface_height_km, site_.elevation_deg,
+                 level_roll ? 0 : site_.roll_deg, duration_seconds);
 }
 
 bool SurfaceNavigation::advance(double monotonic_seconds) {
@@ -199,18 +226,20 @@ bool SurfaceNavigation::advance(double monotonic_seconds) {
     const double t = std::clamp((monotonic_seconds - flight.start_time) / flight.duration, 0.0, 1.0);
     if (t == 0) return false;
     const double smooth = t * t * (3 - 2 * t);
-    const double old_height = site_.height_km, old_elevation = site_.elevation_deg;
+    const double old_height = site_.height_km, old_elevation = site_.elevation_deg, old_roll = site_.roll_deg;
     // 2mから惑星規模までの距離差を、地表付近で急激に飛ばない対数高度でつなぐ。
     site_.height_km = std::clamp(std::exp(std::log(flight.start_height) * (1 - smooth)
                               + std::log(flight.end_height) * smooth),
                               minimum_surface_height_km, maximum_height_km);
     site_.elevation_deg = flight.start_elevation * (1 - smooth) + flight.end_elevation * smooth;
+    site_.roll_deg = flight.start_roll * (1 - smooth) + flight.end_roll * smooth;
     if (t == 1) {
         site_.height_km = flight.end_height;
         site_.elevation_deg = flight.end_elevation;
+        site_.roll_deg = flight.end_roll;
         interrupt();
     }
-    return site_.height_km != old_height || site_.elevation_deg != old_elevation;
+    return site_.height_km != old_height || site_.elevation_deg != old_elevation || site_.roll_deg != old_roll;
 }
 
 void SurfaceNavigation::look(double dx_points, double dy_points) {

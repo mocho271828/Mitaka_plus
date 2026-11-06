@@ -132,6 +132,7 @@ NSStackView *observerRow(NSString *title, NSView *control) {
 - (void)applyObserver:(id)sender {
     (void)sender;
     if (!_model || _loading) return;
+    [self stopScriptPlaceTransition];
     const NSInteger index = _observerPlacesPopup.indexOfSelectedItem - 1;
     if (_observerPlaces && index >= 0 && static_cast<std::size_t>(index) < _observerPlaces->places.size() &&
         !observer_place_is_earth(_observerPlaces->places[index])) {

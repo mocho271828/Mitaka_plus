@@ -49,6 +49,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @property(nonatomic, readonly) BOOL flightAnimating;
 @property(nonatomic) BOOL showsTimeInfo;
 @property(nonatomic, copy) void (^navigationChanged)(void);
+@property(nonatomic, copy) void (^userSurfaceViewChange)(void);
 // 全体表示と地球・月／地表／飛行表示の切替後に通知する。カメラ移動だけでは通知しない。
 @property(nonatomic, copy) void (^overviewVisibilityChanged)(BOOL visible);
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel;
@@ -96,6 +97,13 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)applyScriptZoomMode:(int)mode previousRadius:(std::optional<double>)previousRadius initialDistance:(double)initialDistance;
 - (void)stopScriptTargetTransition;
 - (void)animateScriptTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
+- (void)animateScriptPlaceTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
+- (BOOL)selectScriptEarthPlaceLatitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error;
+- (BOOL)moveScriptEarthSurfaceLatitude:(double)latitude longitude:(double)longitude;
+- (void)setScriptEarthPlaceTarget:(const std::string&)target;
+- (const std::string&)scriptEarthPlaceTarget;
+- (const std::string&)scriptOverviewTarget;
+- (BOOL)selectScriptOverviewTarget:(const std::string&)target error:(NSString **)error;
 - (BOOL)selectScriptStarTarget:(const std::string&)target error:(NSString **)error;
 - (std::optional<std::int32_t>)selectedScriptStarHIP;
 - (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedScriptGalaxyRecord;
@@ -150,6 +158,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)forceSpaceFromHorizon:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)descendToHorizon:(NSString **)error;
 - (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error;
+- (BOOL)descendToSelectedSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)earthSurfaceSite:(mitaka::gui::SurfaceSite *)site;

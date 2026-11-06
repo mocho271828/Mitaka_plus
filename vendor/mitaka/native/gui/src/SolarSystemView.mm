@@ -227,6 +227,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)clearGalaxySelection {
     [self stopScriptTargetTransition];
+    _scriptOverviewTarget.clear();
+    _scriptEarthPlaceTarget.clear();
+    _scriptSpacePlace.reset();
     [_galaxyOverlay invalidatePendingPicks]; _galaxySelection.reset(); _hipSelection.reset(); _ourGalaxySelected = NO;
 }
 - (void)setGalaxyVisibility:(GalaxySpatialVisibility)visibility {
@@ -283,11 +286,17 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)updateTrackedCamera {
     if (_journeyActive) {
         if (_journey.flying()) [self updateJourneyAtTime:_lastFlightTime];
-    } else if (_surfaceActive) _camera = _navigation.camera(_bodies);
+    } else if (_surfaceActive) {
+        _camera = _navigation.camera(_bodies);
+        if (_navigation.flying()) [self restoreFlightOrientation];
+    }
     else if (_earthMoonMode && _earthMoonFollowing) {
         const Vec3 earth = [self displayPosition:3], moon = [self displayPosition:10];
         _camera.target = {(earth.x + moon.x) / 2, (earth.y + moon.y) / 2, (earth.z + moon.z) / 2};
-    } else if (_following && _selection) _camera.target = [self displayPosition:*_selection];
+    } else if (_following && _selection) {
+        _camera.target = _scriptSpacePlace && *_selection == 3
+            ? [self scriptSpacePlacePositionForBodies:_bodies] : [self displayPosition:*_selection];
+    }
     else if (_following && _smallBodySelection && _smallBodySnapshot) {
         const auto& position = _smallBodySnapshot->positions[*_smallBodySelection];
         if (position) _camera.target = *position;
@@ -705,7 +714,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             // 公開済みの地形フレームと同じ視点から座標を復元し、線と星のずれを避ける。
             const auto& site = *earthSite;
             const ObservationFrame observation({site.latitude_deg, site.longitude_deg}, frame.julian_date);
-            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 1, 1};
+            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 1, 1, site.roll_deg};
             if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
                 const double maximumDimension = self.flightAnimating ? 512 : 1024;
                 const double scale = std::min(1.0, maximumDimension / std::max(frame.map.size.width, frame.map.size.height));
@@ -713,8 +722,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 const auto height = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.height * scale), 1.0, maximumDimension));
                 // AU 座標からの再計算誤差で、垂直移動中に同じ背景を毎フレーム生成しない。
                 const auto stable = [](double value) { return std::round(value * 1e7) / 1e7; };
-                const std::array<double, 7> key{stable(site.latitude_deg), stable(site.longitude_deg),
-                    stable(site.heading_deg), stable(site.elevation_deg), frame.julian_date,
+                const std::array<double, 8> key{stable(site.latitude_deg), stable(site.longitude_deg),
+                    stable(site.heading_deg), stable(site.elevation_deg), stable(site.roll_deg), frame.julian_date,
                     static_cast<double>(width), static_cast<double>(height)};
                 if (!_surfaceBackgroundKey || *_surfaceBackgroundKey != key) {
                     const auto pixels = render_horizon_background(*texture, viewport, observation, width, height);

@@ -93,7 +93,7 @@ ConstellationRenderStats draw_horizon_constellations(CGContextRef context, const
         }, [&](EquatorialCoordinates point) {
             const auto horizontal = frame.to_horizontal(point);
             return project_horizon({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
-                {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend}, map.size.width, map.size.height);
+                {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg}, map.size.width, map.size.height);
         });
 }
 }

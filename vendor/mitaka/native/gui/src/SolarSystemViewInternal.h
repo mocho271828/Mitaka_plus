@@ -54,7 +54,7 @@ struct ScriptTargetAnimation {
     std::shared_ptr<const mitaka::gui::SkyBackgrounds> _surfaceBackgrounds;
     mitaka::gui::MilkyWayMode _surfaceMilkyWayMode;
     NSImage *_surfaceBackgroundImage;
-    std::optional<std::array<double, 7>> _surfaceBackgroundKey;
+    std::optional<std::array<double, 8>> _surfaceBackgroundKey;
     mitaka::gui::StarDisplayOptions _surfaceStarOptions;
     double _surfaceMagnitudeLimit;
     BOOL _hipVisible;
@@ -72,6 +72,7 @@ struct ScriptTargetAnimation {
     NSTimer *_targetTimer;
     std::optional<ScriptTargetAnimation> _targetAnimation;
     std::optional<mitaka::gui::PlusOrientationQuaternion> _scriptOrientation;
+    std::optional<mitaka::gui::PlusOrientationQuaternion> _flightOrientation;
     NSString *_flightNotice;
     BOOL _surfaceActive;
     BOOL _physicalSpaceActive;
@@ -83,6 +84,9 @@ struct ScriptTargetAnimation {
     double _lastFlightTime;
     std::shared_ptr<const mitaka::gui::PlanetTextures> _textures;
     std::optional<std::size_t> _selection;
+    std::string _scriptEarthPlaceTarget;
+    std::string _scriptOverviewTarget;
+    std::optional<mitaka::gui::SurfaceSite> _scriptSpacePlace;
     std::shared_ptr<const mitaka::gui::SmallBodySnapshot> _smallBodySnapshot;
     std::optional<std::size_t> _smallBodySelection;
     BOOL _smallBodiesVisible;
@@ -129,6 +133,7 @@ struct ScriptTargetAnimation {
 - (std::vector<std::string>)terrainDiagnostics;
 - (NSRect)mapRect;
 - (mitaka::Vec3)displayPosition:(NSUInteger)index;
+- (mitaka::Vec3)scriptSpacePlacePositionForBodies:(const mitaka::gui::SolarBodies&)bodies;
 - (SolarScene)scene;
 - (CGFloat)radiusForBody:(NSUInteger)index depth:(double)depth;
 - (void)updateTrackedCamera;
@@ -149,6 +154,7 @@ struct ScriptTargetAnimation {
 - (void)leaveNavigation;
 - (void)advanceFlightAtTime:(double)time;
 - (void)updateJourneyAtTime:(double)time;
+- (void)restoreFlightOrientation;
 - (void)startFlightTimer;
 - (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site ascending:(BOOL)ascending preserveLook:(BOOL)preserveLook duration:(double)duration error:(NSString **)error;
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom;

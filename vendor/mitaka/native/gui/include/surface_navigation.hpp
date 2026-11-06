@@ -25,12 +25,16 @@ struct SurfaceSite {
     double height_km = minimum_surface_height_km;
     double heading_deg = 0; // 北0、東90。
     double elevation_deg = 0; // 地平線0、天頂90。
+    double roll_deg = 0;
 };
 
 // カメラが天体外にあり、地表の水平姿勢で表せる場合だけ逆変換する。
 // ロールや範囲外の高度を暗黙に捨てず、invalid_argument で拒否する。
 SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
                                      std::size_t body_index);
+// 通常降下ではロールを保持したまま地表の局所姿勢へ変換する。
+SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const SolarBodies& bodies,
+                                               std::size_t body_index);
 
 // 遠距離等からの強制着陸は天体中心から見た視点方向に着陸し、ロールを捨てる。
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
@@ -47,8 +51,9 @@ public:
     // 既定では実時間3秒。0秒は即時移動。
     void begin_ascent(double monotonic_seconds, double duration_seconds = 3);
     void begin_descent(double monotonic_seconds, double duration_seconds = 3);
-    // 既存の視線方向を維持して地表に降下する。
-    void begin_descent_preserving_look(double monotonic_seconds, double duration_seconds = 3);
+    // 視線方向を維持して降下し、必要な場合は水平姿勢に戻す。
+    void begin_descent_preserving_look(double monotonic_seconds, double duration_seconds = 3,
+                                      bool level_roll = false);
     // >1秒の空白、時計逆行、非有限時計は現在位置を保って中断する。
     // 戻り値は視点が変化したか。開始時の非有限時計はinvalid_argument。
     bool advance(double monotonic_seconds);
@@ -60,9 +65,9 @@ public:
 private:
     struct Flight {
         double start_time, previous_time, start_height, end_height;
-        double start_elevation, end_elevation, duration;
+        double start_elevation, end_elevation, start_roll, end_roll, duration;
     };
-    void begin_flight(double time, double height, double elevation, double duration);
+    void begin_flight(double time, double height, double elevation, double roll, double duration);
     SurfaceSite site_;
     std::optional<Flight> flight_;
 };

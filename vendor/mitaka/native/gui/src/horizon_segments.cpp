@@ -139,7 +139,7 @@ HorizonSegmentProjection project_equatorial_segment_to_horizon(
     start.right_ascension_deg = positive_degrees(start.right_ascension_deg);
     end.right_ascension_deg = positive_degrees(end.right_ascension_deg);
     const SkyViewport sky_viewport{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-        viewport.zoom, viewport.perspective_blend};
+        viewport.zoom, viewport.perspective_blend, viewport.roll_deg};
     return Sampler(start, end, frame, sky_viewport, width, height, limits).run(
         rotate_horizon({360 - first.azimuth_deg, first.altitude_deg}, sky_viewport),
         rotate_horizon({360 - last.azimuth_deg, last.altitude_deg}, sky_viewport));

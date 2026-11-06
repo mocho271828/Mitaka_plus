@@ -158,7 +158,7 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     end.right_ascension_deg = start.right_ascension_deg;
                 const auto segments = horizontal_projection
                     ? project_equatorial_segment_to_horizon(line[index - 1], line[index], cache.frame(),
-                        {360 - viewport.center_ra_deg, viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend},
+                        {360 - viewport.center_ra_deg, viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg},
                         map.size.width, map.size.height).segments
                     : project_sky_segment(start, end, viewport, map.size.width, map.size.height);
                 for (const auto& segment : segments) {

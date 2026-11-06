@@ -21,7 +21,7 @@ namespace {
 struct BackgroundKey {
     const SkyBackgrounds* model;
     MilkyWayMode mode;
-    std::array<double, 7> observationViewport;
+    std::array<double, 8> observationViewport;
     std::size_t width, height;
     bool operator==(const BackgroundKey& other) const {
         return model == other.model && mode == other.mode && observationViewport == other.observationViewport
@@ -30,11 +30,11 @@ struct BackgroundKey {
 };
 // 共通の投影座標系では、方位を右向きにするため経度を反転する。
 SkyViewport skyViewport(HorizonViewport viewport) {
-    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend};
+    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg};
 }
 HorizonViewport horizonViewport(SkyViewport viewport) {
     viewport = normalize_sky_viewport(viewport, true);
-    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend};
+    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg};
 }
 std::optional<ScreenPoint> projectHorizontal(HorizontalCoordinates coordinates,
                                              HorizonViewport viewport, NSSize size) {
@@ -388,7 +388,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (!_selection && !moving) return;
     const auto coordinates = _frame->to_horizontal(moving ? moving->coordinates : [self selectionCoordinates]);
     if (self.userViewportChange) self.userViewportChange();
-    [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::max(4.0, _viewport.zoom)}];
+    [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::max(4.0, _viewport.zoom),
+                       _viewport.perspective_blend, _viewport.roll_deg}];
 }
 - (BOOL)lookAtBody:(Body)body {
     HorizonViewport target;
@@ -401,7 +402,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto found = std::find_if(_bodies.begin(), _bodies.end(), [body](const auto& candidate) { return candidate.id == body; });
     if (found == _bodies.end()) return NO;
     const auto coordinates = _frame->to_horizontal(found->coordinates);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (BOOL)lookAtStarHIP:(int32_t)hip {
@@ -416,7 +417,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (!index) return NO;
     const auto& star = _model->stars()[*index];
     const auto coordinates = _frame->to_horizontal({star.right_ascension_degrees, star.declination_degrees});
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (BOOL)viewportForHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
@@ -424,7 +425,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition);
     if (!equatorial) return NO;
     const auto coordinates = _frame->to_horizontal(*equatorial);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (void)selectBody:(NSUInteger)index {
@@ -597,7 +598,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const BackgroundKey key{_backgrounds.get(), _milkyWayMode,
         {_site.latitude_deg, _site.longitude_deg, _julianDate,
          _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.zoom,
-         _viewport.perspective_blend}, width, height};
+         _viewport.perspective_blend, _viewport.roll_deg}, width, height};
     // 非表示中の日時更新は描画まで評価しない。同一 JD の天体更新も画像を再生成しない。
     if (!_backgroundImage || !_backgroundKey || !(*_backgroundKey == key)) {
         const auto pixels = render_horizon_background(*texture, _viewport, *_frame, width, height);
@@ -619,7 +620,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         fraction:1 respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
 }
 - (void)drawGrid:(CGContextRef)context inRect:(NSRect)map {
-    if (!_landscapeRenderer.hasModel && _viewport.perspective_blend > 0) {
+    if (!_landscapeRenderer.hasModel && (_viewport.perspective_blend > 0 || _viewport.roll_deg != 0)) {
         // 投影の変形中も、画素の逆投影で地平線の上下を判定する。
         const int columns = std::max(1, static_cast<int>(std::ceil(map.size.width)));
         const int rows = 64;

@@ -53,6 +53,20 @@ struct ScriptCameraAnimation {
     bool smooth;
 };
 
+struct ScriptPlaceTransition {
+    mitaka::Vec3 start, tangent;
+    double angle, start_time, duration, latitude, longitude;
+    NSInteger mode;
+    std::string target;
+};
+
+struct HorizonOrientationAnimation {
+    PlusOrientationQuaternion initial, target;
+    PlusOrientationEuler initial_euler, target_euler;
+    double start_time, duration;
+    bool smooth, quaternion, relative;
+};
+
 struct ScriptLookTarget {
     enum class Kind { body, star, small_body, spacecraft, constellation, satellite, galaxy, our_galaxy } kind;
     std::size_t index;
@@ -93,7 +107,10 @@ struct ScriptLookTarget {
     DisplayOutputController *_displayOutput;
     ScriptController *_scripts;
     NSTimer *_scriptCameraTimer;
+    NSTimer *_scriptPlaceTimer;
+    std::optional<ScriptPlaceTransition> _scriptPlaceTransition;
     std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;
+    std::optional<HorizonOrientationAnimation> _horizonOrientationAnimation;
     std::optional<ScriptLookTarget> _scriptLookTarget;
     std::shared_ptr<const SmallBodySnapshot> _scriptLookSmallBodySnapshot;
     std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
@@ -178,6 +195,7 @@ struct ScriptLookTarget {
 - (void)cancelHorizonProjection;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error;
+- (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force selectedSurface:(BOOL)selectedSurface error:(NSString **)error;
 - (void)takeOffFromHorizon:(id)sender;
 - (void)descendToHorizon:(id)sender;
 - (void)stepHour:(NSButton *)sender;
@@ -359,6 +377,7 @@ struct ScriptLookTarget {
 - (void)cancelScript:(id)sender;
 - (void)configureScripts;
 - (void)stopScriptCameraAnimation;
+- (void)stopScriptPlaceTransition;
 - (BOOL)applyScriptAction:(const mitaka::gui::ScriptAction&)action error:(NSString **)error;
 @end
 

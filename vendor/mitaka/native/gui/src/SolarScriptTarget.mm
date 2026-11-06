@@ -12,8 +12,37 @@
 using namespace mitaka;
 using namespace mitaka::gui;
 
+@interface SolarSystemView (ScriptTargetAnimationInternal)
+- (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration includeOrientation:(BOOL)includeOrientation;
+@end
+
 @implementation SolarSystemView (ScriptTargets)
+- (Vec3)scriptSpacePlacePositionForBodies:(const SolarBodies&)bodies {
+    SurfaceNavigation navigation;
+    navigation.set_site(*_scriptSpacePlace);
+    const auto camera = navigation.camera(bodies);
+    const auto basis = solar_camera_basis(camera);
+    return {camera.target.x + basis.outward.x * camera.distance_au,
+            camera.target.y + basis.outward.y * camera.distance_au,
+            camera.target.z + basis.outward.z * camera.distance_au};
+}
+- (void)setScriptEarthPlaceTarget:(const std::string&)target { _scriptEarthPlaceTarget = target; }
+- (const std::string&)scriptEarthPlaceTarget { return _scriptEarthPlaceTarget; }
+- (const std::string&)scriptOverviewTarget { return _scriptOverviewTarget; }
+- (BOOL)moveScriptEarthSurfaceLatitude:(double)latitude longitude:(double)longitude {
+    SurfaceSite site;
+    if (![self scriptSurfaceSite:&site] || site.body_index != 3) return NO;
+    site.latitude_deg = latitude;
+    site.longitude_deg = longitude;
+    _navigation.set_site(site);
+    _camera = _navigation.camera(_bodies);
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
+}
 - (std::optional<double>)scriptTargetRadiusAU {
+    if (_scriptOverviewTarget == "Other.SolarSystem") return 50.0;
+    if (_scriptOverviewTarget == "Other.LSS") return 100000000.0 * astronomical_units_per_parsec;
     if (_selection) {
         const auto index = *_selection;
         const double radius = index == 0 ? 696000.0 : surface_body_info(index).radius_km;
@@ -57,6 +86,8 @@ using namespace mitaka::gui;
     constexpr double pi = 3.14159265358979323846;
     const double weight = (1.0 - std::cos(pi * t)) / 2.0;
     Vec3 target = state.body ? [self displayPosition:*state.body] : state.target;
+    if (_scriptSpacePlace && state.body && *state.body == 3)
+        target = [self scriptSpacePlacePositionForBodies:_bodies];
     if (state.small_body) {
         if (!_smallBodySnapshot || !_smallBodySelection || *_smallBodySelection != *state.small_body ||
             *state.small_body >= _smallBodySnapshot->positions.size() || !_smallBodySnapshot->positions[*state.small_body]) {
@@ -105,12 +136,18 @@ using namespace mitaka::gui;
     self.needsDisplay = YES;
 }
 - (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration {
+    [self animateScriptTargetFrom:initial duration:duration includeOrientation:NO];
+}
+- (void)animateScriptPlaceTargetFrom:(const SolarCamera&)initial duration:(double)duration {
+    [self animateScriptTargetFrom:initial duration:duration includeOrientation:YES];
+}
+- (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration includeOrientation:(BOOL)includeOrientation {
     [self stopScriptTargetTransition];
     if (duration == 0) return;
     const auto destination = _camera;
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     std::optional<PlusOrientationQuaternion> initialOrientation, targetOrientation;
-    if (_ourGalaxySelected) {
+    if (_ourGalaxySelected || includeOrientation) {
         initialOrientation = plus_orientation_from_basis(solar_camera_basis(initial));
         targetOrientation = plus_orientation_from_basis(solar_camera_basis(destination));
     }
@@ -126,6 +163,50 @@ using namespace mitaka::gui;
         if (view) [view advanceScriptTargetTransition]; else [timer invalidate];
     }];
     [NSRunLoop.mainRunLoop addTimer:_targetTimer forMode:NSRunLoopCommonModes];
+}
+- (BOOL)selectScriptEarthPlaceLatitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error {
+    if (!_hasData) {
+        if (error) *error = @"Solar system is unavailable";
+        return NO;
+    }
+    try {
+        SurfaceSite site;
+        if (surface) {
+            if (![self scriptSurfaceSite:&site])
+                throw std::invalid_argument("Earth place selection requires a surface observer");
+            site.body_index = 3;
+            site.latitude_deg = latitude;
+            site.longitude_deg = longitude;
+            SurfaceNavigation next;
+            next.set_site(site);
+            const auto camera = next.camera(_bodies);
+            [self interruptFlight];
+            _navigation = next;
+            _camera = camera;
+            [self selectBody:3];
+        } else {
+            site = SurfaceSite{3, latitude, longitude, surface_body_info(3).radius_km * 8, 0, -90};
+            SurfaceNavigation next;
+            next.set_site(site);
+            auto camera = next.camera(_bodies);
+            camera.distance_au = _camera.distance_au;
+            camera.frame_is_orbit = true;
+            [self leaveNavigation];
+            [self selectBody:3];
+            site.height_km = minimum_surface_height_km;
+            _scriptSpacePlace = site;
+            camera.target = [self scriptSpacePlacePositionForBodies:_bodies];
+            _camera = camera;
+            _physicalSpaceActive = YES;
+            _following = YES;
+        }
+    } catch (const std::exception& failure) {
+        if (error) *error = [NSString stringWithUTF8String:failure.what()];
+        return NO;
+    }
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
 }
 - (std::optional<std::int32_t>)selectedScriptStarHIP {
     const auto model = [_galaxyOverlay hipModel];
@@ -176,6 +257,28 @@ using namespace mitaka::gui;
     _ourGalaxySelected = YES;
     _following = YES;
     _camera = destination;
+    [self notifySelection];
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
+}
+
+- (BOOL)selectScriptOverviewTarget:(const std::string&)target error:(NSString **)error {
+    if (!_hasData || (target != "Other.SolarSystem" && target != "Other.LSS")) {
+        if (error) *error = @"Overview target is unavailable";
+        return NO;
+    }
+    const auto frame = solar_camera_basis(_camera);
+    [self leaveNavigation];
+    [self clearGalaxySelection];
+    _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
+    if (target == "Other.SolarSystem") _selection = 0;
+    _scriptOverviewTarget = target;
+    _following = YES;
+    _camera.target = [self displayPosition:0];
+    _camera.frame = frame;
+    _camera.frame_is_orbit = true;
+    _camera.roll_deg = 0;
     [self notifySelection];
     [self notifyCamera];
     self.needsDisplay = YES;

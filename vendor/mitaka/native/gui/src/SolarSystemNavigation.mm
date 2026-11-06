@@ -24,6 +24,7 @@ static double monotonicSeconds() {
     _navigation.interrupt();
     _exitSurfaceAfterAscent = NO;
     if (_journeyActive) _journey.interrupt();
+    else if (_surfaceActive) [self restoreFlightOrientation];
     [self invalidateFlightTimer];
     if (flying) {
         _flightNotice = _journeyActive ? @"飛行を停止 · 現在位置から再開できます" : @"飛行を中断";
@@ -34,6 +35,7 @@ static double monotonicSeconds() {
 - (void)leaveNavigation {
     [self stopScriptTargetTransition];
     [self stopScriptOrientation];
+    _flightOrientation.reset();
     [self interruptFlight];
     _journey = InterplanetaryFlight{};
     _journeyActive = NO;
@@ -78,6 +80,7 @@ static double monotonicSeconds() {
         _navigation.advance(time);
         _lastFlightTime = time;
         _camera = _navigation.camera(_bodies);
+        [self restoreFlightOrientation];
         if (!_navigation.flying()) {
             if (_exitSurfaceAfterAscent && !interrupted) {
                 _physicalSpaceActive = YES;
@@ -115,7 +118,9 @@ static double monotonicSeconds() {
         else if (preserveLook) next.begin_descent_preserving_look(time, duration);
         else next.begin_descent(time, duration);
         const SolarCamera camera = next.camera(_bodies);
+        [self stopScriptTargetTransition];
         [self stopScriptOrientation];
+        _flightOrientation.reset();
         [self invalidateFlightTimer];
         _navigation = next;
         _camera = camera;
@@ -168,9 +173,23 @@ static double monotonicSeconds() {
     if (!_hasData || _journeyActive) return NO;
     try {
         const auto site = _surfaceActive && _navigation.site().body_index == 3
-            ? _navigation.site() : surface_site_from_camera(_camera, _bodies, 3);
+            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, 3);
         if (site.height_km > 8 * surface_body_info(3).radius_km + 1e-6)
             throw std::invalid_argument("地球の近くに移動してください。");
+        return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
+}
+- (BOOL)descendToSelectedSurfaceWithDuration:(double)duration error:(NSString **)error {
+    if (!_hasData || _journeyActive || !_selection || *_selection == 0) return NO;
+    try {
+        const auto body = *_selection;
+        const auto site = _surfaceActive && _navigation.site().body_index == body
+            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, body);
+        if (site.height_km > 8 * surface_body_info(body).radius_km + 1e-6)
+            throw std::invalid_argument("選択した天体の近くに移動してください。");
         return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
     } catch (const std::exception& exception) {
         if (error) *error = [NSString stringWithUTF8String:exception.what()];
@@ -221,7 +240,11 @@ static double monotonicSeconds() {
 - (BOOL)scriptSurfaceLookVector:(Vec3)vector position:(BOOL)isPosition result:(SurfaceSite *)result {
     SurfaceSite site;
     if (![self scriptSurfaceSite:&site] || !result) return NO;
-    const auto basis = solar_camera_basis(_camera);
+    auto unrolledSite = site;
+    unrolledSite.roll_deg = 0;
+    SurfaceNavigation unrolled;
+    unrolled.set_site(unrolledSite);
+    const auto basis = solar_camera_basis(unrolled.camera(_bodies));
     if (isPosition) {
         vector.x -= _camera.target.x + basis.outward.x * _camera.distance_au;
         vector.y -= _camera.target.y + basis.outward.y * _camera.distance_au;
@@ -260,6 +283,7 @@ static double monotonicSeconds() {
             [self interruptFlight];
             _journeyActive = NO;
             _journey = InterplanetaryFlight{};
+            _flightOrientation.reset();
             _physicalSpaceActive = YES;
             [self notifyCamera];
             if (self.navigationChanged) self.navigationChanged();
@@ -270,6 +294,7 @@ static double monotonicSeconds() {
             _camera = _navigation.camera(_bodies);
             _surfaceActive = NO;
             _physicalSpaceActive = YES;
+            _flightOrientation.reset();
             [self notifyCamera];
             if (self.navigationChanged) self.navigationChanged();
             self.needsDisplay = YES;
@@ -329,6 +354,8 @@ static double monotonicSeconds() {
     [self beginFlightAtSite:site ascending:YES preserveLook:NO duration:3 error:nil];
 }
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom {
+    if ((dx != 0 || dy != 0) && self.userSurfaceViewChange) self.userSurfaceViewChange();
+    [self stopScriptOrientation];
     [self interruptFlight];
     try {
         auto next = _navigation;
@@ -347,7 +374,7 @@ static double monotonicSeconds() {
     _journey.advance(time, _bodies);
     _lastFlightTime = time;
     _camera = _journey.camera();
-    if (_journey.flying()) return;
+    if (_journey.flying()) { [self restoreFlightOrientation]; return; }
     [self invalidateFlightTimer];
     if (_journey.completed()) {
         // 航行の終端は同じ日時・緯度経度の地表カメラに一致する。
@@ -363,6 +390,7 @@ static double monotonicSeconds() {
             default: _flightNotice = @"飛行を停止 · 現在位置から再開できます"; break;
         }
     }
+    [self restoreFlightOrientation];
     if (self.navigationChanged) self.navigationChanged();
 }
 - (void)startJourneyAtLatitude:(double)latitude longitude:(double)longitude {
@@ -380,6 +408,7 @@ static double monotonicSeconds() {
         InterplanetaryFlight next;
         next.begin(departure, destination, _bodies, time);
         [self stopScriptOrientation];
+        _flightOrientation.reset();
         [self invalidateFlightTimer];
         _navigation.interrupt();
         _exitSurfaceAfterAscent = NO;

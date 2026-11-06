@@ -15,8 +15,30 @@ static bool sameOrientationBasis(const SolarCameraBasis& a, const SolarCameraBas
     return close(a.outward, b.outward) && close(a.right, b.right) && close(a.up, b.up);
 }
 
+// 地表位置を維持したまま、慣性座標の姿勢を地点の方位・高度・ロールへ変換する。
+static SurfaceSite surfaceSiteWithOrientation(const SurfaceNavigation& navigation, const SolarBodies& bodies,
+                                              const SolarCameraBasis& desired) {
+    auto site = navigation.site();
+    auto axesSite = site;
+    axesSite.heading_deg = axesSite.elevation_deg = axesSite.roll_deg = 0;
+    SurfaceNavigation axes;
+    axes.set_site(axesSite);
+    const auto local = solar_camera_basis(axes.camera(bodies));
+    const auto dot = [](mitaka::Vec3 a, mitaka::Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
+    constexpr double degrees = 180.0 / 3.14159265358979323846;
+    const mitaka::Vec3 forward{-desired.outward.x, -desired.outward.y, -desired.outward.z};
+    const double north = -dot(forward, local.outward), east = dot(forward, local.right);
+    if (std::hypot(north, east) > 1e-12) site.heading_deg = std::atan2(east, north) * degrees;
+    site.elevation_deg = std::asin(std::clamp(dot(forward, local.up), -1.0, 1.0)) * degrees;
+    site.roll_deg = 0;
+    axes.set_site(site);
+    const auto unrolled = solar_camera_basis(axes.camera(bodies));
+    site.roll_deg = std::atan2(dot(desired.right, unrolled.up), dot(desired.right, unrolled.right)) * degrees;
+    return site;
+}
+
 @implementation SolarSystemView (ScriptOrientation)
-- (BOOL)scriptCameraOrientationAvailable { return !_surfaceActive && !_journeyActive; }
+- (BOOL)scriptCameraOrientationAvailable { return YES; }
 - (PlusOrientationQuaternion)scriptCameraOrientation {
     const auto basis = solar_camera_basis(_camera);
     if (_scriptOrientation && sameOrientationBasis(plus_orientation_basis(*_scriptOrientation), basis))
@@ -26,12 +48,34 @@ static bool sameOrientationBasis(const SolarCameraBasis& a, const SolarCameraBas
 }
 - (void)applyScriptOrientation:(PlusOrientationQuaternion)orientation {
     const auto normalized = plus_orientation_normalized(orientation);
-    _camera.frame = plus_orientation_basis(normalized);
-    _camera.frame_is_orbit = true;
-    _camera.roll_deg = 0;
+    const auto basis = plus_orientation_basis(normalized);
+    if (_journeyActive || (_surfaceActive && _navigation.flying()) || _physicalSpaceActive) {
+        // 飛行と物理宇宙視点では、視点位置を変えずに表示姿勢を差し替える。
+        const auto previous = solar_camera_basis(_camera);
+        _camera.target.x += (previous.outward.x - basis.outward.x) * _camera.distance_au;
+        _camera.target.y += (previous.outward.y - basis.outward.y) * _camera.distance_au;
+        _camera.target.z += (previous.outward.z - basis.outward.z) * _camera.distance_au;
+        _camera.frame = basis;
+        _camera.frame_is_orbit = false;
+        _camera.roll_deg = 0;
+        if (_journeyActive || (_surfaceActive && _navigation.flying())) _flightOrientation = normalized;
+    } else if (_surfaceActive) {
+        _navigation.set_site(surfaceSiteWithOrientation(_navigation, _bodies, basis));
+        _camera = _navigation.camera(_bodies);
+    } else {
+        _camera.frame = basis;
+        _camera.frame_is_orbit = true;
+        _camera.roll_deg = 0;
+    }
     _scriptOrientation = normalized;
     [self notifyCamera];
     self.needsDisplay = YES;
+}
+- (void)restoreFlightOrientation {
+    if (!_flightOrientation) return;
+    const auto orientation = *_flightOrientation;
+    if (!_journeyActive && (!_surfaceActive || !_navigation.flying())) _flightOrientation.reset();
+    [self applyScriptOrientation:orientation];
 }
 - (void)stopScriptOrientation {
     [_orientationTimer invalidate];
@@ -40,7 +84,7 @@ static bool sameOrientationBasis(const SolarCameraBasis& a, const SolarCameraBas
 }
 - (void)advanceScriptOrientation {
     if (!_orientationAnimation) return;
-    if (_surfaceActive || _journeyActive) { [self stopScriptOrientation]; return; }
+    if (![self scriptCameraOrientationAvailable]) { [self stopScriptOrientation]; return; }
     const auto state = *_orientationAnimation;
     const double t = std::clamp((orientationClock() - state.start_time) / state.duration, 0.0, 1.0);
     try {
@@ -60,8 +104,8 @@ static bool sameOrientationBasis(const SolarCameraBasis& a, const SolarCameraBas
     if (t >= 1) [self stopScriptOrientation];
 }
 - (BOOL)beginScriptOrientation:(ScriptOrientationAnimation)state error:(NSString **)error {
-    if (_surfaceActive || _journeyActive) {
-        if (error) *error = @"地表・飛行中の姿勢指定にはまだ対応していません。";
+    if (![self scriptCameraOrientationAvailable]) {
+        if (error) *error = @"飛行中の姿勢指定にはまだ対応していません。";
         return NO;
     }
     if (!std::isfinite(state.duration) || state.duration < 0) {

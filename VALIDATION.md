@@ -2,13 +2,17 @@
 
 ## 2026-11-06: P1-5〜P1-8 の追加実装
 
+選択中の惑星・月へ、近傍から時間指定で降下する機能を追加した。3D 地表、地球地平図、飛行中は観測位置を保って姿勢・ロールを設定でき、地球への降下時にもロールを引き継ぐ。`lookTo` の完了後の対象追尾と、登録地点の `Planet.Earth.<地点ID>` 指定・読み戻し、および地球上の地点間の時間指定移動を追加した。宇宙からの登録地点への自転追従を追加したが、実画面での日時変更・時間指定移動中の追従は未確認。継続追尾と地点間の経路は旧仕様未確認のため推測である。地球以外の地表から地球の地点への時間指定移動は未対応。
+
+最終追加後の `make -j4 build` は成功した。途中の GUI 確認では、火星への時間指定降下後の地表、および地球地平図で `setEuler(10, 20, 30)` を設定し、`getEuler()` から同じ値を得た。地平図での地点移動は日本語設定で読み込まれない `Planet.Earth.Greenwich` を指定して停止し、正しい ID を使った再実行はファイル選択画面で Open が無効となり実行できなかった。地点移動、飛行中の姿勢設定、自転追従、`Other.SolarSystem`・`Other.LSS` の実画面確認と旧版との一致は未確認。[追加分の policy gate 判定](temp_gates/2026-11-06-17-00-55/)は全体試験未実施により検証 gate が NO。
+
 地球以外の天体でも Lua の強制的な地表・宇宙切替、地表での方位・高度の設定と補間、太陽系天体や恒星などへの注視を扱えるようにした。`Other.M31`、`Other.M13`、`Other.M87` の対象指定と、対象選択時の `zoomMode` にも対応した。M87 をおとめ座銀河団の中心として扱うこと、半径からズーム距離を求める方法、遠方からの着陸位置などは旧版での動作を確認できていないため仮定である。
 
-独立した銀河ブラウザーのカメラ、未解決の対象種別、注視完了後の継続追尾など、旧版との対応には残りがある。[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)に対応範囲を記載した。旧版との動作・描画一致は未確認。
+独立した銀河ブラウザーのカメラ、未解決の対象種別など、旧版との対応には残りがある。[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)に対応範囲を記載した。旧版との動作・描画一致は未確認。
 
 `make -j4 build` は成功した。GUI から一時 Lua を一度実行し、`ZOOM_ALWAYS` で火星を選択した際の距離調整、火星地表への `forceMode`、方位 45 度・高度 20 度の設定と読み戻し、太陽への注視と地表・選択状態の維持を確認した。火星地形は `mars_topo.dat: terrain triangle limit exceeded` の警告が出て基準球面で表示されたため、地形表示は確認できていない。他天体、時間補間、宇宙への復帰は今回未確認。
 
-ユーザーの指示に沿い、失敗注入を含む `make test` と全体の `make data-test`・`make reference-test` は実施していない。[今回の policy gate 判定](temp_gates/2026-11-06-16-32-34/)では検証 gate が NO であり、全 gate 通過ではない。新規ライブラリ依存はない。`/simplifier-lai` は利用可能な skill に存在せず、LobbyAI 専用の `simplify-lai` は適用対象外。リポジトリ全体の方針変更はなく、`IMPLEMENTATION_POLICY.md` と `policy_gates/` の原本は更新していない。
+ユーザーの指示に沿い、失敗注入を含む `make test` と全体の `make data-test`・`make reference-test` は実施していない。[今回の policy gate 判定](temp_gates/2026-11-06-16-32-34/)では検証 gate が NO であり、全 gate 通過ではない。新規ライブラリ依存はない。`/simplifier-lai` は利用可能な skill に存在せず、LobbyAI 専用の `simplify-lai` は適用対象外。地平図のロール保存に伴い、`IMPLEMENTATION_POLICY.md` と `policy_gates/shared_implementation.md` を更新した。
 
 ## 2026-11-05: P1-5〜P1-8 の途中実装
 
