@@ -382,6 +382,15 @@ void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const
     check([view viewportForTopocentricHeliocentricPosition:eclipticTarget julianDate:jd result:&scripted] &&
           std::abs(scripted.center_azimuth_deg - 90) < 1e-7 && std::abs(scripted.center_altitude_deg - 45) < 1e-7,
           "ellipsoid target script viewport differs from drawing");
+    [view clearSelection];
+    view.targetSelectionMode = 1;
+    click_object(view, midFrame.to_equatorial({90, 45}), jd, 0, 0, true);
+    check(view.selectedSmallBodyIndex == 0, "ellipsoid target was not selectable by hover at the drawn position");
+    [view focusSelection];
+    focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg - 90) < 1e-7 && std::abs(focused.center_altitude_deg - 45) < 1e-7,
+          "ellipsoid target focus after hover differs from drawing");
+    view.targetSelectionMode = 2;
     const Vec3 sphericalRelative{ellipsoidTarget.x-earth.x-radius*midUp.x,
                                  ellipsoidTarget.y-earth.y-radius*midUp.y,
                                  ellipsoidTarget.z-earth.z-radius*midUp.z};
