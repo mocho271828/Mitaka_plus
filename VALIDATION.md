@@ -401,4 +401,4 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 
 再開後の飛行完了を最大 8 秒、同じ run loop のタイマーで待つ。成功には飛行の停止、地表状態、既存の完了通知、有限な期待半径をすべて要求し、時間空白による中断や半径不一致を成功扱いしない。失敗時は経過時間、飛行・地表状態、通知、実際と期待の距離を出力する。飛行本体の 1 秒の安全閾値は変更しない。従来の間欠的な失敗は原因が特定できておらず、待機変更で解決したとはまだ判断できない。
 
-隔離 worktree、基点 `35a32c7`、共有 checkout の `resources/data` を読み取り専用に指定して `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` は成功。GUI smoke は競合回避の実行枠待ちで未実施であり、実タイマーによる新判定は未検証。新規依存・原データ・全体方針の変更はない。
+隔離 worktree、基点 `35a32c7`、共有 checkout の `resources/data` を読み取り専用に指定して `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` は成功。`make -j4 smoke` も成功し、実タイマーで飛行中断・再開・完了と、目標半径への到達を確認した。`make test` には AppKit のウィンドウを表示する検査も含まれる。故意の時間空白を実タイマーで注入する試験と、旧 Plus 比較は未実施。新規依存・原データ・全体方針の変更はない。

@@ -25,8 +25,8 @@
 
 ## 判定
 
-NO
+YES
 
-検証対象: 飛行完了 smoke の待機と診断のみ。既存機能の条件は親 35a32c7 の検証記録を継承し、本差分ではデータ・依存・公開範囲を変更しない。GUI smoke はスロット待ちで未実施。Rust 移行方針は別作業であり本単位の対象外。
+検証対象: 飛行完了 smoke の待機と診断のみ。既存機能の条件は親 35a32c7 の検証記録を継承し、本差分ではデータ・依存・公開範囲を変更しない。`make -j4 smoke` は GUI 実行枠で成功。Rust 移行方針は別作業であり本単位の対象外。
 
-`make -j4 build`、`test`、`data-test`、`reference-test` は成功。GUI smoke を未実施のためこの単位の完了判定は保留する。
+`make -j4 build`、`test`、`data-test`、`reference-test` は成功。`make -j4 smoke` は成功。実タイマーでの故意の時間空白注入と旧 Plus 比較は未実施。
