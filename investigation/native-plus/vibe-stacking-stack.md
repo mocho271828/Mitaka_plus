@@ -14,6 +14,8 @@
 
 各単位で対象試験と `make build`、`make test`、`make data-test`、`make reference-test` を実施する。GUI 変更は `make smoke` と実画面でも確認する。該当する限定テストの対象は下表に記す。未実施は理由と影響を明記する。各単位の gate は `temp_gates/YYYY-MM-DD-HH-MM-SS/` に複写し判定を記入し、機能表と優先順位表を更新する。Git 状態・変更ファイル・差分量を確認し、300 行以上の場合は依存関係と指定 skill の利用可否を確認して原則 commit する。
 
+第 2 単位は地球地平図の FOV と補間を実装し、5 種の全体検証と同梱 HIP 117,956 件による実画面の地平図・45° 復帰を確認した。旧 Plus との比較は未実施。極小画角の混合投影や極付近では微小な未解決線分を省略し、画素誤差は保証しない。非地球 3D 地表の FOV は未対応であり、P1-1 全体は部分実装。詳細は [FOV 設計](fov-projection-design.md) と [検証記録](../../VALIDATION.md)を参照する。
+
 ## スタック概要
 
 次表は上から下への通常の着手順であり、各 PR の通常の parent は直前行、最初だけ `main` とする。P1-1 → P1-2 → P1-3 → P1-4 → P1-5 → P1-6 → P1-7 → P1-8 → P2 → P3 → P4 の順を守る。高い優先度の基盤と低い優先度の利用側は別単位とする。例えば 3D カメラは P1、星座線は P2、星座絵は P3 に置く。P3 の媒体メニューのうち P4 の図表・タイトルに依存する部分だけは P4 で追補し、それまでは CUSTOM-04 を部分実装として扱う。
@@ -23,7 +25,7 @@
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
 - 公開状態: 最初の 6 行が `submitted-now` の予定、以降は `local-only`。投稿操作そのものの承認・実行状態ではない。
-- 実装状態: 第 1 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
+- 実装状態: 第 1 単位は `implemented`、第 2 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
 - 独立レビュー: 全行とも、親までの差分を前提に、その行に書いた機能と限定検証だけで判断可能かを着手時に確認する。以下の `yes*` は計画上の判定であり、実コードを調査した上で要件が満たされなければ branch を作らず行を修正する。
 - 対象 seam: 対応機能の domain・描画・GUI/Lua 契約およびその回帰試験。各行に関連する境界だけを変更し、他機能の機械的変更は必要最小限に留める。
@@ -32,7 +34,7 @@
 | 順 | branch | parent | 対象 ID | レビュー理由・範囲 | 限定検証 | 公開予定 | 実装状態 | 独立レビュー |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `codex/mitaka-01-camera-zoom` | `main` | P1-1: CAM-03 | ScriptWorker / ScriptController / AppScripting と距離アニメーションを通してズーム補間を表示へ接続する | pc 単位、時間省略時 Camera.duration、線形・対数中点、非有限値・距離境界、途中再指定、太陽系・銀河の描画接続 | `submitted-now` | `implemented` | yes* |
-| 2 | `codex/mitaka-02-camera-fov` | `codex/mitaka-01-camera-zoom` | P1-1: CAM-03 | 地平図の画角・補間・45°復帰を投影と選択に整合させる | 0°拒否、90°、再指定、投影・選択・モード往復 | `submitted-now` | `not-started` | yes* |
+| 2 | `codex/mitaka-02-camera-fov` | `codex/mitaka-01-camera-zoom` | P1-1: CAM-03 | 地平図の画角・補間・45°復帰を投影と選択に整合させる | 0°拒否、90°、再指定、投影・選択・モード往復 | `submitted-now` | `implemented` | yes* |
 | 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | 銀河点群を出典内 ID で個別選択する | 実データの描画点と選択、重複、復元、旧版比較 | `submitted-now` | `not-started` | yes* |
 | 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-02, GAL-03 | 銀河・SDSS/QSO の共有視点と実描画の残存差を解消する | 太陽系・恒星・天の川・SDSS/QSO の往復、位置・縮尺・選択の連続性と表示復帰、色・座標・測光の実データおよび可能な範囲の旧版比較 | `submitted-now` | `not-started` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04-large-scale-view` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `submitted-now` | `not-started` | yes* |

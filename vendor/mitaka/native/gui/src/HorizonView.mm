@@ -29,12 +29,12 @@ struct BackgroundKey {
     }
 };
 // 共通の投影座標系では、方位を右向きにするため経度を反転する。
-SkyViewport skyViewport(HorizonViewport viewport) {
-    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg};
+HorizonProjectionViewport skyViewport(HorizonViewport viewport) {
+    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
 }
-HorizonViewport horizonViewport(SkyViewport viewport) {
-    viewport = normalize_sky_viewport(viewport, true);
-    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg};
+HorizonViewport horizonViewport(HorizonProjectionViewport viewport) {
+    viewport = normalize_horizon_viewport(viewport);
+    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
 }
 std::optional<ScreenPoint> projectHorizontal(HorizontalCoordinates coordinates,
                                              HorizonViewport viewport, NSSize size) {
@@ -364,6 +364,18 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     self.needsDisplay = YES;
     if (self.viewportChanged) self.viewportChanged();
 }
+- (double)verticalFovDegrees {
+    return (1 - _viewport.perspective_blend) * _viewport.vertical_fov_deg
+        + _viewport.perspective_blend * 45;
+}
+- (BOOL)setVerticalFovDegrees:(double)degrees {
+    if (!std::isfinite(degrees) || degrees <= 0 || degrees > 90 || _viewport.perspective_blend != 0)
+        return NO;
+    auto viewport = _viewport;
+    viewport.vertical_fov_deg = degrees;
+    [self setViewport:viewport];
+    return YES;
+}
 - (void)resetView {
     if (self.userViewportChange) self.userViewportChange();
     [self setViewport:{}];
@@ -388,7 +400,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (!_selection && !moving) return;
     const auto coordinates = _frame->to_horizontal(moving ? moving->coordinates : [self selectionCoordinates]);
     if (self.userViewportChange) self.userViewportChange();
-    [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::max(4.0, _viewport.zoom),
+    [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::min(45.0, _viewport.vertical_fov_deg),
                        _viewport.perspective_blend, _viewport.roll_deg}];
 }
 - (BOOL)lookAtBody:(Body)body {
@@ -402,7 +414,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto found = std::find_if(_bodies.begin(), _bodies.end(), [body](const auto& candidate) { return candidate.id == body; });
     if (found == _bodies.end()) return NO;
     const auto coordinates = _frame->to_horizontal(found->coordinates);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (BOOL)lookAtStarHIP:(int32_t)hip {
@@ -417,7 +429,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (!index) return NO;
     const auto& star = _model->stars()[*index];
     const auto coordinates = _frame->to_horizontal({star.right_ascension_degrees, star.declination_degrees});
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (BOOL)viewportForHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
@@ -425,7 +437,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition);
     if (!equatorial) return NO;
     const auto coordinates = _frame->to_horizontal(*equatorial);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.zoom, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
     return YES;
 }
 - (void)selectBody:(NSUInteger)index {
@@ -509,8 +521,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     _dragging = _dragging || std::hypot(point.x - _mouseDownPoint.x, point.y - _mouseDownPoint.y) > 3;
     if (_dragging) {
         if (self.userViewportChange) self.userViewportChange();
-        [self setViewport:horizonViewport(pan_sky(skyViewport(_viewport),
-            point.x - _lastDragPoint.x, point.y - _lastDragPoint.y, map.size.width, map.size.height, true))];
+        [self setViewport:horizonViewport(pan_horizon(skyViewport(_viewport),
+            point.x - _lastDragPoint.x, point.y - _lastDragPoint.y, map.size.width, map.size.height))];
     }
     _lastDragPoint = point;
 }
@@ -571,8 +583,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (map.size.width <= 0 || map.size.height <= 0) return;
     if (event.hasPreciseScrollingDeltas) {
         if (self.userViewportChange) self.userViewportChange();
-        [self setViewport:horizonViewport(pan_sky(skyViewport(_viewport), event.scrollingDeltaX,
-            event.scrollingDeltaY, map.size.width, map.size.height, true))];
+        [self setViewport:horizonViewport(pan_horizon(skyViewport(_viewport), event.scrollingDeltaX,
+            event.scrollingDeltaY, map.size.width, map.size.height))];
     } else [self zoomBy:std::exp(std::clamp(event.scrollingDeltaY * 0.08, -2.0, 2.0))
              atPoint:[self convertPoint:event.locationInWindow fromView:nil]];
 }
@@ -597,7 +609,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto height = static_cast<std::size_t>(std::clamp(std::ceil(map.size.height * scale), 1.0, limit));
     const BackgroundKey key{_backgrounds.get(), _milkyWayMode,
         {_site.latitude_deg, _site.longitude_deg, _julianDate,
-         _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.zoom,
+         _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.vertical_fov_deg,
          _viewport.perspective_blend, _viewport.roll_deg}, width, height};
     // 非表示中の日時更新は描画まで評価しない。同一 JD の天体更新も画像を再生成しない。
     if (!_backgroundImage || !_backgroundKey || !(*_backgroundKey == key)) {
@@ -663,9 +675,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         CGContextMoveToPoint(context, NSMinX(map), NSMaxY(map));
         for (int i = 0; i <= columns; ++i) {
             const double fraction = static_cast<double>(i) / columns;
-            const double longitude = (0.5 - fraction) * 360 / _viewport.zoom * radians;
+            const double fov = std::max(_viewport.vertical_fov_deg, 1e-9);
+            const double longitude = (0.5 - fraction) * 2 * fov * radians;
             const double latitude = std::atan2(-std::cos(longitude) * std::sin(tilt), std::cos(tilt));
-            const double y = std::clamp(NSMidY(map) - latitude / radians / 180 * _viewport.zoom * map.size.height,
+            const double y = std::clamp(NSMidY(map) - latitude / radians / fov * map.size.height,
                                         static_cast<double>(NSMinY(map)), static_cast<double>(NSMaxY(map)));
             CGContextAddLineToPoint(context, NSMinX(map) + fraction * map.size.width, y);
         }
@@ -673,7 +686,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         CGContextClosePath(context);
         CGContextFillPath(context);
     }
-    draw_sky_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, true, _rendererDisplayOptions);
+    draw_horizon_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, _rendererDisplayOptions);
 }
 - (void)drawRect:(NSRect)dirtyRect {
     (void)dirtyRect;
@@ -686,8 +699,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [self drawSkyBackgroundInRect:map];
     [self drawGrid:context inRect:map];
     NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · JD %.5f", _julianDate] : @"";
-    drawText([NSString stringWithFormat:@"地平座標（大気差・視差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.1f×", _site.latitude_deg,
-        _site.longitude_deg, time, _viewport.zoom], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
+    drawText([NSString stringWithFormat:@"地平座標（大気差・視差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
+        _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
     if (!_model) {
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);
         return;
@@ -776,6 +789,6 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     }
     [_landscapeRenderer drawInRect:map viewport:_viewport quality:_rendererDisplayOptions];
     if (_landscapeRenderer.hasModel)
-        draw_sky_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, true, _rendererDisplayOptions);
+        draw_horizon_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, _rendererDisplayOptions);
 }
 @end

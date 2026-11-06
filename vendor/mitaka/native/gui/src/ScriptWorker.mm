@@ -51,7 +51,7 @@ enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTi
               getLocalComponentBase = 40, setLocalComponentBase = 50,
               setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, lookTarget, animateAzimuth, animateAltitude,
               setModeTo, toggleMode, toggleModeTo, forceMode, getOrient, getEuler, setOrient, setEuler, addEuler,
-              setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, animateZoom, animateZoomLog, toggleFlagBase = 100 };
+              setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, animateZoom, animateZoomLog, animateFov, toggleFlagBase = 100 };
 struct LocalTimeBinding {
     const char *property;
     const char *getter;
@@ -349,6 +349,7 @@ Reply readProperty(int object, const std::string& key) {
         if (key == "setTargetTo") return method(animateTarget);
         if (key == "setZoomTo") return method(animateZoom);
         if (key == "setZoomLogTo") return method(animateZoomLog);
+        if (key == "setFovTo") return method(animateFov);
         if (key == "setAzimuthTo") return method(animateAzimuth);
         if (key == "setAltitudeTo") return method(animateAltitude);
         if (key == "setModeTo") return method(setModeTo);
@@ -375,6 +376,10 @@ Reply readProperty(int object, const std::string& key) {
             return numeric([current[@"cameraDuration"] doubleValue]);
         }
         if (key == "zoom") return numeric([current[@"distance"] doubleValue] / auPerParsec);
+        if (key == "fov") {
+            if (current[@"cameraFov"] == NSNull.null) throw std::runtime_error("Camera.fov is unavailable in this view");
+            return numeric([current[@"cameraFov"] doubleValue]);
+        }
         if (key == "azimuth") return numeric([current[@"azimuth"] doubleValue]);
         if (key == "altitude") return numeric([current[@"altitude"] doubleValue]);
         if (key == "target") return textReply(current[@"target"]);
@@ -476,6 +481,11 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         const double distance = numberAt(state, 3) * auPerParsec;
         if (!std::isfinite(distance) || distance <= 0) throw std::invalid_argument("Camera.zoom must be positive");
         apply(ScriptActionKind::set_camera_distance, distance); return;
+    }
+    if (object == cameraObject && key == "fov") {
+        const double fov = numberAt(state, 3);
+        if (fov <= 0 || fov > 90) throw std::invalid_argument("Camera.fov must be greater than 0 and at most 90 degrees");
+        apply(ScriptActionKind::set_camera_fov, fov); return;
     }
     if (object == cameraObject && key == "target") { apply(ScriptActionKind::select_target, 0, false, textAt(state, 3)); return; }
     if (object == cameraObject && key == "azimuth") {
@@ -602,6 +612,21 @@ Reply invoke(lua_State *state, int operation) {
         const double duration = operation == toggleMode || operation == forceMode ? 0 : (count >= (toggle ? 1 : 2) ? numberAt(state, durationIndex) : [current[@"cameraModeDuration"] doubleValue]);
         if (duration < 0) throw std::invalid_argument("Camera mode duration must be nonnegative");
         apply(ScriptActionKind::set_camera_mode, mode, operation == forceMode, "", duration);
+    } else if (operation == animateFov) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        if (count < 1 || count > 2) throw std::invalid_argument("Camera:setFovTo requires a target and optional duration");
+        const double fov = numberAt(state, offset + 1);
+        if (fov <= 0 || fov > 90) throw std::invalid_argument("Camera.fov must be greater than 0 and at most 90 degrees");
+        double duration;
+        if (count == 2) duration = numberAt(state, offset + 2);
+        else {
+            id value = snapshot()[@"cameraDuration"];
+            if (value == NSNull.null) throw std::invalid_argument("Camera.duration must be set when duration is omitted");
+            duration = [value doubleValue];
+        }
+        if (duration < 0) throw std::invalid_argument("Camera animation duration must be nonnegative");
+        apply(ScriptActionKind::animate_camera_fov, fov, false, "", duration);
     } else if (operation == animateZoom || operation == animateZoomLog) {
         if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
         const int count = lua_gettop(state) - offset;

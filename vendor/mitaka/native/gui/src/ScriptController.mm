@@ -62,6 +62,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         !std::isfinite(state.camera_mode_duration) || state.camera_mode_duration < 0 ||
         state.camera_zoom_mode < 0 || state.camera_zoom_mode > 2 ||
         (state.camera_mode && *state.camera_mode != 0 && *state.camera_mode != 1) ||
+        (state.camera_fov && (!std::isfinite(*state.camera_fov) || *state.camera_fov <= 0 || *state.camera_fov > 180)) ||
         (state.camera_duration && (!std::isfinite(*state.camera_duration) || *state.camera_duration < 0)) ||
         state.atmosphere_mode < 0 || state.atmosphere_mode > 2)
         throw std::runtime_error("Invalid host snapshot");
@@ -134,6 +135,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         @"fullScreen":@(state.full_screen), @"nebulae":@(state.nebulae), @"galaxies":@(state.distant_galaxies), @"quasars":@(state.quasars),
         @"azimuth":@(state.camera_azimuth_deg), @"altitude":@(state.camera_altitude_deg),
         @"cameraDuration":state.camera_duration ? (id)@(*state.camera_duration) : (id)NSNull.null,
+        @"cameraFov":state.camera_fov ? (id)@(*state.camera_fov) : (id)NSNull.null,
         @"cameraMode":state.camera_mode ? (id)@(*state.camera_mode) : (id)NSNull.null,
         @"cameraModeDuration":@(state.camera_mode_duration), @"cameraZoomMode":@(state.camera_zoom_mode),
         @"targetBrowser":@(state.target_browser),
@@ -295,7 +297,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             ![message[@"enabled"] isKindOfClass:NSNumber.class] || ![message[@"text"] isKindOfClass:NSString.class])
             throw std::runtime_error("Invalid script action");
         const double kind = [message[@"kind"] doubleValue];
-        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::animate_camera_zoom))
+        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::animate_camera_fov))
             throw std::runtime_error("Unknown script action");
         if (![message[@"hips"] isKindOfClass:NSArray.class] || [message[@"hips"] count] > 2048)
             throw std::runtime_error("Invalid star identifier list");
@@ -317,6 +319,9 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         if (action.kind == ScriptActionKind::set_camera_zoom_mode &&
             (action.number != std::floor(action.number) || action.number < 0 || action.number > 2))
             throw std::runtime_error("Invalid Camera.zoomMode");
+        if ((action.kind == ScriptActionKind::set_camera_fov || action.kind == ScriptActionKind::animate_camera_fov) &&
+            (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID() || action.number <= 0 || action.number > 90))
+            throw std::runtime_error("Invalid Camera.fov");
         NSArray *orientation = message[@"orientation"];
         const bool quaternion = action.kind == ScriptActionKind::set_camera_orientation || action.kind == ScriptActionKind::animate_camera_orientation;
         const bool euler = action.kind == ScriptActionKind::set_camera_euler || action.kind == ScriptActionKind::add_camera_euler ||

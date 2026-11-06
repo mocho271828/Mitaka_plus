@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <deque>
 #include <utility>
 
 namespace mitaka::gui {
@@ -17,17 +18,27 @@ Vec3 normalized(Vec3 p) {
 class Sampler {
 public:
     Sampler(Vec3 start, Vec3 end, const ObservationFrame* frame, SkyViewport viewport,
+        HorizonProjectionViewport horizon_viewport,
         double width, double height, HorizonSamplingLimits limits)
         : start_(normalized(start)), end_(normalized(end)), frame_(frame), viewport_(viewport),
-          width_(width), height_(height), limits_(limits) {
+          horizon_viewport_(horizon_viewport), width_(width), height_(height), limits_(limits) {
         // 正の端点長は大円上の同じ弧を表すため、正規化して演算の動的範囲を抑える。
         const double dot = std::clamp(start_.x * end_.x + start_.y * end_.y + start_.z * end_.z, -1.0, 1.0);
         if (dot <= -1 + 1e-14) throw std::invalid_argument("CAB segment crosses observer origin");
-        angular_span_ = std::acos(dot) * 180 / 3.14159265358979323846;
+        const Vec3 cross{start_.y * end_.z - start_.z * end_.y,
+                         start_.z * end_.x - start_.x * end_.z,
+                         start_.x * end_.y - start_.y * end_.x};
+        // 端点が近い場合は内積が 1 に丸められても微小な角距離を失わない。
+        cross_length_ = std::hypot(cross.x, cross.y, cross.z);
     }
     HorizonSegmentProjection run() {
         const auto a = sample(0), m = sample(.5), b = sample(1);
-        subdivide(0, 1, a, m, b, 0);
+        pending_.push_back({0, 1, a, m, b, 0});
+        while (!pending_.empty()) {
+            const auto interval = pending_.front();
+            pending_.pop_front();
+            subdivide(interval.a, interval.b, interval.first, interval.middle, interval.last, interval.depth);
+        }
         return std::move(result_);
     }
 private:
@@ -37,12 +48,20 @@ private:
             (1 - t) * start_.y + t * end_.y, (1 - t) * start_.z + t * end_.z});
         if (!frame_) return p;
         const auto h = frame_->to_horizontal(p);
-        return rotate_horizon({360 - h.azimuth_deg, h.altitude_deg}, viewport_);
+        return rotate_horizon({360 - h.azimuth_deg, h.altitude_deg}, horizon_viewport_);
     }
-    bool accepted(std::array<EquatorialCoordinates, 5>& points, double dt) const {
-        // 正規化直線の角速度は中央で最大。端点角ではなく保守的な上限を使う。
-        const double radians = angular_span_ * 3.14159265358979323846 / 180;
-        if (dt * 2 * std::tan(radians / 2) * 180 / 3.14159265358979323846 > limits_.max_source_step_deg) return false;
+    double source_span(double a, double b) const {
+        // 正規化直線は大円弧を単調に進む。全区間の最大角速度では
+        // 対蹠点に近い端点で遠方まで過分割されるため、区間の角距離を使う。
+        const Vec3 p{(1 - a) * start_.x + a * end_.x, (1 - a) * start_.y + a * end_.y,
+                     (1 - a) * start_.z + a * end_.z};
+        const Vec3 q{(1 - b) * start_.x + b * end_.x, (1 - b) * start_.y + b * end_.y,
+                     (1 - b) * start_.z + b * end_.z};
+        return std::atan2((b - a) * cross_length_, p.x * q.x + p.y * q.y + p.z * q.z)
+            * 180 / 3.14159265358979323846;
+    }
+    bool accepted(std::array<EquatorialCoordinates, 5>& points, double source_span) const {
+        if (source_span > limits_.max_source_step_deg) return false;
         for (std::size_t i = 1; i < 4; ++i) if (pole(points[i])) return false;
         if (pole(points.front())) points.front().right_ascension_deg = points[1].right_ascension_deg;
         if (pole(points.back())) points.back().right_ascension_deg = points[3].right_ascension_deg;
@@ -70,57 +89,79 @@ private:
         if (std::all_of(points.begin(), points.end(), [&](auto p) {
             return pole(p) && p.declination_deg * first.declination_deg > 0;
         })) return;
-        if (frame_ && viewport_.perspective_blend > 0) {
-            const double radians = angular_span_ * 3.14159265358979323846 / 180;
-            const double source_span = (b - a) * 2 * std::tan(radians / 2) * 180 / 3.14159265358979323846;
-            const auto decision = project_morph_interval(points, viewport_, width_, height_, source_span, limits_, result_);
-            if (decision != HorizonMorphDecision::subdivide) return;
-            if (depth == limits_.max_depth) return;
-            subdivide(a, m, first, points[1], middle, depth + 1);
-            subdivide(m, b, middle, points[3], last, depth + 1);
-            return;
+        const double interval_span = source_span(a, b);
+        if (frame_) {
+            if (horizon_interval_outside(points, horizon_viewport_, width_, height_, interval_span)) return;
+            if (horizon_viewport_.perspective_blend > 0) {
+                const auto decision = project_morph_interval(points, horizon_viewport_, width_, height_, interval_span, limits_, result_);
+                if (decision != HorizonMorphDecision::subdivide) return;
+                if (depth == limits_.max_depth || horizon_interval_small(interval_span, horizon_viewport_, width_, height_)
+                    || horizon_morph_subpixel(points, horizon_viewport_, width_, height_, interval_span, limits_.screen_tolerance)) {
+                    ++result_.omitted_intervals;
+                    return;
+                }
+                pending_.push_back({a, m, first, points[1], middle, depth + 1});
+                pending_.push_back({m, b, middle, points[3], last, depth + 1});
+                return;
+            }
         }
         auto adjusted = points;
-        if (accepted(adjusted, b - a)) {
+        if (accepted(adjusted, interval_span)) {
             const SkyViewport projected_viewport = frame_ ? SkyViewport{0, 0, viewport_.zoom} : viewport_;
             const auto projected = project_sky_segment(adjusted.front(), adjusted.back(), projected_viewport, width_, height_);
             result_.segments.insert(result_.segments.end(), projected.begin(), projected.end());
         } else if (depth == limits_.max_depth) ++result_.omitted_intervals;
         else {
-            subdivide(a, m, first, points[1], middle, depth + 1);
-            subdivide(m, b, middle, points[3], last, depth + 1);
+            pending_.push_back({a, m, first, points[1], middle, depth + 1});
+            pending_.push_back({m, b, middle, points[3], last, depth + 1});
         }
     }
+    struct Interval {
+        double a, b;
+        EquatorialCoordinates first, middle, last;
+        unsigned depth;
+    };
+    std::deque<Interval> pending_;
     Vec3 start_, end_;
     const ObservationFrame* frame_;
     SkyViewport viewport_;
-    double width_, height_, angular_span_;
+    HorizonProjectionViewport horizon_viewport_;
+    double width_, height_, cross_length_;
     HorizonSamplingLimits limits_;
     HorizonSegmentProjection result_;
 };
 HorizonSegmentProjection project(Vec3 start, Vec3 end, const ObservationFrame* frame,
-    SkyViewport viewport, double width, double height, HorizonSamplingLimits limits) {
+    SkyViewport viewport, HorizonProjectionViewport horizon_viewport,
+    double width, double height, HorizonSamplingLimits limits) {
     if (!std::isfinite(viewport.center_ra_deg) || !std::isfinite(viewport.center_dec_deg)
-        || std::abs(viewport.center_dec_deg) > 90 || !std::isfinite(viewport.zoom) || viewport.zoom < 1 || viewport.zoom > 180
+        || std::abs(viewport.center_dec_deg) > 90 || !std::isfinite(viewport.zoom) || viewport.zoom < 1
+        || (!frame && viewport.zoom > 180)
         || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0 || viewport.perspective_blend > 1
         || !std::isfinite(width) || width <= 0 || !std::isfinite(height) || height <= 0
         || !std::isfinite(width * viewport.zoom) || !std::isfinite(height * viewport.zoom)
         || !std::isfinite(limits.max_source_step_deg) || limits.max_source_step_deg <= 0 || limits.max_source_step_deg > 2
         || !std::isfinite(limits.screen_tolerance) || limits.screen_tolerance <= 0 || limits.screen_tolerance > 4
-        || limits.max_evaluations < 5 || limits.max_evaluations > 1048577 || limits.max_depth < 1 || limits.max_depth > 24)
+        || limits.max_evaluations < 5 || limits.max_evaluations > 1048577 || limits.max_depth < 1 || limits.max_depth > 52)
         throw std::invalid_argument("invalid CAB projection parameters");
-    return Sampler(start, end, frame, viewport, width, height, limits).run();
+    return Sampler(start, end, frame, viewport, horizon_viewport, width, height, limits).run();
 }
 }
 HorizonSegmentProjection project_sky_constellation_art_segment(Vec3 start, Vec3 end,
     const SkyViewport& viewport, double width, double height, HorizonSamplingLimits limits) {
-    return project(start, end, nullptr, viewport, width, height, limits);
+    return project(start, end, nullptr, viewport, {}, width, height, limits);
 }
 HorizonSegmentProjection project_horizon_constellation_art_segment(Vec3 start, Vec3 end,
     const ObservationFrame& frame, const HorizonViewport& viewport,
     double width, double height, HorizonSamplingLimits limits) {
-    return project(start, end, &frame, {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-        viewport.zoom, viewport.perspective_blend, viewport.roll_deg},
-        width, height, limits);
+    if (!std::isfinite(viewport.center_azimuth_deg) || !std::isfinite(viewport.center_altitude_deg)
+        || std::abs(viewport.center_altitude_deg) > 90 || !std::isfinite(viewport.vertical_fov_deg)
+        || viewport.vertical_fov_deg <= 0 || viewport.vertical_fov_deg > 180
+        || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0
+        || viewport.perspective_blend > 1 || !std::isfinite(viewport.roll_deg))
+        throw std::invalid_argument("invalid CAB projection parameters");
+    const HorizonProjectionViewport horizon_viewport{360 - viewport.center_azimuth_deg,
+        viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+    const SkyViewport sky_viewport{0, 0, 180 / std::max(viewport.vertical_fov_deg, 1e-9)};
+    return project(start, end, &frame, sky_viewport, horizon_viewport, width, height, limits);
 }
 }

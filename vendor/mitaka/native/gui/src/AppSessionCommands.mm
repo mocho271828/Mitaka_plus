@@ -74,6 +74,7 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         [_scripts cancel];
         [_starBrightness cancel];
         [self stopScriptCameraAnimation];
+        [self stopScriptFovAnimation];
         [self stopScriptPlaceTransition];
         if (![self setDate:state.julian_date]) return NO;
         [_playback setSimulationRate:state.simulation_rate];

@@ -473,6 +473,56 @@ static NSString *const scriptCompatibilityNote =
     }];
     [NSRunLoop.mainRunLoop addTimer:_scriptCameraTimer forMode:NSRunLoopCommonModes];
 }
+- (void)stopScriptFovAnimation {
+    _scriptFovAnimation.reset();
+    [_scriptFovTimer invalidate];
+    _scriptFovTimer = nil;
+}
+- (void)updateScriptFovAnimation {
+    if (!_scriptFovAnimation) return;
+    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0) {
+        [self stopScriptFovAnimation];
+        return;
+    }
+    const auto animation = *_scriptFovAnimation;
+    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    const double t = std::clamp((now - animation.start_time) / animation.duration, 0.0, 1.0);
+    auto viewport = [_horizon viewport];
+    viewport.vertical_fov_deg = t >= 1 ? animation.target : animation.start + (animation.target - animation.start) * t;
+    [_horizon setViewport:viewport];
+    if (t >= 1) [self stopScriptFovAnimation];
+}
+- (BOOL)animateScriptFovTo:(double)target duration:(double)duration error:(NSString **)error {
+    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0 ||
+        !std::isfinite(target) || target <= 0 || target > 90 || !std::isfinite(duration) || duration < 0) {
+        if (error) *error = @"視野角は地平図で 0 より大きく 90 度以下、時間は 0 秒以上にしてください。";
+        return NO;
+    }
+    if (_scriptFovAnimation) [self updateScriptFovAnimation];
+    const double initial = [_horizon viewport].vertical_fov_deg;
+    [self stopScriptFovAnimation];
+    if (duration == 0 || initial == target) {
+        auto viewport = [_horizon viewport];
+        viewport.vertical_fov_deg = target;
+        [_horizon setViewport:viewport];
+        return YES;
+    }
+    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    _scriptFovAnimation = ScriptCameraAnimation{initial, target, now, duration, false};
+    __weak AppController *weakSelf = self;
+    _scriptFovTimer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
+        AppController *controller = weakSelf;
+        if (controller) [controller updateScriptFovAnimation];
+        else [timer invalidate];
+    }];
+    [NSRunLoop.mainRunLoop addTimer:_scriptFovTimer forMode:NSRunLoopCommonModes];
+    return YES;
+}
+- (void)resetViewAngle:(id)sender {
+    (void)sender;
+    NSString *error = nil;
+    if (![self animateScriptFovTo:45 duration:0 error:&error] && error) [self showError:error];
+}
 - (void)configureScripts {
     if (_scripts) return;
     _scripts = [[ScriptController alloc] init];
@@ -548,6 +598,9 @@ static NSString *const scriptCompatibilityNote =
         const double azimuth = scriptViewport.center_azimuth_deg;
         state.camera_azimuth_deg = azimuth > 180 ? azimuth - 360 : azimuth;
         state.camera_altitude_deg = scriptViewport.center_altitude_deg;
+        if (controller->_mode.selectedSegment == 2 && !controller->_horizonProjectionTimer &&
+            [controller->_horizon viewport].perspective_blend == 0)
+            state.camera_fov = [controller->_horizon viewport].vertical_fov_deg;
         state.camera_duration = controller->_scriptCameraDuration;
         state.camera_zoom_mode = controller->_scriptCameraZoomMode;
         if (controller->_mode.selectedSegment == 1)
@@ -956,6 +1009,10 @@ static NSString *const scriptCompatibilityNote =
                 return [_solar animateScriptZoomTo:action.number duration:action.duration_seconds logarithmic:action.enabled error:error];
             case ScriptActionKind::set_camera_distance:
                 return [_solar animateScriptZoomTo:action.number duration:0 logarithmic:NO error:error];
+            case ScriptActionKind::set_camera_fov:
+                return [self animateScriptFovTo:action.number duration:0 error:error];
+            case ScriptActionKind::animate_camera_fov:
+                return [self animateScriptFovTo:action.number duration:action.duration_seconds error:error];
             case ScriptActionKind::set_constellation_lines:
             case ScriptActionKind::set_constellation_boundaries:
             case ScriptActionKind::set_constellation_illustrations:

@@ -62,6 +62,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 
 - (void)dealloc {
     [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
+    [self stopScriptFovAnimation];
     [_horizonProjectionTimer invalidate];
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
@@ -76,6 +77,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     (void)notification;
     [self savePreferences];
     _terminating = YES;
+    [self stopScriptFovAnimation];
     [self cancelHorizonProjection];
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
@@ -162,6 +164,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [_solar stopScriptZoomAnimation];
     [_starBrightness cancel];
     [self stopScriptCameraAnimation];
+    [self stopScriptFovAnimation];
     [self stopScriptPlaceTransition];
 }
 - (void)systemDidWake:(NSNotification *)notification {
@@ -243,6 +246,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 }
 
 - (void)loadData:(NSString *)path {
+    [self stopScriptFovAnimation];
     const BOOL reloadPlusGalaxy = _galaxyUsesPlusCatalogs && [_activePath isEqualToString:path];
     [self invalidateSmallBodyOrbits];
     [self cancelGalaxyLoading];
@@ -613,7 +617,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         [self stopScriptPlaceTransition];
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
-    if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
+    if (_mode.selectedSegment != 2) { [self stopScriptCameraAnimation]; [self stopScriptFovAnimation]; }
     if (!solar) { [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
@@ -737,6 +741,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [self updateEnabled];
 }
 - (void)startHorizonProjectionTo:(double)target duration:(double)duration {
+    [self stopScriptFovAnimation];
     [_horizonProjectionTimer invalidate];
     _horizonProjectionTimer = nil;
     _horizonProjectionStart = [_horizon viewport].perspective_blend;
@@ -871,7 +876,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
             if (!samePlace) [_horizon setObserverPlaceIdentifier:std::string{}];
             [_sky setObservationSite:{site.latitude_deg, site.longitude_deg} julianDate:_jd];
             [self stopScriptCameraAnimation];
-            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].zoom, 1, site.roll_deg}];
+            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].vertical_fov_deg, 1, site.roll_deg}];
             _mode.selectedSegment = 2;
             [self changeMode:nil];
             [self startHorizonProjectionTo:0 duration:_earthDescentProjectionDuration];

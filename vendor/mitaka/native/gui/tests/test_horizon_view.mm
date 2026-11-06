@@ -30,19 +30,19 @@ void near(double actual, double expected) {
 void test_state(HorizonView *view) {
     __block unsigned viewportChanges = 0;
     view.viewportChanged = ^{ ++viewportChanges; };
-    [view setViewport:{725, 45, 2}];
+    [view setViewport:{725, 45, 90}];
     near([view viewport].center_azimuth_deg, 5);
     near([view viewport].center_altitude_deg, 45);
     [view zoomIn];
-    near([view viewport].zoom, 3);
+    near([view viewport].vertical_fov_deg, 60);
     [view zoomOut];
-    near([view viewport].zoom, 2);
+    near([view viewport].vertical_fov_deg, 90);
     [view resetView];
     near([view viewport].center_azimuth_deg, 180);
     near([view viewport].center_altitude_deg, 0);
-    near([view viewport].zoom, 1);
+    near([view viewport].vertical_fov_deg, 180);
     check(viewportChanges == 4, "viewport callback mismatch");
-    [view setViewport:{180, 90, 1}];
+    [view setViewport:{180, 90, 180}];
     near([view viewport].center_altitude_deg, 90);
     [view zoomIn];
     near([view viewport].center_altitude_deg, 90);
@@ -171,11 +171,11 @@ NSData *rendered_bitmap(HorizonView *view) {
 // 描画と同じ投影の位置を通常のマウス操作で選択する。
 void click_object(HorizonView *view, EquatorialCoordinates coordinates, double jd) {
     const auto horizontal = ObservationFrame([view observerSite], jd).to_horizontal(coordinates);
-    [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 4}];
+    [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 45}];
     const auto viewport = [view viewport];
     const NSRect map = NSInsetRect(view.bounds, 42, 34);
     const auto point = project_horizon({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
-        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom},
+        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg},
         map.size.width, map.size.height);
     check(point.has_value(), "fixture object is outside viewport");
     const NSPoint location = NSMakePoint(map.origin.x + point->x, map.origin.y + point->y);
@@ -345,7 +345,7 @@ void test_data(HorizonView *view, const char *directory) {
     check([view selectStarHIP:32349], "Sirius HIP could not be selected");
     check([description containsString:@"HIP 32349"] && [description containsString:@"高度"], "selection description missing horizon coordinates");
     [view focusSelection];
-    check([view viewport].zoom >= 4 && view.visibleStarCount < count, "focus did not reduce sky extent");
+    check([view viewport].vertical_fov_deg <= 45 && view.visibleStarCount < count, "focus did not reduce sky extent");
     const auto& star = model->stars()[*model->star_index(32349)];
     const auto horizontal = equatorial_to_horizontal({star.right_ascension_degrees, star.declination_degrees},
                                                      [view observerSite], jd);

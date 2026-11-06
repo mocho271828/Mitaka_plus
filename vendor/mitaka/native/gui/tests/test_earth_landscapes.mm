@@ -231,16 +231,16 @@ void projection_tests() {
     }
     landscape = definition();
     const auto texture = gradient();
-    const auto central = render_horizon_landscape(&texture, &landscape, {0, 0, 4}, 1, 1);
+    const auto central = render_horizon_landscape(&texture, &landscape, {0, 0, 45}, 1, 1);
     expect(central.rgba == std::vector<std::uint8_t>({126, 124, 0, 255}), "north horizon samples image center");
-    const auto east = render_horizon_landscape(&texture, &landscape, {90, 0, 4}, 1, 1);
+    const auto east = render_horizon_landscape(&texture, &landscape, {90, 0, 45}, 1, 1);
     expect(east.rgba[0] == 190, "east samples right image quarter");
     landscape.vertical_scale = .25;
-    const auto high = render_horizon_landscape(&texture, &landscape, {0, 50, 4}, 1, 1);
-    const auto low = render_horizon_landscape(&texture, &landscape, {0, -50, 4}, 1, 1);
+    const auto high = render_horizon_landscape(&texture, &landscape, {0, 50, 45}, 1, 1);
+    const auto low = render_horizon_landscape(&texture, &landscape, {0, -50, 45}, 1, 1);
     expect(high.rgba[1] == 0 && low.rgba[1] == 248, "vertical texture clamp retains first and last row");
-    const auto left = render_horizon_landscape(&texture, &landscape, {180, 0, 4}, 1, 1);
-    const auto right = render_horizon_landscape(&texture, &landscape, {179.999, 0, 4}, 1, 1);
+    const auto left = render_horizon_landscape(&texture, &landscape, {180, 0, 45}, 1, 1);
+    const auto right = render_horizon_landscape(&texture, &landscape, {179.999, 0, 45}, 1, 1);
     expect(left.rgba[0] == 0 && right.rgba[0] == 252, "horizontal seam clamps each edge without repeat filtering");
     auto alpha = texture;
     std::fill(alpha.rgba.begin(), alpha.rgba.end(), 80);
@@ -250,13 +250,13 @@ void projection_tests() {
         const auto offset = (y * 4 + x) * 4;
         expect(ground.rgba[offset] == 0 && ground.rgba[offset + 3] == 0, "absent image leaves the dimmed sky visible");
     }
-    const auto moved = render_horizon_landscape(&texture, &landscape, {270, 10, 4}, 17, 13);
+    const auto moved = render_horizon_landscape(&texture, &landscape, {270, 10, 45}, 17, 13);
     for (std::size_t y : {std::size_t(0), std::size_t(6), std::size_t(12)})
         for (std::size_t x : {std::size_t(0), std::size_t(8), std::size_t(16)}) {
-            const auto direction = unproject_horizon({x + .5, y + .5}, {90, 10, 4}, 17, 13);
+            const auto direction = unproject_horizon({x + .5, y + .5}, {90, 10, 45}, 17, 13);
             const double azimuth = 360 - direction.right_ascension_deg;
             const double altitude = direction.declination_deg;
-            const auto screen = project_horizon(direction, {90, 10, 4}, 17, 13);
+            const auto screen = project_horizon(direction, {90, 10, 45}, 17, 13);
             expect(bool(screen), "pan and zoom sample projects into viewport");
             near(screen->x, x + .5, "landscape horizontal pixels align with HorizonView sky projection");
             near(screen->y, y + .5, "landscape vertical pixels align with HorizonView sky projection");

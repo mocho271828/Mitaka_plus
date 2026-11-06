@@ -2,6 +2,7 @@
 #include "small_body_orbit_model.hpp"
 
 #include <cstdio>
+#include <chrono>
 
 @implementation AppController (ScriptSmokeTests)
 - (void)runScriptSmokeTestWithCompletion:(void (^)(void))completion {
@@ -63,9 +64,122 @@
     spaceZoom.duration_seconds = 0;
     zoomModesValid = [self applyScriptAction:spaceZoom error:&zoomError] &&
         [_solar cameraState].distance_au == 2 && zoomModesValid;
+    bool fovValid = true;
+    ScriptAction fov{};
+    fov.kind = ScriptActionKind::set_camera_fov;
+    fov.number = 45;
+    const auto blockedFov = [&] {
+        const auto before = [_horizon viewport];
+        NSString *error = nil;
+        fovValid = ![self applyScriptAction:fov error:&error] && error.length &&
+            [_horizon viewport].vertical_fov_deg == before.vertical_fov_deg && fovValid;
+    };
+    blockedFov();
+    _mode.selectedSegment = 0;
+    [self changeMode:nil];
+    blockedFov();
+    _mode.selectedSegment = 2;
+    [self changeMode:nil];
+    auto viewport = [_horizon viewport];
+    viewport.vertical_fov_deg = 180;
+    viewport.perspective_blend = 0;
+    [_horizon setViewport:viewport];
+    fov.kind = ScriptActionKind::animate_camera_fov;
+    fov.number = 60;
+    fov.duration_seconds = 10;
+    NSString *fovError = nil;
+    fovValid = [self applyScriptAction:fov error:&fovError] && _scriptFovAnimation.has_value() && fovValid;
+    if (_scriptFovAnimation) {
+        _scriptFovAnimation->start_time -= 5;
+        [self updateScriptFovAnimation];
+        const double midpoint = [_horizon viewport].vertical_fov_deg;
+        fovValid = midpoint > 60 && midpoint < 180 && fovValid;
+        fov.number = 0;
+        blockedFov();
+        fovValid = _scriptFovAnimation.has_value() && fovValid;
+        fov.number = 30;
+        fovValid = [self applyScriptAction:fov error:&fovError] && _scriptFovAnimation.has_value() &&
+            _scriptFovAnimation->start <= midpoint && _scriptFovAnimation->start > 60 && fovValid;
+    }
+    if (_scriptFovAnimation) {
+        const double before = [_horizon viewport].vertical_fov_deg;
+        const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        _scriptAzimuthAnimation = ScriptCameraAnimation{10, 20, now - 5, 10, false};
+        [self startScriptCameraTimer];
+        [self updateScriptCameraAnimations];
+        fovValid = [_horizon viewport].vertical_fov_deg == before && _scriptFovAnimation.has_value() && fovValid;
+        _scriptFovAnimation->start_time -= 11;
+        [self updateScriptFovAnimation];
+        fovValid = !_scriptFovAnimation && [_horizon viewport].vertical_fov_deg == 30 &&
+            _scriptAzimuthAnimation.has_value() && fovValid;
+        [self stopScriptCameraAnimation];
+    }
+    fov.kind = ScriptActionKind::set_camera_fov;
+    fov.number = 45;
+    fovValid = [self applyScriptAction:fov error:&fovError] && [_horizon viewport].vertical_fov_deg == 45 && fovValid;
+    fov.number = 20;
+    fovValid = [self applyScriptAction:fov error:&fovError] && fovValid;
+    const auto beforeReset = [_horizon viewport];
+    [self resetViewAngle:nil];
+    const auto afterReset = [_horizon viewport];
+    fovValid = afterReset.vertical_fov_deg == 45 &&
+        std::abs(std::remainder(afterReset.center_azimuth_deg - beforeReset.center_azimuth_deg, 360.0)) < 1e-9 &&
+        std::abs(afterReset.center_altitude_deg - beforeReset.center_altitude_deg) < 1e-9 &&
+        std::abs(afterReset.roll_deg - beforeReset.roll_deg) < 1e-9 && fovValid;
+    fov.kind = ScriptActionKind::animate_camera_fov;
+    fov.number = 75;
+    fovValid = [self applyScriptAction:fov error:&fovError] && _scriptFovAnimation.has_value() && fovValid;
+    if (!_model->constellations().empty()) {
+        [self revealConstellationRow:0 center:YES];
+        const double constellationFov = [_horizon viewport].vertical_fov_deg;
+        [self updateScriptFovAnimation];
+        fovValid = !_scriptFovAnimation && [_horizon viewport].vertical_fov_deg == constellationFov && fovValid;
+        fovValid = [self applyScriptAction:fov error:&fovError] && _scriptFovAnimation.has_value() && fovValid;
+    }
+    if (_horizon.userViewportChange) _horizon.userViewportChange();
+    fovValid = !_scriptFovAnimation && fovValid;
+    fovValid = [self applyScriptAction:fov error:&fovError] && fovValid;
+    [self systemWillSleep:nil];
+    fovValid = !_scriptFovAnimation && fovValid;
+    [self systemDidWake:nil];
+    fovValid = [self applyScriptAction:fov error:&fovError] && fovValid;
+    _mode.selectedSegment = 0;
+    [self changeMode:nil];
+    fovValid = !_scriptFovAnimation && fovValid;
+    _mode.selectedSegment = 2;
+    [self changeMode:nil];
+    viewport = [_horizon viewport];
+    viewport.perspective_blend = 0.5;
+    [_horizon setViewport:viewport];
+    blockedFov();
+    viewport.perspective_blend = 0;
+    [_horizon setViewport:viewport];
+    fov.kind = ScriptActionKind::animate_camera_fov;
+    fov.number = 55;
+    fov.duration_seconds = 0.05;
+    fovValid = [self applyScriptAction:fov error:&fovError] && fovValid;
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:2];
+    while (_scriptFovAnimation && deadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    fovValid = !_scriptFovAnimation && [_horizon viewport].vertical_fov_deg == 55 && fovValid;
+    fov.duration_seconds = 10;
+    fov.number = 40;
+    fovValid = [self applyScriptAction:fov error:&fovError] && _scriptFovAnimation.has_value() && fovValid;
+    auto invalidSession = [self sessionState];
+    invalidSession.horizon_viewport.vertical_fov_deg = 0;
+    const BOOL smoke = _smokeTest;
+    _smokeTest = NO;
+    const BOOL acceptedInvalid = [self applySessionState:invalidSession];
+    _smokeTest = smoke;
+    fovValid = !acceptedInvalid && _scriptFovAnimation.has_value() && fovValid;
     if (![self applySessionState:original]) return;
+    fovValid = !_scriptFovAnimation && fovValid;
     if (!zoomModesValid) {
         [self showError:@"smoke: camera distance mode guard failed"];
+        return;
+    }
+    if (!fovValid) {
+        [self showError:@"smoke: camera FOV behavior failed"];
         return;
     }
     const auto range = _model->time_range();
@@ -421,7 +535,7 @@
         } else if ([text isEqualToString:@"__smoke_azimuth"]) {
             const auto viewport = [controller->_horizon viewport];
             if (controller->_mode.selectedSegment != 2 || viewport.center_azimuth_deg != 270 ||
-                viewport.center_altitude_deg != originalHorizon.center_altitude_deg || viewport.zoom != originalHorizon.zoom)
+                viewport.center_altitude_deg != originalHorizon.center_altitude_deg || viewport.vertical_fov_deg != originalHorizon.vertical_fov_deg)
                 interactionFailure = @"smoke: azimuth changed other viewport state or did not select the horizon view";
         } else if ([text isEqualToString:@"__smoke_close_windows"]) {
             [controller->_browser.window performClose:nil];

@@ -89,6 +89,8 @@ struct HorizonPreparedDate {
 - (void)setObserverSite:(mitaka::ObserverSite)site;
 - (mitaka::gui::HorizonViewport)viewport;
 - (void)setViewport:(mitaka::gui::HorizonViewport)viewport;
+- (double)verticalFovDegrees;
+- (BOOL)setVerticalFovDegrees:(double)degrees;
 - (void)selectBody:(NSUInteger)index;
 - (void)clearSelection;
 - (BOOL)selectStarHIP:(int32_t)hip;

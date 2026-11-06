@@ -56,8 +56,8 @@ TextureImage render_horizon_landscape(const TextureImage* texture, const PlaceLa
             throw std::invalid_argument("invalid landscape texture");
         LandscapeImageMesh validated(*landscape);
     }
-    const auto normalized = normalize_sky_viewport({360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-        viewport.zoom, viewport.perspective_blend, viewport.roll_deg}, true);
+    const auto normalized = normalize_horizon_viewport({360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
+        viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg});
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
     // 風景画像がないときは、既に暗く描いた地平線下の天体を覆わない。
     if (!texture) return result;

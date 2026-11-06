@@ -196,26 +196,26 @@ void horizon_mapping_tests() {
                 const auto horizontal = frame.to_horizontal(axes[index]);
                 expect(std::abs(horizontal.altitude_deg) < 89.5, "axis fixture must fit at native maximum zoom");
                 const auto point = render_horizon_background(texture,
-                    {horizontal.azimuth_deg, horizontal.altitude_deg, 180}, frame, 1, 1);
+                    {horizontal.azimuth_deg, horizontal.altitude_deg, 1}, frame, 1, 1);
                 const std::array<int, 4> expected_green{{124, 124, 0, 248}};
                 near(point.rgba[1], expected_green[index], 1, "horizon Galactic axis latitude is inverted or shifted");
                 if (index < 2) near(point.rgba[0], index == 0 ? 126 : 62, 1, "horizon Galactic axis handedness mismatch");
             }
-            const auto first = render_horizon_background(texture, {0, 0, 1}, frame, 31, 17);
-            const auto wrapped = render_horizon_background(texture, {720, 0, 1}, frame, 31, 17);
+            const auto first = render_horizon_background(texture, {0, 0, 180}, frame, 31, 17);
+            const auto wrapped = render_horizon_background(texture, {720, 0, 180}, frame, 31, 17);
             expect(first.rgba == wrapped.rgba, "azimuth 0/360 seam must be periodic at both observer poles");
             for (double altitude : {-90.0, 90.0}) {
-                const auto vertical = render_horizon_background(texture, {0, altitude, 180}, frame, 9, 9);
+                const auto vertical = render_horizon_background(texture, {0, altitude, 1}, frame, 9, 9);
                 expect(vertical.rgba.size() == 9 * 9 * 4, "zenith/nadir edge viewport must remain finite");
             }
         }
     }
     const ObservationFrame frame({35.68, 139.76}, 2451545);
-    const HorizonViewport viewport{2, 20, 4};
+    const HorizonViewport viewport{2, 20, 45};
     const auto rendered = render_horizon_background(texture, viewport, frame, 17, 13);
     for (std::size_t y = 0; y < rendered.height; ++y) {
         for (std::size_t x = 0; x < rendered.width; ++x) {
-            const SkyViewport projection{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom};
+            const HorizonProjectionViewport projection{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg};
             const auto direction = unproject_horizon({x + 0.5, y + 0.5}, projection, 17, 13);
             const HorizontalCoordinates horizontal{360 - direction.right_ascension_deg, direction.declination_deg};
             const auto projected = project_horizon(direction, projection, 17, 13);
@@ -230,13 +230,13 @@ void horizon_mapping_tests() {
         }
     }
     const auto at_center = frame.to_horizontal(center);
-    const HorizonViewport centered{at_center.azimuth_deg, at_center.altitude_deg, 180};
+    const HorizonViewport centered{at_center.azimuth_deg, at_center.altitude_deg, 1};
     const auto alpha = render_horizon_background({2, 1, {80, 120, 160, 255, 255, 0, 0, 0}}, centered, frame, 1, 1);
     expect(alpha.rgba[0] == 80 && alpha.rgba[1] == 120 && alpha.rgba[2] == 160,
         "transparent texture colors must not contaminate horizon interpolation");
     near(alpha.rgba[3], 128, 1, "horizon interpolation must retain weighted alpha");
     const auto opposite = frame.to_horizontal({86.41682625, 29.007796944444443});
-    const auto seam = render_horizon_background(texture, {opposite.azimuth_deg, opposite.altitude_deg, 180}, frame, 1, 1);
+    const auto seam = render_horizon_background(texture, {opposite.azimuth_deg, opposite.altitude_deg, 1}, frame, 1, 1);
     near(seam.rgba[0], 126, 1, "Galactic seam must blend the last and first texture columns");
     const auto max_size = render_horizon_background({1, 1, {1, 2, 3, 255}}, {}, frame, 1024, 1024);
     expect(max_size.rgba.size() == 1024 * 1024 * 4 && max_size.rgba.back() == 255,
@@ -244,12 +244,12 @@ void horizon_mapping_tests() {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     for (auto dimensions : {std::pair<std::size_t, std::size_t>{0, 1}, {1, 0}, {1025, 1}, {1, 1025}})
         rejects([&] { render_horizon_background(texture, {}, frame, dimensions.first, dimensions.second); });
-    for (auto invalid : {HorizonViewport{nan, 0, 1}, {0, nan, 1}, {0, 0, nan}, {0, 0, 0}, {0, 0, -1}})
+    for (auto invalid : {HorizonViewport{nan, 0, 1}, {0, nan, 1}, {0, 0, nan}, {0, 0, 0}, {0, 0, -1}, {0, 0, 181}})
         rejects([&] { render_horizon_background(texture, invalid, frame, 1, 1); });
     for (auto invalid : {TextureImage{}, TextureImage{1, 1, {1, 2, 3}}, TextureImage{1025, 1, {}}})
         rejects([&] { render_horizon_background(invalid, {}, frame, 1, 1); });
-    expect(render_horizon_background(texture, {725, 90, 0.5}, frame, 11, 7).rgba
-        == render_horizon_background(texture, {5, 90, 1}, frame, 11, 7).rgba,
+    expect(render_horizon_background(texture, {725, 90, 180}, frame, 11, 7).rgba
+        == render_horizon_background(texture, {5, 90, 180}, frame, 11, 7).rgba,
         "horizon viewport normalization must match the view's native bounds");
 }
 

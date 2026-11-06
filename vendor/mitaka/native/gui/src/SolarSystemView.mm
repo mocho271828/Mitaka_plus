@@ -785,7 +785,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             // 公開済みの地形フレームと同じ視点から座標を復元し、線と星のずれを避ける。
             const auto& site = *earthSite;
             const ObservationFrame observation({site.latitude_deg, site.longitude_deg}, frame.julian_date);
-            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 1, 1, site.roll_deg};
+            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
             if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
                 const double maximumDimension = self.flightAnimating ? 512 : 1024;
                 const double scale = std::min(1.0, maximumDimension / std::max(frame.map.size.width, frame.map.size.height));

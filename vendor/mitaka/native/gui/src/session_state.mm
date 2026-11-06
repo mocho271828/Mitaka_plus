@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 
 #include <cmath>
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 
@@ -99,7 +100,9 @@ void validate(const SessionState& state) {
     const auto& sky = state.sky_viewport;
     validate_viewport(sky.center_ra_deg, sky.center_dec_deg, sky.zoom, 90 - 90 / sky.zoom, @"sky_viewport");
     const auto& horizon = state.horizon_viewport;
-    validate_viewport(horizon.center_azimuth_deg, horizon.center_altitude_deg, horizon.zoom, 90, @"horizon_viewport");
+    validate_viewport(horizon.center_azimuth_deg, horizon.center_altitude_deg, 1, 90, @"horizon_viewport");
+    if (!std::isfinite(horizon.vertical_fov_deg) || horizon.vertical_fov_deg <= 0 ||
+        horizon.vertical_fov_deg > 180) invalid(@"horizon_viewport.fov_deg");
     if (!std::isfinite(horizon.roll_deg)) invalid(@"horizon_viewport.roll_deg");
     // 保存状態のカメラも描画時と同じ基底・距離の契約を通す。
     (void)solar_camera_basis(state.solar_camera);
@@ -134,8 +137,12 @@ SessionState decode_session_state(std::string_view json) {
         state.sky_viewport = {numeric_field(sky, @"center_ra_deg"), numeric_field(sky, @"center_dec_deg"),
                               numeric_field(sky, @"zoom")};
         NSDictionary *horizon = dictionary(required(object, @"horizon_viewport"), @"horizon_viewport");
-        state.horizon_viewport = {numeric_field(horizon, @"center_azimuth_deg"),
-                                  numeric_field(horizon, @"center_altitude_deg"), numeric_field(horizon, @"zoom")};
+        const double horizon_azimuth = numeric_field(horizon, @"center_azimuth_deg");
+        const double horizon_altitude = numeric_field(horizon, @"center_altitude_deg");
+        const double horizon_zoom = numeric_field(horizon, @"zoom");
+        validate_viewport(horizon_azimuth, horizon_altitude, horizon_zoom, 90, @"horizon_viewport");
+        const double horizon_fov = horizon[@"fov_deg"] ? numeric_field(horizon, @"fov_deg") : 180 / horizon_zoom;
+        state.horizon_viewport = {horizon_azimuth, horizon_altitude, horizon_fov};
         if (horizon[@"roll_deg"]) state.horizon_viewport.roll_deg = numeric_field(horizon, @"roll_deg");
         NSDictionary *camera = dictionary(required(object, @"solar_camera"), @"solar_camera");
         state.solar_camera.target = vector_field(camera, @"target");
@@ -246,7 +253,9 @@ std::string encode_session_state(const SessionState& state) {
             @"sky_viewport": @{@"center_ra_deg": @(sky.center_ra_deg), @"center_dec_deg": @(sky.center_dec_deg),
                                @"zoom": @(sky.zoom)},
             @"horizon_viewport": @{@"center_azimuth_deg": @(horizon.center_azimuth_deg),
-                @"center_altitude_deg": @(horizon.center_altitude_deg), @"zoom": @(horizon.zoom), @"roll_deg": @(horizon.roll_deg)},
+                @"center_altitude_deg": @(horizon.center_altitude_deg),
+                @"zoom": @(180 / std::max(horizon.vertical_fov_deg, 1.0)),
+                @"fov_deg": @(horizon.vertical_fov_deg), @"roll_deg": @(horizon.roll_deg)},
             @"solar_camera": @{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
                                @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
                                @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)},
