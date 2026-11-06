@@ -362,3 +362,11 @@ HIP、天の川モデル、SDSS/QSO が重なるとき、選択候補の描画�
 天の川モデルの同一レイヤー内で、描画形状が重なる点の選択を描画順に揃える。preview の矩形と完成画像の円を区別し、透明な点と形状外は従来の候補規則を維持する。点の元データと識別子は変更しない。隔離環境では実データの renderer と overlay を検証し、5 種の make が成功した。
 
 統合後の checkout では `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test` が成功。`make -j6 smoke` は Lua アニメーションの途中値を検査する `host.lua:21` の assertion で失敗し、原因は未確定のため再検証が必要。手動 GUI と旧 Plus 比較も未実施。新規依存・原データ・全体方針の変更はない。
+
+## 2026-11-07: P1-2 地平風景による選択遮蔽
+
+AppKit の HorizonView において、小天体・探査機の選択を不透明な地平風景の背後で抑止する。透明・半透明、画像欠損、非表示と黒い地面 fallback は選択可能。補間境界では 4×4 画素がすべて完全不透明のときだけ選択を抑止するという仮定を採った。クリック位置に応じた判定を透明・不透明の両側で検証した。旧 Plus の挙動、実画面における補間境界の完全一致と手動操作は未確認であり、OBJ-15 は部分実装。原データ、依存、全体方針の変更はない。
+
+基点 `815b362` の隔離 checkout で `make -j4 build`、`make -j6 test`、`make -j6 data-test`、`make -j4 reference-test`、`make smoke` は成功した。HorizonView は実データで 148 checks、Earth landscape は 2608 checks。隔離 checkout の LFS 実体が未展開のため、同じリポジトリの共有 checkout にある `resources/data` を `DATA_ROOT` に読み取り専用で指定した。
+
+統合後の `62bbc36` 相当では `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test` が成功。統合後の smoke と手動 GUI は未実施である。

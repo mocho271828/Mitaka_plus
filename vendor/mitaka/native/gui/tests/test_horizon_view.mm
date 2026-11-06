@@ -3,6 +3,7 @@
 #include "small_body_display.hpp"
 #include "spacecraft_browser_model.hpp"
 #include "horizon_objects.hpp"
+#include "landscape_projection.hpp"
 #include "surface_navigation.hpp"
 #include "mitaka/rotation.hpp"
 
@@ -10,6 +11,9 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <unistd.h>
 #include <limits>
 #include <stdexcept>
 
@@ -172,7 +176,7 @@ NSData *rendered_bitmap(HorizonView *view) {
 }
 
 // 描画と同じ投影の位置を通常のマウス操作で選択する。
-void click_object(HorizonView *view, EquatorialCoordinates coordinates, double jd) {
+void click_object(HorizonView *view, EquatorialCoordinates coordinates, double jd, double dx = 0, double dy = 0) {
     const auto horizontal = ObservationFrame([view observerSite], jd).to_horizontal(coordinates);
     [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 45}];
     const auto viewport = [view viewport];
@@ -181,7 +185,7 @@ void click_object(HorizonView *view, EquatorialCoordinates coordinates, double j
         {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg},
         map.size.width, map.size.height);
     check(point.has_value(), "fixture object is outside viewport");
-    const NSPoint location = NSMakePoint(map.origin.x + point->x, map.origin.y + point->y);
+    const NSPoint location = NSMakePoint(map.origin.x + point->x + dx, map.origin.y + point->y + dy);
     NSEvent *down = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:location
         modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:1 clickCount:1 pressure:1];
     NSEvent *up = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:location
@@ -313,6 +317,89 @@ void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const
     [view setObserverSite:{35.68, 139.76}];
     view.starDisplayOptions = savedStars;
     view.planetDisplayOptions = savedPlanets;
+}
+
+void test_landscape_selection(HorizonView *view, const SkyModel& model, const SkyBodies& bodies, double jd) {
+    namespace fs = std::filesystem;
+    std::string name = (fs::temp_directory_path() / "mitaka-horizon-pick-XXXXXX").string();
+    std::vector<char> writable(name.begin(), name.end()); writable.push_back('\0');
+    const char *created = mkdtemp(writable.data());
+    check(created != nullptr, "cannot create landscape fixture");
+    const fs::path root(created);
+    struct Cleanup { fs::path root; ~Cleanup() { std::error_code ec; fs::remove_all(root, ec); } } cleanup{root};
+    fs::create_directory(root / "data");
+    for (int alpha : {0, 128, 255}) {
+        std::vector<unsigned char> bytes(18, 0);
+        bytes[2] = 2; bytes[12] = 2; bytes[14] = 2; bytes[16] = 32; bytes[17] = 0x28;
+        for (int i = 0; i < 4; ++i) bytes.insert(bytes.end(), {0, 0, 0, static_cast<unsigned char>(alpha)});
+        std::ofstream out(root / (std::to_string(alpha) + ".tga"), std::ios::binary);
+        out.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+        check(bool(out), "cannot write landscape fixture");
+    }
+    HorizonFixture fixture;
+    const auto earth = model.solar_bodies(jd)[3].position_au;
+    [view setBodies:bodies julianDate:jd earthPosition:earth smallBodies:fixture.frame
+        smallBodyDisplay:fixture.display spacecraft:fixture.spacecraft];
+    auto stars = view.starDisplayOptions; stars.visible = false; view.starDisplayOptions = stars;
+    auto planets = view.planetDisplayOptions; planets.visible = false; view.planetDisplayOptions = planets;
+    view.smallBodiesVisible = YES; view.spacecraftVisible = YES;
+    const auto observer = horizon_observer_position(ObservationFrame([view observerSite], jd));
+    const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth, observer);
+    const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, observer, spacecraft_scene_position);
+    check(!objects.empty() && !probes.empty(), "missing landscape selection fixture");
+    for (const auto& file : {std::string("0.tga"), std::string("128.tga"), std::string("255.tga"), std::string("missing.tga")}) {
+        ObserverPlaces places;
+        places.sources.push_back({"places.dat", {}, PlaceCatalog{}, {}});
+        places.selected_source = 0;
+        places.sources[0].catalog->landscapes.push_back({"Planet.Earth", "Default", file, 1, {0, 0}});
+        [view setEarthLandscapes:std::make_shared<const EarthLandscapes>(EarthLandscapes::load(root / "data", places))];
+        view.showsLandscapeImage = YES;
+        const bool opaque = file == "255.tga";
+        click_object(view, objects[0].coordinates, jd);
+        check((view.selectedSmallBodyIndex == NSNotFound) == opaque, "small body landscape selection mismatch");
+        click_object(view, probes[0].coordinates, jd);
+        check((view.selectedSpacecraftIndex == NSNotFound) == opaque, "spacecraft landscape selection mismatch");
+        if (opaque) {
+            view.showsLandscapeImage = NO;
+            click_object(view, probes[0].coordinates, jd);
+            check(view.selectedSpacecraftIndex == 0, "hidden landscape still blocks selection");
+        }
+    }
+    // 中心を境界に置き、同じ天体でもクリックした画素に応じて遮蔽を判定する。
+    std::vector<unsigned char> edge(18, 0);
+    edge[2] = 2; edge[12] = 0; edge[13] = 4; edge[14] = 2; edge[16] = 32; edge[17] = 0x28;
+    for (int y = 0; y < 2; ++y) for (int x = 0; x < 1024; ++x)
+        edge.insert(edge.end(), {0, 0, 0, static_cast<unsigned char>(x < 512 ? 0 : 255)});
+    std::ofstream output(root / "edge.tga", std::ios::binary);
+    output.write(reinterpret_cast<const char *>(edge.data()), edge.size()); output.close();
+    check(bool(output), "cannot write edge landscape fixture");
+    ObserverPlaces edgePlaces;
+    edgePlaces.sources.push_back({"places.dat", {}, PlaceCatalog{}, {}}); edgePlaces.selected_source = 0;
+    const auto horizontal = ObservationFrame([view observerSite], jd).to_horizontal(objects[0].coordinates);
+    edgePlaces.sources[0].catalog->landscapes.push_back({"Planet.Earth", "Default", "edge.tga", 1, {0, -horizontal.azimuth_deg}});
+    const auto edgeModel = std::make_shared<const EarthLandscapes>(EarthLandscapes::load(root / "data", edgePlaces));
+    [view setEarthLandscapes:edgeModel];
+    view.showsLandscapeImage = YES;
+    click_object(view, objects[0].coordinates, jd, -7);
+    const bool leftSelected = view.selectedSmallBodyIndex == 0;
+    click_object(view, objects[0].coordinates, jd, 7);
+    const bool rightSelected = view.selectedSmallBodyIndex == 0;
+    check(leftSelected != rightSelected, "landscape must test click location, not object center");
+    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const auto projected = render_horizon_landscape(edgeModel->image(0),
+        &edgeModel->definitions().landscapes()[0].definition, [view viewport], map.size.width, map.size.height);
+    const auto alphaAt = [&](int offset) {
+        const auto x = static_cast<std::size_t>(map.size.width / 2 + offset);
+        const auto y = static_cast<std::size_t>(map.size.height / 2);
+        return projected.rgba[(y * projected.width + x) * 4 + 3];
+    };
+    check((alphaAt(-7) == 0 && leftSelected) || (alphaAt(-7) == 255 && !leftSelected),
+        "left click does not match the projected landscape pixel");
+    check((alphaAt(7) == 0 && rightSelected) || (alphaAt(7) == 255 && !rightSelected),
+        "right click does not match the projected landscape pixel");
+    [view setEarthLandscapes:nullptr];
+    click_object(view, objects[0].coordinates, jd);
+    check(view.selectedSmallBodyIndex == 0, "base ground fallback must not obscure subsequently drawn objects");
 }
 
 void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodies& bodies, double jd) {
@@ -485,6 +572,7 @@ void test_data(HorizonView *view, const char *directory) {
     [view resetView];
     test_drawing(view);
     test_moving_objects(view, *model, bodies, jd);
+    test_landscape_selection(view, *model, bodies, jd);
     [view setModel:nullptr bodies:bodies];
     check(view.visibleStarCount == 0, "unloading model left stars");
     view.selectionChanged = nil;

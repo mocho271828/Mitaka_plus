@@ -62,7 +62,8 @@
 | 8c | `codex/mitaka-08c-non-earth-picking` | `codex/mitaka-11b-planet-places` | P1-5: CAM-01 | 非地球 3D 地表の恒星・星座線の選択と地形遮蔽を揃える | 恒星と星座線、可視設定、地形・球面の遮蔽と描画一致 | `local-only` | `partial` | yes* |
 | 8d | `codex/mitaka-08d-surface-fov` | `codex/mitaka-08c-non-earth-picking` | P1-1: CAM-03, P1-5: CAM-01 | 非地球 3D 地表の画角と Lua 操作を投影・選択に接続する | 地形・背景・恒星・星座・銀河、補間と再指定、45° 復帰 | `local-only` | `partial` | yes* |
 | 4k | `codex/mitaka-04k-our-galaxy-integrated` | `codex/mitaka-08d-surface-fov` | P1-1: Galaxy picking | 天の川点群の同一レイヤー内で描画順に選択する | preview・complete の描画形状と原順 | `local-only` | `partial` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-04k-our-galaxy-integrated` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
+| 5b | `codex/mitaka-05b-horizon-integrated` | `codex/mitaka-04k-our-galaxy-integrated` | P1-2: OBJ-15 | 不透明な地平風景に隠れた天体のクリック選択を抑止する | 透明・半透明・不透明、欠損、非表示、fallback と境界の描画選択 | `local-only` | `partial` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-05b-horizon-integrated` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |
@@ -257,3 +258,10 @@
 - 依存と範囲: **YES**。既存の描画・レイヤー間選択の上に限定し、追加データやライブラリは不要。
 - 作業都合のみの分割ではない: **YES**。同一レイヤー内の判定は他レイヤー間の優先順位と別にレビューできる。
 - 状態: `local-only`、P1-1 全体は `partial`。旧 Plus の優先順位とアンチエイリアス境界は未確認。
+
+## 第 5b 単位の branch admission 判定
+
+- レビュー理由・named seam: **YES**。地平風景の不透明な画素に隠れた天体のクリックを抑止し、`HorizonLandscapeRenderer` と `HorizonView` の描画・選択を揃える。
+- 独立検証・依存: **YES**。独立作業の親は第 11b 単位 `815b362`、統合時の親は `a6d703a`。小天体・探査機、透明度、画像欠損・非表示・黒地 fallback と境界位置を AppKit の実ビューで確認する。
+- 分割理由: 観測位置の視差や後続のポインター API とは独立した風景による選択遮蔽の契約である。
+- 仮定・残件: 半透明では選択を許可し、補間のため 4×4 画素すべてが不透明の場合だけ遮蔽する。実画面の境界一致と旧 Plus 比較は未確認。OBJ-15 全体は部分実装のままとする。

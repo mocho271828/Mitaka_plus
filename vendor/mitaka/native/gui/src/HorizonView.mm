@@ -543,8 +543,13 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0 || !NSPointInRect(point, map)) return;
-    double nearest = 8 * 8;
     _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection.reset();
+    if ([_landscapeRenderer isOpaqueAtPoint:point inRect:map viewport:_viewport]) {
+        [self notifySelection];
+        self.needsDisplay = YES;
+        return;
+    }
+    double nearest = 8 * 8;
     const auto consider = [&](EquatorialCoordinates coordinates, Selection selection) {
         const auto projected = projectHorizontal(_frame->to_horizontal(coordinates), _viewport, map.size);
         if (!projected) return;
