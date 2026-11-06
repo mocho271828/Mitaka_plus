@@ -227,17 +227,17 @@ struct PreparedSolarDate {
     if (!p->journey_active && !p->surface_active) {
         if (_earthMoonMode && _earthMoonFollowing) {
             const auto earth = solar_display_position(next, 3), moon = solar_display_position(next, 10);
-            p->camera.target = {(earth.x + moon.x)/2, (earth.y + moon.y)/2, (earth.z + moon.z)/2};
+            p->camera.set_target_au({(earth.x + moon.x)/2, (earth.y + moon.y)/2, (earth.z + moon.z)/2});
         } else if (p->following && _selection) {
-            p->camera.target = _scriptSpacePlace && *_selection == 3
-                ? [self scriptSpacePlacePositionForBodies:p->bodies] : solar_display_position(next, *_selection);
+            p->camera.set_target_au(_scriptSpacePlace && *_selection == 3
+                ? [self scriptSpacePlacePositionForBodies:p->bodies] : solar_display_position(next, *_selection));
         }
         else if (p->following && p->small_selection && p->small) {
-            const auto& pos = p->small->positions.at(*p->small_selection); if (pos) p->camera.target = *pos; else p->following = false;
+            const auto& pos = p->small->positions.at(*p->small_selection); if (pos) p->camera.set_target_au(*pos); else p->following = false;
         } else if (p->following && p->satellite_selection && p->satellites) {
-            const auto& pos = p->satellites->positions.at(*p->satellite_selection); if (pos) p->camera.target = *pos; else p->following = false;
+            const auto& pos = p->satellites->positions.at(*p->satellite_selection); if (pos) p->camera.set_target_au(*pos); else p->following = false;
         } else if (p->following && p->spacecraft_selection && p->spacecraft) {
-            const auto pos = spacecraft_scene_position(*p->spacecraft, *p->spacecraft_selection); if (pos) p->camera.target = *pos; else p->following = false;
+            const auto pos = spacecraft_scene_position(*p->spacecraft, *p->spacecraft_selection); if (pos) p->camera.set_target_au(*pos); else p->following = false;
         }
     }
     if (_earthMoonMode) {

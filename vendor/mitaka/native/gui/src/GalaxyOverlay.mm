@@ -22,7 +22,10 @@ bool sameFrame(const std::optional<SolarCameraBasis>& a, const std::optional<Sol
 }
 bool sameRequest(const GalaxyOverlayRequest& a, const GalaxyOverlayRequest& b) {
     return a.camera.target.x_pc == b.camera.target.x_pc && a.camera.target.y_pc == b.camera.target.y_pc &&
-        a.camera.target.z_pc == b.camera.target.z_pc && a.camera.distance_pc == b.camera.distance_pc &&
+        a.camera.target.z_pc == b.camera.target.z_pc &&
+        a.camera.target_offset_au.x == b.camera.target_offset_au.x &&
+        a.camera.target_offset_au.y == b.camera.target_offset_au.y &&
+        a.camera.target_offset_au.z == b.camera.target_offset_au.z && a.camera.distance_pc == b.camera.distance_pc &&
         a.camera.yaw_deg == b.camera.yaw_deg && a.camera.pitch_deg == b.camera.pitch_deg && a.camera.roll_deg == b.camera.roll_deg &&
         sameFrame(a.camera.frame, b.camera.frame) && NSEqualSizes(a.size, b.size) && a.scale == b.scale &&
         a.quality.antialias == b.quality.antialias && a.quality.point_smoothing == b.quality.point_smoothing &&

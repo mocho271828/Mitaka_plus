@@ -145,7 +145,14 @@ SessionState decode_session_state(std::string_view json) {
         state.horizon_viewport = {horizon_azimuth, horizon_altitude, horizon_fov};
         if (horizon[@"roll_deg"]) state.horizon_viewport.roll_deg = numeric_field(horizon, @"roll_deg");
         NSDictionary *camera = dictionary(required(object, @"solar_camera"), @"solar_camera");
-        state.solar_camera.target = vector_field(camera, @"target");
+        const Vec3 legacy_target = vector_field(camera, @"target");
+        if (id precise_value = camera[@"precise_target"]) {
+            NSDictionary *precise = dictionary(precise_value, @"precise_target");
+            state.solar_camera.set_target_pc(vector_field(precise, @"anchor_pc"));
+            state.solar_camera.translate_target_au(vector_field(precise, @"offset_au"));
+        } else {
+            state.solar_camera.set_target_au(legacy_target);
+        }
         state.solar_camera.yaw_deg = numeric_field(camera, @"yaw_deg");
         state.solar_camera.pitch_deg = numeric_field(camera, @"pitch_deg");
         state.solar_camera.distance_au = numeric_field(camera, @"distance_au");
@@ -246,6 +253,13 @@ std::string encode_session_state(const SessionState& state) {
         id frame = NSNull.null;
         if (camera.frame) frame = @{@"outward": vector_json(camera.frame->outward),
                                    @"right": vector_json(camera.frame->right), @"up": vector_json(camera.frame->up)};
+        NSMutableDictionary *camera_object = [@{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
+            @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
+            @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)} mutableCopy];
+        if (camera.precise_target) {
+            camera_object[@"precise_target"] = @{@"anchor_pc": vector_json(camera.precise_target->anchor_pc),
+                                                 @"offset_au": vector_json(camera.precise_target->offset_au)};
+        }
         NSMutableDictionary *object = [@{
             @"version": @(state.version), @"julian_date": @(state.julian_date),
             @"simulation_rate": @(state.simulation_rate), @"mode": @(state.mode),
@@ -256,9 +270,7 @@ std::string encode_session_state(const SessionState& state) {
                 @"center_altitude_deg": @(horizon.center_altitude_deg),
                 @"zoom": @(180 / std::max(horizon.vertical_fov_deg, 1.0)),
                 @"fov_deg": @(horizon.vertical_fov_deg), @"roll_deg": @(horizon.roll_deg)},
-            @"solar_camera": @{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
-                               @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
-                               @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)},
+            @"solar_camera": camera_object,
             @"selected_body": @(static_cast<int>(state.selected_body)),
             @"sky_selected_body": state.sky_selected_body ? @(static_cast<int>(*state.sky_selected_body)) : NSNull.null,
             @"horizon_selected_body": state.horizon_selected_body ? @(static_cast<int>(*state.horizon_selected_body)) : NSNull.null,

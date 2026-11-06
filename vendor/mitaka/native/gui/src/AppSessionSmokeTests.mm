@@ -110,6 +110,15 @@ void requireSession(bool condition, const char *message) {
                        sameSessionSmokeJSON(encode_session_state([self sessionState]), savedJSON),
                        "v9 layer settings did not restore from JSON");
 
+        auto precise = saved;
+        precise.solar_camera.set_target_pc({1e9, -2e9, 3e9});
+        precise.solar_camera.translate_target_au({0.001, -0.002, 0.003});
+        const auto preciseJSON = encode_session_state(precise);
+        requireSession([self applySessionState:decode_session_state(preciseJSON)] &&
+                       sameSessionSmokeJSON(encode_session_state([self sessionState]), preciseJSON),
+                       "precise camera target did not restore through the application");
+        requireSession([self applySessionState:saved], "precise camera smoke did not restore previous state");
+
         std::size_t rejected = 0;
         auto requireRejected = [&](SessionState invalid) {
             const auto before = encode_session_state([self sessionState]);
@@ -144,6 +153,10 @@ void requireSession(bool condition, const char *message) {
             requireRejected(invalid);
         }
         SessionState invalid = saved;
+        invalid.solar_camera = precise.solar_camera;
+        invalid.solar_camera.precise_target->offset_au.x = std::numeric_limits<double>::infinity();
+        requireRejected(invalid);
+        invalid = saved;
         std::string unknown = "session-smoke-unknown";
         while (constellations.abbreviations().count(unknown)) unknown.push_back('_');
         invalid.constellations.exceptions.insert(unknown);

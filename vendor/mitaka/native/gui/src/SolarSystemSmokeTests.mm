@@ -8,6 +8,10 @@
 using namespace mitaka;
 using namespace mitaka::gui;
 
+@interface SolarSystemView (PrecisionSmokeInternal)
+- (void)advanceScriptTargetTransition;
+@end
+
 static bool sameFlightCamera(const SolarCamera& a, const SolarCamera& b) {
     const auto first = solar_camera_basis(a), second = solar_camera_basis(b);
     const auto near = [](Vec3 x, Vec3 y) { return std::hypot(x.x-y.x, x.y-y.y, x.z-y.z) < 1e-11; };
@@ -332,6 +336,35 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self focusSelection];
     const Vec3 earth = [self displayPosition:3];
     const BOOL focused = _following && _camera.target.x == earth.x && _camera.target.y == earth.y && _camera.target.z == earth.z;
+    _camera.set_target_pc({-1003390485.606666, 0, 0});
+    _camera.distance_au = 1;
+    [self panByX:1 y:0];
+    [self selectBody:3];
+    [self focusSelection];
+    const BOOL farToTracking = !_camera.precise_target && _following &&
+        _camera.target.x == earth.x && _camera.target.y == earth.y && _camera.target.z == earth.z;
+
+    _selection.reset(); _following = NO;
+    SolarCamera initial;
+    initial.set_target_pc({-1003390485.606666, 0, 0});
+    initial.distance_au = 1;
+    _camera = initial;
+    _camera.translate_target_au({0, 0.01, 0});
+    [self animateScriptTargetFrom:initial duration:100];
+    _targetAnimation->start_time -= 50;
+    [self advanceScriptTargetTransition];
+    const auto midway = _camera;
+    const BOOL halfway = midway.precise_target &&
+        std::abs(midway.precise_target->offset_au.y - 0.005) < 0.001;
+    _camera = midway;
+    _camera.translate_target_au({0, 0.02, 0});
+    [self animateScriptTargetFrom:midway duration:100];
+    const BOOL restarted = _camera.precise_target && midway.precise_target &&
+        _camera.precise_target->offset_au.y == midway.precise_target->offset_au.y;
+    _targetAnimation->start_time -= 101;
+    [self advanceScriptTargetTransition];
+    const BOOL finished = !_targetAnimation && _camera.precise_target && midway.precise_target &&
+        std::abs(_camera.precise_target->offset_au.y - (midway.precise_target->offset_au.y + 0.02)) < 1e-12;
     const BOOL invalidCameraRejected = [self rejectsInvalidCameraStatesWithoutChanges];
     [self resetCamera];
     [self refreshTerrain];
@@ -416,7 +449,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self notifySelection];
     [self notifyCamera];
     self.needsDisplay = YES;
-    return rotated && panned && zoomedIn && zoomedOut && inner && focused && invalidCameraRejected && visible
+    return rotated && panned && zoomedIn && zoomedOut && inner && focused && farToTracking && halfway && restarted && finished && invalidCameraRejected && visible
         && pickedFront && clippedNear && partialVisible && partialPicked && clippedViewport && cleared;
 }
 - (NSBitmapImageRep *)renderedBitmap {

@@ -430,9 +430,10 @@ plus-spatial-time-test: $(BUILD_DIR)/test_plus_time_step $(BUILD_DIR)/test_place
 	"$(BUILD_DIR)/test_sdss_spatial_model"
 test: plus-spatial-time-test
 
-plus-spatial-data-test: $(BUILD_DIR)/test_place_display_model $(BUILD_DIR)/test_sdss_spatial_model
+plus-spatial-data-test: $(BUILD_DIR)/test_place_display_model $(BUILD_DIR)/test_sdss_spatial_model $(BUILD_DIR)/test_galaxy_real_precision
 	"$(BUILD_DIR)/test_place_display_model" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_sdss_spatial_model" "$${DATA_ROOT:?Set DATA_ROOT}"
+	"$(BUILD_DIR)/test_galaxy_real_precision" "$${DATA_ROOT:?Set DATA_ROOT}"
 data-test: plus-spatial-data-test
 
 $(BUILD_DIR)/test_earth_landscapes: tests/test_earth_landscapes.mm $(HORIZON_LANDSCAPE_TEST_OBJECTS) $(addprefix $(BUILD_DIR)/,sky_model.o local_image.o RendererQuality.o) core
@@ -481,6 +482,8 @@ $(BUILD_DIR)/test_galaxy_spatial_scene: tests/test_galaxy_spatial_scene.cpp $(ad
 $(BUILD_DIR)/test_galaxy_spatial_load: tests/test_galaxy_spatial_load.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_load.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_galaxy_renderer: tests/test_galaxy_renderer.mm $(addprefix $(BUILD_DIR)/,GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
+$(BUILD_DIR)/test_galaxy_real_precision: tests/test_galaxy_real_precision.mm $(addprefix $(BUILD_DIR)/,GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o shared_camera.o sdss_spatial_model.o RendererQuality.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"
 $(BUILD_DIR)/test_hip_spatial_renderer: tests/test_hip_spatial_renderer.mm $(addprefix $(BUILD_DIR)/,HipSpatialRenderer.o GalaxyRenderer.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o RendererQuality.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -o "$@"

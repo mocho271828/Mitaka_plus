@@ -24,7 +24,7 @@ struct ScriptOrientationAnimation {
 };
 
 struct ScriptTargetAnimation {
-    mitaka::Vec3 initial, target;
+    mitaka::gui::SolarCamera initial, target;
     double initial_distance, target_distance, start_time, duration;
     std::optional<std::size_t> body, small_body, spacecraft, satellite;
     std::optional<mitaka::gui::GalaxySpatialRecordId> galaxy;

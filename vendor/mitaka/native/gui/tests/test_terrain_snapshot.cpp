@@ -44,6 +44,8 @@ void keys() {
         [](auto& r){r.low_resolution=true;},[](auto& r){r.camera.target.x=1;},
         [](auto& r){r.camera.target.y=1;},[](auto& r){r.camera.target.z=1;},
         [](auto& r){r.camera.yaw_deg=1;},[](auto& r){r.camera.pitch_deg=1;},
+        [](auto& r){r.camera.roll_deg=1;},[](auto& r){r.camera.frame_is_orbit=true;},
+        [](auto& r){r.camera.precise_target=PreciseCameraTarget{};},
         [](auto& r){r.camera.distance_au*=2;},[](auto& r){r.camera.frame=solar_camera_basis(r.camera);},
         [](auto& r){++r.width;},[](auto& r){++r.height;},
         [](auto& r){++r.load_limits.max_file_bytes;},[](auto& r){++r.load_limits.max_patches;},
@@ -58,6 +60,22 @@ void keys() {
         if(axis==1) g.camera.frame->right.x+=.1;
         if(axis==2) g.camera.frame->up.x+=.1;
         require(!terrain_surface_request_matches(f,g),"explicit camera basis belongs to key");
+    }
+    auto precise=a;precise.camera.set_target_pc({1e9,1e9,1e9});
+    require(terrain_surface_request_matches(precise,precise),"precise target matches itself");
+    auto moved=precise;moved.camera.translate_target_au({.001,0,0});
+    require(moved.camera.target.x==precise.camera.target.x,"small movement preserves rounded AU target");
+    require(!terrain_surface_request_matches(precise,moved)&&!terrain_surface_request_matches(moved,precise),
+        "sub-ULP precise movement changes request key");
+    for(int axis=0;axis<3;++axis) {
+        for(bool anchor:{false,true}) {
+            auto changed=precise;
+            auto& v=anchor?changed.camera.precise_target->anchor_pc:changed.camera.precise_target->offset_au;
+            if(axis==0) v.x+=1;
+            if(axis==1) v.y+=1;
+            if(axis==2) v.z+=1;
+            require(!terrain_surface_request_matches(precise,changed),"every precise coordinate belongs to key");
+        }
     }
     const std::vector<std::function<void(TerrainSurfaceRequest&)>> invalid{
         [](auto& r){r.data_directory="relative";},[](auto& r){r.data_directory=std::string("/a\0b",4);},

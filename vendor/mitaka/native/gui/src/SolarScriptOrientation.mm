@@ -52,9 +52,9 @@ static SurfaceSite surfaceSiteWithOrientation(const SurfaceNavigation& navigatio
     if (_journeyActive || (_surfaceActive && _navigation.flying()) || _physicalSpaceActive) {
         // 飛行と物理宇宙視点では、視点位置を変えずに表示姿勢を差し替える。
         const auto previous = solar_camera_basis(_camera);
-        _camera.target.x += (previous.outward.x - basis.outward.x) * _camera.distance_au;
-        _camera.target.y += (previous.outward.y - basis.outward.y) * _camera.distance_au;
-        _camera.target.z += (previous.outward.z - basis.outward.z) * _camera.distance_au;
+        _camera.translate_target_au({(previous.outward.x - basis.outward.x) * _camera.distance_au,
+                                     (previous.outward.y - basis.outward.y) * _camera.distance_au,
+                                     (previous.outward.z - basis.outward.z) * _camera.distance_au});
         _camera.frame = basis;
         _camera.frame_is_orbit = false;
         _camera.roll_deg = 0;
