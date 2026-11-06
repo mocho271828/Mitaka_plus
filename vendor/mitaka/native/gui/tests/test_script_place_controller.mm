@@ -29,6 +29,8 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
     const std::optional<std::size_t> star = kind == 1 ? std::optional<std::size_t>(0) : std::nullopt;
     const std::optional<std::size_t> constellation = kind == 2 ? std::optional<std::size_t>(0) : std::nullopt;
     [self applySurfaceSkyStar:star constellation:constellation];
+    if ([self selectedScriptConstellationInModel:nullptr]) return NO;
+    if (constellation && [self selectedScriptConstellationInModel:_surfaceSkyModel] != constellation) return NO;
     return !_selection && !_smallBodySelection && !_satelliteSelection && !_spacecraftSelection && !_following &&
         [self scriptEarthPlaceTarget].empty() && _surfaceStarSelection == star && _surfaceConstellationSelection == constellation;
 }
@@ -147,7 +149,13 @@ int main(int argc, const char *argv[]) {
             const auto selectedHIP = [app fixtureSkySelection:1];
             run(scripts, [NSString stringWithFormat:@"assert(Camera.target=='Star.%d')", selectedHIP]);
             [app fixtureSkySelection:2];
-            run(scripts, @"assert(Camera.target=='')");
+            run(scripts, @R"lua(
+                assert(Camera.target=='Constel.And')
+                Camera:look(Camera.target)
+                assert(Camera.target=='Constel.And')
+                local ok=pcall(function() Camera.target='Constel.And' end)
+                assert(not ok and Camera.target=='Constel.And')
+            )lua");
             [app fixtureSkySelection:0];
             run(scripts, @"assert(Camera.target=='')");
             [scripts invalidate];

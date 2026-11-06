@@ -466,6 +466,21 @@ static NSString *const scriptCompatibilityNote =
         else if (const auto hip = [controller->_solar selectedScriptStarHIP]) {
             state.target = controller->_scriptStarHIP == hip ? controller->_scriptStarTarget : "Star." + std::to_string(*hip);
         }
+        else if (const auto constellation = [controller->_solar selectedScriptConstellationInModel:controller->_model]) {
+            const auto& record = controller->_model->constellations()[*constellation];
+            // look と同じ名前解決で一意な ID だけを返す。
+            for (const auto& name : {record.abbreviation, record.english_name}) {
+                if (name.empty()) continue;
+                const auto& records = controller->_model->constellations();
+                const auto matches = std::count_if(records.begin(), records.end(), [&](const auto& candidate) {
+                    return candidate.abbreviation == name || candidate.english_name == name;
+                });
+                if (matches == 1) {
+                    state.target = "Constel." + name;
+                    break;
+                }
+            }
+        }
         else if (controller->_solar.selectedSmallBodyIndex != NSNotFound) {
             const auto index = controller->_solar.selectedSmallBodyIndex;
             state.target.clear();

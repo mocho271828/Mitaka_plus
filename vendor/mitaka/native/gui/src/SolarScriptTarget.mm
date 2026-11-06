@@ -262,6 +262,11 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     if (!model || !_hipSelection || *_hipSelection >= model->points.size()) return std::nullopt;
     return model->points[*_hipSelection].hip;
 }
+- (std::optional<std::size_t>)selectedScriptConstellationInModel:(const std::shared_ptr<const SkyModel>&)model {
+    if (!_surfaceActive || !model || model != _surfaceSkyModel || !_surfaceConstellationSelection ||
+        *_surfaceConstellationSelection >= model->constellations().size()) return std::nullopt;
+    return _surfaceConstellationSelection;
+}
 - (std::optional<GalaxySpatialRecordId>)selectedScriptGalaxyRecord { return _galaxySelection; }
 - (BOOL)isScriptOurGalaxySelected { return _ourGalaxySelected; }
 - (BOOL)selectScriptGalaxyRecord:(GalaxySpatialRecordId)record error:(NSString **)error {

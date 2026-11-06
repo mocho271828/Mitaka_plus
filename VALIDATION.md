@@ -388,3 +388,6 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 地平風景の不透明画素で候補天体の中心が隠れる場合、透明な近傍をクリックしても選ばない。小天体・探査機・恒星・惑星と拡大惑星を対象とし、既存の半透明・4×4 画素の補間境界判定を維持する。中心が遮蔽されていれば記号の一部が見える場合も選択しない仮定とした。小天体と探査機が重なる場合の選択順位、および隠れた候補を除いた近くの可視候補の選択を実ビューで検証。回帰試験は修正前に失敗し、修正後に拡大惑星の 8 px 超の fallback を含め 165 checks 成功。旧 Plus 比較と手動 GUI は未実施。原データ・依存・全体方針の変更はない。
 
 独立作業の親は `09196de`。隔離 worktree で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。その後、実装を変えず拡大惑星の回帰試験を追加し、対象の HorizonView 試験を再実行した。LFS 実体は共有 checkout の `resources/data` を読み取り専用の `DATA_ROOT` に指定した。`make smoke` は各 AppKit smoke の一部が成功した後、`flight did not complete` で失敗。原因は未確定で再検証が必要。
+### P1-8 地表星座の Lua 読み戻し（独立作業）
+
+`35a32c7` 上で、実データの非地球地表における星座選択から `Camera.target` の読み戻し、`Camera:look` への受け渡し、選択解除、未対応 setter による選択保持を `script-place-controller-test` で確認した。モデル不一致は空として扱う。`make build`、`make test`、`make data-test`、`make reference-test` は成功。`make smoke` は GUI 枠未割当につき未実施。実画面操作と旧 Plus 比較、星座の `Camera.target` への指定・時間指定移動は未対応または未検証。

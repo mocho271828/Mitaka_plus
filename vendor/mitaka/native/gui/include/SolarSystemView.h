@@ -115,6 +115,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)selectScriptOverviewTarget:(const std::string&)target error:(NSString **)error;
 - (BOOL)selectScriptStarTarget:(const std::string&)target error:(NSString **)error;
 - (std::optional<std::int32_t>)selectedScriptStarHIP;
+- (std::optional<std::size_t>)selectedScriptConstellationInModel:(const std::shared_ptr<const mitaka::gui::SkyModel>&)model;
 - (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedScriptGalaxyRecord;
 - (BOOL)isScriptOurGalaxySelected;
 - (BOOL)selectScriptGalaxyRecord:(mitaka::gui::GalaxySpatialRecordId)record error:(NSString **)error;
