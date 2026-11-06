@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #include "star_brightness.hpp"
+#include "script_object_identity.hpp"
 #include "SpacecraftRenderer.h"
 #include "our_galaxy_navigation.hpp"
 #include "shared_camera.hpp"
@@ -79,48 +80,12 @@ static std::string resolveScriptStarTarget(const std::string& target, NSString *
 
 static std::optional<std::size_t> resolveScriptSmallBody(const std::string& target,
                                                           const mitaka::gui::SmallBodyModel& model) {
-    mitaka::SmallBodyKind kind;
-    std::size_t prefix;
-    if (target.compare(0, 10, "Asteroids.") == 0) { kind = mitaka::SmallBodyKind::asteroid; prefix = 10; }
-    else if (target.compare(0, 4, "TNO.") == 0) { kind = mitaka::SmallBodyKind::trans_neptunian; prefix = 4; }
-    else if (target.compare(0, 6, "Comet.") == 0) { kind = mitaka::SmallBodyKind::comet; prefix = 6; }
-    else return std::nullopt;
-    const std::string name = target.substr(prefix);
-    if (name.empty()) throw std::invalid_argument("Empty small-body target");
-    std::int32_t number = 0;
-    const auto parsed = std::from_chars(name.data(), name.data() + name.size(), number);
-    const bool isNumber = kind != mitaka::SmallBodyKind::comet && parsed.ec == std::errc{} &&
-                          parsed.ptr == name.data() + name.size() && number > 0;
-    std::optional<std::size_t> match;
-    const auto& records = model.dataset().records;
-    for (std::size_t index = 0; index < records.size(); ++index) {
-        const auto& record = records[index];
-        if (record.kind != kind) continue;
-        const bool matches = isNumber ? record.number == number :
-            record.name_bytes == name || std::find(record.alias_bytes.begin(), record.alias_bytes.end(), name) != record.alias_bytes.end();
-        if (!matches) continue;
-        if (match) throw std::invalid_argument("Ambiguous small-body target: " + target);
-        match = index;
-    }
-    if (!match) throw std::invalid_argument("Unknown small-body target: " + target);
-    return match;
+    return mitaka::gui::resolveScriptSmallBody(target, model.dataset());
 }
 
 static std::size_t resolveScriptSpacecraft(const std::string& target,
                                             const mitaka::gui::SpacecraftBrowserModel& model) {
-    const std::string name = target.substr(11);
-    if (name.empty()) throw std::invalid_argument("Empty spacecraft target");
-    std::optional<std::size_t> match;
-    const auto& definitions = model.model().dataset().definitions;
-    for (std::size_t index = 0; index < definitions.size(); ++index) {
-        const auto* display = mitaka::unique_spacecraft_field(definitions[index], "DisplayName");
-        const auto* internal = mitaka::unique_spacecraft_field(definitions[index], "Name");
-        if ((!display || display->value_bytes != name) && (!internal || internal->value_bytes != name)) continue;
-        if (match) throw std::invalid_argument("Ambiguous spacecraft target: " + target);
-        match = index;
-    }
-    if (!match) throw std::invalid_argument("Unknown spacecraft target: " + target);
-    return *match;
+    return mitaka::gui::resolveScriptSpacecraft(target, model.model().dataset());
 }
 
 static std::size_t resolveScriptSatellite(const std::string& target,
@@ -488,12 +453,31 @@ static NSString *const scriptCompatibilityNote =
         else if (const auto hip = [controller->_solar selectedScriptStarHIP]) {
             state.target = controller->_scriptStarHIP == hip ? controller->_scriptStarTarget : "Star." + std::to_string(*hip);
         }
-        else if (controller->_scriptSmallBodyIndex &&
-                 controller->_solar.selectedSmallBodyIndex == *controller->_scriptSmallBodyIndex)
-            state.target = controller->_scriptSmallBodyTarget;
-        else if (controller->_scriptSpacecraftIndex &&
-                 controller->_solar.selectedSpacecraftIndex == *controller->_scriptSpacecraftIndex)
-            state.target = controller->_scriptSpacecraftTarget;
+        else if (controller->_solar.selectedSmallBodyIndex != NSNotFound) {
+            const auto index = controller->_solar.selectedSmallBodyIndex;
+            state.target.clear();
+            if (controller->_smallBodyModel) {
+                auto& snapshot = controller->_scriptLookSmallBodySnapshot;
+                if (!snapshot || snapshot->model != controller->_smallBodyModel || snapshot->julian_date != controller->_jd ||
+                    index >= snapshot->positions.size() || !snapshot->positions[index])
+                    snapshot = evaluate_small_body_snapshot(controller->_smallBodyModel, controller->_jd, false, index);
+                if (index < snapshot->positions.size() && snapshot->positions[index])
+                    state.target = mitaka::gui::smallBodySnapshotTarget(&controller->_smallBodyModel->dataset(), index,
+                        controller->_scriptSmallBodyIndex, controller->_scriptSmallBodyTarget);
+            }
+        }
+        else if (controller->_solar.selectedSpacecraftIndex != NSNotFound) {
+            const auto index = controller->_solar.selectedSpacecraftIndex;
+            state.target.clear();
+            if (controller->_spacecraftModel) {
+                auto& snapshot = controller->_scriptLookSpacecraftSnapshot;
+                if (!snapshot || snapshot->model != controller->_spacecraftModel || snapshot->julian_date != controller->_jd)
+                    snapshot = [controller spacecraftSnapshotAtDate:controller->_jd];
+                if (snapshot && spacecraft_scene_position(*snapshot, index))
+                    state.target = mitaka::gui::spacecraftSnapshotTarget(&controller->_spacecraftModel->model().dataset(), index,
+                        controller->_scriptSpacecraftIndex, controller->_scriptSpacecraftTarget);
+            }
+        }
         else if (controller->_satelliteModel &&
                  controller->_solar.selectedSatelliteIndex < controller->_satelliteModel->model().records().size())
             state.target = "Satellite." + controller->_satelliteModel->model().records()[controller->_solar.selectedSatelliteIndex].identifier_bytes;

@@ -578,3 +578,28 @@ $(BUILD_DIR)/test_plus_camera_orientation: tests/test_plus_camera_orientation.cp
 plus-camera-orientation-test: $(BUILD_DIR)/test_plus_camera_orientation
 	"$(BUILD_DIR)/test_plus_camera_orientation"
 test: plus-camera-orientation-test
+
+$(BUILD_DIR)/AppScripting.o: src/AppScripting.mm include/script_object_identity.hpp
+
+$(BUILD_DIR)/test_script_object_identity: tests/test_script_object_identity.cpp include/script_object_identity.hpp core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+
+script-object-identity-test: $(BUILD_DIR)/test_script_object_identity
+	"$(BUILD_DIR)/test_script_object_identity"
+
+test: script-object-identity-test
+
+script-object-identity-data-test: $(BUILD_DIR)/test_script_object_identity
+	"$(BUILD_DIR)/test_script_object_identity" "$(DATA_ROOT)"
+
+data-test: script-object-identity-data-test
+
+$(BUILD_DIR)/test_script_object_lua: tests/test_script_object_lua.mm include/script_object_identity.hpp $(BUILD_DIR)/ScriptController.o $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter %.mm %.o,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+
+script-object-lua-test: $(BUILD_DIR)/test_script_object_lua $(SCRIPT_HELPER)
+	"$(BUILD_DIR)/test_script_object_lua" "$(abspath $(SCRIPT_HELPER))"
+
+controller-test: script-object-lua-test
+
+.PHONY: script-object-identity-test script-object-identity-data-test script-object-lua-test

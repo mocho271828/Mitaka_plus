@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #include "small_body_orbit_model.hpp"
+#include "script_object_identity.hpp"
 #include "galaxy_script_identity.hpp"
 #include "mitaka/galaxy_catalog.hpp"
 
@@ -17,6 +18,72 @@
     const SessionState original = [self sessionState];
     const ScriptSnapshot originalScriptState = _scripts.snapshot();
     const HorizonViewport originalHorizon = [_horizon viewport];
+    // GUI 選択した出典行を Lua の対象名として読み戻し、同じ行へ再指定できるか確認する。
+    bool objectTargetsValid = true;
+    const auto previousSmallIndex = _scriptSmallBodyIndex;
+    const auto previousSmallTarget = _scriptSmallBodyTarget;
+    const auto previousShipIndex = _scriptSpacecraftIndex;
+    const auto previousShipTarget = _scriptSpacecraftTarget;
+    _scriptSmallBodyIndex.reset();
+    _scriptSpacecraftIndex.reset();
+    if (_smallBodySnapshot) {
+        for (std::size_t i = 0; i < _smallBodySnapshot->positions.size(); ++i) {
+            const auto target = smallBodyScriptTarget(_smallBodyModel->dataset(), i);
+            if (target.empty() || !_smallBodySnapshot->positions[i]) continue;
+            [_solar selectSmallBody:i];
+            objectTargetsValid = _solar.selectedSmallBodyIndex == i && _scripts.snapshot().target == target;
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = [self applyScriptAction:select error:&targetError] &&
+                _solar.selectedSmallBodyIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            break;
+        }
+    }
+    if (_spacecraftModel && _spacecraftSnapshot) {
+        for (std::size_t i = 0; i < _spacecraftSnapshot->positions.size(); ++i) {
+            const auto target = spacecraftScriptTarget(_spacecraftModel->model().dataset(), i);
+            if (target.empty() || !spacecraft_scene_position(*_spacecraftSnapshot, i)) continue;
+            [_solar selectSpacecraft:i];
+            objectTargetsValid = _solar.selectedSpacecraftIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = [self applyScriptAction:select error:&targetError] &&
+                _solar.selectedSpacecraftIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            break;
+        }
+    }
+    // 位置を確定できない選択は、Lua で再指定できる識別子として返さない。
+    if (_smallBodySnapshot) {
+        for (std::size_t i = 0; i < _smallBodySnapshot->positions.size(); ++i) {
+            const auto target = smallBodyScriptTarget(_smallBodyModel->dataset(), i);
+            if (target.empty()) continue;
+            const auto evaluated = evaluate_small_body_snapshot(_smallBodyModel, _jd, false, i);
+            if (evaluated->positions[i]) continue;
+            [_solar selectSmallBody:i];
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = _scripts.snapshot().target.empty() &&
+                ![self applyScriptAction:select error:&targetError] && objectTargetsValid;
+            break;
+        }
+    }
+    if (_spacecraftModel && _spacecraftSnapshot) {
+        for (std::size_t i = 0; i < _spacecraftSnapshot->positions.size(); ++i) {
+            const auto target = spacecraftScriptTarget(_spacecraftModel->model().dataset(), i);
+            if (target.empty() || spacecraft_scene_position(*_spacecraftSnapshot, i)) continue;
+            [_solar selectSpacecraft:i];
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = _scripts.snapshot().target.empty() &&
+                ![self applyScriptAction:select error:&targetError] && objectTargetsValid;
+            break;
+        }
+    }
+    _scriptSmallBodyIndex = previousSmallIndex;
+    _scriptSmallBodyTarget = previousSmallTarget;
+    _scriptSpacecraftIndex = previousShipIndex;
+    _scriptSpacecraftTarget = previousShipTarget;
+    if (!objectTargetsValid) { [self showError:@"smoke: selected object target roundtrip failed"]; return; }
     // 表示中のモードを通して検査し、背後の太陽系カメラを更新しないことを確認する。
     bool zoomModesValid = true;
     const auto blockedZoom = [&] {

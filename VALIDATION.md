@@ -312,3 +312,9 @@ gate は `temp_gates/` にコピーし、判定条件をチェックして YES �
 非地球 3D 地表のドラッグ時の高度制限を ±89° から API と同じ ±90° に変更した。端点で横方向にドラッグしても視点位置と中心方向を保持し、縦操作で再び端点から戻せることをテストする。旧 Plus との比較と実画面操作は未実施。新規依存・原データ・全体方針の変更はない。
 
 同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make smoke` は成功。
+
+## 2026-11-07: P1-8 GUI 選択対象の Lua 読み戻し
+
+GUI で選択された小惑星・TNO・彗星・探査機について、選択時刻に位置を評価でき、一意に解決して元の選択へ戻せる ASCII の名前または番号を Camera.target へ返す。探査機は既存の Name・DisplayName に加え KEY と NAME フィールドも照合する。曖昧な名前、位置を評価できない行、ASCII 表記を取得できない行などは空にし、別の天体に結び付けない。4,095 byte 上限と埋め込み NUL、同梱データ、Lua の往復を隔離環境で検査した。非 ASCII 名のみの自動読み戻しや旧 Plus との比較は未対応・未実施。新規依存・原データ・全体方針の変更はない。
+
+同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -C vendor/mitaka/native/gui script-object-lua-test`、`make smoke` は成功。手動 GUI と旧 Plus 比較は未実施。
