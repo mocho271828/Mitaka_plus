@@ -1,4 +1,5 @@
 #import "HorizonView.h"
+#import "HorizonLandscapeRenderer.h"
 #include "small_body_model.hpp"
 #include "small_body_display.hpp"
 #include "spacecraft_browser_model.hpp"
@@ -397,7 +398,83 @@ void test_landscape_selection(HorizonView *view, const SkyModel& model, const Sk
         "left click does not match the projected landscape pixel");
     check((alphaAt(7) == 0 && rightSelected) || (alphaAt(7) == 255 && !rightSelected),
         "right click does not match the projected landscape pixel");
+    // 候補中心が不透明、クリック点が透明の境界で、隠れた候補を拾わない。
+    HorizonFixture overlapping(Vec3{1, 1, 0.2});
+    [view setBodies:bodies julianDate:jd earthPosition:earth smallBodies:overlapping.frame
+        smallBodyDisplay:overlapping.display spacecraft:overlapping.spacecraft];
+    HorizonLandscapeRenderer *renderer = [[HorizonLandscapeRenderer alloc] init];
+    const NSPoint center = NSMakePoint(NSMidX(map), NSMidY(map));
+    bool foundEdge = false;
+    int clearOffset = 0;
+    for (double shift = -2; shift <= 2 && !foundEdge; shift += .05) {
+        edgePlaces.sources[0].catalog->landscapes[0].offset_arguments[1] = -horizontal.azimuth_deg + shift;
+        const auto candidate = std::make_shared<const EarthLandscapes>(EarthLandscapes::load(root / "data", edgePlaces));
+        [renderer setModel:candidate];
+        if (![renderer isOpaqueAtPoint:center inRect:map viewport:[view viewport]]) continue;
+        for (int offset : {-7, 7}) {
+            const NSPoint click = NSMakePoint(center.x + offset, center.y);
+            if (![renderer isOpaqueAtPoint:click inRect:map viewport:[view viewport]]) {
+                [view setEarthLandscapes:candidate];
+                clearOffset = offset;
+                foundEdge = true;
+                break;
+            }
+        }
+    }
+    check(foundEdge, "could not place a landscape boundary between candidate and click");
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedSmallBodyIndex == NSNotFound && view.selectedSpacecraftIndex == NSNotFound,
+          "transparent click selected moving objects hidden by landscape");
+    // 隠れた候補が距離の順位を占有せず、近くの見える候補を選べる。
+    auto separated = std::make_shared<SmallBodySnapshot>(*overlapping.frame);
+    const auto viewport = [view viewport];
+    const auto direction = unproject_horizon({map.size.width / 2 + clearOffset, map.size.height / 2},
+        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg},
+        map.size.width, map.size.height);
+    const auto equatorial = ObservationFrame([view observerSite], jd).to_equatorial(
+        {360 - direction.right_ascension_deg, direction.declination_deg});
+    const auto unit = equatorial_direction(equatorial);
+    const Vec3 position{earth.x + observer.x + unit.x, earth.y + observer.y + unit.y, earth.z + observer.z + unit.z};
+    separated->positions[1] = j2000_equatorial_to_ecliptic(position);
+    [view setSmallBodySnapshot:separated];
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedSmallBodyIndex == 1 && view.selectedSpacecraftIndex == NSNotFound,
+          "hidden candidate prevented selecting the neighboring visible small body");
+    [view setSmallBodySnapshot:overlapping.frame];
+    view.showsLandscapeImage = NO;
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedSpacecraftIndex == 0 && view.selectedSmallBodyIndex == NSNotFound,
+          "equal-distance visible overlap changed spacecraft priority");
+    view.spacecraftVisible = NO;
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedSmallBodyIndex == 0, "visible overlapping small body was not selectable");
+    view.spacecraftVisible = NO;
+    view.smallBodiesVisible = NO;
+    auto nearbyBodies = bodies;
+    nearbyBodies[0].coordinates = objects[0].coordinates;
+    [view setBodies:nearbyBodies julianDate:jd earthPosition:earth];
+    planets.visible = true; view.planetDisplayOptions = planets;
+    view.showsLandscapeImage = YES;
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedBodyIndex == NSNotFound, "transparent click selected a planet hidden by landscape");
+    view.showsLandscapeImage = NO;
+    click_object(view, objects[0].coordinates, jd, clearOffset);
+    check(view.selectedBodyIndex == 0, "visible planet was not selectable");
+    const auto savedRadius = view.radiusDisplayOptions;
+    view.radiusDisplayOptions = RadiusDisplayOptions{1, 1, 5, 5};
+    const int expandedOffset = clearOffset < 0 ? -12 : 12;
+    view.showsLandscapeImage = YES;
+    click_object(view, objects[0].coordinates, jd, expandedOffset);
+    check(view.selectedBodyIndex == NSNotFound, "transparent click selected a hidden expanded planet");
+    view.showsLandscapeImage = NO;
+    click_object(view, objects[0].coordinates, jd, expandedOffset);
+    check(view.selectedBodyIndex == 0, "visible expanded planet was not selectable");
+    view.radiusDisplayOptions = savedRadius;
+    planets.visible = false; view.planetDisplayOptions = planets;
+    view.smallBodiesVisible = YES;
+    view.showsLandscapeImage = YES;
     [view setEarthLandscapes:nullptr];
+    view.spacecraftVisible = NO;
     click_object(view, objects[0].coordinates, jd);
     check(view.selectedSmallBodyIndex == 0, "base ground fallback must not obscure subsequently drawn objects");
 }

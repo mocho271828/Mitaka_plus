@@ -63,6 +63,7 @@
 | 8d | `codex/mitaka-08d-surface-fov` | `codex/mitaka-08c-non-earth-picking` | P1-1: CAM-03, P1-5: CAM-01 | 非地球 3D 地表の画角と Lua 操作を投影・選択に接続する | 地形・背景・恒星・星座・銀河、補間と再指定、45° 復帰 | `local-only` | `partial` | yes* |
 | 4k | `codex/mitaka-04k-our-galaxy-integrated` | `codex/mitaka-08d-surface-fov` | P1-1: Galaxy picking | 天の川点群の同一レイヤー内で描画順に選択する | preview・complete の描画形状と原順 | `local-only` | `partial` | yes* |
 | 5b | `codex/mitaka-05b-horizon-integrated` | `codex/mitaka-04k-our-galaxy-integrated` | P1-2: OBJ-15 | 不透明な地平風景に隠れた天体のクリック選択を抑止する | 透明・半透明・不透明、欠損、非表示、fallback と境界の描画選択 | `local-only` | `partial` | yes* |
+| 5c | `codex/mitaka-horizon-occluded-pick` | `09196de` | P1-2: OBJ-15 | 地平風景に隠れた候補天体をクリック候補から除外する | 透明・半透明・不透明・補間境界、候補の重なりと順位 | `local-only` | `partial` | yes* |
 | 8e | `codex/mitaka-p13-integration` | `codex/mitaka-05b-horizon-integrated` | P1-3: OBJ-06 | 基準球の外縁で画素描画と選択・遮蔽を一致させる | 内外画素・画素端クリック、既存地形選択、実データと 5 種の make | `local-only` | `implemented` | yes* |
 | 8f | `codex/mitaka-surface-session-p13` | `codex/mitaka-p13-integration` | P1-1: CAM-03, P3: STATE-01 | 停止中の地表位置・姿勢と画角を状態保存と復元に接続する | JSON v9 の往復と旧状態、異常値の事前拒否、実データ、描画と地形更新 | `local-only` | `partial` | yes* |
 | 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-surface-session-p13` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
@@ -281,3 +282,8 @@
 - レビュー理由と seam: **YES**。地表の停止状態を JSON v9 と地表 navigation の境界で保存・復元し、画角も保存する。
 - 依存と検証: **YES**。独立作業では第 8d の FOV (`a8b4a65`) を親とし、最初の統合では `62bbc36`、P1-3 との統合では `a82fd3a` を親とする。前段の FOV は共通祖先に含まれ、旧 v9、正負の地形高さ、不正値の事前拒否、アプリ上の復元を確認する。
 - 分割理由: 地表投影と独立した保存契約であり、既存の JSON と地表操作を繋ぐ単一の検証可能な単位である。P3 の State API 全体は未対応のままとする。旧版比較と飛行途中の復元は対象外。
+## 第 5c 単位の branch admission 判定
+
+- レビュー理由・named seam: **YES**。地平風景の候補中心の遮蔽を `HorizonView` の既存の選択順位判定に反映する。
+- 独立検証・依存: **YES**。第 5b の風景判定を使い、透明点と不透明な候補、可視候補との重なりと順位を AppKit 実ビューで検証する。親は `09196de`。
+- 仮定・残件: 補間時は 4×4 画素すべてが不透明なときだけ遮蔽とし、半透明は選択を許す。候補の中心が遮蔽されていれば記号の一部が見える場合も選択しない。実画面の境界一致・旧 Plus 比較は未確認。OBJ-15 は部分実装。

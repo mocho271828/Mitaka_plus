@@ -382,3 +382,9 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 統合検証: 親 `62bbc36` に P1-3 の `98c4f90` を適用し、FOV 変更を含む隔離統合状態で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。`solar terrain: 91 checks PASS` にて 45°・60°・75°・90° の球外縁で描画と選択の一致を確認。`make smoke` は初回に飛行完了の待機で失敗し、再試行は成功した。失敗の原因は未確定。
 
 共有 checkout では、地平風景の選択遮蔽を含む親 `a5be624` に統合し、`make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` が成功した。
+
+## 2026-11-07: P1-2 地平風景で遮蔽された候補の選択
+
+地平風景の不透明画素で候補天体の中心が隠れる場合、透明な近傍をクリックしても選ばない。小天体・探査機・恒星・惑星と拡大惑星を対象とし、既存の半透明・4×4 画素の補間境界判定を維持する。中心が遮蔽されていれば記号の一部が見える場合も選択しない仮定とした。小天体と探査機が重なる場合の選択順位、および隠れた候補を除いた近くの可視候補の選択を実ビューで検証。回帰試験は修正前に失敗し、修正後に拡大惑星の 8 px 超の fallback を含め 165 checks 成功。旧 Plus 比較と手動 GUI は未実施。原データ・依存・全体方針の変更はない。
+
+独立作業の親は `09196de`。隔離 worktree で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。その後、実装を変えず拡大惑星の回帰試験を追加し、対象の HorizonView 試験を再実行した。LFS 実体は共有 checkout の `resources/data` を読み取り専用の `DATA_ROOT` に指定した。`make smoke` は各 AppKit smoke の一部が成功した後、`flight did not complete` で失敗。原因は未確定で再検証が必要。

@@ -550,12 +550,16 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         return;
     }
     double nearest = 8 * 8;
+    const auto unobscured = [&](const auto& projected) {
+        return ![_landscapeRenderer isOpaqueAtPoint:NSMakePoint(map.origin.x + projected.x, map.origin.y + projected.y)
+                                             inRect:map viewport:_viewport];
+    };
     const auto consider = [&](EquatorialCoordinates coordinates, Selection selection) {
         const auto projected = projectHorizontal(_frame->to_horizontal(coordinates), _viewport, map.size);
         if (!projected) return;
         const double dx = map.origin.x + projected->x - point.x, dy = map.origin.y + projected->y - point.y;
         const double distance = dx * dx + dy * dy;
-        if (distance <= nearest) { nearest = distance; _selection = selection; }
+        if (distance <= nearest && unobscured(*projected)) { nearest = distance; _selection = selection; }
     };
     for (std::size_t index = 0; _starDisplayOptions.visible && index < _model->stars().size(); ++index) {
         const auto& star = _model->stars()[index];
@@ -570,7 +574,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         if (!projected) return;
         const double dx = map.origin.x + projected->x - point.x, dy = map.origin.y + projected->y - point.y;
         const double distance = dx * dx + dy * dy;
-        if (distance <= nearest) {
+        if (distance <= nearest && unobscured(*projected)) {
             nearest = distance; _selection.reset();
             if (smallBody) { _smallBodySelection = object.index; _spacecraftSelection.reset(); }
             else { _spacecraftSelection = object.index; _smallBodySelection.reset(); }
@@ -586,7 +590,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         const double distance = std::hypot(point.x - map.origin.x - projected->x, point.y - map.origin.y - projected->y);
         const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
             RadiusDisplayContext::planetarium, _bodies[index].id), 1.0, 120.0);
-        if (distance <= radius && distance < nearestBody) {
+        if (distance <= radius && distance < nearestBody && unobscured(*projected)) {
             nearestBody = distance;
             _selection = Selection{ObjectKind::body, index};
         }
