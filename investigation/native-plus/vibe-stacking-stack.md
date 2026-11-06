@@ -24,7 +24,9 @@
 
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
-- 公開状態: 最初の 6 行は draft PR として作成済み、以降は `local-only`。
+- 公開状態: 最初の 6 行は個別の draft PR として作成済み。以降の行の `local-only` は個別 PR がないことを示し、統合済みの変更は下記の累積 Draft PR に含まれる。
+  - 累積統合: [Draft PR #8](https://github.com/mocho271828/Mitaka_plus/pull/8)。head は `codex/mitaka-08f-surface-session-integrated`、base は PR #7 の `codex/mitaka-04c-large-scale-continuity`。2026-11-07 のユーザー指示により、`84a6867` から `c7e7dfa` までの53コミットを含む現在ブランチを push し、通常のレビュー枠6件とは別の確認用 Draft として追加した。後続の文書更新も同じ PR に含める。
+  - PR #8 は複数単位の累積差分であり、直近の CAM-08 だけの PR ではない。個別単位のレビュー完了・受入・マージを意味せず、通常の分割方針とレビュー枠は変更しない。別チャットの Rust 移行計画の未 commit 文書は含めていない。
   - 1: [PR #2](https://github.com/mocho271828/Mitaka_plus/pull/2)、2: [PR #3](https://github.com/mocho271828/Mitaka_plus/pull/3)、3: [PR #4](https://github.com/mocho271828/Mitaka_plus/pull/4)、4: [PR #5](https://github.com/mocho271828/Mitaka_plus/pull/5)、4b: [PR #6](https://github.com/mocho271828/Mitaka_plus/pull/6)、4c: [PR #7](https://github.com/mocho271828/Mitaka_plus/pull/7)。各 PR の base は直前の親ブランチ。
 - 実装状態: `implemented` は行の範囲を実装・検証済み、`partial` は一部を実装済みで行の受入条件が残る、`in-progress` は現在統合中、`not-started` は今回の作業未着手を表す。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
