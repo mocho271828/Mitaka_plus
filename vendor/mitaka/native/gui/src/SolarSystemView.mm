@@ -389,6 +389,22 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         if (row.position) description = [NSString stringWithFormat:@"%@ · 出典 %lu · 原行 %lu\n日心黄道 X %+.6g pc\n日心黄道 Y %+.6g pc\n日心黄道 Z %+.6g pc",
             families[static_cast<NSUInteger>(id.family)], id.source_index + 1, id.ordinal + 1,
             row.position->x_pc, row.position->y_pc, row.position->z_pc];
+        // 元の ID だけを表示する。座標や近接する描画点から天体名を推定しない。
+        NSString *identity = nil;
+        const auto& source = model->sources().at(id.source_index);
+        if (const auto* catalog = std::get_if<PlusGlobularClusterCatalog>(&source)) {
+            const auto& bytes = catalog->records.at(id.ordinal).name_bytes;
+            const auto end = std::find(bytes.begin(), bytes.end(), 0);
+            identity = [[NSString alloc] initWithBytes:bytes.data() length:std::distance(bytes.begin(), end)
+                                             encoding:NSUTF8StringEncoding];
+        } else if (const auto* catalog = std::get_if<PlusNearbyGalaxyCatalog>(&source)) {
+            const auto& record = catalog->records.at(id.ordinal);
+            if (record.catalog_code >= 33 && record.catalog_code <= 126)
+                identity = [NSString stringWithFormat:@"原 ID %c%d", record.catalog_code, record.catalog_number];
+            else
+                identity = [NSString stringWithFormat:@"原 code %u · 番号 %d", unsigned(record.catalog_code), record.catalog_number];
+        }
+        if (identity.length) description = [NSString stringWithFormat:@"%@\n%@", identity, description];
     }
     if (self.selectionChanged) self.selectionChanged(description);
     if (self.navigationChanged) self.navigationChanged();

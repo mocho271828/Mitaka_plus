@@ -2,6 +2,7 @@
 #import "SmallBodyRenderer.h"
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 using namespace mitaka;
@@ -62,6 +63,68 @@ namespace {
 unsigned checks = 0;
 void require(bool value, const char *message) { ++checks; if (!value) throw std::runtime_error(message); }
 bool same(Vec3 a, Vec3 b) { return std::hypot(a.x-b.x, a.y-b.y, a.z-b.z) < 1e-12; }
+void nearby_galaxy_radius_tests() {
+    PlusNearbyGalaxyCatalog catalog{{"NBG fixture", {}}, {}};
+    for (const float diameter : {120.0f, 0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN(),
+                                 std::numeric_limits<float>::infinity(), 10800.0f}) {
+        PlusNearbyGalaxyRecord record;
+        record.distance_pc = 100.0f;
+        record.angular_diameter_arcminutes = diameter;
+        catalog.records.push_back(record);
+    }
+    auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{catalog});
+    SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [view setGalaxyModel:model];
+    NSString *error = nil;
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 0, 0} error:&error],
+        "valid nearby galaxy can be selected");
+    constexpr double pi = 3.14159265358979323846;
+    const double expected = 100.0 * (pi / 180.0) * astronomical_units_per_parsec;
+    const auto radius = [view scriptTargetRadiusAU];
+    require(radius && std::abs(*radius / expected - 1.0) < 1e-12,
+        "120 arcminute diameter yields one degree angular radius");
+    [view applyScriptZoomMode:2 previousRadius:std::nullopt initialDistance:1.0];
+    require(std::abs([view cameraState].distance_au / (9.0 * expected) - 1.0) < 1e-12,
+        "always zoom uses nine times nearby galaxy radius");
+    [view applyScriptZoomMode:1 previousRadius:expected / 2.0 initialDistance:42.0];
+    require(std::abs([view cameraState].distance_au / (9.0 * expected) - 1.0) < 1e-12,
+        "auto zoom expands when the new target is larger");
+    [view applyScriptZoomMode:1 previousRadius:expected * 2.0 initialDistance:42.0];
+    require([view cameraState].distance_au == 42.0, "auto zoom preserves distance for a smaller target");
+    for (std::size_t row = 1; row < catalog.records.size(); ++row) {
+        require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 0, row} error:&error],
+            "boundary fixture with valid position can be selected");
+        require(![view scriptTargetRadiusAU], "invalid diameter has no known radius");
+        [view applyScriptZoomMode:2 previousRadius:std::nullopt initialDistance:42.0];
+        require([view cameraState].distance_au == 42.0, "unknown radius retains initial distance");
+    }
+}
+void galaxy_identity_tests() {
+    PlusGlobularClusterCatalog gc{{"globular_cluster.dat", {}}, {}};
+    PlusGlobularClusterRecord cluster;
+    constexpr char name[] = "NGC 6205";
+    std::copy(name, name + sizeof(name) - 1, cluster.name_bytes.begin());
+    cluster.distance_pc = 100;
+    gc.records.push_back(cluster);
+    PlusNearbyGalaxyCatalog nbg{{"NBG.dat", {}}, {}};
+    PlusNearbyGalaxyRecord galaxy;
+    galaxy.distance_pc = 710000;
+    galaxy.catalog_code = 'N';
+    galaxy.catalog_number = 224;
+    nbg.records.push_back(galaxy);
+    auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{gc, nbg});
+    SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [view setGalaxyModel:model];
+    __block NSString *description = nil;
+    view.selectionChanged = ^(NSString *text) { description = text; };
+    NSString *error = nil;
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::globular_cluster, 0, 0} error:&error] &&
+        [description containsString:@"NGC 6205"] && [description containsString:@"原行 1"],
+        "GC selection displays its original name and source row");
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 1, 0} error:&error] &&
+        [description containsString:@"原 ID N224"] && [description containsString:@"出典 2"],
+        "nearby galaxy selection displays its original code, number and source");
+}
 void minor_planet_orbit_tests() {
     auto dataset = std::make_shared<SmallBodyDataset>();
     SmallBodyRecord asteroid;
@@ -374,7 +437,7 @@ void tests() {
 int main() {
     @autoreleasepool {
         [NSApplication sharedApplication];
-        try { minor_planet_orbit_tests(); tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
+        try { galaxy_identity_tests(); nearby_galaxy_radius_tests(); minor_planet_orbit_tests(); tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
         catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }
     }
 }

@@ -40,7 +40,7 @@
 | 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `implemented` | yes* |
 | 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `in-progress` | yes* |
 | 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `in-progress` | yes* |
-| 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `not-started` | yes* |
+| 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `in-progress` | yes* |
 | 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `not-started` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `not-started` | yes* |
 | 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `not-started` | yes* |
@@ -182,3 +182,12 @@
 - vanilla では空 branch を先行作成せず、各行の実差分を親の上に作る。履歴の並べ替えや cherry-pick はユーザー変更と保全を確認してから行う。旧版比較不能、使用許諾の未確認、セキュリティ境界の判断待ちは個別に記録し、独立して進められる後続範囲を続ける。
 
 第 1 単位の距離補間は実装・自動検証済み。実画面で Lua 実行を確認したが、操作後の表示値と旧 Plus 比較は未確認。CAM-03 全体は FOV と残る検証があるため部分実装。
+
+## 第 4e 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。近傍銀河・球状星団の原 ID、表示半径と Lua 対象の対応を正す。
+- named seam: **YES**。近傍銀河カタログ、`SolarScriptTarget`、選択情報と Lua snapshot。近接座標による名称推測はしない。
+- 依存: **YES**。第 4d 単位に続く。ID は現在読み込んだ出典内での一意性に限定する。
+- テスト可能: **YES**。半径境界、raw ID と名前表の衝突、曖昧 ID、実データ、Lua 対象と選択を検証する。
+- 作業都合のみの分割ではない: **YES**。銀河系点群の可視性とは独立したカタログ識別契約である。
+- 対象外: atlas と形態コードの根拠不明の画像対応、旧 Plus との未比較部分。第 4e 全体の完成とは扱わない。

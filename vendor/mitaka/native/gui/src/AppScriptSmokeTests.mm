@@ -1,5 +1,7 @@
 #import "AppControllerInternal.h"
 #include "small_body_orbit_model.hpp"
+#include "galaxy_script_identity.hpp"
+#include "mitaka/galaxy_catalog.hpp"
 
 #include <cstdio>
 #include <chrono>
@@ -182,6 +184,23 @@
         [self showError:@"smoke: camera FOV behavior failed"];
         return;
     }
+    // GUI からの選択と Lua RPC の往復は、同梱カタログを読み取る。
+    const auto originalGalaxyModel = _galaxyModel;
+    const auto dataRoot = std::filesystem::path(_activePath.fileSystemRepresentation);
+    const auto smokeGalaxyModel = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{
+        mitaka::load_plus_globular_clusters(dataRoot / "globular_cluster.dat"),
+        mitaka::load_plus_nearby_galaxies(dataRoot / "NBG.dat")});
+    const auto smokeNearby = resolve_raw_galaxy_target("Galaxy.#N224", *smokeGalaxyModel);
+    std::optional<GalaxySpatialRecordId> smokeCluster;
+    const auto& clusters = std::get<mitaka::PlusGlobularClusterCatalog>(smokeGalaxyModel->sources()[0]);
+    for (std::size_t ordinal = 0; ordinal < clusters.records.size(); ++ordinal) {
+        const GalaxySpatialRecordId candidate{GalaxySpatialFamily::globular_cluster, 0, ordinal};
+        if (script_galaxy_target_identity(*smokeGalaxyModel, candidate) == "GC.NGC 6205") smokeCluster = candidate;
+    }
+    if (!smokeNearby || !smokeCluster) {
+        [self showError:@"smoke: real galaxy target fixture unavailable"];
+        return;
+    }
     const auto range = _model->time_range();
     auto date = mitaka::gregorian_date_time((range.first + range.second) / 2);
     date.hour = 12; date.minute = 34; date.second = 56;
@@ -227,6 +246,14 @@
          "assert(Camera.target == 'Planet.Earth')\n"
          "Camera.target = 'Satellite.Moon'\n"
          "assert(Camera.target == 'Satellite.Moon')\n"
+         "print('__smoke_select_gc')\n"
+         "assert(Camera.target == 'GC.NGC 6205')\n"
+         "print('__smoke_select_nearby')\n"
+         "assert(Camera.target == 'Galaxy.#N224')\n"
+         "Camera.target = 'Galaxy.#N224'; assert(Camera.target == 'Galaxy.#N224')\n"
+         "Camera.target = 'Galaxy.Andromeda Galaxy'; assert(Camera.target == 'Galaxy.Andromeda Galaxy')\n"
+         "Camera.target = 'GC.NGC 6205'; assert(Camera.target == 'GC.NGC 6205')\n"
+         "Camera.target = 'Satellite.Moon'; assert(Camera.target == 'Satellite.Moon')\n"
          "Camera.zoom = 2 * mtk.UNIT_AU\n"
          "assert(math.abs(Camera.zoom - 2 * UNIT_AU) < 1e-16)\n"
          "for _, distance in ipairs({1e41, 1e-15 * UNIT_AU, math.huge, 0/0}) do\n"
@@ -368,6 +395,13 @@
         return;
     }
 
+    // 起動時の自動 SDSS 読込が fixture を置き換えないよう一時停止する。
+    // この smoke は起動直後にのみ実行され、進行中の要求は通常 SDSS 読込である。
+    const BOOL restartGalaxyLoading = _galaxyLoading;
+    [self cancelGalaxyLoading];
+    _galaxyModel = smokeGalaxyModel;
+    [_solar setGalaxyModel:smokeGalaxyModel];
+
     void (^originalCompletion)(BOOL, NSString *) = _scripts.completion;
     void (^originalOutput)(NSString *) = _scripts.output;
     NSURL *originalWorkingDirectory = _scripts.workingDirectoryURL;
@@ -386,6 +420,8 @@
         AppController *controller = weakSelf;
         if (controller) {
             [controller->_scripts cancel];
+            controller->_galaxyModel = originalGalaxyModel;
+            [controller->_solar setGalaxyModel:originalGalaxyModel];
             controller->_scripts.completion = originalCompletion;
             controller->_scripts.output = originalOutput;
             controller->_scripts.workingDirectoryURL = originalWorkingDirectory;
@@ -406,8 +442,13 @@
         if (!controller) return;
         if (consoleWasVisible) [controller showScriptConsole:nil];
         else [controller->_scriptWindow orderOut:nil];
-        if (failure) { [controller showError:failure]; return; }
+        if (failure) {
+            if (restartGalaxyLoading) [controller loadGalaxyIncludingPlus:NO];
+            [controller showError:failure];
+            return;
+        }
         if (![controller applySessionState:original]) return;
+        if (restartGalaxyLoading) [controller loadGalaxyIncludingPlus:NO];
         std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,radius,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
             asteroidBudgetExceeded ? "rejection-tested" : "acceptance-tested");
         completion();
@@ -416,7 +457,12 @@
     _scripts.output = ^(NSString *text) {
         AppController *controller = weakSelf;
         if (!controller) return;
-        if ([text isEqualToString:@"__smoke_time_info"]) {
+        if ([text isEqualToString:@"__smoke_select_gc"] || [text isEqualToString:@"__smoke_select_nearby"]) {
+            const auto record = [text isEqualToString:@"__smoke_select_gc"] ? *smokeCluster : *smokeNearby;
+            NSString *selectionError = nil;
+            if (![controller->_solar selectScriptGalaxyRecord:record error:&selectionError])
+                interactionFailure = [@"smoke: simulated GUI galaxy selection failed: " stringByAppendingString:(selectionError ? selectionError : @"unknown")];
+        } else if ([text isEqualToString:@"__smoke_time_info"]) {
             if ([controller timeInfoVisible] || !controller->_dateLabel.hidden ||
                 controller->_horizon.showsTimeInfo || controller->_solar.showsTimeInfo ||
                 !controller->_playback.clockTracking)

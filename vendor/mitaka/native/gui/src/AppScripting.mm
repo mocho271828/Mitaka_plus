@@ -3,6 +3,7 @@
 #include "SpacecraftRenderer.h"
 #include "our_galaxy_navigation.hpp"
 #include "shared_camera.hpp"
+#include "galaxy_script_identity.hpp"
 #include "mitaka/extended_catalog.hpp"
 #import "HtmlBrowserController.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -58,13 +59,6 @@ static HorizonViewport horizonWithOrientation(HorizonViewport viewport, mitaka::
     viewport.center_altitude_deg = site.elevation_deg;
     viewport.roll_deg = site.roll_deg;
     return viewport;
-}
-
-static std::string resolveScriptGalaxyAlias(const std::string& target) {
-    if (target == "Other.M31") return "Galaxy.Andromeda Galaxy";
-    if (target == "Other.M13") return "GC.NGC 6205";
-    if (target == "Other.M87") return "Galaxy.M87";
-    return target;
 }
 
 static std::string resolveScriptStarTarget(const std::string& target, NSString *dataPath) {
@@ -147,63 +141,14 @@ static std::size_t resolveScriptSatellite(const std::string& target,
 
 static mitaka::gui::GalaxySpatialRecordId resolveScriptGlobularCluster(
     const std::string& target, const mitaka::gui::GalaxySpatialModel& model) {
-    const auto name = target.substr(3);
-    if (name.empty()) throw std::invalid_argument("Empty globular-cluster target");
-    std::optional<mitaka::gui::GalaxySpatialRecordId> match;
-    for (std::size_t source = 0; source < model.sources().size(); ++source) {
-        const auto* catalog = std::get_if<mitaka::PlusGlobularClusterCatalog>(&model.sources()[source]);
-        if (!catalog) continue;
-        for (std::size_t ordinal = 0; ordinal < catalog->records.size(); ++ordinal) {
-            const auto& bytes = catalog->records[ordinal].name_bytes;
-            const auto end = std::find(bytes.begin(), bytes.end(), 0);
-            const std::string candidate(bytes.begin(), end);
-            if (candidate != name) continue;
-            if (match) throw std::invalid_argument("Ambiguous globular-cluster target: " + target);
-            match = mitaka::gui::GalaxySpatialRecordId{mitaka::gui::GalaxySpatialFamily::globular_cluster, source, ordinal};
-        }
-    }
-    if (!match) throw std::invalid_argument("Unknown globular-cluster target: " + target);
-    return *match;
+    return mitaka::gui::resolve_script_globular_cluster(target, model);
 }
 
 static mitaka::gui::GalaxySpatialRecordId resolveScriptNearbyGalaxy(
     const std::string& target, NSString *dataPath, const mitaka::gui::GalaxySpatialModel& model) {
-    const auto name = target.substr(7);
-    if (name.empty()) throw std::invalid_argument("Empty galaxy target");
-    if (!dataPath) throw std::invalid_argument("Galaxy-name catalog is unavailable");
-    const auto path = std::filesystem::path(dataPath.fileSystemRepresentation) / "nearby_galaxies_name.dat";
-    std::optional<mitaka::gui::GalaxySpatialRecordId> match;
-    for (const auto& line : mitaka::load_galaxy_name_table(path).lines) {
-        if (line.kind != mitaka::GalaxyNameLineKind::entry || line.key_bytes.size() < 2) continue;
-        // 英語名の後ろには間隔を置いて CP932 の日本語名が続く。
-        auto end = line.payload_bytes.find("  ");
-        const auto nonAscii = std::find_if(line.payload_bytes.begin(), line.payload_bytes.end(),
-                                           [](unsigned char ch) { return ch >= 0x80; });
-        end = std::min(end, static_cast<std::size_t>(nonAscii - line.payload_bytes.begin()));
-        auto candidate = line.payload_bytes.substr(0, end);
-        const auto last = candidate.find_last_not_of(" \t\r");
-        if (last == std::string::npos) continue;
-        candidate.resize(last + 1);
-        if (candidate != name) continue;
-        std::int32_t number = 0;
-        const char *first = line.key_bytes.data() + 1, *lastKey = line.key_bytes.data() + line.key_bytes.size();
-        const auto parsed = std::from_chars(first, lastKey, number);
-        if (parsed.ec != std::errc{} || parsed.ptr != lastKey || number <= 0) continue;
-        for (std::size_t source = 0; source < model.sources().size(); ++source) {
-            const auto* catalog = std::get_if<mitaka::PlusNearbyGalaxyCatalog>(&model.sources()[source]);
-            if (!catalog) continue;
-            for (std::size_t ordinal = 0; ordinal < catalog->records.size(); ++ordinal) {
-                const auto& record = catalog->records[ordinal];
-                if (record.catalog_code != static_cast<unsigned char>(line.key_bytes.front()) ||
-                    record.catalog_number != number) continue;
-                const mitaka::gui::GalaxySpatialRecordId id{mitaka::gui::GalaxySpatialFamily::nearby_galaxy, source, ordinal};
-                if (match && !(*match == id)) throw std::invalid_argument("Ambiguous galaxy target: " + target);
-                match = id;
-            }
-        }
-    }
-    if (!match) throw std::invalid_argument("Unknown galaxy target: " + target);
-    return *match;
+    const std::optional<std::filesystem::path> path = dataPath
+        ? std::optional{std::filesystem::path(dataPath.fileSystemRepresentation)} : std::nullopt;
+    return mitaka::gui::resolve_script_nearby_galaxy(target, path, model);
 }
 
 static std::size_t resolveScriptConstellation(const std::string& target, const mitaka::gui::SkyModel& model) {
@@ -550,10 +495,12 @@ static NSString *const scriptCompatibilityNote =
         else if (controller->_satelliteModel &&
                  controller->_solar.selectedSatelliteIndex < controller->_satelliteModel->model().records().size())
             state.target = "Satellite." + controller->_satelliteModel->model().records()[controller->_solar.selectedSatelliteIndex].identifier_bytes;
-        else if (const auto galaxy = [controller->_solar selectedScriptGalaxyRecord]; galaxy &&
-                 controller->_scriptGalaxyModel == controller->_galaxyModel && controller->_scriptGalaxyRecord &&
-                 *galaxy == *controller->_scriptGalaxyRecord)
-            state.target = controller->_scriptGalaxyTarget;
+        else if (const auto galaxy = [controller->_solar selectedScriptGalaxyRecord]) {
+            state.target = mitaka::gui::script_galaxy_target_for_snapshot(
+                controller->_galaxyModel.get(), *galaxy, controller->_scriptGalaxyModel.get(),
+                controller->_scriptGalaxyRecord, controller->_scriptGalaxyTarget,
+                controller->_activePath ? std::optional{std::filesystem::path(controller->_activePath.fileSystemRepresentation)} : std::nullopt);
+        }
         else if ([controller->_solar isScriptOurGalaxySelected] && !controller->_scriptOurGalaxyTarget.empty())
             state.target = controller->_scriptOurGalaxyTarget;
         state.camera_distance_au = [controller->_solar cameraState].distance_au;
@@ -823,7 +770,7 @@ static NSString *const scriptCompatibilityNote =
                     if (action.enabled) [_solar animateScriptPlaceTargetFrom:initial duration:action.duration_seconds];
                     break;
                 }
-                const auto galaxyTarget = resolveScriptGalaxyAlias(action.text);
+                const auto galaxyTarget = mitaka::gui::resolve_script_galaxy_alias(action.text);
                 if (action.text == "Other.OurGalaxyCenter" || action.text == "Other.OurGalaxy") {
                     if (![_solar selectScriptOurGalaxyOverview:(action.text == "Other.OurGalaxy") error:error]) return NO;
                     _scriptOurGalaxyTarget = action.text;
@@ -938,7 +885,7 @@ static NSString *const scriptCompatibilityNote =
                     throw std::invalid_argument("Invalid Camera look duration");
                 std::optional<ScriptLookTarget> look;
                 HorizonViewport target;
-                const auto galaxyTarget = resolveScriptGalaxyAlias(action.text);
+                const auto galaxyTarget = mitaka::gui::resolve_script_galaxy_alias(action.text);
                 if (action.text == "Other.OurGalaxyCenter" || action.text == "Other.OurGalaxy") {
                     look = ScriptLookTarget{ScriptLookTarget::Kind::our_galaxy, 0};
                 } else if (galaxyTarget.compare(0, 3, "GC.") == 0 || galaxyTarget.compare(0, 7, "Galaxy.") == 0) {

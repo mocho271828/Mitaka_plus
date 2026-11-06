@@ -81,8 +81,8 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     } else if (const auto* catalog = std::get_if<PlusNearbyGalaxyCatalog>(&source)) {
         const auto& record = catalog->records.at(id.ordinal);
         constexpr double pi = 3.14159265358979323846;
-        const double angle = record.angular_diameter_arcminutes * pi / 43200.0;
-        if (angle > 0 && angle < pi / 2) radius = record.distance_pc * std::tan(angle);
+        const double angle = record.angular_diameter_arcminutes * pi / 21600.0;
+        if (angle > 0 && angle < pi / 2) radius = record.distance_pc * angle;
     }
     if (!std::isfinite(radius) || radius <= 0) return std::nullopt;
     return radius * astronomical_units_per_parsec;

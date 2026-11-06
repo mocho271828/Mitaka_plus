@@ -430,10 +430,11 @@ plus-spatial-time-test: $(BUILD_DIR)/test_plus_time_step $(BUILD_DIR)/test_place
 	"$(BUILD_DIR)/test_sdss_spatial_model"
 test: plus-spatial-time-test
 
-plus-spatial-data-test: $(BUILD_DIR)/test_place_display_model $(BUILD_DIR)/test_sdss_spatial_model $(BUILD_DIR)/test_galaxy_real_precision
+plus-spatial-data-test: $(BUILD_DIR)/test_place_display_model $(BUILD_DIR)/test_sdss_spatial_model $(BUILD_DIR)/test_galaxy_real_precision $(BUILD_DIR)/test_galaxy_script_identity
 	"$(BUILD_DIR)/test_place_display_model" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_sdss_spatial_model" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_galaxy_real_precision" "$${DATA_ROOT:?Set DATA_ROOT}"
+	"$(BUILD_DIR)/test_galaxy_script_identity" "$${DATA_ROOT:?Set DATA_ROOT}"
 data-test: plus-spatial-data-test
 
 $(BUILD_DIR)/test_earth_landscapes: tests/test_earth_landscapes.mm $(HORIZON_LANDSCAPE_TEST_OBJECTS) $(addprefix $(BUILD_DIR)/,sky_model.o local_image.o RendererQuality.o) core
@@ -477,6 +478,11 @@ $(BUILD_DIR)/test_galaxy_camera: tests/test_galaxy_camera.cpp $(BUILD_DIR)/galax
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_shared_camera: tests/test_shared_camera.cpp $(BUILD_DIR)/shared_camera.o $(BUILD_DIR)/galaxy_camera.o $(BUILD_DIR)/solar_camera.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/AppScripting.o: include/galaxy_script_identity.hpp
+
+$(BUILD_DIR)/test_galaxy_script_identity: tests/test_galaxy_script_identity.cpp include/galaxy_script_identity.hpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter %.cpp %.o,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+
 $(BUILD_DIR)/test_galaxy_spatial_scene: tests/test_galaxy_spatial_scene.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_galaxy_spatial_load: tests/test_galaxy_spatial_load.cpp $(addprefix $(BUILD_DIR)/,galaxy_spatial_load.o galaxy_spatial_scene.o galaxy_camera.o solar_camera.o sdss_spatial_model.o) core
@@ -524,7 +530,7 @@ $(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controlle
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
 
 .PHONY: unit8-test galaxy-controller-test script-time-test
-unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
+unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_script_identity test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
 	@for binary in $^; do "$$binary" || exit $$?; done
 test: unit8-test
 galaxy-controller-test: $(BUILD_DIR)/test_galaxy_controller
