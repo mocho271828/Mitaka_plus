@@ -1,5 +1,6 @@
 #import "AppControllerInternal.h"
 #import "../src/SolarSystemViewInternal.h"
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <stdexcept>
@@ -36,6 +37,11 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
 }
 @end
 
+@interface AppController (LookIntegrationMethods)
+- (HorizonViewport)scriptCameraViewport;
+- (BOOL)scriptLookViewport:(const ScriptLookTarget&)target result:(HorizonViewport *)result;
+@end
+
 @interface AppController (PlaceIntegration)
 - (void)prepareFixture:(NSString *)root;
 - (ScriptController *)fixtureScripts:(NSString *)helper;
@@ -44,6 +50,12 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
 - (void)fixtureHalfTransition;
 - (BOOL)fixtureRetargeted;
 - (std::int32_t)fixtureSkySelection:(int)kind;
+- (HorizonViewport)fixtureExpectedLook;
+- (HorizonViewport)fixtureLookStart;
+- (void)fixturePauseLookAndAdvanceDate;
+- (void)fixtureAdvanceLook:(double)seconds;
+- (BOOL)fixtureIsLooking:(BOOL)animated;
+- (SurfaceSite)fixtureSurfaceSite;
 @end
 @implementation AppController (PlaceIntegration)
 - (void)prepareFixture:(NSString *)root {
@@ -64,7 +76,9 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
     scripts.snapshot = _scripts.snapshot; scripts.applyAction = _scripts.applyAction;
     return scripts;
 }
-- (void)fixtureSurface:(std::size_t)body { [self stopScriptPlaceTransition]; [_solar fixtureSurface:body]; }
+- (void)fixtureSurface:(std::size_t)body {
+    [self stopScriptPlaceTransition]; [self stopScriptCameraAnimation]; [_solar fixtureSurface:body];
+}
 - (void)fixtureDefaultPlaces:(NSString *)path { _observerPlaces = std::make_shared<const ObserverPlaces>(load_observer_places(path.fileSystemRepresentation)); }
 - (std::int32_t)fixtureSkySelection:(int)kind {
     require(!_model->stars().empty(), "real stars required");
@@ -82,6 +96,44 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
                       p.y-std::cos(site.latitude_deg*r)*std::sin(site.longitude_deg*r),
                       p.z-std::sin(site.latitude_deg*r)) < 0.0005
         && std::abs(site.latitude_deg) > 10 && std::abs(site.latitude_deg) < 80;
+}
+- (HorizonViewport)fixtureExpectedLook {
+    HorizonViewport result;
+    require(_scriptLookTarget && [self scriptLookViewport:*_scriptLookTarget result:&result], "look target unavailable");
+    return result;
+}
+- (HorizonViewport)fixtureLookStart {
+    require(_scriptAzimuthAnimation && _scriptAltitudeAnimation, "look animation missing");
+    require(_scriptAzimuthAnimation->duration == 100 && _scriptAltitudeAnimation->duration == 100,
+            "lookTo must use Camera.duration when omitted");
+    auto result = [self scriptCameraViewport];
+    result.center_azimuth_deg = _scriptAzimuthAnimation->start;
+    result.center_altitude_deg = _scriptAltitudeAnimation->start;
+    return result;
+}
+- (void)fixturePauseLookAndAdvanceDate {
+    // メインループがまだ timer を処理していない状態で、天体の自転だけを進める。
+    [_scriptCameraTimer invalidate]; _scriptCameraTimer = nil;
+    _jd += 0.125;
+    _solarBodies = _model->solar_bodies(_jd);
+    [_solar setBodies:_solarBodies];
+}
+- (void)fixtureAdvanceLook:(double)seconds {
+    [_scriptCameraTimer invalidate]; _scriptCameraTimer = nil;
+    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (_scriptAzimuthAnimation) _scriptAzimuthAnimation->start_time = now - seconds;
+    if (_scriptAltitudeAnimation) _scriptAltitudeAnimation->start_time = now - seconds;
+    [self updateScriptCameraAnimations];
+}
+- (BOOL)fixtureIsLooking:(BOOL)animated {
+    return _scriptLookTarget.has_value() &&
+        _scriptAzimuthAnimation.has_value() == static_cast<bool>(animated) &&
+        _scriptAltitudeAnimation.has_value() == static_cast<bool>(animated);
+}
+- (SurfaceSite)fixtureSurfaceSite {
+    SurfaceSite site;
+    require([_solar scriptSurfaceSite:&site], "surface site missing");
+    return site;
 }
 @end
 
@@ -162,6 +214,63 @@ int main(int argc, const char *argv[]) {
             )lua");
             [app fixtureSkySelection:0];
             run(scripts, @"assert(Camera.target=='')");
+            for (const auto body : {4u, 10u}) {
+                [app fixtureSurface:body];
+                [app fixtureSkySelection:2];
+                const auto originalSite = [app fixtureSurfaceSite];
+                run(scripts, @R"lua(
+                    Camera.duration=100
+                    Camera:lookTo('Constel.And',0)
+                    assert(Camera.target=='Constel.And' and Camera.mode==mtk.PLANETARIUM)
+                )lua");
+                require([app fixtureIsLooking:NO], "zero-duration lookTo should retain tracking");
+                [app fixturePauseLookAndAdvanceDate];
+                const auto stale = [app scriptCameraViewport];
+                const auto expectedStart = [app fixtureExpectedLook];
+                require(std::abs(stale.center_altitude_deg - expectedStart.center_altitude_deg) > 0.01 ||
+                        std::abs(std::remainder(stale.center_azimuth_deg - expectedStart.center_azimuth_deg, 360.0)) > 0.01,
+                        "date update must move tracked constellation in the surface frame");
+                run(scripts, @R"lua(
+                    local az,alt,fov=Camera.azimuth,Camera.altitude,Camera.fov
+                    for _,f in ipairs({
+                        function() Camera:lookTo('Constel.DoesNotExist',100) end,
+                        function() Camera:lookTo('Constel.and',100) end,
+                        function() Camera:lookTo('Constel.Orion',-1) end,
+                        function() Camera.target='Constel.Orion' end,
+                        function() Camera:setTargetTo('Constel.Orion',100) end
+                    }) do
+                        assert(not pcall(f))
+                        assert(Camera.target=='Constel.And' and Camera.mode==mtk.PLANETARIUM)
+                        assert(Camera.azimuth==az and Camera.altitude==alt and Camera.fov==fov)
+                    end
+                )lua");
+                require([app fixtureIsLooking:NO], "invalid requests must preserve constellation tracking");
+                run(scripts, @"Camera:lookTo('Constel.Orion'); assert(Camera.target=='Constel.And')");
+                const auto start = [app fixtureLookStart];
+                require(std::abs(std::remainder(start.center_azimuth_deg - expectedStart.center_azimuth_deg, 360.0)) < 1e-8 &&
+                        std::abs(start.center_altitude_deg - expectedStart.center_altitude_deg) < 1e-8,
+                        "lookTo retarget must advance pending tracking before capturing its start");
+                [app fixtureAdvanceLook:50];
+                require([app fixtureIsLooking:YES], "lookTo must animate before the duration elapses");
+                const auto destination = [app fixtureExpectedLook];
+                const auto midpoint = [app scriptCameraViewport];
+                const double azimuthSpan = std::remainder(destination.center_azimuth_deg - start.center_azimuth_deg, 360.0);
+                require(std::abs(std::remainder(midpoint.center_azimuth_deg - start.center_azimuth_deg, 360.0) - azimuthSpan / 2) < 0.1 &&
+                        std::abs(midpoint.center_altitude_deg - (start.center_altitude_deg + destination.center_altitude_deg) / 2) < 0.1,
+                        "lookTo midpoint must interpolate toward the requested constellation");
+                [app fixtureAdvanceLook:100];
+                require([app fixtureIsLooking:NO], "completed lookTo should retain tracking");
+                const auto finish = [app scriptCameraViewport];
+                require(std::abs(std::remainder(finish.center_azimuth_deg - destination.center_azimuth_deg, 360.0)) < 1e-8 &&
+                        std::abs(finish.center_altitude_deg - destination.center_altitude_deg) < 1e-8,
+                        "completed lookTo must reach the constellation center");
+                const auto finalSite = [app fixtureSurfaceSite];
+                require(finalSite.body_index == originalSite.body_index && finalSite.latitude_deg == originalSite.latitude_deg &&
+                        finalSite.longitude_deg == originalSite.longitude_deg && finalSite.height_km == originalSite.height_km,
+                        "lookTo must preserve the surface observer");
+                run(scripts, @"assert(Camera.target=='Constel.And'); Camera.azimuth=25");
+                require(![app fixtureIsLooking:NO] && ![app fixtureIsLooking:YES], "manual orientation must stop look tracking");
+            }
             [scripts invalidate];
             require([files removeItemAtPath:temporary error:nil], "remove temporary directory");
             std::puts("Lua place controller integration passed");

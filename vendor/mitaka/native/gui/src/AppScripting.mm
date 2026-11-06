@@ -950,7 +950,8 @@ static NSString *const scriptCompatibilityNote =
                 if (!look || ![self scriptLookViewport:*look result:&target])
                     throw std::invalid_argument("Unsupported or unavailable Camera:look target: " + action.text);
                 if (_mode.selectedSegment == 1 && [_solar scriptPlanetariumMode]) [_solar stopScriptOrientation];
-                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _horizonOrientationAnimation) [self updateScriptCameraAnimations];
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _horizonOrientationAnimation || _scriptLookTarget)
+                    [self updateScriptCameraAnimations];
                 const auto start = [self scriptCameraViewport];
                 target.roll_deg = start.roll_deg;
                 [self stopScriptCameraAnimation];

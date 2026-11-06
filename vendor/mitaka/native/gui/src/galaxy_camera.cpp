@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace mitaka::gui {
@@ -124,6 +125,14 @@ std::optional<GalaxyProjectionPc> GalaxyProjector::project(NativeEclipticPositio
 }
 bool GalaxyProjector::contains(const GalaxyProjectionPc& position) const noexcept {
     return position.x >= 0 && position.x <= width_ && position.y >= 0 && position.y <= height_;
+}
+double GalaxyProjector::projected_radius(double radius_pc, double depth_pc) const noexcept {
+    if (!std::isfinite(radius_pc) || radius_pc <= 0 || !std::isfinite(depth_pc) || depth_pc <= 0)
+        return 0;
+    const long double projected = static_cast<long double>(radius_pc) / depth_pc *
+        (static_cast<long double>(height_) / 2) / tangent_;
+    return static_cast<double>(std::min(projected,
+        static_cast<long double>(std::numeric_limits<double>::max() / 4)));
 }
 
 } // namespace mitaka::gui

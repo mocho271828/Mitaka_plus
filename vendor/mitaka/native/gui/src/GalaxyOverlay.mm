@@ -240,12 +240,11 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         const auto step = std::max<std::size_t>(1, count / quota + (count % quota != 0));
         if (record.ordinal % step) return NO;
     }
-    const auto row = _model->row(record);
-    if (!row.position) return NO;
     const auto& request = *_diagnostics.displayed;
     const GalaxyProjector projector(request.camera, request.size.width, request.size.height);
-    const auto point = projector.project(*row.position);
-    return point && projector.contains(*point);
+    const auto shape = galaxy_spatial_shape(*_model, record, projector,
+        _diagnostics.display == GalaxyOverlayDisplay::preview);
+    return shape && shape->intersects_viewport(projector);
 }
 - (void)pickAtPoint:(NSPoint)point camera:(const GalaxyCameraPc&)camera
          completion:(void (^)(std::optional<GalaxySpatialRecordId>))completion {
@@ -326,17 +325,17 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 double bestX = 0, bestY = 0;
                 forPreviewRows(*model, request.visibility, [&](GalaxySpatialRecordId id) {
                     if (cancelled()) return false;
-                    const auto row = model->row(id);
-                    if (!row.position) return true;
-                    const auto projected = projector.project(*row.position);
-                    if (!projected || !projector.contains(*projected)) return true;
-                    const double distance = std::hypot(projected->x - point.x, projected->y - point.y);
-                    if (distance <= 8 && galaxy_spatial_point_contains(id.family, projected->x, projected->y, point.x, point.y, true))
+                    const auto shape = galaxy_spatial_shape(*model, id, projector, true, cancelled);
+                    if (shape && shape->clipping && shape->clipping->cancelled) return false;
+                    if (!shape || !shape->intersects_viewport(projector)) return true;
+                    const auto& projected = shape->center;
+                    const double distance = std::hypot(projected.x - point.x, projected.y - point.y);
+                    if (shape->contains(point.x, point.y))
                         painted = id;
-                    if (distance <= best && (!selected.galaxy || distance < best || projected->depth_pc < depth ||
-                        (projected->x == bestX && projected->y == bestY))) {
-                        selected.galaxy = id; best = distance; depth = projected->depth_pc;
-                        bestX = projected->x; bestY = projected->y;
+                    if (distance <= best && (!selected.galaxy || distance < best || projected.depth_pc < depth ||
+                        (projected.x == bestX && projected.y == bestY))) {
+                        selected.galaxy = id; best = distance; depth = projected.depth_pc;
+                        bestX = projected.x; bestY = projected.y;
                     }
                     return true;
                 });
@@ -380,10 +379,9 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             // 点が重なる場合は描画された図形を近傍ヒットより優先する。
             // OurGalaxy は加算合成なので、両方が見える場合は後描き群を仮に選ぶ。
             if (galaxyCandidate) {
-                const auto row = model->row(*galaxyCandidate);
-                const auto projected = projector.project(*row.position);
-                if (projected && galaxy_spatial_point_contains(galaxyCandidate->family, projected->x, projected->y,
-                                                               point.x, point.y, mode == GalaxyOverlayDisplay::preview)) {
+                const auto shape = galaxy_spatial_shape(*model, *galaxyCandidate, projector,
+                                                        mode == GalaxyOverlayDisplay::preview, cancelled);
+                if (shape && shape->contains(point.x, point.y)) {
                     selected.hip.reset(); selected.our_galaxy_point.reset(); selected.galaxy = galaxyCandidate;
                 }
             }
@@ -476,10 +474,8 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         std::size_t cachedColorCount = 0;
         if (_model) forPreviewRows(*_model, _visibility, [&](GalaxySpatialRecordId id) {
             ++_diagnostics.preview_rows;
-            const auto row = _model->row(id);
-            if (!row.position) return true;
-            const auto point = projector.project(*row.position);
-            if (point && projector.contains(*point)) {
+            const auto shape = galaxy_spatial_shape(*_model, id, projector, true);
+            if (shape && shape->intersects_viewport(projector)) {
                 const auto color = galaxy_point_color(*_model, id);
                 std::size_t index = 0;
                 while (index < cachedColorCount && (cachedPointColors[index].red != color.red ||
@@ -492,8 +488,23 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
                     : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
                 [nativeColor setFill];
-                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y,
-                                      galaxy_spatial_preview_size, galaxy_spatial_preview_size));
+                if (shape->preview_rectangle) {
+                    NSRectFill(NSMakeRect(rect.origin.x + shape->center.x, rect.origin.y + shape->center.y,
+                                          galaxy_spatial_preview_size, galaxy_spatial_preview_size));
+                } else {
+                    const double radius = shape->radius;
+                    if (shape->clipping) {
+                        NSBezierPath *path = [NSBezierPath bezierPath];
+                        for (const auto& part : shape->clipping->rectangles)
+                            [path appendBezierPathWithRect:NSMakeRect(rect.origin.x + part.x,
+                                rect.origin.y + part.y, part.width, part.height)];
+                        [path fill];
+                    } else {
+                        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(
+                            rect.origin.x + shape->center.x - radius, rect.origin.y + shape->center.y - radius,
+                            2 * radius, 2 * radius)] fill];
+                    }
+                }
                 ++_diagnostics.displayed_drawn;
             }
             return true;

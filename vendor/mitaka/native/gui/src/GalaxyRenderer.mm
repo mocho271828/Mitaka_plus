@@ -120,21 +120,23 @@ std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
             const GalaxySpatialRecordId id{family, source, ordinal};
             const auto row = model.row(id);
             if (!row.position) { ++counts.invalid; continue; }
-            const auto projected = projector.project(*row.position);
-            if (!projected || !projector.contains(*projected)) { ++counts.outside; continue; }
-            const double radius = galaxy_spatial_point_radius(family);
+            const auto shape = galaxy_spatial_shape(model, row, projector, false, should_cancel);
+            if (shape && shape->clipping && shape->clipping->cancelled) return {};
+            if (!shape || !shape->intersects_viewport(projector)) { ++counts.outside; continue; }
+            const auto& projected = shape->center;
+            const double radius = shape->radius;
             const auto bucket = family == GalaxySpatialFamily::sdss_galaxy
                 ? sdss_galaxy_color_class(std::get<GalaxySdssSource>(model.sources()[source]).snapshot->model->record(
                     {std::get<GalaxySdssSource>(model.sources()[source]).source_index, ordinal}).classification_value)
                 : 0;
             if (family == GalaxySpatialFamily::sdss_galaxy) {
                 const auto cell = [cell_size](double value) {
-                    return static_cast<std::uint32_t>(std::floor(value / cell_size) + 1);
+                    return static_cast<std::uint32_t>(std::max(0.0, std::floor(value / cell_size) + 1));
                 };
-                const auto x0 = cell(projected->x - radius - padding_x);
-                const auto x1 = cell(projected->x + radius + padding_x);
-                const auto y0 = cell(projected->y - radius - padding_y);
-                const auto y1 = cell(projected->y + radius + padding_y);
+                const auto x0 = cell(projected.x - radius - padding_x);
+                const auto x1 = cell(projected.x + radius + padding_x);
+                const auto y0 = cell(projected.y - radius - padding_y);
+                const auto y1 = cell(projected.y + radius + padding_y);
                 const unsigned mask = 1u << bucket;
                 bool conflict = false;
                 for (auto y = y0; y <= y1 && !conflict; ++y) for (auto x = x0; x <= x1; ++x) {
@@ -145,14 +147,22 @@ std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
                 for (auto y = y0; y <= y1; ++y) for (auto x = x0; x <= x1; ++x)
                     occupied[(std::uint64_t(y) << 32) | x] |= mask;
             }
+            // 巨大円は一行で多数の矩形を持ち得るため、通常点の 512 行 batch と分ける。
+            if (shape->clipping) flush();
             if (!paths[bucket]) paths[bucket].reset(CGPathCreateMutable());
-            const CGPoint position{projected->x, projected->y};
-            if (!previous[bucket] || !CGPointEqualToPoint(*previous[bucket], position))
-                CGPathAddEllipseInRect(paths[bucket].get(), nullptr, CGRectMake(projected->x - radius,
-                    projected->y - radius, radius * 2, radius * 2));
+            const CGPoint position{projected.x, projected.y};
+            if (family != GalaxySpatialFamily::sdss_galaxy || !previous[bucket] || !CGPointEqualToPoint(*previous[bucket], position)) {
+                if (shape->clipping) {
+                    for (const auto& part : shape->clipping->rectangles)
+                        CGPathAddRect(paths[bucket].get(), nullptr, CGRectMake(part.x, part.y, part.width, part.height));
+                } else {
+                    CGPathAddEllipseInRect(paths[bucket].get(), nullptr, CGRectMake(projected.x - radius,
+                        projected.y - radius, radius * 2, radius * 2));
+                }
+            }
             previous[bucket] = position;
             ++counts.drawn;
-            if (++pending == 512) flush();
+            if (++pending == 512 || shape->clipping) flush();
         }
         if (pending) flush();
     }

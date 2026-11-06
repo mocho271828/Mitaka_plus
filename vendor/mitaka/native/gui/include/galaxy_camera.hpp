@@ -42,6 +42,10 @@ public:
     GalaxyProjector(GalaxyCameraPc camera, double width, double height);
     std::optional<GalaxyProjectionPc> project(NativeEclipticPositionPc position) const;
     bool contains(const GalaxyProjectionPc& position) const noexcept;
+    double width() const noexcept { return width_; }
+    double height() const noexcept { return height_; }
+    // 正面平行の半径を投影する。極端な入力の overflow は有限最大値に抑える。
+    double projected_radius(double radius_pc, double depth_pc) const noexcept;
 private:
     GalaxyCameraPc camera_;
     SolarCameraBasis basis_;

@@ -1,6 +1,8 @@
 #import "../src/GalaxyOverlay.h"
 #include "our_galaxy_navigation.hpp"
 #include "OurGalaxyRadiativeRenderer.h"
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -53,19 +55,26 @@ std::shared_ptr<const GalaxySpatialModel> fixture() {
     return std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{
         GalaxySdssSource{snapshot, 0}, GalaxySdssSource{snapshot, 1}, clusters, galaxies});
 }
-NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera, bool opaqueBackground = false, int scale = 1) {
+NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera, bool opaqueBackground = false,
+                          int scale = 1, RendererDisplayOptions quality = {}, bool flipped = false) {
     NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
         pixelsWide:512 * scale pixelsHigh:512 * scale bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
         isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
     NSGraphicsContext *context = [NSGraphicsContext graphicsContextWithBitmapImageRep:image];
+    if (flipped) context = [NSGraphicsContext graphicsContextWithCGContext:context.CGContext flipped:YES];
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:context];
-    CGContextScaleCTM(context.CGContext, scale, scale);
+    if (flipped) {
+        // 実ビューと同じ左上原点にし、NSImage の respectFlipped と preview の座標を揃える。
+        CGContextTranslateCTM(context.CGContext, 0, 512 * scale);
+        CGContextScaleCTM(context.CGContext, scale, -scale);
+    } else CGContextScaleCTM(context.CGContext, scale, scale);
+    CGContextSetShouldAntialias(context.CGContext, quality.antialias);
     if (opaqueBackground) {
         [[NSColor colorWithSRGBRed:.1 green:.2 blue:.3 alpha:1] setFill];
         NSRectFill(NSMakeRect(0, 0, 512, 512));
     }
-    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:{} scale:scale];
+    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:quality scale:scale];
     [NSGraphicsContext restoreGraphicsState];
     return image;
 }
@@ -75,6 +84,121 @@ template<class F> void waitFor(F condition, const char *message) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
     while (!condition() && [deadline timeIntervalSinceNow] > 0) spin();
     check(condition(), message);
+}
+void extendedObjectsMatchPaintedPixels() {
+    constexpr double pi = 3.14159265358979323846;
+    constexpr double focalLength = 256 / 0.41421356237309504880;
+    std::array<bool, 4> checkedClippedBoundary{};
+    for (const auto family : {GalaxySpatialFamily::globular_cluster, GalaxySpatialFamily::nearby_galaxy}) {
+        PlusGlobularClusterRecord cluster;
+        cluster.distance_pc = 100;
+        cluster.half_light_radius_pc = 1;
+        PlusNearbyGalaxyRecord galaxy;
+        galaxy.distance_pc = 100;
+        galaxy.angular_diameter_arcminutes = 68.7549354f;
+        const double physicalRadius = family == GalaxySpatialFamily::globular_cluster ? 1 :
+            double(galaxy.distance_pc) * (double(galaxy.angular_diameter_arcminutes) * pi / 21600);
+        const GalaxySpatialSource source = family == GalaxySpatialFamily::globular_cluster
+            ? GalaxySpatialSource(PlusGlobularClusterCatalog{{"extended-gc", {}}, {cluster}})
+            : GalaxySpatialSource(PlusNearbyGalaxyCatalog{{"extended-nbg", {}}, {galaxy}});
+        const auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{source});
+        const GalaxySpatialRecordId id{family, 0, 0};
+        struct Scenario { double radius, centerX, centerY; NSPoint inside, outside; };
+        // 中心の近傍判定では拾えない画素を使い、画面外の中心と巨大円の境界も通す。
+        const std::array<Scenario, 4> scenarios{{
+            {64, 256, 256, {296, 256}, {336, 256}},
+            {96, 576, 256, {500, 256}, {464, 256}},
+            {1e12, 1e12 * std::cos(.37) + 256.17, 1e12 * std::sin(.37) + 256.31,
+                {400, 400}, {100, 100}},
+            {1e18, 1e18 / std::sqrt(2.0) + 256, 1e18 / std::sqrt(2.0) + 256, {480, 480}, {32, 32}}
+        }};
+        for (const auto& scenario : scenarios) for (int scale : {1, 2}) {
+            GalaxyCameraPc camera{*model->row(id).position, 0, 0, physicalRadius * focalLength / scenario.radius};
+            camera.pan(scenario.centerX - 256, scenario.centerY - 256, 512, 512);
+            NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+            GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+            [overlay setModel:model];
+            RendererDisplayOptions quality;
+            quality.antialias = false;
+            const GalaxyProjector projector(camera, 512, 512);
+            const auto shape = galaxy_spatial_shape(*model, id, projector, true);
+            check(shape.has_value(), "extended fixture shape is missing");
+            const auto verify = [&](NSBitmapImageRep *image) {
+                if ([overlay diagnostics].displayed_drawn != 1 || ![overlay isRecordDisplayed:id])
+                    std::cerr << "extended display: family=" << int(family) << " radius=" << scenario.radius
+                              << " scale=" << scale << " display=" << int([overlay diagnostics].display)
+                              << " count=" << [overlay diagnostics].displayed_drawn
+                              << " rectangles=" << (shape->clipping ? shape->clipping->rectangles.size() : 0) << '\n';
+                check([overlay diagnostics].displayed_drawn == 1 && [overlay isRecordDisplayed:id],
+                      "extended object must remain displayed when its center leaves the viewport");
+                const auto verifyPick = [&](NSPoint point, bool painted) {
+                    const auto result = std::make_shared<PickResult>();
+                    [overlay pickAtPoint:point camera:camera completion:^(std::optional<GalaxySpatialRecordId> selection) {
+                        result->picked = selection; result->called = true;
+                    }];
+                    waitFor([&] { return result->called; }, "extended object pick did not finish");
+                    if (!(painted ? result->picked && *result->picked == id : !result->picked))
+                        std::cerr << "extended pick: family=" << int(family) << " radius=" << scenario.radius
+                                  << " scale=" << scale << " display=" << int([overlay diagnostics].display)
+                                  << " point=" << point.x << ',' << point.y << " painted=" << painted
+                                  << " picked=" << bool(result->picked) << " contains=" << shape->contains(point.x, point.y)
+                                  << " rectangles=" << (shape->clipping ? shape->clipping->rectangles.size() : 0) << '\n';
+                    check(painted ? result->picked && *result->picked == id : !result->picked,
+                          "extended object pick disagrees with the painted pixel");
+                };
+                for (bool inside : {true, false}) {
+                    auto point = inside ? scenario.inside : scenario.outside;
+                    point.x += 0.5 / scale;
+                    point.y += 0.5 / scale;
+                    const int x = int(std::floor(point.x * scale));
+                    const int y = int(std::floor(point.y * scale));
+                    const double alpha = [[image colorAtX:x y:y] alphaComponent];
+                    if (!(inside ? alpha > .99 : alpha == 0))
+                        std::cerr << "extended pixel: family=" << int(family) << " radius=" << scenario.radius
+                                  << " scale=" << scale << " display=" << int([overlay diagnostics].display)
+                                  << " point=" << point.x << ',' << point.y << " alpha=" << alpha << '\n';
+                    check(inside ? alpha > .99 : alpha == 0,
+                          "extended object did not paint the expected interior and exterior pixels");
+                    verifyPick(point, inside);
+                }
+                if (shape->clipping && shape->clipping->budget_exhausted) {
+                    const auto* pixels = image.bitmapData;
+                    bool found = false;
+                    // 元の解析円と実画素が異なる境界を探し、近似前の円で選択する回帰を捕まえる。
+                    for (int y = 0; y < 512 * scale && !found; ++y) for (int x = 0; x < 512 * scale; ++x) {
+                        const NSPoint point{(x + .5) / scale, (y + .5) / scale};
+                        const bool originalCircle = std::hypot(point.x - shape->center.x,
+                            point.y - shape->center.y) <= shape->radius;
+                        const auto alpha = pixels[y * image.bytesPerRow + x * 4 + 3];
+                        if (alpha != 0 && alpha != 255) continue;
+                        const bool painted = alpha == 255;
+                        if (painted == originalCircle) continue;
+                        // 端画素の rasterize 規則を除き、矩形の幾何と実画素が一致する場所を使う。
+                        if (painted != shape->contains(point.x, point.y)) continue;
+                        verifyPick(point, painted);
+                        found = true;
+                        const bool complete = [overlay diagnostics].display == GalaxyOverlayDisplay::complete;
+                        checkedClippedBoundary[2 * (scale - 1) + complete] = true;
+                        break;
+                    }
+                }
+            };
+            auto image = drawImage(overlay, camera, false, scale, quality, true);
+            check([overlay diagnostics].display == GalaxyOverlayDisplay::preview,
+                  "extended object test must begin in preview");
+            verify(image);
+            waitFor([&] {
+                image = drawImage(overlay, camera, false, scale, quality, true);
+                return [overlay diagnostics].display == GalaxyOverlayDisplay::complete;
+            }, "extended object complete image did not finish");
+            verify(image);
+        }
+    }
+    if (!std::all_of(checkedClippedBoundary.begin(), checkedClippedBoundary.end(), [](bool value) { return value; }))
+        std::cerr << "clipped boundary coverage: " << checkedClippedBoundary[0] << checkedClippedBoundary[1]
+                  << checkedClippedBoundary[2] << checkedClippedBoundary[3] << '\n';
+    check(std::all_of(checkedClippedBoundary.begin(), checkedClippedBoundary.end(), [](bool value) { return value; }),
+          "fixture did not exercise a budget-limited painted boundary in every mode and backing scale");
 }
 void asynchronousRedrawDoesNotInvalidateScene() {
     GenerationAwareTestView *view = [[GenerationAwareTestView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -760,7 +884,7 @@ void tests() {
 } // namespace
 int main() {
     @autoreleasepool {
-        try { asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); previewAndCompletePartialOverlapPick(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
+        try { extendedObjectsMatchPaintedPixels(); asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); previewAndCompletePartialOverlapPick(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
         catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }
 }
