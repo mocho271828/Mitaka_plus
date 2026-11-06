@@ -213,6 +213,34 @@ void advance(GenerationSolarView *view, double date) {
     [view endSceneUpdate];
     [view refreshTerrain];
 }
+void physicalSpaceDatePublication() {
+    SolarBodies bodies{};
+    const std::array<Body, 11> ids{Body::sun, Body::mercury, Body::venus, Body::earth, Body::mars,
+        Body::jupiter, Body::saturn, Body::uranus, Body::neptune, Body::pluto, Body::moon};
+    for (std::size_t i = 0; i < bodies.size(); ++i) {
+        bodies[i].id = ids[i];
+        bodies[i].position_au = {1, double(i), 0};
+    }
+    for (std::size_t body : {std::size_t{3}, std::size_t{4}}) {
+        SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 320, 240)];
+        [view setBodies:bodies];
+        view.planetDisplayOptions = {true, false, false, false};
+        SurfaceSite site;
+        site.body_index = body;
+        NSString *error = nil;
+        require([view forceSpaceFromHorizon:site error:&error], "enter physical space");
+        require([view scene].physical_navigation, "live scene must use physical navigation");
+        SolarDateInput input{2451546, {35, 139}, bodies, false, {}, {}, nullptr, nullptr,
+            prepare_satellite_scene(nullptr, nullptr), nullptr};
+        auto candidate = [view prepareDateUpdate:input];
+        [view commitDateUpdate:std::move(candidate)];
+        const auto published = [view displayedScene];
+        require(published.julian_date == input.julian_date, "date candidate published");
+        require(published.physical_navigation, "physical-space date publication must retain physical navigation");
+        require(solar_terrain_request(published, body, "/tmp").has_value(),
+                "physical-space date publication must retain terrain eligibility");
+    }
+}
 void tests() {
     const auto probe = std::make_shared<Probe>();
     GenerationSolarView *view = [[GenerationSolarView alloc] initWithFrame:NSMakeRect(0, 0, 320, 240)];
@@ -329,6 +357,7 @@ int main() {
     @autoreleasepool {
         [NSApplication sharedApplication];
         try {
+            physicalSpaceDatePublication();
             tests();
             clearSelectionWithoutGalaxyModel();
             spatialPickAcrossScenePublication(true);

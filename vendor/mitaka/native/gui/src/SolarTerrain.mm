@@ -219,7 +219,7 @@ struct PreparedSolarDate {
     auto old = [self scene];
     SolarScene next{p->bodies, p->orbits, p->lunar_orbit, p->camera, old.textures, old.selection, old.map, old.backing_scale,
         old.earth_moon, old.preview_body, p->surface_active ? std::optional<std::size_t>(p->navigation.site().body_index) : std::nullopt,
-        p->journey_active || p->surface_active, nullptr, !_selection ? p->small_selection : std::nullopt,
+        p->journey_active || p->surface_active || static_cast<bool>(_physicalSpaceActive), nullptr, !_selection ? p->small_selection : std::nullopt,
         old.planet_display, old.grid_display, &p->grid, old.renderer_display, nullptr,
         !_selection ? p->satellite_selection : std::nullopt, nullptr, !_selection ? p->spacecraft_selection : std::nullopt,
         old.spacecraft_display, p->small_display.get(), p->small_orbits.get(), p->satellite_display.get(), p->satellite_orbits.get(),

@@ -24,7 +24,8 @@
 
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
-- 公開状態: 最初の 6 行が `submitted-now` の予定、以降は `local-only`。投稿操作そのものの承認・実行状態ではない。
+- 公開状態: 最初の 6 行は draft PR として作成済み、以降は `local-only`。
+  - 1: [PR #2](https://github.com/mocho271828/Mitaka_plus/pull/2)、2: [PR #3](https://github.com/mocho271828/Mitaka_plus/pull/3)、3: [PR #4](https://github.com/mocho271828/Mitaka_plus/pull/4)、4: [PR #5](https://github.com/mocho271828/Mitaka_plus/pull/5)、4b: [PR #6](https://github.com/mocho271828/Mitaka_plus/pull/6)、4c: [PR #7](https://github.com/mocho271828/Mitaka_plus/pull/7)。各 PR の base は直前の親ブランチ。
 - 実装状態: `implemented` は行の範囲を実装・検証済み、`partial` は一部を実装済みで行の受入条件が残る、`in-progress` は現在統合中、`not-started` は今回の作業未着手を表す。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
 - 独立レビュー: 全行とも、親までの差分を前提に、その行に書いた機能と限定検証だけで判断可能かを着手時に確認する。以下の `yes*` は計画上の判定であり、実コードを調査した上で要件が満たされなければ branch を作らず行を修正する。
@@ -43,7 +44,7 @@
 | 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `partial` | yes* |
 | 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `partial` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `partial` | yes* |
-| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `in-progress` | yes* |
+| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `partial` | yes* |
 | 7 | `codex/mitaka-07-small-body-orbits` | `codex/mitaka-06-terrain-continuity` | P1-4: OBJ-09, OBJ-10 | 37 byte 原記録の隔離・調査と、根拠のある形式の小惑星・TNO 軌道描画 | 36/37 byte の区別、不正長・全原行・重複保持、37 byte の採用根拠が確認できるまで位置評価しない、36 byte の位置・選択・軌道・標本上限と実データ | `local-only` | `not-started` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `not-started` | yes* |
 | 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `not-started` | yes* |
