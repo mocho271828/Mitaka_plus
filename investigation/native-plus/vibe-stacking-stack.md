@@ -25,20 +25,25 @@
 各行の受入はその行の実装範囲に対する判定であり、複数行にまたがる機能 ID の完了判定とは別である。機能 ID は全範囲の実装と必要な検証を満たすまで部分実装または未完了として記録し、利用不能な旧版比較等は未検証と明記する。
 
 - 公開状態: 最初の 6 行が `submitted-now` の予定、以降は `local-only`。投稿操作そのものの承認・実行状態ではない。
-- 実装状態: 第 1・第 2 単位は `implemented`、第 3 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
+- 実装状態: 第 1・第 2 単位は `implemented`、第 3 単位は `implemented`、第 4 単位は `implemented`、残りは `not-started`。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
 - サイズ目安: 1 行は 1 つのレビュー理由に収め、原則 500 行前後まで。膨らむ場合は下記の再分割規則を適用する。
 - 独立レビュー: 全行とも、親までの差分を前提に、その行に書いた機能と限定検証だけで判断可能かを着手時に確認する。以下の `yes*` は計画上の判定であり、実コードを調査した上で要件が満たされなければ branch を作らず行を修正する。
 - 対象 seam: 対応機能の domain・描画・GUI/Lua 契約およびその回帰試験。各行に関連する境界だけを変更し、他機能の機械的変更は必要最小限に留める。
-- P1-4 の 37 byte 形式調査と確認済み形式の軌道、P1-5 の地表遷移と非地球地平、P1-8 の対象解決と移動・追従はそれぞれ別のレビュー理由である。着手前に各行をこの境界で子行・branch に分割し、親と後続の参照を更新する。表の番号は計画上の識別子であり、実装計画の単位番号とは対応させない。
+- P1-1 の 4c〜4f と、P1-4 の 37 byte 形式調査と確認済み形式の軌道、P1-5 の地表遷移と非地球地平、P1-8 の対象解決と移動・追従はそれぞれ別のレビュー理由である。着手前に各行をこの境界で子行・branch に分割し、親と後続の参照を更新する。表の番号は計画上の識別子であり、実装計画の単位番号とは対応させない。
 
 | 順 | branch | parent | 対象 ID | レビュー理由・範囲 | 限定検証 | 公開予定 | 実装状態 | 独立レビュー |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `codex/mitaka-01-camera-zoom` | `main` | P1-1: CAM-03 | ScriptWorker / ScriptController / AppScripting と距離アニメーションを通してズーム補間を表示へ接続する | pc 単位、時間省略時 Camera.duration、線形・対数中点、非有限値・距離境界、途中再指定、太陽系・銀河の描画接続 | `submitted-now` | `implemented` | yes* |
 | 2 | `codex/mitaka-02-camera-fov` | `codex/mitaka-01-camera-zoom` | P1-1: CAM-03 | 地平図の画角・補間・45°復帰を投影と選択に整合させる | 0°拒否、90°、再指定、投影・選択・モード往復 | `submitted-now` | `implemented` | yes* |
 | 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | OurGalaxy 描画点を出典内 ID で個別選択し、注視追従する | 群・原順、preview/complete と可視性、重複・選択順位、取消・モデル交換、透明、追従解除、実データ、旧版比較 | `submitted-now` | `implemented` | yes* |
-| 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-02, GAL-03 | 銀河・SDSS/QSO の共有視点と実描画の残存差を解消する | 太陽系・恒星・天の川・SDSS/QSO の往復、位置・縮尺・選択の連続性と表示復帰、色・座標・測光の実データおよび可能な範囲の旧版比較 | `submitted-now` | `not-started` | yes* |
-| 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04-large-scale-view` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `submitted-now` | `not-started` | yes* |
-| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `submitted-now` | `not-started` | yes* |
+| 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-03 | 同梱通常版原典に基づく SDSS 銀河の分類色を preview と完成画像へ反映する | eClass 境界・無効値、原典参照色、描画画素、実データ分布 | `submitted-now` | `implemented` | yes* |
+| 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `not-started` | yes* |
+| 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `not-started` | yes* |
+| 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `not-started` | yes* |
+| 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `not-started` | yes* |
+| 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `not-started` | yes* |
+| 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `not-started` | yes* |
+| 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `not-started` | yes* |
 | 7 | `codex/mitaka-07-small-body-orbits` | `codex/mitaka-06-terrain-continuity` | P1-4: OBJ-09, OBJ-10 | 37 byte 原記録の隔離・調査と、根拠のある形式の小惑星・TNO 軌道描画 | 36/37 byte の区別、不正長・全原行・重複保持、37 byte の採用根拠が確認できるまで位置評価しない、36 byte の位置・選択・軌道・標本上限と実データ | `local-only` | `not-started` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `not-started` | yes* |
 | 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `not-started` | yes* |
@@ -59,9 +64,9 @@
 | 24 | `codex/mitaka-24-satellite-orbits` | `codex/mitaka-23-display-radius` | P2: OBJ-07 | 衛星軌道・表面・自転の対象を拡張する | 衛星別の日時追従、物理時系と精度期間、描画選択 | `local-only` | `not-started` | yes* |
 | 25 | `codex/mitaka-25-satellite-landing` | `codex/mitaka-24-satellite-orbits` | P2: CAM-11 | 衛星の離着陸モードを実現する | 複数衛星、両着陸モード、離陸と中断 | `local-only` | `not-started` | yes* |
 | 26 | `codex/mitaka-26-comet-data` | `codex/mitaka-25-satellite-landing` | P2: OBJ-08 | 彗星の名前と日付契約を確認し提供範囲を整える | 古代暦・名前・同名、尾の実態とデータ根拠 | `local-only` | `not-started` | yes* |
-| 27 | `codex/mitaka-27-oort-cloud` | `codex/mitaka-26-comet-data` | P2: OBJ-11 | 利用可能な根拠に基づきオールトの雲を表示する | データの出典・使用権、視点変化、表示切替 | `local-only` | `not-started` | yes* |
+| 27 | `codex/mitaka-27-oort-cloud` | `codex/mitaka-26-comet-data` | P2: OBJ-11 | 利用可能な根拠に基づきオールトの雲を表示する | 同梱通常版を出典とする再現可能な模式雲、1 万 AU との関係、往復と表示切替 | `local-only` | `not-started` | yes* |
 | 28 | `codex/mitaka-28-spacecraft-models` | `codex/mitaka-27-oort-cloud` | P2: OBJ-12, OBJ-13 | 探査機の形状・姿勢・アニメーションを描画する | 機体別、時刻と座標系、PPI の根拠、実データ比較 | `local-only` | `not-started` | yes* |
-| 29 | `codex/mitaka-29-star-labels` | `codex/mitaka-28-spacecraft-models` | P2: STAR-02 | 近傍星名と距離に応じたラベルを表示する | 距離端、選択位置、フェード、太陽系・銀河の遷移 | `local-only` | `not-started` | yes* |
+| 29 | `codex/mitaka-29-star-labels` | `codex/mitaka-28-spacecraft-models` | P2: STAR-02 | 近傍星名と距離に応じたラベルを表示する | 実 HIP ID、距離端、選択位置、フェード、太陽系・銀河の遷移 | `local-only` | `not-started` | yes* |
 | 30 | `codex/mitaka-30-constellation-3d` | `codex/mitaka-29-star-labels` | P2: CONST-01 | 星座の線・境界・名称を共有 3D 空間へ接続する | 視点距離、座標投影、切替、旧表示比較 | `local-only` | `not-started` | yes* |
 | 31 | `codex/mitaka-31-drawing-performance` | `codex/mitaka-30-constellation-3d` | P2: DRAW-02 | 重い対象レイヤーの描画負荷を測定し改善する | 実データの時間・メモリ、欠落と選択一致、旧版比 | `local-only` | `not-started` | yes* |
 | 32 | `codex/mitaka-32-location-edit` | `codex/mitaka-31-drawing-performance` | P2: DATA-01 | 他天体を含む地点編集・保存・着陸を実現する | 天体別位置、編集保存復元、地表着陸と Lua | `local-only` | `not-started` | yes* |
@@ -70,11 +75,11 @@
 | 35 | `codex/mitaka-35-time-dialog` | `codex/mitaka-34-camera-display` | P3: TIME-02, TIME-08 | 日時の表示操作と時刻状態の独立性を検証する | 閏日・無効日、表示切替前後の JD、不一致は修正 | `local-only` | `not-started` | yes* |
 | 36 | `codex/mitaka-36-planet-layers` | `codex/mitaka-35-time-dialog` | P3: OBJ-02 | 惑星の表示レイヤーを対象別に検証する | 4 レイヤーの独立切替、各対象、旧版画素 | `local-only` | `not-started` | yes* |
 | 37 | `codex/mitaka-37-individual-visibility` | `codex/mitaka-36-planet-layers` | P3: OBJ-14 | 天体の個体別表示と名前指定 Lua を実現する | 一意名・同名・不明名、出典 ID、保存復元 | `local-only` | `not-started` | yes* |
-| 38 | `codex/mitaka-38-star-compat` | `codex/mitaka-37-individual-visibility` | P3: STAR-03, STAR-04, STAR-05 | 恒星選択・記号・明るさの互換を検証する | HIP 往復、連星・系外惑星、明るさ補間と旧版画素 | `local-only` | `not-started` | yes* |
+| 38 | `codex/mitaka-38-star-compat` | `codex/mitaka-37-individual-visibility` | P3: STAR-03, STAR-04, STAR-05 | 恒星選択・記号・明るさの互換を検証する | HIP 往復、3D 測光と色、無効視差、連星・系外惑星、明るさ補間と旧版画素 | `local-only` | `not-started` | yes* |
 | 39 | `codex/mitaka-39-constellation-art` | `codex/mitaka-38-star-compat` | P3: CONST-02 | 星座絵を宇宙空間の 3D 表示に接続する | 距離・視点、表示切替、旧版画素比較 | `local-only` | `not-started` | yes* |
 | 40 | `codex/mitaka-40-constellation-api` | `codex/mitaka-39-constellation-art` | P3: CONST-03 | 星座略号による個別表示 API を実現する | 略号・未知 ID・Serpens の複数図、往復 | `local-only` | `not-started` | yes* |
 | 41 | `codex/mitaka-41-milky-way-modes` | `codex/mitaka-40-constellation-api` | P3: GAL-01 | 天の川の 4 表示方式を検証する | モード、屈折・フェード、旧版画素比較 | `local-only` | `not-started` | yes* |
-| 42 | `codex/mitaka-42-coordinate-grids` | `codex/mitaka-41-milky-way-modes` | P3: GRID-01, GRID-02 | 座標網と距離目盛の物理的整合を検証する | 4 座標系、極・軸、AU と光年の間隔 | `local-only` | `not-started` | yes* |
+| 42 | `codex/mitaka-42-coordinate-grids` | `codex/mitaka-41-milky-way-modes` | P3: GRID-01, GRID-02 | 座標網と距離目盛の物理的整合を検証する | 4 座標系、極・軸、AU と光年の間隔、距離リングの色と万・億表記 | `local-only` | `not-started` | yes* |
 | 43 | `codex/mitaka-43-surface-pointer` | `codex/mitaka-42-coordinate-grids` | P3: GRID-03 | 地表ポインターの両 API と描画を整合させる | 両 setter/getter、地上と宇宙、座標と表示 | `local-only` | `not-started` | yes* |
 | 44 | `codex/mitaka-44-landscape-editor` | `codex/mitaka-43-surface-pointer` | P3: DATA-03 | 風景編集と他天体への適用を実現する | 編集保存、親天体、フェード、画素比較 | `local-only` | `not-started` | yes* |
 | 45 | `codex/mitaka-45-external-data` | `codex/mitaka-44-landscape-editor` | P3: DATA-04 | ユーザーデータの追加・編集・再読込を実現する | 形式別読込、無効入力、編集と再読込、原本不変 | `local-only` | `not-started` | yes* |
@@ -128,6 +133,14 @@
 - 独立検証: **YES**。renderer と overlay の対象テストで原順・重複、preview 間引き、complete 変換・可視性、画面距離・深度の順位、無効入力、取消、画像生成失敗、透明とモデル交換を検証。太陽系 view の選択・追従解除と統合を対象テストで確認する。実データ操作と旧 Plus 比較は未実施で、全体検証は進行中。
 - 親依存の明確さ: **YES**。第 2 単位までの共有カメラと既存の太陽系・銀河選択を利用する。実 branch は `codex/mitaka-03-galaxy-selection`、計画上の親は第 2 単位。
 - 作業都合のみの分割ではない: **YES**。点の ID と表示に一致する選択は、大規模構造の描画・尺度の照合とは独立した機能契約である。選択は session v9 に保存しない。
+
+## 第 4 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。SDSS 銀河の分類ごとの色を、描画の preview と完成画像で一致させる。共有カメラの精度と距離間の表示連続性は独立する後続単位へ分離する。
+- named seam: **YES**。`GalaxyRenderer` と `GalaxyOverlay` における同梱 SDSS レコードの eClass から描画色への対応。
+- 独立検証: **YES**。通常 Mitaka の同梱原典を根拠に区分と色を確認し、境界値・無効値・出力画素・実データでの分類分布を検査する。旧 Plus での一致は別途検証し、推定と区別する。
+- 親依存の明確さ: **YES**。第 3 単位までの描画・選択基盤を用いる。
+- 作業都合のみの分割ではない: **YES**。分類色の契約はカメラの精度表現や遠距離移動の連続性から独立してレビューできる。
 
 ## 対象ファイルと依存
 

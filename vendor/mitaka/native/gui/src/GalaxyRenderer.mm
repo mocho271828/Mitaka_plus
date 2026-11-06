@@ -1,22 +1,49 @@
 #include "GalaxyRenderer.h"
 #include "RendererQuality.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace mitaka::gui {
 namespace {
 struct ContextRelease { void operator()(CGContextRef value) const { CGContextRelease(value); } };
 using Context = std::unique_ptr<CGContext, ContextRelease>;
-void set_family_color(CGContextRef context, GalaxySpatialFamily family) {
-    switch (family) {
-    case GalaxySpatialFamily::sdss_galaxy: CGContextSetRGBFillColor(context, 0.60, 0.80, 1.00, 1); break;
-    case GalaxySpatialFamily::sdss_quasar: CGContextSetRGBFillColor(context, 1.00, 0.55, 0.75, 1); break;
-    case GalaxySpatialFamily::globular_cluster: CGContextSetRGBFillColor(context, 1.00, 0.85, 0.40, 1); break;
-    case GalaxySpatialFamily::nearby_galaxy: CGContextSetRGBFillColor(context, 0.50, 1.00, 0.70, 1); break;
-    }
+// 通常 Mitaka 1.3.1 の mtk_galaxies.cpp と common/graphics/color.cpp を
+// 参照ビルドし、correct_RGB(0.9 * blackbody_color(B_V_to_Tc(B_V))) から取得。
+constexpr std::array<GalaxyPointColor, 5> sdss_colors{{
+    {0.99999994, 0.864829004, 0.444727212},
+    {0.99999994, 0.902213693, 0.608703375},
+    {0.99999994, 0.931117773, 0.787465751},
+    {0.9641608, 0.948678792, 0.985172272},
+    {0.864615917, 0.951970816, 0.99999994},
+}};
+struct PathRelease { void operator()(CGPath* path) const { CGPathRelease(path); } };
+using Path = std::unique_ptr<CGPath, PathRelease>;
+} // namespace
+
+std::size_t sdss_galaxy_color_class(float eclass) {
+    if (!std::isfinite(eclass)) throw std::invalid_argument("galaxy color: nonfinite eClass");
+    // 極端な入力の float→int 変換を避けたうえで、原典と同じ float 演算を使う。
+    if (eclass <= -0.35f) return 0;
+    if (eclass >= 0.5f) return 4;
+    return std::min<std::size_t>(4, static_cast<std::size_t>((eclass - (-0.35f)) / (0.5f - (-0.35f)) * 5));
 }
+GalaxyPointColor galaxy_point_color(const GalaxySpatialModel& model, GalaxySpatialRecordId id) {
+    (void)model.row_index(id);
+    switch (id.family) {
+    case GalaxySpatialFamily::sdss_galaxy: {
+        const auto& source = std::get<GalaxySdssSource>(model.sources().at(id.source_index));
+        return sdss_colors[sdss_galaxy_color_class(source.snapshot->model->record({source.source_index, id.ordinal}).classification_value)];
+    }
+    case GalaxySpatialFamily::sdss_quasar: return {1.00, 0.55, 0.75};
+    case GalaxySpatialFamily::globular_cluster: return {1.00, 0.85, 0.40};
+    case GalaxySpatialFamily::nearby_galaxy: return {0.50, 1.00, 0.70};
+    }
+    throw std::invalid_argument("galaxy color: unknown family");
 }
 GalaxyRasterSize galaxy_raster_size(double width, double height, double scale) {
     if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0 ||
@@ -66,32 +93,68 @@ std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
         const auto count = model.source_size(source);
         if (should_cancel && should_cancel()) return {};
         if (!visibility.visible(family)) { counts.hidden += count; continue; }
-        set_family_color(context.get(), family);
-        // Path の一時メモリは固定サイズに抑える。次の batch でも全原行を続ける。
+        // 同じバッチ内を 5 色の path に分け、原行数と一時メモリを制限する。
+        std::array<Path, 5> paths;
+        std::array<std::optional<CGPoint>, 5> previous;
+        std::unordered_map<std::uint64_t, unsigned> occupied;
+        // 画素を共有し得る異色の点だけ順序を確定する。1 画素分を加えて AA の影響も含める。
+        const double padding_x = width / raster.width, padding_y = height / raster.height;
+        const double cell_size = 2 * (1.25 + std::max(padding_x, padding_y));
         std::size_t pending = 0;
-        std::optional<CGPoint> previous;
-        CGContextBeginPath(context.get());
+        const auto flush = [&] {
+            for (std::size_t i = 0; i < paths.size(); ++i) {
+                if (!paths[i]) continue;
+                const auto color = family == GalaxySpatialFamily::sdss_galaxy
+                    ? sdss_colors[i] : galaxy_point_color(model, {family, source, 0});
+                CGContextSetRGBFillColor(context.get(), color.red, color.green, color.blue, 1);
+                CGContextAddPath(context.get(), paths[i].get());
+                CGContextFillPath(context.get());
+                paths[i].reset();
+                previous[i].reset();
+            }
+            occupied.clear();
+            pending = 0;
+        };
         for (std::size_t ordinal = 0; ordinal < count; ++ordinal) {
             if (ordinal % 256 == 0 && should_cancel && should_cancel()) return {};
-            const auto row = model.row({family, source, ordinal});
+            const GalaxySpatialRecordId id{family, source, ordinal};
+            const auto row = model.row(id);
             if (!row.position) { ++counts.invalid; continue; }
             const auto projected = projector.project(*row.position);
             if (!projected || !projector.contains(*projected)) { ++counts.outside; continue; }
             const double radius = family == GalaxySpatialFamily::globular_cluster ? 2.0 : 1.25;
-            // 同一 path 内の連続する同形状は非ゼロ winding の塗り領域を変えない。
-            // 元の行数で batch を区切り、次の塗りとの重ね合わせは維持する。
-            const CGPoint position{projected->x, projected->y};
-            if (!previous || !CGPointEqualToPoint(*previous, position))
-                CGContextAddEllipseInRect(context.get(), CGRectMake(projected->x - radius,
-                    projected->y - radius, radius * 2, radius * 2));
-            previous = position;
-            ++counts.drawn;
-            if (++pending == 512) {
-                CGContextFillPath(context.get()); CGContextBeginPath(context.get());
-                pending = 0; previous.reset();
+            const auto bucket = family == GalaxySpatialFamily::sdss_galaxy
+                ? sdss_galaxy_color_class(std::get<GalaxySdssSource>(model.sources()[source]).snapshot->model->record(
+                    {std::get<GalaxySdssSource>(model.sources()[source]).source_index, ordinal}).classification_value)
+                : 0;
+            if (family == GalaxySpatialFamily::sdss_galaxy) {
+                const auto cell = [cell_size](double value) {
+                    return static_cast<std::uint32_t>(std::floor(value / cell_size) + 1);
+                };
+                const auto x0 = cell(projected->x - radius - padding_x);
+                const auto x1 = cell(projected->x + radius + padding_x);
+                const auto y0 = cell(projected->y - radius - padding_y);
+                const auto y1 = cell(projected->y + radius + padding_y);
+                const unsigned mask = 1u << bucket;
+                bool conflict = false;
+                for (auto y = y0; y <= y1 && !conflict; ++y) for (auto x = x0; x <= x1; ++x) {
+                    const auto found = occupied.find((std::uint64_t(y) << 32) | x);
+                    if (found != occupied.end() && (found->second & ~mask)) { conflict = true; break; }
+                }
+                if (conflict) flush();
+                for (auto y = y0; y <= y1; ++y) for (auto x = x0; x <= x1; ++x)
+                    occupied[(std::uint64_t(y) << 32) | x] |= mask;
             }
+            if (!paths[bucket]) paths[bucket].reset(CGPathCreateMutable());
+            const CGPoint position{projected->x, projected->y};
+            if (!previous[bucket] || !CGPointEqualToPoint(*previous[bucket], position))
+                CGPathAddEllipseInRect(paths[bucket].get(), nullptr, CGRectMake(projected->x - radius,
+                    projected->y - radius, radius * 2, radius * 2));
+            previous[bucket] = position;
+            ++counts.drawn;
+            if (++pending == 512) flush();
         }
-        if (pending) CGContextFillPath(context.get());
+        if (pending) flush();
     }
     if (should_cancel && should_cancel()) return {};
     CGImageRef image = CGBitmapContextCreateImage(context.get());
