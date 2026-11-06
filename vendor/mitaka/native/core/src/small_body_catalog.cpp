@@ -100,8 +100,9 @@ SmallBodyEvaluation evaluate_small_body(const SmallBodyRecord& record, double jd
             })) result.diagnostics.push_back({code, record.id.source_key, record.id.record_ordinal, field, message});
     };
     bool unavailable = false;
+    // 面・時系の値だけで、未確認の追加 byte を持つ形式を評価可能にしない。
     if (record.encoding == SmallBodyEncoding::packed_37) {
-        add(SmallBodyDiagnosticCode::invalid_source, "encoding", "37-byte position contract is unresolved");
+        add(SmallBodyDiagnosticCode::invalid_source, "encoding", "packed_37 position contract is unresolved");
         unavailable = true;
     }
     if (!std::isfinite(jd)) { add(SmallBodyDiagnosticCode::invalid_time, "julian_date", "time must be finite"); unavailable = true; }

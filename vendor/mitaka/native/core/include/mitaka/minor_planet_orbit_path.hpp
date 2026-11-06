@@ -29,7 +29,7 @@ struct MinorPlanetOrbitPath {
     bool cancelled = false;
 };
 
-// packed_36 小惑星・TNO のみ。元期から 360/n 日を離心近点角の等間隔で標本化する。
+// packed_36 と a 指定の個別小惑星・TNO。元期から 360/n 日を離心近点角の等間隔で標本化する。
 // 時刻を区別できない場合は等時間に戻す。
 // この期間は native の表示方針であり、原版の標本則や科学的精度の保証ではない。
 // 個々の位置は evaluate_minor_planet_position の検証と診断に従う。

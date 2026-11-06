@@ -26,7 +26,7 @@ const record を受け、`MinorPlanetPositionEvaluation` に ID、要求 JD、op
 天体番号、名称、現在の原本件数は条件にしない。
 `packed_37` は 36 byte 行と数値入力が一致しても未対応の診断を返す。
 追加 byte の意味と reader の契約が未確定であるため、代用・優先・統合に使わない。
-個別軌道 text、彗星、非楕円、要素欠損は本 API の適用外であり、位置を返さない。
+当初の36 byte契約では個別軌道 text は対象外だった。2026-11-07に a 指定楕円を別契約 `mitaka-plus-1.5.4-element-text-legacy-jd-native-au-v1` で追加した。旧 float 丸め・番号上書きとの差と採用範囲は [個別形式監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md) を参照。明示 n、彗星、非楕円、要素欠損は位置を返さない。
 既存の確定済み JPL 彗星 evaluator は別の API として維持する。
 
 時刻は元期と同じ尺度の数値 JD をそのまま渡す。物理時系を UTC / TT / TDB と認定せず、

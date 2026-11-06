@@ -6,12 +6,15 @@
 
 namespace mitaka::gui {
 namespace {
-bool is_minor_planet_packed36(const SmallBodyRecord& record) {
-    return record.kind != SmallBodyKind::comet && record.encoding == SmallBodyEncoding::packed_36;
+bool uses_minor_planet_orbit(const SmallBodyRecord& record) {
+    return record.kind != SmallBodyKind::comet
+        && (record.encoding == SmallBodyEncoding::packed_36
+            || record.encoding == SmallBodyEncoding::element_text);
 }
 bool is_unresolved_non_comet(const SmallBodyRecord& record) {
     return record.kind != SmallBodyKind::comet
-        && (record.frame != SmallBodyFrame::heliocentric_j2000_ecliptic
+        && (record.encoding == SmallBodyEncoding::packed_37
+            || record.frame != SmallBodyFrame::heliocentric_j2000_ecliptic
             || record.time_scale != SmallBodyTimeScale::tdb
             || std::holds_alternative<std::monostate>(record.orbit));
 }
@@ -29,7 +32,7 @@ std::vector<std::size_t> small_body_orbit_requested_rows(
         if (display.visibility(row).orbit) {
             rows.push_back(row);
             const auto& record = model.dataset().records[row];
-            const bool minor = is_minor_planet_packed36(record);
+            const bool minor = uses_minor_planet_orbit(record);
             auto& total = minor ? minor_samples : other_samples;
             const auto limit = minor ? maximum_minor_planet_orbit_total_samples
                                      : maximum_small_body_orbit_total_samples;
@@ -60,7 +63,7 @@ std::shared_ptr<const SmallBodyOrbitSnapshot> evaluate_small_body_orbit_snapshot
     for (const auto row : rows) {
         if (cancelled && cancelled()) { result->cancelled = true; return result; }
         const auto& record = result->model->dataset().records[row];
-        if (is_minor_planet_packed36(record)) {
+        if (uses_minor_planet_orbit(record)) {
             auto path = sample_minor_planet_orbit_path(record, sampling.sample_count, cancelled);
             if (path.cancelled) { result->cancelled = true; return result; }
             if (std::any_of(path.samples.begin(), path.samples.end(), [](const auto& sample) {

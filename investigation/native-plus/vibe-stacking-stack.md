@@ -66,6 +66,7 @@
 | 5c | `codex/mitaka-horizon-occluded-pick` | `09196de` | P1-2: OBJ-15 | 地平風景に隠れた候補天体をクリック候補から除外する | 透明・半透明・不透明・補間境界、候補の重なりと順位 | `local-only` | `partial` | yes* |
 | 8e | `codex/mitaka-p13-integration` | `codex/mitaka-05b-horizon-integrated` | P1-3: OBJ-06 | 基準球の外縁で画素描画と選択・遮蔽を一致させる | 内外画素・画素端クリック、既存地形選択、実データと 5 種の make | `local-only` | `implemented` | yes* |
 | 8f | `codex/mitaka-surface-session-p13` | `codex/mitaka-p13-integration` | P1-1: CAM-03, P3: STATE-01 | 停止中の地表位置・姿勢と画角を状態保存と復元に接続する | JSON v9 の往復と旧状態、異常値の事前拒否、実データ、描画と地形更新 | `local-only` | `partial` | yes* |
+| 7c | `codex/mitaka-p14-format-integration` | `cab9b90` | P1-4: OBJ-09, OBJ-10 | 同梱個別形式の a 指定楕円軌道を評価・描画し、既存の離心近点角による標本化と統合する | 全実データ・両形式の高離心率・大きな平均近点角・地上選択、37 byte 拒否、旧版差異 | `local-only` | `partial` | yes* |
 | 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-surface-session-p13` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |

@@ -77,6 +77,14 @@ void preservation() {
     const auto& old=std::get<OrbitalElements>(data.records[0].orbit);
     near(old.mean_anomaly_deg,25,0,"binary M0"); near(old.argument_of_periapsis_deg,73,0,"binary w");
     expect(!evaluate_small_body(data.records[0],2451545).state,"unresolved frame never guessed");
+    auto flagged=data.records[2];
+    flagged.frame=SmallBodyFrame::heliocentric_j2000_ecliptic;
+    flagged.time_scale=SmallBodyTimeScale::tdb;
+    const auto flagged_state=evaluate_small_body(flagged,2451545);
+    expect(!flagged_state.state&&diagnostic(flagged_state.diagnostics,SmallBodyDiagnosticCode::invalid_source),
+           "resolved metadata cannot route packed37 through generic evaluation");
+    expect(flagged.raw_record_bytes==data.records[2].raw_record_bytes&&flagged.raw_flag==255,
+           "packed37 rejection preserves original bytes and flag");
     expect(data.records[8].display_name_bytes==std::string("\x83\x5a\x83\x8c\x83\x58"),"CP932 retained");
     expect(diagnostic(data.records[10].diagnostics,SmallBodyDiagnosticCode::unresolved_perihelion_time),"mixed Tp diagnosed");
     expect(source(data,"mp.dat").bytes==packed(1,false)+packed(1,false),"entire original bytes");
@@ -190,6 +198,33 @@ void malformed_and_limits() {
     expect(source(data,"comets.dat").loaded,"empty source accepted");
 }
 
+void derived_mean_motion_limits() {
+    using namespace mitaka;
+    Fixture f;
+    f.write("orbits/asteroids/good.dat",asteroid);
+    for (const std::string axis : {"1e-300", "1e300", "1e216"}) {
+        auto bytes = asteroid;
+        const auto start = bytes.find("a: 2.766180");
+        bytes.replace(start, std::string("a: 2.766180").size(), "a: " + axis);
+        f.write("orbits/asteroids/bad.dat",bytes);
+        const auto data = load_small_body_dataset(f.root);
+        const auto& bad = source(data,"orbits/asteroids/bad.dat");
+        expect(!bad.loaded && bad.record_count == 0 && bad.bytes == bytes,
+               "non-finite or zero derived motion rejects source but preserves bytes");
+        expect(std::any_of(data.diagnostics.begin(),data.diagnostics.end(),[](const auto& d) {
+            return d.source_key == "orbits/asteroids/bad.dat"
+                && d.code == SmallBodyDiagnosticCode::invalid_source
+                && d.message.find("derived mean motion") != std::string::npos;
+        }),"derived motion failure identifies the bad source");
+        expect(data.records.size() == 1 && data.records.front().id.source_key == "orbits/asteroids/good.dat",
+               "invalid derived motion does not block the next source");
+        const auto& good = data.records.front();
+        const auto& orbit = std::get<OrbitalElements>(good.orbit);
+        expect(good.raw_record_bytes == asteroid && std::isfinite(orbit.mean_motion_deg_per_day)
+               && orbit.mean_motion_deg_per_day > 0,"ordinary axis retains original bytes and positive motion");
+    }
+}
+
 void real_data(const std::filesystem::path& path) {
     using namespace mitaka;
     const auto data=load_small_body_dataset(path);
@@ -224,7 +259,7 @@ void real_data(const std::filesystem::path& path) {
 } // namespace
 int main(int argc,char** argv) {
     try {
-        preservation(); packed_37_contract(); time_and_evaluation(); malformed_and_limits();
+        preservation(); packed_37_contract(); time_and_evaluation(); malformed_and_limits(); derived_mean_motion_limits();
         if(argc==2) real_data(argv[1]);
         std::cout<<"small-body catalog: "<<checks<<" checks passed\n";
     } catch(const std::exception& error) { std::cerr<<"small-body catalog failure: "<<error.what()<<'\n'; return 1; }

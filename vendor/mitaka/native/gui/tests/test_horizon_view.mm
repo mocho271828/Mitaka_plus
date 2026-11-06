@@ -718,6 +718,46 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
           "planet selection did not clear spacecraft selection");
     view.selectionChanged = nil;
 }
+void test_individual_real_horizon_selection(HorizonView *view, const char *directory,
+                                            const SkyModel& sky, const SkyBodies& bodies, double jd) {
+    const auto data = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
+    const auto small = std::make_shared<SmallBodyModel>(data);
+    const auto display = std::make_shared<SmallBodyDisplayModel>(data);
+    const auto snapshot = evaluate_small_body_snapshot(small, jd);
+    const ObserverSite site{35.68, 139.76};
+    const ObservationFrame frame(site, jd);
+    const auto earth = sky.solar_bodies(jd)[3].position_au;
+    const auto observer = horizon_earth_observer_position(frame, site.latitude_deg);
+    const auto objects = horizon_small_body_objects(*snapshot, *display, jd, earth, observer);
+    const auto target = std::find_if(objects.begin(), objects.end(), [&](const auto& object) {
+        return data->records[object.index].encoding == SmallBodyEncoding::element_text &&
+            frame.to_horizontal(object.coordinates).altitude_deg > 30;
+    });
+    check(target != objects.end(), "no visible real individual small body");
+    display->set_selected_ids({data->records[target->index].id});
+    for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet}) {
+        auto options = display->kind_options(kind);
+        options.selected_only = true;
+        display->set_kind_options(kind, options);
+    }
+    [view setObservationSite:site julianDate:jd];
+    [view setBodies:bodies julianDate:jd earthPosition:earth smallBodies:snapshot
+        smallBodyDisplay:display spacecraft:nullptr];
+    view.smallBodiesVisible = YES;
+    view.spacecraftVisible = NO;
+    auto stars = view.starDisplayOptions; stars.visible = false; view.starDisplayOptions = stars;
+    auto planets = view.planetDisplayOptions; planets.visible = false; view.planetDisplayOptions = planets;
+    view.targetSelectionMode = 2;
+    [view clearSelection];
+    click_object(view, target->coordinates, jd);
+    check(view.selectedSmallBodyIndex == target->index, "real individual object not selected");
+    [view focusSelection];
+    const auto expected = frame.to_horizontal(target->coordinates);
+    const auto viewport = [view viewport];
+    check(std::abs(viewport.center_azimuth_deg - expected.azimuth_deg) < 1e-7 &&
+          std::abs(viewport.center_altitude_deg - expected.altitude_deg) < 1e-7,
+          "real individual object focus mismatch");
+}
 void test_data(HorizonView *view, const char *directory) {
     auto model = std::make_shared<SkyModel>(SkyModel::load(directory));
     const double jd = std::clamp(2451545.0, model->time_range().first, model->time_range().second);
@@ -772,6 +812,7 @@ void test_data(HorizonView *view, const char *directory) {
     test_drawing(view);
     test_moving_objects(view, *model, bodies, jd);
     test_landscape_selection(view, *model, bodies, jd);
+    test_individual_real_horizon_selection(view, directory, *model, bodies, jd);
     [view setModel:nullptr bodies:bodies];
     check(view.visibleStarCount == 0, "unloading model left stars");
     view.selectionChanged = nil;

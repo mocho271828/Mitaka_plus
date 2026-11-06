@@ -42,6 +42,14 @@ OurGalaxy の preview に完成描画と同じ距離フェードを適用し、�
 
 最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功した。ログは `/tmp/mitaka-04d-final-{build,test,data-test,reference-test,smoke}.log`。新規依存と方針原本の変更はない。[policy gate の検証コピー](temp_gates/2026-11-06-23-22-00/)に判定を記録した。原本データ全件の再ハッシュ、GUI での外観確認は未実施。`/simplifier-lai` は利用できず、類似の `simplify-lai` は LobbyAI 専用で対象外。P1-1 と第 4d 単位は部分実装のまま。
 
+## 2026-11-07: P1-4 個別小惑星・外縁天体の位置と軌道
+
+個別 a 指定楕円57本を位置・一周期軌道・GUI modelへ接続。旧 reader の静的根拠を別 PC と共有し、native double・全出典保持と旧 float 丸め・番号上書きとの差を記録した。明示 n、非楕円、37 byte は位置なし。極端 a の派生平均運動と37 byteの汎用評価迂回も拒否した。
+
+`make build/test/data-test/reference-test/smoke`、専用5本の通常/実データ、core3本のASan/UBSan通常/実データは成功。実画面で日本語Ceresの独立出典・表示集合1件・軌道129標本・3D中心選択・+1日位置更新を確認。初回専用GUI試験のfixture ID不整合を修正して再検証した。旧実行比較・画素一致・物理時系は未確認。[監査](investigation/native-plus/minor-planet-individual-format-audit.md)、[検証記録](investigation/native-plus/minor-planet-individual-validation.md)、[gate](temp_gates/2026-11-07-03-59-05/)に詳細を記録。
+
+原本57本は基点blobと一致。カメラ・地形・銀河・時刻実装、Rust関連Markdown、データ原本は未変更。方針とpreservation gateへ採用範囲を追記、新規依存なし、指定 `/simplifier-lai` は利用不可で独立レビューを実施。基点 `84a6867`、独立ブランチ `codex/mitaka-small-body-formats`。push・他作業ブランチへの統合は行わない。
+
 ## 2026-11-06: P1-1 遠方追従時のフレーム連続性
 
 実 SDSS データの選択天体を追従し、1,000 AU と 1 pc を両方向にまたぐズームの各操作後に、表示要求のカメラ、選択 ID、追従状態、対象の投影中心を自動確認した。比較には pc 基準点に加え AU 残差、roll、軌道フレームを含め、それぞれ異なる古いフレームを拒否することも検査した。preview は対象を間引く場合があるため、各フレームで対象の画素表示までは検証していない。
@@ -419,3 +427,11 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 統合基点 `a862f53`。`make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功。隔離 checkout の LFS 実体が不足するため、実データ試験には共有 checkout の `resources/data` を読み取り専用で指定した。ホバー時の地平風景遮蔽と銀河の未完了選択の失効を回帰試験で確認した。初回の追加テストは fixture のコンパイル不備で失敗し、修正後に再実行して成功した。既存の P1-8 は地表で選択済みの恒星・星座を Lua から読み戻す試験を含むが、実マウスによる地表選択から Lua までの通し検証ではない。座標指定 API、旧 Plus 比較、実画面の対話操作は未対応または未実施。
 
 統合 checkout の `cab9b90` に、測地緯度 45 度の近距離天体をホバーで選択・注視し、表示位置と一致することを確認する回帰試験を追加した。共有 checkout で `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功した。旧 Plus との比較と実マウスによる手動操作は未実施。
+
+## 2026-11-07: P1-4 個別軌道形式の統合
+
+別 Mac の `3c10fcbe`（親 `84a6867`）を基点 `cab9b90` へ統合し、既存の離心近点角標本化・37 byte 拒否と両立させた。個別 a 指定楕円の小惑星・外縁天体の位置、表示集合、選択と一周期軌道を扱う。36 byte と個別形式の両方について高離心率・大きな平均近点角を回帰検証した。地上の実データでは個別形式の可視天体を選び、地平図の実クリックと注視を検証した（HorizonView 201 checks）。この追加試験は描画画素を比較していない。
+
+隔離 worktree で `make -j2 build`、`make -j2 test`、`make -j2 data-test`、`make -j2 reference-test`、`make -j2 smoke` はすべて成功。LFS 実体を共有 checkout の `resources/data` から読み取り専用で指定した。別 Mac の実画面確認は [記録](investigation/native-plus/minor-planet-individual-validation.md) を参照する。統合後の専用手動 GUI、旧 Plus との実行・画素比較、物理的時系と観測精度、37 byte・明示 n・非楕円の位置は未確認または未対応。原データ・旧環境は変更せず、新規依存なし。既存の C++ evaluator と標本化を使用する。`/simplifier-lai` は提供されておらず未実行。[gate 判定](temp_gates/2026-11-07-04-16-05/)を記録した。
+
+共有 checkout の `9b5537a` に統合した状態でも、`make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功した。Rust 移行文書の並行編集は index に含めず保持した。

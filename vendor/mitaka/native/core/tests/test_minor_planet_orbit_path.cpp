@@ -26,14 +26,23 @@ SmallBodyRecord asteroid() {
     r.orbit = OrbitalElements{2451545, 1, 0.2, 30, 1, 20, 10, 40};
     return r;
 }
-void full_period() {
+void full_period(SmallBodyEncoding encoding) {
     for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian}) {
         auto record = asteroid();
         record.kind = kind;
+        record.encoding = encoding;
+        if (encoding == SmallBodyEncoding::element_text) {
+            record.id = {"orbits/asteroids/custom.dat", 0};
+            record.raw_record_bytes = "Name: Custom\r\na: 1\r\n";
+            std::get<OrbitalElements>(record.orbit).mean_motion_deg_per_day = 0.985607669;
+        }
+        const auto& orbit = std::get<OrbitalElements>(record.orbit);
+        const auto original = record.raw_record_bytes;
         const auto path = sample_minor_planet_orbit_path(record, 129);
-        expect(path.id.source_key == "mp.dat" && path.id.record_ordinal == 42, "identity");
+        expect(path.id.source_key == record.id.source_key && path.id.record_ordinal == record.id.record_ordinal, "identity");
         expect(path.samples.size() == 129 && path.failures.empty() && !path.cancelled, "whole period");
-        expect(path.samples.front().julian_date == 2451545 && path.samples.back().julian_date == 2451905,
+        expect(path.samples.front().julian_date == orbit.epoch_jd
+               && path.samples.back().julian_date == orbit.epoch_jd + 360 / orbit.mean_motion_deg_per_day,
                "full period endpoints");
         expect(diagnostic(path, SmallBodyDiagnosticCode::unknown_accuracy_range), "accuracy unknown");
         expect(diagnostic(path, SmallBodyDiagnosticCode::unresolved_time_scale), "time scale unresolved");
@@ -44,11 +53,20 @@ void full_period() {
             expect(a.x == b.x && a.y == b.y && a.z == b.z, "coordinates use same evaluation");
         }
         expect(minor_planet_orbit_segments(path).size() == 128, "no implicit extra closure");
-        expect(record.raw_record_bytes == std::string(36, '\0'), "source preserved");
+        expect(record.raw_record_bytes == original, "source preserved");
+        const auto first = *path.samples.front().position, last = *path.samples.back().position;
+        expect(std::hypot(first.x-last.x, std::hypot(first.y-last.y, first.z-last.z)) < 1e-10,
+               "full period returns to initial position");
+        std::size_t calls = 0;
+        const auto cancelled = sample_minor_planet_orbit_path(record, 129, [&] { return ++calls == 8; });
+        expect(cancelled.cancelled && minor_planet_orbit_segments(cancelled).empty(),
+               "each supported encoding cancels without exposing partial segments");
     }
 }
-void high_eccentricity_sampling() {
+void high_eccentricity_sampling(SmallBodyEncoding encoding) {
     auto record = asteroid();
+    record.encoding = encoding;
+    if (encoding == SmallBodyEncoding::element_text) record.raw_record_bytes = "a: 1\n";
     auto& orbit = std::get<OrbitalElements>(record.orbit);
     orbit.eccentricity = 0.99;
     orbit.mean_anomaly_deg = 0;
@@ -68,8 +86,10 @@ void high_eccentricity_sampling() {
     for (std::size_t i = 1; i < path.samples.size(); ++i)
         expect(path.samples[i].julian_date > path.samples[i-1].julian_date, "fallback dates increase");
 }
-void large_mean_anomaly_sampling() {
+void large_mean_anomaly_sampling(SmallBodyEncoding encoding) {
     auto record = asteroid();
+    record.encoding = encoding;
+    if (encoding == SmallBodyEncoding::element_text) record.raw_record_bytes = "a: 1\n";
     auto& orbit = std::get<OrbitalElements>(record.orbit);
     orbit.eccentricity = 0.99;
     orbit.mean_anomaly_deg = 1e18;
@@ -135,7 +155,7 @@ void failures_and_gaps() {
         "distinct prior and current encoding diagnostics retained");
     path.samples[2].position.reset();
     expect(minor_planet_orbit_segments(path).empty(), "interior missing point is not bridged");
-    for (const auto encoding : {SmallBodyEncoding::packed_37, SmallBodyEncoding::element_text}) {
+    for (const auto encoding : {SmallBodyEncoding::packed_37, SmallBodyEncoding::comet_fixed_width}) {
         record = asteroid(); record.encoding = encoding;
         path = sample_minor_planet_orbit_path(record, 129);
         expect(path.samples.empty() && diagnostic(path, SmallBodyDiagnosticCode::invalid_source),
@@ -171,23 +191,46 @@ void cancellation_and_count() {
 }
 void local_data(const std::filesystem::path& root) {
     const auto dataset = load_small_body_dataset(root);
-    std::size_t rows = 0, points = 0;
+    std::size_t rows = 0, individual = 0, points = 0;
     for (const auto& record : dataset.records) {
-        if (record.encoding != SmallBodyEncoding::packed_36) continue;
+        const bool text = record.encoding == SmallBodyEncoding::element_text
+            && record.kind != SmallBodyKind::comet;
+        if (record.encoding != SmallBodyEncoding::packed_36 && !text) continue;
         const auto path = sample_minor_planet_orbit_path(record, 129);
-        expect(path.samples.size() == 129 && path.failures.empty(), "real packed row fully sampled");
+        expect(path.samples.size() == 129 && path.failures.empty() && !path.cancelled,
+               "real supported row fully sampled");
+        if (text) ++individual;
         rows++; points += path.samples.size();
-        for (const auto& sample : path.samples)
+        const auto& orbit = std::get<OrbitalElements>(record.orbit);
+        expect(path.id.source_key == record.id.source_key && path.id.record_ordinal == record.id.record_ordinal,
+               "real orbit retains independent source identity");
+        expect(path.samples.front().julian_date == orbit.epoch_jd
+               && path.samples.back().julian_date == orbit.epoch_jd + 360 / orbit.mean_motion_deg_per_day,
+               "real orbit covers exactly its own numeric-JD period");
+        for (const auto& sample : path.samples) {
             expect(sample.position && std::isfinite(sample.position->x) && std::isfinite(sample.position->y)
                    && std::isfinite(sample.position->z), "real point finite");
+            const auto p = *sample.position;
+            const double radius = std::hypot(p.x, std::hypot(p.y, p.z));
+            const double tolerance = 2e-12 * orbit.semi_major_axis_au;
+            expect(radius >= orbit.semi_major_axis_au * (1-orbit.eccentricity)-tolerance
+                   && radius <= orbit.semi_major_axis_au * (1+orbit.eccentricity)+tolerance,
+                   "real orbit stays between perihelion and aphelion");
+        }
+        expect(minor_planet_orbit_segments(path).size() == 128, "real orbit does not add a duplicate closing segment");
     }
     expect(rows > 0, "real catalog has packed rows");
-    std::cout << "real packed rows=" << rows << " points=" << points << '\n';
+    std::cout << "real packed rows=" << rows-individual << " individual rows=" << individual
+              << " points=" << points << '\n';
 }
 }
 int main(int argc, char** argv) {
     try {
-        full_period(); high_eccentricity_sampling(); large_mean_anomaly_sampling(); failures_and_gaps(); cancellation_and_count();
+        full_period(SmallBodyEncoding::packed_36); full_period(SmallBodyEncoding::element_text);
+        for (const auto encoding : {SmallBodyEncoding::packed_36, SmallBodyEncoding::element_text}) {
+            high_eccentricity_sampling(encoding); large_mean_anomaly_sampling(encoding);
+        }
+        failures_and_gaps(); cancellation_and_count();
         if (argc == 2) local_data(argv[1]);
         else if (argc != 1) throw std::invalid_argument("usage: test_minor_planet_orbit_path [data_directory]");
         std::cout << "minor_planet_orbit_path: " << checks << " checks passed\n";

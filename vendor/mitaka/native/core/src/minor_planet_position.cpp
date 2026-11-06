@@ -31,17 +31,17 @@ bool validate_elements(const OrbitalElements& orbit, MinorPlanetPositionEvaluati
                         orbit.ascending_node_deg, orbit.inclination_deg,
                         orbit.argument_of_periapsis_deg}) {
         if (!std::isfinite(value)) {
-            add(result, Code::invalid_source, "orbit", "packed orbital elements must all be finite");
+            add(result, Code::invalid_source, "orbit", "minor-planet orbital elements must all be finite");
             return false;
         }
     }
     if (orbit.semi_major_axis_au <= 0 || orbit.mean_motion_deg_per_day <= 0 || orbit.eccentricity < 0) {
-        add(result, Code::invalid_source, "orbit", "packed orbit requires a > 0, n > 0 and e >= 0");
+        add(result, Code::invalid_source, "orbit", "minor-planet orbit requires a > 0, n > 0 and e >= 0");
         return false;
     }
     if (orbit.eccentricity >= 1) {
         add(result, Code::calculation_failed, "eccentricity",
-            "packed non-elliptic position contract is not verified; require e < 1");
+            "minor-planet non-elliptic position contract is not verified; require e < 1");
         return false;
     }
     return true;
@@ -57,22 +57,32 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         add(result, Code::invalid_time, "legacy_julian_date", "requested legacy numeric JD must be finite");
         return result;
     }
-    if (record.encoding != SmallBodyEncoding::packed_36) {
+    const bool packed = record.encoding == SmallBodyEncoding::packed_36;
+    const bool text = record.encoding == SmallBodyEncoding::element_text;
+    if (!packed && !text) {
         add(result, Code::invalid_source, "encoding",
-            "position contract is verified only for packed_36; packed_37 and text records remain unresolved");
+            "position contract is verified only for packed_36 and individual element_text; packed_37 remains unresolved");
         return result;
     }
     if (record.kind != SmallBodyKind::asteroid && record.kind != SmallBodyKind::trans_neptunian) {
-        add(result, Code::invalid_source, "kind", "packed position contract applies only to asteroids and TNOs");
+        add(result, Code::invalid_source, "kind", "minor-planet position contract applies only to asteroids and TNOs");
         return result;
     }
-    if (record.raw_record_bytes.size() != 36 || record.raw_flag) {
-        add(result, Code::invalid_source, "raw_record_bytes", "packed_36 record storage is inconsistent");
+    if ((packed && record.raw_record_bytes.size() != 36)
+        || (text && record.raw_record_bytes.empty()) || record.raw_flag) {
+        add(result, Code::invalid_source, "raw_record_bytes", "minor-planet record storage is inconsistent");
+        return result;
+    }
+    // 現 parser は a から n を導出する。今回の契約外の明示 n を無視して位置を出さない。
+    if (text && std::any_of(record.fields.begin(), record.fields.end(),
+                           [](const auto& field) { return field.key == "n"; })) {
+        add(result, Code::invalid_source, "n",
+            "individual element_text with explicit n is not supported by the a-derived position contract");
         return result;
     }
     const auto* orbit = std::get_if<OrbitalElements>(&record.orbit);
     if (!orbit) {
-        add(result, Code::invalid_source, "orbit", "packed record has no mean-anomaly orbital elements");
+        add(result, Code::invalid_source, "orbit", "minor-planet record has no mean-anomaly orbital elements");
         return result;
     }
     if (!validate_elements(*orbit, result)) return result;
@@ -101,7 +111,8 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
     result.status = MinorPlanetPositionStatus::unavailable_at_time;
     try {
         result.heliocentric_j2000_ecliptic_au = orbital_state(*orbit, time).position_au;
-        result.contract = minor_planet_packed_position_contract;
+        result.contract = packed ? minor_planet_packed_position_contract
+                                 : minor_planet_element_position_contract;
         result.status = MinorPlanetPositionStatus::success;
     } catch (const std::invalid_argument& error) {
         add(result, Code::calculation_failed, "orbit", error.what());

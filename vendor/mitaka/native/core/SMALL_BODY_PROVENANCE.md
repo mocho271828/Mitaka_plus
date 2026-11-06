@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | `mp.dat`, `TNO.dat` | 36 バイトの全記録、番号、元期、軌道要素 | 原版の数値 JD による日心 J2000 黄道 AU 位置。物理時系は未確定 |
 | `mp2.dat`, `TNO2.dat` | 37 バイトの全記録と意味未確定の生フラグ | 旧 Plus での利用・評価契約が未確定のため保留 |
-| `orbits/asteroids/*.dat` | 全キー、CP932 名称、元番号、言語別定義、軌道要素候補 | 参照面・時系が未確定のため保留 |
+| `orbits/asteroids/*.dat` | 全キー、CP932 名称、元番号、言語別定義、軌道要素候補 | a 指定の楕円を数値 JD・日心 J2000 黄道 AU で評価。物理時系は未認定 |
 | `orbits/comets/*.dat` | 全キーと混在する `Tp` の原値 | `Tp` の形式・参照面・時系が未確定のため保留 |
 | `comets.dat` | 固定幅の全行と元フィールド | 確認できた近代の暦日について楕円・放物線・双曲線を評価 |
 | `small_objects_name.dat` | 原出典全体、番号以降の文字列と繰り返し行 | 検索用の関連名として付加。既存記録を統合しない |
@@ -149,3 +149,7 @@ Viète 解を使用することで、閉形式の途中に現れる大きな `B�
 これらの日付の成功は有限な数値計算を検証するものであり、観測精度や旧 Plus 画面との一致を保証しない。
 Apple clang の C++17、`-Wall -Wextra -Wpedantic -Werror` で通常テストと ASan / UBSan が通過した。
 x86_64 向けのコンパイルとリンクも通過したが、この検証では x86_64 実行環境で実行していない。
+
+## 2026-11-07 個別形式の追加
+
+別 PC の旧 Plus reader/evaluator 静的解析を根拠に、a 指定の個別 Asteroid/TNObject を専用 legacy numeric JD 契約で評価し、一周期軌道と GUI snapshot へ接続した。旧 float 丸めと番号上書きは再現せず、native double と全出典保持を維持する。明示 n、非楕円、37 byte は評価しない。根拠・原本57本のハッシュ・採用範囲は [監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)、結果は [検証記録](../../../../investigation/native-plus/minor-planet-individual-validation.md) を参照。

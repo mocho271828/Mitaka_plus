@@ -130,7 +130,7 @@ NSString *string(const std::string& text) {
             [NSTextField labelWithString:@"標本数"], _samples, apply]];
         sampling.spacing = 8;
         [rows addObject:sampling];
-        NSTextField *orbitExplanation = [NSTextField wrappingLabelWithString:@"彗星は指定区間、36 byte の小惑星・外縁天体は元期から一周期を標本化します。標本数は共通です。小惑星・外縁天体の数値 JD の物理時系は未確定です。"];
+        NSTextField *orbitExplanation = [NSTextField wrappingLabelWithString:@"彗星は指定区間、小惑星・外縁天体は元期から一周期を標本化します。36 byte と個別ファイルの長半径 a 指定の楕円軌道に対応します。標本数は共通です。小惑星・外縁天体の数値 JD の物理時系は未確定です。"];
         orbitExplanation.accessibilityIdentifier = @"small-body-orbit-explanation";
         orbitExplanation.font = [NSFont systemFontOfSize:11];
         [rows addObject:orbitExplanation];
