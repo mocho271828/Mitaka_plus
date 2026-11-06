@@ -32,14 +32,17 @@ Vec3 observer_reference(ObserverSite site, double jd) {
     const auto basis = planet_orientation(Planet::earth, jd);
     const double lat = site.latitude_deg * pi / 180;
     const double lon = site.longitude_deg * pi / 180;
-    const double x = std::cos(lat) * std::cos(lon);
-    const double y = std::cos(lat) * std::sin(lon);
-    const double z = std::sin(lat);
-    const double radius = earth_reference_radius_km / astronomical_unit_km;
+    constexpr double f = 1.0 / 298.257223563;
+    constexpr double e2 = f * (2 - f);
+    const double scale = earth_reference_radius_km / astronomical_unit_km /
+        std::sqrt(1 - e2 * std::sin(lat) * std::sin(lat));
+    const double x = scale * std::cos(lat) * std::cos(lon);
+    const double y = scale * std::cos(lat) * std::sin(lon);
+    const double z = scale * (1 - e2) * std::sin(lat);
     return j2000_ecliptic_to_equatorial({
-        radius * (x * basis.x_axis.x + y * basis.y_axis.x + z * basis.north_axis.x),
-        radius * (x * basis.x_axis.y + y * basis.y_axis.y + z * basis.north_axis.y),
-        radius * (x * basis.x_axis.z + y * basis.y_axis.z + z * basis.north_axis.z)});
+        (x * basis.x_axis.x + y * basis.y_axis.x + z * basis.north_axis.x),
+        (x * basis.x_axis.y + y * basis.y_axis.y + z * basis.north_axis.y),
+        (x * basis.x_axis.z + y * basis.y_axis.z + z * basis.north_axis.z)});
 }
 
 struct Stats {
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
             for (ObserverSite site : {ObserverSite{0, 0}, ObserverSite{35.68, 139.76}, ObserverSite{-90, -180}}) {
                 const ObservationFrame frame(site, jd);
                 const auto observer = observer_reference(site, jd);
-                const auto actual_observer = horizon_observer_position(frame);
+                const auto actual_observer = horizon_earth_observer_position(frame, site.latitude_deg);
                 if (magnitude(subtract(observer, actual_observer)) > 1e-15) {
                     throw std::runtime_error("observer basis mismatch");
                 }

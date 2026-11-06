@@ -276,10 +276,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     result.spacecraft = std::move(spacecraft);
     if (_smallBodiesVisible && result.smallBodies && result.smallBodyDisplay && result.smallBodies->model &&
         result.smallBodyDisplay->dataset().get() == &result.smallBodies->model->dataset())
-        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition, horizon_observer_position(*result.frame));
+        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition, horizon_earth_observer_position(*result.frame, _site.latitude_deg));
     if (_spacecraftVisible && result.spacecraft)
         result.spacecraftObjects = horizon_spacecraft_objects(*result.spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, julianDate, earthPosition, horizon_observer_position(*result.frame), spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, julianDate, earthPosition, horizon_earth_observer_position(*result.frame, _site.latitude_deg), spacecraft_scene_position);
     return result;
 }
 - (void)commitPreparedDate:(HorizonPreparedDate&&)prepared {
@@ -309,10 +309,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (_earthJulianDate != _julianDate || !_frame) return;
     if (_smallBodiesVisible && _smallBodies && _smallBodyDisplay && _smallBodies->model &&
         _smallBodyDisplay->dataset().get() == &_smallBodies->model->dataset())
-        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition, horizon_observer_position(*_frame));
+        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg));
     if (_spacecraftVisible && _spacecraft)
         _spacecraftObjects = horizon_spacecraft_objects(*_spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, horizon_observer_position(*_frame), spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg), spacecraft_scene_position);
 }
 - (void)movingObjectsChanged {
     [self rebuildMovingObjects];
@@ -443,7 +443,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (BOOL)viewportForTopocentricHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
     if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
-    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, horizon_observer_position(*_frame));
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg));
     if (!equatorial) return NO;
     const auto coordinates = _frame->to_horizontal(*equatorial);
     if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg};

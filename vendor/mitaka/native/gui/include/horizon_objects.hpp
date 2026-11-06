@@ -15,8 +15,8 @@ struct HorizonObject {
     bool label;
 };
 
-// 球面地球上の地点から、地心基準の J2000 赤道 AU ベクトルを求める。
-Vec3 horizon_observer_position(const ObservationFrame& frame);
+// frame と同一地点の測地緯度を使用し、標高 0 の楕円体上の地心 J2000 赤道 AU を求める。
+Vec3 horizon_earth_observer_position(const ObservationFrame& frame, double latitude_deg);
 // 天体中心から観測者までの距離を km で指定する。
 Vec3 horizon_observer_position(const ObservationFrame& frame, double observer_radius_km);
 std::optional<EquatorialCoordinates> horizon_heliocentric_coordinates(

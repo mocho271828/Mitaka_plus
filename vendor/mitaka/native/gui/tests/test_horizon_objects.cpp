@@ -22,7 +22,7 @@ void parallax_tests() {
     constexpr double jd = 2451545;
     const double radius = earth_reference_radius_km / astronomical_unit_km;
     const ObservationFrame frame({0, 0}, jd);
-    const auto observer = horizon_observer_position(frame);
+    const auto observer = horizon_earth_observer_position(frame, 0);
     require(near(std::hypot(observer.x, observer.y, observer.z), radius), "observer radius");
     const auto zenith = frame.to_horizontal(equatorial_coordinates(observer));
     require(std::abs(zenith.altitude_deg - 90) < 1e-8, "observer points to zenith");
@@ -34,16 +34,51 @@ void parallax_tests() {
         const auto orientation = planet_orientation(Planet::earth, date);
         const auto x = j2000_ecliptic_to_equatorial(orientation.x_axis);
         const auto north = j2000_ecliptic_to_equatorial(orientation.north_axis);
-        const auto equator = horizon_observer_position(ObservationFrame({0, 0}, date));
+        constexpr double flattening = 1.0 / 298.257223563;
+        const double polar_radius = radius * (1 - flattening);
+        const auto equator = horizon_earth_observer_position(ObservationFrame({0, 0}, date), 0);
         require(distance(equator, {radius*x.x, radius*x.y, radius*x.z}) < 1e-15,
                 "equatorial observer follows independent earth axis");
         for (double longitude : {0.0, 90.0, -180.0}) {
             for (double sign : {-1.0, 1.0}) {
-                const auto pole = horizon_observer_position(ObservationFrame({sign*90, longitude}, date));
-                require(distance(pole, {sign*radius*north.x, sign*radius*north.y, sign*radius*north.z}) < 1e-15,
+                const auto pole = horizon_earth_observer_position(ObservationFrame({sign*90, longitude}, date), sign*90);
+                require(distance(pole, {sign*polar_radius*north.x, sign*polar_radius*north.y, sign*polar_radius*north.z}) < 1e-15,
                         "polar observer follows independent north axis");
             }
         }
+    }
+    // 球面との差と南北の符号を、回転軸を使う独立の楕円体座標で確認する。
+    constexpr double pi = 3.14159265358979323846;
+    constexpr double f = 1.0 / 298.257223563;
+    constexpr double e2 = f * (2 - f);
+    for (double date : {jd, jd + 0.25}) {
+        const auto orientation = planet_orientation(Planet::earth, date);
+        for (double latitude : {-89.999, -45.0, 0.0, 35.68, 45.0, 89.999}) {
+            for (double longitude : {-180.0, 0.0, 139.76}) {
+                const double lat = latitude * pi / 180, lon = longitude * pi / 180;
+                const double n = radius / std::sqrt(1 - e2 * std::sin(lat) * std::sin(lat));
+                const double x = n * std::cos(lat) * std::cos(lon);
+                const double y = n * std::cos(lat) * std::sin(lon);
+                const double z = n * (1 - e2) * std::sin(lat);
+                const auto expected = j2000_ecliptic_to_equatorial({
+                    x*orientation.x_axis.x + y*orientation.y_axis.x + z*orientation.north_axis.x,
+                    x*orientation.x_axis.y + y*orientation.y_axis.y + z*orientation.north_axis.y,
+                    x*orientation.x_axis.z + y*orientation.y_axis.z + z*orientation.north_axis.z});
+                const ObservationFrame local({latitude, longitude}, date);
+                const auto actual = horizon_earth_observer_position(local, latitude);
+                require(distance(actual, expected) < 1e-15, "ellipsoid position follows earth orientation");
+                if (latitude == 45 || latitude == -45)
+                    require(distance(actual, horizon_observer_position(local, earth_reference_radius_km)) > 1e-8,
+                            "ellipsoid differs from spherical observer");
+            }
+        }
+    }
+    for (double invalid : {-90.001, 90.001, std::numeric_limits<double>::quiet_NaN(),
+                           std::numeric_limits<double>::infinity()}) {
+        bool rejected = false;
+        try { horizon_earth_observer_position(frame, invalid); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected, "invalid geodetic latitude rejected");
     }
     for (double date : {jd, jd + 10}) {
         for (const auto& orientation : {planet_orientation(Planet::mars,date), lunar_orientation(date)}) {
@@ -62,10 +97,10 @@ void parallax_tests() {
         catch (const std::invalid_argument&) { rejected = true; }
         require(rejected, "invalid observer radius rejected");
     }
-    const auto quarter_day = horizon_observer_position(ObservationFrame({0, 0}, jd + 0.25));
+    const auto quarter_day = horizon_earth_observer_position(ObservationFrame({0, 0}, jd + 0.25), 0);
     const double cosine = (observer.x*quarter_day.x + observer.y*quarter_day.y + observer.z*quarter_day.z) / (radius*radius);
     require(cosine < -0.004 && cosine > -0.005, "quarter day rotates observer by about 90.25 degrees");
-    const auto opposite = horizon_observer_position(ObservationFrame({0, 180}, jd));
+    const auto opposite = horizon_earth_observer_position(ObservationFrame({0, 180}, jd), 0);
     require(std::hypot(observer.x + opposite.x, observer.y + opposite.y, observer.z + opposite.z) < 1e-14,
             "opposite longitudes reverse observer");
     // Earth=0 and x observer: a position (2R,R,0) gives a 45-degree measured direction.

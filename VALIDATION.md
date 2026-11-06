@@ -405,3 +405,9 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 隔離 worktree、基点 `35a32c7`、共有 checkout の `resources/data` を読み取り専用に指定して `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` は成功。`make -j4 smoke` も成功し、実タイマーで飛行中断・再開・完了と、目標半径への到達を確認した。`make test` には AppKit のウィンドウを表示する検査も含まれる。故意の時間空白を実タイマーで注入する試験と、旧 Plus 比較は未実施。新規依存・原データ・全体方針の変更はない。
 
 統合 checkout の `a862f53` で `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功。地平風景の候補遮蔽、地形読み込みの中断、地表星座の Lua 読み戻し、姿勢精度、飛行テスト改善を含む統合状態で確認した。旧 Plus の手動比較と地表星座の実マウス操作は未実施。
+
+## 2026-11-07: P1-2 地球の楕円体観測位置（OBJ-15）
+
+地平図の小天体・探査機について、地球の観測位置を測地緯度、標高 0、既存の赤道半径と WGS84 扁平率から計算し、描画・選択・注視と Lua の対象視点で共用する。地平風景と地形の基準は従来の球面であり、標高・地形、屈折、光行時間、物理的時系は考慮しない。旧 Plus との一致は未検証である。
+
+基点 `a862f53` の隔離 worktree で、独立計算による赤道・極・中緯度・経度・日時の境界と不正緯度、小天体 10,839 件と PTH 14 件の実データ、AppKit ビューの描画画素・クリック選択・注視・Lua 対象視点を確認した。`make -j2 build`、`make -j2 test`（horizon objects 115 checks）、`make -j2 data-test`（HorizonView 173 checks）、`make -j2 reference-test`、`make -j2 smoke` は成功した。初回 `data-test` は GUI 資源の調整のためコンパイル中に中断し、実行枠確保後に再実行して成功した。LFS 実体が隔離 checkout に揃わないため、共有 checkout の `resources/data` を `DATA_ROOT` に指定して読み取り専用で用いた。smoke は OBJ-15 専用の手動操作ではない。実画面の手動操作と旧 Plus 比較は未実施。新規依存、原データ、リポジトリ全体方針の変更はない。

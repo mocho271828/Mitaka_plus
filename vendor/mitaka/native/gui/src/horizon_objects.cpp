@@ -28,8 +28,24 @@ bool matching_date(double snapshot_date, double julian_date, Vec3 center) {
 }
 } // namespace
 
-Vec3 horizon_observer_position(const ObservationFrame& frame) {
-    return horizon_observer_position(frame, earth_reference_radius_km);
+Vec3 horizon_earth_observer_position(const ObservationFrame& frame, double latitude_deg) {
+    if (!std::isfinite(latitude_deg) || std::abs(latitude_deg) > 90)
+        throw std::invalid_argument("horizon: invalid geodetic latitude");
+    // 地表描画の既存半径と WGS84 の扁平率を用いる。高度は地点情報にないため 0。
+    constexpr double flattening = 1.0 / 298.257223563;
+    constexpr double eccentricity_squared = flattening * (2 - flattening);
+    constexpr double radians_per_degree = 3.14159265358979323846 / 180;
+    const double latitude = latitude_deg * radians_per_degree;
+    const double sine = std::sin(latitude), cosine = std::cos(latitude);
+    const double prime_vertical = earth_reference_radius_km / astronomical_unit_km /
+        std::sqrt(1 - eccentricity_squared * sine * sine);
+    const auto up = equatorial_direction(frame.to_equatorial({0, 90}));
+    const auto north = equatorial_direction(frame.to_equatorial({0, 0}));
+    const double up_scale = prime_vertical * (1 - eccentricity_squared * sine * sine);
+    const double north_scale = -prime_vertical * eccentricity_squared * sine * cosine;
+    return {up_scale * up.x + north_scale * north.x,
+            up_scale * up.y + north_scale * north.y,
+            up_scale * up.z + north_scale * north.z};
 }
 
 Vec3 horizon_observer_position(const ObservationFrame& frame, double observer_radius_km) {

@@ -315,6 +315,73 @@ void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const
     check(std::abs(focused.center_azimuth_deg-laterHorizontal.azimuth_deg) < 1e-7 &&
           std::abs(focused.center_altitude_deg-laterHorizontal.altitude_deg) < 1e-7,
           "focus after date change did not follow object");
+    // 45° の測地緯度で楕円体から独立に対象を作り、球面との差を画面経由で確認する。
+    const ObserverSite midLatitude{45, 30};
+    const ObservationFrame midFrame(midLatitude, jd);
+    const auto midUp = equatorial_direction(midFrame.to_equatorial({0, 90}));
+    const auto midNorth = equatorial_direction(midFrame.to_equatorial({0, 0}));
+    const auto midEast = equatorial_direction(midFrame.to_equatorial({90, 0}));
+    const double flattening = 1.0 / 298.257223563;
+    const double eccentricity2 = flattening * (2 - flattening);
+    const double primeVertical = radius / std::sqrt(1 - eccentricity2 * 0.5);
+    const double upRadius = primeVertical * (1 - eccentricity2 * 0.5);
+    const double northRadius = -primeVertical * eccentricity2 * 0.5;
+    const double distanceComponent = (100.0 / astronomical_unit_km) / std::sqrt(2.0);
+    const Vec3 ellipsoidTarget{
+        earth.x + upRadius * midUp.x + northRadius * midNorth.x + distanceComponent * (midUp.x + midEast.x),
+        earth.y + upRadius * midUp.y + northRadius * midNorth.y + distanceComponent * (midUp.y + midEast.y),
+        earth.z + upRadius * midUp.z + northRadius * midNorth.z + distanceComponent * (midUp.z + midEast.z)};
+    const auto eclipticTarget = j2000_equatorial_to_ecliptic(ellipsoidTarget);
+    auto midSnapshot = std::make_shared<SmallBodySnapshot>(*fixture.frame);
+    midSnapshot->positions[0] = eclipticTarget;
+    midSnapshot->positions[1] = std::nullopt;
+    [view setObservationSite:midLatitude julianDate:jd];
+    [view setBodies:bodies julianDate:jd earthPosition:earth smallBodies:midSnapshot
+        smallBodyDisplay:fixture.display spacecraft:nullptr];
+    [view clearSelection];
+    [view setViewport:{90, 45, 45}];
+    NSBitmapImageRep *visible = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    check(visible != nil, "cannot capture ellipsoid target");
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:visible];
+    view.smallBodiesVisible = NO;
+    NSBitmapImageRep *hidden = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    check(hidden != nil, "cannot capture background for ellipsoid target");
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:hidden];
+    bool centerChanged = false;
+    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const double sx = visible.pixelsWide / view.bounds.size.width;
+    const double sy = visible.pixelsHigh / view.bounds.size.height;
+    for (int y = -8; y <= 8 && !centerChanged; ++y) {
+        for (int x = -8; x <= 8; ++x) {
+            const auto px = static_cast<NSInteger>((NSMidX(map) + x) * sx);
+            const auto py = static_cast<NSInteger>((NSMidY(map) + y) * sy);
+            NSColor *a = [[visible colorAtX:px y:py] colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+            NSColor *b = [[hidden colorAtX:px y:py] colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+            if (a && b && (std::abs(a.redComponent-b.redComponent) > 0.01 ||
+                           std::abs(a.greenComponent-b.greenComponent) > 0.01 ||
+                           std::abs(a.blueComponent-b.blueComponent) > 0.01)) {
+                centerChanged = true;
+                break;
+            }
+        }
+    }
+    check(centerChanged, "ellipsoid target was not drawn at its expected pixel");
+    view.smallBodiesVisible = YES;
+    click_object(view, midFrame.to_equatorial({90, 45}), jd);
+    check(view.selectedSmallBodyIndex == 0, "ellipsoid target was not selectable at the drawn position");
+    [view focusSelection];
+    focused = [view viewport];
+    check(std::abs(focused.center_azimuth_deg - 90) < 1e-7 && std::abs(focused.center_altitude_deg - 45) < 1e-7,
+          "ellipsoid target focus differs from drawing");
+    check([view viewportForTopocentricHeliocentricPosition:eclipticTarget julianDate:jd result:&scripted] &&
+          std::abs(scripted.center_azimuth_deg - 90) < 1e-7 && std::abs(scripted.center_altitude_deg - 45) < 1e-7,
+          "ellipsoid target script viewport differs from drawing");
+    const Vec3 sphericalRelative{ellipsoidTarget.x-earth.x-radius*midUp.x,
+                                 ellipsoidTarget.y-earth.y-radius*midUp.y,
+                                 ellipsoidTarget.z-earth.z-radius*midUp.z};
+    const auto sphericalHorizontal = midFrame.to_horizontal(equatorial_coordinates(sphericalRelative));
+    check(std::abs(sphericalHorizontal.azimuth_deg - 90) > 1,
+          "test target does not distinguish spherical from ellipsoidal observer");
     [view setObserverSite:{35.68, 139.76}];
     view.starDisplayOptions = savedStars;
     view.planetDisplayOptions = savedPlanets;
@@ -344,7 +411,7 @@ void test_landscape_selection(HorizonView *view, const SkyModel& model, const Sk
     auto stars = view.starDisplayOptions; stars.visible = false; view.starDisplayOptions = stars;
     auto planets = view.planetDisplayOptions; planets.visible = false; view.planetDisplayOptions = planets;
     view.smallBodiesVisible = YES; view.spacecraftVisible = YES;
-    const auto observer = horizon_observer_position(ObservationFrame([view observerSite], jd));
+    const auto observer = horizon_earth_observer_position(ObservationFrame([view observerSite], jd), [view observerSite].latitude_deg);
     const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth, observer);
     const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, observer, spacecraft_scene_position);
     check(!objects.empty() && !probes.empty(), "missing landscape selection fixture");
@@ -494,7 +561,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     view.spacecraftVisible = NO;
     __block NSString *description;
     view.selectionChanged = ^(NSString *text) { description = text; };
-    const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth, horizon_observer_position(ObservationFrame([view observerSite], jd)));
+    const auto objects = horizon_small_body_objects(*fixture.frame, *fixture.display, jd, earth, horizon_earth_observer_position(ObservationFrame([view observerSite], jd), [view observerSite].latitude_deg));
     check(objects.size() == 2, "small body fixture did not yield both objects");
     click_object(view, objects[0].coordinates, jd);
     check(view.selectedSmallBodyIndex == 0 && view.selectedSpacecraftIndex == NSNotFound &&
@@ -530,13 +597,13 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     fresh->julian_date = jd + 1;
     [view setSmallBodySnapshot:fresh];
     const auto freshObjects = horizon_small_body_objects(*fresh, *fixture.display, jd + 1,
-                                                         model.solar_bodies(jd + 1)[3].position_au, horizon_observer_position(ObservationFrame([view observerSite], jd + 1)));
+                                                         model.solar_bodies(jd + 1)[3].position_au, horizon_earth_observer_position(ObservationFrame([view observerSite], jd + 1), [view observerSite].latitude_deg));
     click_object(view, freshObjects[0].coordinates, jd + 1);
     check(view.selectedSmallBodyIndex == 0, "updated small body snapshot was not clickable");
     [view setBodies:bodies julianDate:jd earthPosition:earth];
     view.smallBodiesVisible = NO;
     view.spacecraftVisible = YES;
-    const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, horizon_observer_position(ObservationFrame([view observerSite], jd)), spacecraft_scene_position);
+    const auto probes = horizon_spacecraft_objects(*fixture.spacecraft, true, false, jd, earth, horizon_earth_observer_position(ObservationFrame([view observerSite], jd), [view observerSite].latitude_deg), spacecraft_scene_position);
     check(probes.size() == 1, "spacecraft fixture did not yield probe");
     click_object(view, probes[0].coordinates, jd);
     check(view.selectedSpacecraftIndex == 0 && view.selectedSmallBodyIndex == NSNotFound &&
@@ -566,7 +633,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
     const auto freshProbe = evaluate_spacecraft_snapshot(fixture.spacecraft->model, jd + 1);
     [view setSpacecraftSnapshot:freshProbe];
     const auto freshProbes = horizon_spacecraft_objects(*freshProbe, true, false, jd + 1,
-        model.solar_bodies(jd + 1)[3].position_au, horizon_observer_position(ObservationFrame([view observerSite], jd + 1)), spacecraft_scene_position);
+        model.solar_bodies(jd + 1)[3].position_au, horizon_earth_observer_position(ObservationFrame([view observerSite], jd + 1), [view observerSite].latitude_deg), spacecraft_scene_position);
     check(freshProbes.size() == 1, "updated spacecraft fixture missing");
     click_object(view, freshProbes[0].coordinates, jd + 1);
     check(view.selectedSpacecraftIndex == 0 && [description containsString:@"Test probe"],
@@ -583,7 +650,7 @@ void test_moving_objects(HorizonView *view, const SkyModel& model, const SkyBodi
         const auto sample = evaluate_spacecraft_snapshot(fixture.spacecraft->model, date);
         [view setSpacecraftSnapshot:sample];
         const auto targets = horizon_spacecraft_objects(*sample, true, false, date, position,
-                                                         horizon_observer_position(ObservationFrame([view observerSite], date)), spacecraft_scene_position);
+                                                         horizon_earth_observer_position(ObservationFrame([view observerSite], date), [view observerSite].latitude_deg), spacecraft_scene_position);
         check(targets.size() == 1, "spacecraft sampling fixture missing");
         click_object(view, targets[0].coordinates, date);
         check(view.selectedSpacecraftIndex == 0 && [description containsString:samplingCase.second],
