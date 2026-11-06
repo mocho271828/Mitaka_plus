@@ -314,6 +314,37 @@ void view_culling_tests(Temporary& temp) {
     const auto fallback=render_terrain_surface({uncertain,{0,0,0},{},.001,1},camera(),65,65);
     expect(fallback.patches_read==1,"uncertain elevation range must not be culled");
 }
+void landing_radius_tests(Temporary& temp) {
+    auto source=TerrainFile::open(temp.write("landing.dat",fixture({{-30,30,30,-30,3},{25,65,30,-30,2}},200,true)));
+    for (double factor : {0.0,1.0,2.0}) for (const auto& location : std::array<std::array<double,2>,4>{{
+        {{0,0}},{{14,13}},{{26,4}},{{-30,30}}}}) {
+        const auto ray=direction(location[0],location[1]);
+        double outer=0;
+        for(std::size_t p=0;p<source.patches().size();++p) {
+            for(int level=0;level<=source.patches()[p].maximum_level_index;++level) {
+                const auto mesh=make_terrain_patch_mesh(source,p,std::size_t(level),factor);
+                for(std::size_t t=0;t<mesh.triangle_count();++t) {
+                    const auto ids=mesh.triangle(t);
+                    const double hit=triangle_hit({0,0,0},ray,mesh.vertices()[ids[0]].position,
+                        mesh.vertices()[ids[1]].position,mesh.vertices()[ids[2]].position);
+                    if(std::isfinite(hit)) outer=std::max(outer,hit);
+                }
+            }
+        }
+        const auto actual=terrain_landing_radius_km(source,location[1],location[0],1000,factor);
+        expect(bool(actual)==(outer>0),"landing intersection coverage");
+        if(actual) near(*actual,1000*outer,1e-7,"landing all LOD triangle radius");
+    }
+    expect(!terrain_landing_radius_km(source,0,180,1000,1),"outside mesh has no landing surface");
+    rejects([&]{terrain_landing_radius_km(source,91,0,1000,1);},"invalid landing latitude");
+    rejects([&]{terrain_landing_radius_km(source,0,0,1000,-1);},"invalid landing factor");
+    rejects<std::runtime_error>([&]{terrain_landing_radius_km(source,0,0,1000,1,[]{return true;});},"landing cancellation");
+    auto seam=TerrainFile::open(temp.write("landing_seam.dat",fixture({{350,370,90,75,2}},10)));
+    const auto a=terrain_landing_radius_km(seam,80,0,1000,1);
+    const auto b=terrain_landing_radius_km(seam,80,360,1000,1);
+    expect(a&&b,"landing wraps seam");
+    near(*a,*b,1e-9,"landing longitude periodic");
+}
 void real_data(const std::filesystem::path& path) {
     auto source=TerrainFile::open(path);
     const auto begin=std::chrono::steady_clock::now();
@@ -387,7 +418,7 @@ void clipping_and_order_tests(Temporary& temp) {
 }
 int main(int argc,char** argv) {
     try {
-        Temporary temp; mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp); view_culling_tests(temp);
+        Temporary temp; landing_radius_tests(temp); mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp); view_culling_tests(temp);
         for(int i=1;i<argc;++i) real_data(argv[i]);
         std::cout<<"terrain surface: "<<checks<<" checks passed\n";
         return 0;

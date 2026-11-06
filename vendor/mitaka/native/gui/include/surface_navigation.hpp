@@ -27,6 +27,9 @@ struct SurfaceSite {
     double heading_deg = 0; // 北0、東90。
     double elevation_deg = 0; // 地平線0、天頂90。
     double roll_deg = 0;
+    // 描画地形の基準球からの外向きオフセット。海抜以下は0に留める。
+    // height_kmはこの局所地表からの高さとして扱う。
+    double terrain_offset_km = 0;
 };
 
 // カメラが天体外にあり、地表の水平姿勢で表せる場合だけ逆変換する。
@@ -47,6 +50,9 @@ public:
     // 緯度±90、仰角±90、高度[0.002,1e9]km。経度/方位は周期化する。
     // 不正入力はinvalid_argumentで状態を保持。設定成功時は飛行を止める。
     void set_site(SurfaceSite site);
+    // 新たな描画地形を適用。上空のカメラ位置は維持し、地中なら地上へ上げる。
+    // 飛行中は残り時間と到着目標を維持し、現在位置から補間を組み直す。
+    void update_terrain_offset(double offset_km);
     // 同一日時の天体中心と姿勢から地表固定ENUカメラを再計算する。
     SolarCamera camera(const SolarBodies& bodies) const;
     // 既定では実時間3秒。0秒は即時移動。

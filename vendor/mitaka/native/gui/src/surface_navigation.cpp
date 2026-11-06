@@ -129,6 +129,7 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
         || !std::isfinite(site.longitude_deg) || !std::isfinite(site.heading_deg)
         || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 90
         || !std::isfinite(site.roll_deg)
+        || !std::isfinite(site.terrain_offset_km) || site.terrain_offset_km < 0 || site.terrain_offset_km > maximum_height_km
         || !std::isfinite(site.height_km) || site.height_km < minimum_surface_height_km
         || site.height_km > maximum_height_km)
         throw std::invalid_argument("invalid surface site");
@@ -137,6 +138,36 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
     site.roll_deg = std::remainder(site.roll_deg, 360);
     site_ = site;
     interrupt();
+}
+
+void SurfaceNavigation::update_terrain_offset(double offset_km) {
+    if (!std::isfinite(offset_km) || offset_km < 0 || offset_km > maximum_height_km)
+        throw std::invalid_argument("invalid terrain offset");
+    if (offset_km == site_.terrain_offset_km) return;
+
+    const double old_offset = site_.terrain_offset_km;
+    // 地表に立っている場合は新地形に追従する。上空では可能な限り
+    // 半径を維持するが、新たな地形の内部に入る場合は安全な地上へ戻す。
+    const double height = site_.height_km == minimum_surface_height_km
+        ? minimum_surface_height_km
+        : std::clamp(site_.height_km + old_offset - offset_km,
+                     minimum_surface_height_km, maximum_height_km);
+    if (flight_) {
+        auto& flight = *flight_;
+        const double progress = std::clamp((flight.previous_time - flight.start_time) / flight.duration, 0.0, 1.0);
+        const double remaining = flight.duration * (1.0 - progress);
+        // 着陸は地上2mを目標に保ち、離陸は可能な限り元の半径を保つ。
+        if (flight.end_height != minimum_surface_height_km)
+            flight.end_height = std::clamp(flight.end_height + old_offset - offset_km,
+                                           minimum_surface_height_km, maximum_height_km);
+        flight.start_time = flight.previous_time;
+        flight.duration = remaining;
+        flight.start_height = height;
+        flight.start_elevation = site_.elevation_deg;
+        flight.start_roll = site_.roll_deg;
+    }
+    site_.terrain_offset_km = offset_km;
+    site_.height_km = height;
 }
 
 SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
@@ -169,7 +200,7 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
     const auto right = frame.right, cameraUp = frame.up;
     frame.right = {right.x * cr + cameraUp.x * sr, right.y * cr + cameraUp.y * sr, right.z * cr + cameraUp.z * sr};
     frame.up = {cameraUp.x * cr - right.x * sr, cameraUp.y * cr - right.y * sr, cameraUp.z * cr - right.z * sr};
-    const double distance = (info.radius_km + site_.height_km) / astronomical_unit_km;
+    const double distance = (info.radius_km + site_.terrain_offset_km + site_.height_km) / astronomical_unit_km;
     SolarCamera result;
     result.distance_au = distance;
     result.target = {center.x + (up.x + forward.x) * distance,
@@ -200,8 +231,10 @@ void SurfaceNavigation::begin_flight(double time, double height, double elevatio
 }
 
 void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_seconds) {
-    begin_flight(monotonic_seconds, std::max(site_.height_km,
-                 surface_body_info(site_.body_index).radius_km * 8), -80, site_.roll_deg, duration_seconds);
+    // 読み込みの前後で地形 offset が変わっても、到達先は基準球から同じ距離にする。
+    const double target_height = surface_body_info(site_.body_index).radius_km * 8 - site_.terrain_offset_km;
+    begin_flight(monotonic_seconds, std::max(site_.height_km, target_height),
+                 -80, site_.roll_deg, duration_seconds);
 }
 
 void SurfaceNavigation::begin_descent(double monotonic_seconds, double duration_seconds) {

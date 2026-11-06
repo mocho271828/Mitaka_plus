@@ -179,6 +179,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @interface SolarSystemView (SmokeTests)
 - (BOOL)runContinuousFlightSmokeTest;
 - (BOOL)runSurfaceNavigationSmokeTest;
+- (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion;
 - (BOOL)runCameraSmokeTest;
 - (BOOL)runTextureSmokeTest;
 - (BOOL)runRotationSmokeTest:(const mitaka::BodyOrientation&)laterEarthOrientation;

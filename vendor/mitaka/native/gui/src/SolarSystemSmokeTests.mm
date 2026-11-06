@@ -506,6 +506,90 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     self.needsDisplay = YES;
     return passed;
 }
+- (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion {
+    if (!_hasData || !_terrainDataDirectory) { completion(NO); return; }
+    [self leaveNavigation];
+    [self selectBody:3];
+    SurfaceSite site{3, 82.2, -84.7, minimum_surface_height_km, 0, 0};
+    _navigation.set_site(site); _surfaceActive = YES; _camera = _navigation.camera(_bodies);
+    [self refreshTerrain];
+    __block BOOL passed = _landingSuppressedBody == 3;
+    __block int phase = 0;
+    __block double firstOffset = 0;
+    __block NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:15];
+    NSTimer *timer = [NSTimer timerWithTimeInterval:0.02 repeats:YES block:^(NSTimer *timer) {
+        if (deadline.timeIntervalSinceNow <= 0) {
+            std::fprintf(stderr, "Terrain landing smoke timed out in phase %d\n", phase);
+            [timer invalidate]; [self leaveNavigation]; [self resetLanding]; [self cancelTerrain]; completion(NO); return;
+        }
+        if (!self->_landingResult) return;
+        if (self->_landingResult->status != TerrainSnapshotStatus::ready) {
+            std::fprintf(stderr, "Terrain landing smoke failed in phase %d: %s\n", phase, self->_landingResult->diagnostic.c_str());
+            [timer invalidate]; [self leaveNavigation]; [self resetLanding]; [self cancelTerrain]; completion(NO); return;
+        }
+        if (phase == 0) {
+            firstOffset = self->_navigation.site().terrain_offset_km;
+            passed = passed && !self->_landingSuppressedBody && firstOffset > 1;
+            self.terrainAmplification = TerrainAmplification::x20;
+            [self refreshTerrain];
+            passed = passed && self->_landingSuppressedBody == 3 &&
+                self->_navigation.site().terrain_offset_km == 0 &&
+                self->_navigation.site().height_km == minimum_surface_height_km;
+            NSString *error = nil;
+            const BOOL selected = [self selectScriptEarthPlaceLatitude:82.2 longitude:-84.7 surface:YES error:&error];
+            passed = passed && selected;
+            self.terrainAmplification = TerrainAmplification::x2;
+            [self refreshTerrain];
+            phase = 1; deadline = [NSDate dateWithTimeIntervalSinceNow:15]; return;
+        }
+        if (phase == 1) {
+            passed = passed && !self->_landingSuppressedBody && self->_landingKey &&
+                self->_landingKey->factor == 2 && self->_navigation.site().terrain_offset_km > firstOffset;
+            self.terrainAmplification = TerrainAmplification::x1;
+            [self selectBody:4];
+            [self startJourneyAtLatitude:49.625 longitude:-81.6875];
+            [self refreshTerrain];
+            passed = passed && self->_journeyActive && self->_landingSuppressedBody == 4;
+            phase = 2; deadline = [NSDate dateWithTimeIntervalSinceNow:15]; return;
+        }
+        passed = passed && self->_journeyActive && self->_landingSuppressedBody == 4;
+        [self interruptFlight];
+        passed = passed && self->_journeyActive && !self.flightAnimating;
+        [self resumeJourney];
+        const double start = self->_lastFlightTime;
+        for (int step = 1; step <= 96; ++step) [self advanceFlightAtTime:start + step*0.25];
+        [self refreshTerrain];
+        passed = passed && !self->_journeyActive && self->_surfaceActive && !self->_landingSuppressedBody &&
+            self->_navigation.site().body_index == 4 && self->_navigation.site().terrain_offset_km > 1;
+        [self leaveNavigation]; [self refreshTerrain];
+        passed = passed && !self->_landingKey && !self->_landingSuppressedBody;
+        // 相対データルートでも例外を画面外へ漏らさず、基準球に戻す。
+        NSString *savedDirectory = [self->_terrainDataDirectory copy];
+        [self setTerrainDataDirectory:@"relative-data-root"];
+        SurfaceSite failedSite{3, 0, 0, minimum_surface_height_km, 0, 0};
+        failedSite.terrain_offset_km = 3;
+        self->_navigation.set_site(failedSite);
+        self->_surfaceActive = YES;
+        [self refreshTerrain];
+        const auto diagnostics = [self terrainDiagnostics];
+        passed = passed && self->_landingSuppressedBody == 3 && self->_landingResult &&
+            self->_landingResult->status == TerrainSnapshotStatus::failed && !diagnostics.empty() &&
+            self->_navigation.site().terrain_offset_km == 0 &&
+            self->_navigation.site().height_km == minimum_surface_height_km;
+        // 異常に大きいが有限の地形半径もメインキューから例外を漏らさない。
+        self->_landingResult->status = TerrainSnapshotStatus::ready;
+        self->_landingResult->radius_km = 1e12;
+        [self refreshLanding];
+        passed = passed && self->_landingResult->status == TerrainSnapshotStatus::failed &&
+            !self->_landingResult->diagnostic.empty() && self->_navigation.site().terrain_offset_km == 0;
+        [self leaveNavigation];
+        [self setTerrainDataDirectory:savedDirectory];
+        [self cancelTerrain]; self.needsDisplay = YES; [timer invalidate];
+        if (passed) std::printf("Terrain landing AppKit smoke passed: real Earth/Mars, Lua, supersession, amplification, interrupted journey, mode exit\n");
+        completion(passed);
+    }];
+    [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+}
 - (BOOL)runRotationSmokeTest:(const mitaka::BodyOrientation&)laterEarthOrientation {
     if (!_hasData || _surfaceActive || _journeyActive || !_textures || !_textures->images[3]) return NO;
     const BOOL savedEarthMoon = _earthMoonMode, savedEarthMoonFollowing = _earthMoonFollowing, savedPreview = _surfacePreview;

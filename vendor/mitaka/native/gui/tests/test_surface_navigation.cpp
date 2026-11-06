@@ -55,6 +55,113 @@ SolarBodies fixture() {
     return bodies;
 }
 
+void test_terrain_offset() {
+    const auto bodies=fixture();
+    SurfaceNavigation nav;
+    SurfaceSite site{3,45,10,100,30,-20,0,1.25};
+    nav.set_site(site);
+    nav.begin_descent(0,0);
+    near(nav.site().height_km,minimum_surface_height_km);
+    near(nav.site().terrain_offset_km,1.25);
+    const auto position=eye(nav.camera(bodies));
+    const auto center=j2000_equatorial_to_ecliptic(bodies[3].position_au);
+    near(std::hypot(position.x-center.x,position.y-center.y,position.z-center.z)*astronomical_unit_km,
+         surface_body_info(3).radius_km+1.25+minimum_surface_height_km,1e-6);
+    nav.zoom(-100);
+    near(nav.site().terrain_offset_km,1.25);
+    nav.look(10,10);
+    near(nav.site().terrain_offset_km,1.25);
+    nav.begin_ascent(0,3);
+    nav.advance(.5);
+    nav.interrupt();
+    near(nav.site().terrain_offset_km,1.25);
+    auto bad=nav.site(); bad.terrain_offset_km=-1;
+    rejects([&]{nav.set_site(bad);});
+    near(nav.site().terrain_offset_km,1.25);
+}
+void test_terrain_offset_updates() {
+    SurfaceNavigation nav;
+    nav.set_site({3,45,10,100,30,-20,0,1});
+    nav.begin_descent(0,3);
+    nav.advance(.5);
+    const auto before=nav.site();
+    nav.update_terrain_offset(2);
+    check(nav.flying(), "terrain update interrupted descent");
+    near(nav.site().height_km + nav.site().terrain_offset_km,
+         before.height_km + before.terrain_offset_km);
+    near(nav.site().elevation_deg,before.elevation_deg);
+    for (int i=2;i<=6;++i) nav.advance(i*.5);
+    check(!nav.flying(), "updated descent failed to finish on schedule");
+    near(nav.site().height_km,minimum_surface_height_km);
+    near(nav.site().terrain_offset_km,2);
+    nav.update_terrain_offset(3);
+    near(nav.site().height_km,minimum_surface_height_km);
+    nav.update_terrain_offset(1);
+    near(nav.site().height_km,minimum_surface_height_km);
+
+    nav.begin_ascent(10,3);
+    nav.advance(10.5);
+    nav.advance(11);
+    nav.advance(11.5);
+    const auto during_ascent=nav.site();
+    nav.update_terrain_offset(2);
+    check(nav.flying(), "terrain update interrupted ascent");
+    near(nav.site().height_km + nav.site().terrain_offset_km,
+         during_ascent.height_km + during_ascent.terrain_offset_km);
+    for (int i=4;i<=6;++i) nav.advance(10+i*.5);
+    check(!nav.flying(), "updated ascent failed to finish on schedule");
+    near(nav.site().height_km + nav.site().terrain_offset_km,
+         surface_body_info(3).radius_km * 8, 1e-8);
+
+    nav.set_site({3,0,0,1,0,0,0,0});
+    nav.begin_descent(20,3);
+    nav.advance(20.5);
+    nav.update_terrain_offset(10);
+    check(nav.flying(), "terrain collision interrupted flight");
+    near(nav.site().height_km,minimum_surface_height_km);
+    for (int i=2;i<=6;++i) nav.advance(20+i*.5);
+    check(!nav.flying(), "terrain-clamped flight failed to finish");
+    near(nav.site().height_km,minimum_surface_height_km);
+
+    nav.begin_ascent(30,3);
+    const auto saved=nav.site();
+    rejects([&]{nav.update_terrain_offset(-1);});
+    rejects([&]{nav.update_terrain_offset(std::numeric_limits<double>::infinity());});
+    rejects([&]{nav.update_terrain_offset(1e10);});
+    same(nav.site(),saved);
+    near(nav.site().terrain_offset_km,saved.terrain_offset_km);
+    check(nav.flying(), "invalid offset changed flight");
+    nav.advance(30.5);
+    nav.interrupt();
+    nav.update_terrain_offset(11);
+    check(!nav.flying(), "terrain update resumed interrupted flight");
+}
+void test_ascent_datum_endpoint() {
+    const double target = surface_body_info(3).radius_km * 8;
+    for (int timing = 0; timing < 3; ++timing) {
+        SurfaceNavigation nav;
+        nav.set_site({3, 35.68, 139.76, minimum_surface_height_km, 0, 0, 0,
+                      timing == 0 ? 2.0 : 0.0});
+        nav.begin_ascent(0, 3);
+        nav.advance(.5);
+        if (timing != 0) nav.update_terrain_offset(2);
+        if (timing == 2) {
+            nav.interrupt();
+            nav.begin_ascent(.5, 3);
+            for (int i = 1; i <= 6; ++i) nav.advance(.5 + i * .5);
+        } else {
+            for (int i = 2; i <= 6; ++i) nav.advance(i * .5);
+        }
+        check(!nav.flying(), "ascent with terrain update did not finish");
+        near(nav.site().height_km + nav.site().terrain_offset_km, target, 1e-8);
+        near(nav.camera(fixture()).distance_au, 9 * surface_body_info(3).radius_km / astronomical_unit_km, 1e-12);
+    }
+    // 既に目標より遠い場所からは、離陸操作によって下降しない。
+    SurfaceNavigation nav;
+    nav.set_site({3, 0, 0, target + 5, 0, 0, 0, 2});
+    nav.begin_ascent(0, 0);
+    near(nav.site().height_km, target + 5);
+}
 void test_body_radii() {
     constexpr std::array<double, 10> radii{2439.7, 6051.8, 6378.1366, 3396.19,
         71492, 60268, 25559, 24764, 1185, 1738.092};
@@ -300,7 +407,8 @@ void test_camera_rays() {
 
 int main() {
     try {
-        test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
+        test_terrain_offset();
+        test_terrain_offset_updates(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
         test_flight_interruptions(); test_manual_controls(); test_camera_rays();
         std::cout << "surface navigation tests passed\n";
         return 0;

@@ -32,6 +32,7 @@ ECLIPSE_OBJECTS = $(addprefix $(BUILD_DIR)/,eclipse_surface.o eclipse_display.o 
 OBJECTS += $(ECLIPSE_OBJECTS)
 GALAXY_OBJECTS = $(addprefix $(BUILD_DIR)/,galaxy_camera.o shared_camera.o galaxy_spatial_scene.o galaxy_spatial_load.o GalaxyRenderer.o GalaxyView.o GalaxyController.o)
 TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o terrain_snapshot.o terrain_source_lease.o)
+OBJECTS += $(addprefix $(BUILD_DIR)/,terrain_landing.o TerrainLandingController.o)
 OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS) $(BUILD_DIR)/GalaxyOverlay.o $(BUILD_DIR)/OurGalaxyRenderer.o $(BUILD_DIR)/OurGalaxyRadiativeRenderer.o $(BUILD_DIR)/HipSpatialRenderer.o $(BUILD_DIR)/our_galaxy_navigation.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
 OBJECTS += $(BUILD_DIR)/SolarScriptTarget.o $(BUILD_DIR)/SolarScriptOrientation.o
@@ -512,6 +513,8 @@ $(BUILD_DIR)/test_galaxy_controller: tests/test_galaxy_controller.mm $(GALAXY_OB
 
 $(BUILD_DIR)/test_terrain_surface: tests/test_terrain_surface.cpp $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o solar_camera.o) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
+$(BUILD_DIR)/test_terrain_landing_controller: tests/test_terrain_landing_controller.mm $(TERRAIN_OBJECTS) $(addprefix $(BUILD_DIR)/,terrain_landing.o TerrainLandingController.o surface_navigation.o solar_camera.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 $(BUILD_DIR)/test_terrain_snapshot: tests/test_terrain_snapshot.cpp $(TERRAIN_OBJECTS) $(BUILD_DIR)/solar_camera.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_terrain_surface_controller: tests/test_terrain_surface_controller.mm $(TERRAIN_OBJECTS) $(addprefix $(BUILD_DIR)/,TerrainSurfaceController.o solar_camera.o) core
@@ -536,7 +539,7 @@ $(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controlle
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
 
 .PHONY: unit8-test galaxy-controller-test script-time-test
-unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_script_identity test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
+unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_script_identity test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_landing_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
 	@for binary in $^; do "$$binary" || exit $$?; done
 test: unit8-test
 galaxy-controller-test: $(BUILD_DIR)/test_galaxy_controller
@@ -560,6 +563,7 @@ $(BUILD_DIR)/test_terrain_real_render: tests/test_terrain_real_render.mm $(filte
 $(BUILD_DIR)/test_terrain_real_generation: tests/test_terrain_real_generation.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
 .PHONY: terrain-real-data-test
-terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_terrain_real_generation
+terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_terrain_real_generation $(BUILD_DIR)/test_terrain_landing_controller
+	"$(BUILD_DIR)/test_terrain_landing_controller" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_render" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_generation" "$${DATA_ROOT:?Set DATA_ROOT}"

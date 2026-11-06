@@ -114,7 +114,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     _julianDate = julianDate;
     self.needsDisplay = YES;
 }
-- (void)dealloc { [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
+- (void)dealloc { [_landingController invalidate]; [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
 - (BOOL)scriptPlanetariumMode {
     return _surfaceActive && !_navigation.flying()

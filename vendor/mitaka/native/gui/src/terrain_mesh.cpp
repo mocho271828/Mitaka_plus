@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 
 #include "terrain_mesh.hpp"
+#include "terrain_surface.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -143,4 +144,59 @@ std::size_t terrain_level_index(const TerrainPatch& patch, Vec3 eye, bool low_re
     return std::size_t(std::max(0,level));
 }
 
+} // namespace mitaka::gui
+
+namespace mitaka::gui {
+namespace {
+double landing_dot(Vec3 a, Vec3 b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+std::optional<double> radial_intersection(Vec3 direction, Vec3 a, Vec3 b, Vec3 c) {
+    const auto ab=subtract(b,a), ac=subtract(c,a);
+    const auto normal=cross(ab,ac);
+    const double n2=landing_dot(normal,normal), denominator=landing_dot(normal,direction);
+    if (!(n2>0) || std::abs(denominator)<=std::sqrt(n2)*1e-14) return std::nullopt;
+    const double radius=landing_dot(normal,a)/denominator;
+    if (!std::isfinite(radius) || radius<=0) return std::nullopt;
+    const Vec3 point{radius*direction.x,radius*direction.y,radius*direction.z};
+    const auto relative=subtract(point,a);
+    const double u=landing_dot(cross(relative,ac),normal)/n2;
+    const double v=landing_dot(cross(ab,relative),normal)/n2;
+    constexpr double tolerance=1e-9;
+    if (u < -tolerance || v < -tolerance || u+v > 1+tolerance) return std::nullopt;
+    return radius;
+}
+}
+std::optional<double> terrain_landing_radius_km(TerrainFile& source,
+    double latitude, double longitude, double display_radius, double factor,
+    const std::function<bool()>& cancelled) {
+    if (!std::isfinite(latitude) || std::abs(latitude)>90 || !std::isfinite(longitude) ||
+        !std::isfinite(display_radius) || display_radius<=0 || !std::isfinite(factor) || factor<0)
+        throw std::invalid_argument("invalid terrain landing geometry");
+    const auto ray=direction(longitude,latitude);
+    std::optional<double> radius;
+    for (std::size_t i=0; i<source.patches().size(); ++i) {
+        if (cancelled && cancelled()) throw TerrainSurfaceCancelled();
+        const auto& patch=source.patches()[i];
+        const double extent=((patch.longitude_end_deg-patch.longitude_begin_deg)+
+            (patch.latitude_begin_deg-patch.latitude_end_deg))*.5*radians;
+        // 90度未満の球面円錐は凸なので、頂点を結ぶ全三角形も内側にある。
+        if (extent < 3.14159265358979323846*.5) {
+            const auto middle=direction((patch.longitude_begin_deg+patch.longitude_end_deg)*.5,
+                (patch.latitude_begin_deg+patch.latitude_end_deg)*.5);
+            if (landing_dot(middle,ray) < std::cos(extent)-1e-12) continue;
+        }
+        // LOD切替の直前・直後のどちらでも地形の内側に入らないよう全levelを調べる。
+        for (int level=0; level<=patch.maximum_level_index; ++level) {
+            const auto mesh=make_terrain_patch_mesh(source,i,static_cast<std::size_t>(level),factor);
+            for (std::size_t triangle=0;triangle<mesh.triangle_count();++triangle) {
+                const auto indices=mesh.triangle(triangle);
+                auto hit=radial_intersection(ray,mesh.vertices()[indices[0]].position,
+                    mesh.vertices()[indices[1]].position,mesh.vertices()[indices[2]].position);
+                if (hit && (!radius || *hit>*radius)) radius=*hit;
+            }
+        }
+    }
+    source.verify_source_unchanged();
+    if (radius) *radius *= display_radius;
+    return radius;
+}
 } // namespace mitaka::gui

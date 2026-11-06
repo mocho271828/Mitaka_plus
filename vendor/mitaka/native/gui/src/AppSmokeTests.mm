@@ -284,6 +284,13 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
         ![_solar runSurfaceNavigationSmokeTest]) {
         [self showError:@"smoke: Moon animation or surface navigation failed"]; return;
     }
+    [_solar runTerrainLandingSmokeTestWithCompletion:^(BOOL passed) {
+        if (!passed) { [self showError:@"smoke: terrain landing failed"]; return; }
+        [self runTravelSmokeTestAfterTerrain];
+    }];
+}
+
+- (void)runTravelSmokeTestAfterTerrain {
     [_solar takeOffFromEarthAtLatitude:35.68 longitude:139.76];
     const double startDistance = [_solar cameraState].distance_au;
     if (!_solar.surfaceNavigationActive || !_solar.flightAnimating) {

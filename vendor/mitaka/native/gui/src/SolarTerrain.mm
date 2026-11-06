@@ -1,5 +1,7 @@
 #import "SolarSystemViewInternal.h"
 #include <exception>
+#include <cmath>
+#include <stdexcept>
 
 using namespace mitaka::gui;
 
@@ -13,6 +15,7 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
         [TerrainSurfaceController new], [TerrainSurfaceController new]];
 }
 - (void)setTerrainDataDirectory:(NSString *)directory {
+    [self resetLanding];
     [self cancelTerrain];
     _terrainDataDirectory = [directory copy];
     self.needsDisplay = YES;
@@ -28,11 +31,105 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     _terrainErrors = {};
 }
 - (void)reloadTerrain {
+    [self resetLanding];
     [self cancelTerrain];
     self.needsDisplay = YES;
 }
+- (void)resetLanding {
+    [_landingController cancel];
+    _landingKey.reset();
+    _landingResult.reset();
+    _landingSuppressedBody.reset();
+}
+- (void)refreshLanding {
+    // 地形を非表示にして基準球を描く間は、視点もその球面に合わせる。
+    // 惑星間飛行中は移動元の経路を変えない。
+    const auto useReferenceSurface = [&] {
+        if (!_surfaceActive || _journeyActive || _navigation.site().terrain_offset_km == 0) return;
+        _navigation.update_terrain_offset(0);
+        _camera = _navigation.camera(_bodies);
+        if (_navigation.flying()) [self restoreFlightOrientation];
+        [self notifyCamera];
+    };
+    if ((!_surfaceActive && !_journeyActive) || !_terrainDataDirectory) {
+        if (_landingKey) { [self resetLanding]; [self cancelTerrain]; }
+        if (!_terrainDataDirectory) useReferenceSurface();
+        return;
+    }
+    const auto site = _journeyActive ? _journey.destination() : _navigation.site();
+    TerrainBody body;
+    switch (site.body_index) {
+        case 1: body = TerrainBody::mercury; break;
+        case 3: body = TerrainBody::earth; break;
+        case 4: body = TerrainBody::mars; break;
+        case 10: body = TerrainBody::moon; break;
+        default:
+            if (_landingKey) { [self resetLanding]; [self cancelTerrain]; }
+            useReferenceSurface();
+            return;
+    }
+    LandingKey key{_terrainDataDirectory.fileSystemRepresentation, site.body_index,
+        site.latitude_deg, site.longitude_deg, terrain_amplification_factor(_terrainAmplification)};
+    if (!_landingKey || !(*_landingKey == key)) {
+        if (!_landingController) _landingController = [TerrainLandingController new];
+        _landingKey = key;
+        _landingResult.reset();
+        _landingSuppressedBody = key.body;
+        useReferenceSurface();
+        [self cancelTerrain];
+        TerrainLandingRequest request;
+        request.data_directory = key.root;
+        request.body = body;
+        request.latitude_deg = key.latitude;
+        request.longitude_deg = key.longitude;
+        request.display_radius_km = surface_body_info(key.body).radius_km;
+        request.elevation_factor = key.factor;
+        __weak SolarSystemView *weakSelf = self;
+        try {
+            [_landingController requestLanding:request completion:^(TerrainLandingResult result, NSString *error) {
+                SolarSystemView *strongSelf = weakSelf;
+                if (!strongSelf || !strongSelf->_landingKey || !(*strongSelf->_landingKey == key)) return;
+                if (error) result.diagnostic = error.UTF8String ? error.UTF8String : "terrain landing failed";
+                strongSelf->_landingResult = std::move(result);
+                [strongSelf refreshLanding];
+                strongSelf.needsDisplay = YES;
+            }];
+        } catch (const std::exception& error) {
+            // 不正なデータルート等の同期検証失敗も球面表示と診断に変換する。
+            TerrainLandingResult result;
+            result.diagnostic = error.what();
+            _landingResult = std::move(result);
+        }
+    }
+    // 惑星間飛行は終端が確定するまで地形を隠し、既存の補間経路を変えない。
+    if (_journeyActive || !_landingResult) return;
+    if (_landingResult->status == TerrainSnapshotStatus::failed) return;
+    const double base = surface_body_info(key.body).radius_km;
+    const double radius = _landingResult->radius_km.value_or(base);
+    double offset;
+    const double previousOffset = _navigation.site().terrain_offset_km;
+    try {
+        if (!std::isfinite(radius)) throw std::invalid_argument("non-finite terrain landing radius");
+        offset = std::max(0.0, radius - base);
+        _navigation.update_terrain_offset(offset);
+    } catch (const std::invalid_argument& error) {
+        _landingResult->status = TerrainSnapshotStatus::failed;
+        _landingResult->diagnostic = error.what();
+        return;
+    }
+    if (previousOffset != offset) {
+        _camera = _navigation.camera(_bodies);
+        if (_navigation.flying()) [self restoreFlightOrientation];
+        [self notifyCamera];
+    }
+    if (_landingSuppressedBody) {
+        _landingSuppressedBody.reset();
+        [self cancelTerrain];
+    }
+}
 - (void)refreshTerrain {
     if (!_hasData || _sceneUpdateDepth) return;
+    [self refreshLanding];
     const auto live = [self scene];
     const BOOL cameraChanged = _publishedScene && ![self matchesDisplayedCamera:live.camera map:live.map];
     if (_hasTerrainViewport && (!NSEqualRects(_terrainViewport, live.map) || _terrainBackingScale != live.backing_scale))
@@ -63,7 +160,7 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     const auto scene = candidate.owner.scene();
     for (std::size_t slot = 0; slot < terrainBodies.size(); ++slot) {
         const auto index = terrainBodies[slot];
-        if (!_terrainDataDirectory || !scene.planet_display.visible ||
+        if (_landingSuppressedBody == index || !_terrainDataDirectory || !scene.planet_display.visible ||
             (!scene.physical_navigation && !scene.earth_moon && !scene.surface_body)) continue;
         try {
             candidate.requests[slot] = solar_terrain_request(scene, index, _terrainDataDirectory.fileSystemRepresentation);
@@ -121,6 +218,8 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
 }
 - (std::vector<std::string>)terrainDiagnostics {
     std::vector<std::string> result;
+    if (_landingSuppressedBody && _landingResult && !_landingResult->diagnostic.empty())
+        result.push_back("Terrain: " + _landingResult->diagnostic + "（基準球面を表示）");
     for (const auto index : terrainBodies) {
         if (!_terrainErrors[index].empty()) result.push_back("Terrain: " + _terrainErrors[index] + "（基準球面を表示）");
         else if (const auto& snapshot = _terrainSnapshots[index]) {
@@ -317,7 +416,7 @@ struct PreparedSolarDate {
     TerrainSceneCoordinator::Mask requested;
     for (std::size_t slot = 0; slot < terrainBodies.size(); ++slot) {
         const auto index = terrainBodies[slot];
-        if (!_terrainDataDirectory || !scene.planet_display.visible ||
+        if (_landingSuppressedBody == index || !_terrainDataDirectory || !scene.planet_display.visible ||
             (!scene.physical_navigation && !scene.earth_moon && !scene.surface_body)) continue;
         try {
             candidate.requests[slot] = solar_terrain_request(scene, index, _terrainDataDirectory.fileSystemRepresentation);

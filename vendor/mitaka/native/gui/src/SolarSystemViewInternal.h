@@ -3,6 +3,7 @@
 #import "SolarSceneRenderer.h"
 #import "GridRenderer.h"
 #import "TerrainSurfaceController.h"
+#import "TerrainLandingController.h"
 #import "TerrainSceneState.h"
 #include "surface_navigation.hpp"
 #include "script_zoom_transition.hpp"
@@ -31,6 +32,16 @@ struct ScriptTargetAnimation {
     bool our_galaxy;
     std::optional<mitaka::gui::PlusOrientationQuaternion> initial_orientation, target_orientation;
     bool updates_distance = true;
+};
+
+struct LandingKey {
+    std::filesystem::path root;
+    std::size_t body;
+    double latitude, longitude, factor;
+    bool operator==(const LandingKey& other) const {
+        return root == other.root && body == other.body && latitude == other.latitude &&
+            longitude == other.longitude && factor == other.factor;
+    }
 };
 
 @interface SolarSystemView () {
@@ -116,6 +127,10 @@ struct ScriptTargetAnimation {
     NSRect _terrainViewport;
     double _terrainBackingScale;
     BOOL _hasTerrainViewport;
+    TerrainLandingController *_landingController;
+    std::optional<LandingKey> _landingKey;
+    std::optional<mitaka::gui::TerrainLandingResult> _landingResult;
+    std::optional<std::size_t> _landingSuppressedBody;
     NSString *_terrainDataDirectory;
     NSArray<TerrainSurfaceController *> *_terrainControllers;
     std::array<std::optional<mitaka::gui::TerrainSurfaceRequest>, 11> _terrainRequests;
@@ -130,6 +145,8 @@ struct ScriptTargetAnimation {
 
 @interface SolarSystemView (Internal)
 - (void)refreshTerrain;
+- (void)refreshLanding;
+- (void)resetLanding;
 - (NSArray<TerrainSurfaceController *> *)makeTerrainControllers;
 - (void)applyTerrainTransition:(TerrainSceneCoordinator::Transition)transition;
 - (SolarScene)displayedScene;

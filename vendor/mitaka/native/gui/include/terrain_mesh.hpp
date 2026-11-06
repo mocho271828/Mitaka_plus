@@ -4,6 +4,8 @@
 #include "mitaka/terrain.hpp"
 
 #include <array>
+#include <functional>
+#include <optional>
 #include <vector>
 
 namespace mitaka::gui {
@@ -49,4 +51,13 @@ TerrainSurfaceMode terrain_surface_mode(Vec3 eye);
 // .13度×2^levelの原版閾値。格子寸法やstored_levelではなく原ordinalを返す。
 std::size_t terrain_level_index(const TerrainPatch& patch, Vec3 eye, bool low_resolution = false);
 
+} // namespace mitaka::gui
+
+namespace mitaka::gui {
+// 各LODの三角形と中心からの視線の交点のうち、最も外側の半径を返す。
+// 描画倍率・display_radiusは描画と同じ値。交点なしはnullopt。
+// 地形ソースは呼出側が安全に開き、専有している必要がある。
+std::optional<double> terrain_landing_radius_km(TerrainFile& source,
+    double latitude_deg, double longitude_deg, double display_radius_km, double elevation_factor,
+    const std::function<bool()>& cancelled = {});
 } // namespace mitaka::gui

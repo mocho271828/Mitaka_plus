@@ -55,6 +55,7 @@ void all_targets(const SolarBodies& bodies) {
         destination.body_index=index;
         destination.latitude_deg=-17;
         destination.longitude_deg=113;
+        destination.terrain_offset_km=1.25;
         InterplanetaryFlight flight;
         flight.begin(SurfaceSite{},destination,bodies,0);
         same_camera(flight.camera(),surface_camera(SurfaceSite{},bodies));
@@ -63,6 +64,7 @@ void all_targets(const SolarBodies& bodies) {
             throw std::runtime_error("target "+std::to_string(index)+": "+e.what());
         }
         check(flight.destination().height_km==minimum_surface_height_km,"landing height must be 2m");
+        check(flight.destination().terrain_offset_km==1.25,"landing terrain offset must be preserved");
     }
 }
 void boundaries(const SolarBodies& bodies) {
