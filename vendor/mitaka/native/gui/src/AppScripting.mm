@@ -572,8 +572,7 @@ static NSString *const scriptCompatibilityNote =
                 ? horizonOrientation([controller->_horizon viewport], controller->_horizon.observerSite, controller->_solarBodies)
                 : [controller->_solar scriptCameraOrientation];
             const auto e = plus_orientation_to_euler(q);
-            state.camera_orientation = std::array<double, 4>{static_cast<float>(q.x), static_cast<float>(q.y),
-                static_cast<float>(q.z), static_cast<float>(q.w)};
+            state.camera_orientation = std::array<double, 4>{q.x, q.y, q.z, q.w};
             state.camera_euler = std::array<double, 3>{e.heading, e.pitch, e.roll};
         }
         state.target_browser = controller->_browser.window.visible;

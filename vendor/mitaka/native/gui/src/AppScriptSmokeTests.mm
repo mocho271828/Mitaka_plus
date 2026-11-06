@@ -1,4 +1,5 @@
 #import "AppControllerInternal.h"
+#import "SolarSystemViewInternal.h"
 #include "small_body_orbit_model.hpp"
 #include "script_object_identity.hpp"
 #include "galaxy_script_identity.hpp"
@@ -388,6 +389,14 @@
          "Camera.target = 'Galaxy.Andromeda Galaxy'; assert(Camera.target == 'Galaxy.Andromeda Galaxy')\n"
          "Camera.target = 'GC.NGC 6205'; assert(Camera.target == 'GC.NGC 6205')\n"
          "Camera.target = 'Satellite.Moon'; assert(Camera.target == 'Satellite.Moon')\n"
+         "local q=0.123456789012345; local norm=math.sqrt(1+q*q)\n"
+         "Camera:setEulerTo(35,12,20,1,false); waitTime(0.15)\n"
+         "Camera:setOrient(q,0,0,1)\n"
+         "local x,y,z,w=Camera:getOrient()\n"
+         "assert(math.abs(x-q/norm)<1e-14 and y==0 and z==0 and math.abs(w-1/norm)<1e-14)\n"
+         "waitTime(0.15); x,y,z,w=Camera:getOrient()\n"
+         "assert(math.abs(x-q/norm)<1e-14 and y==0 and z==0 and math.abs(w-1/norm)<1e-14)\n"
+         "print('__smoke_galaxy_orientation')\n"
          "Camera.zoom = 2 * mtk.UNIT_AU\n"
          "assert(math.abs(Camera.zoom - 2 * UNIT_AU) < 1e-16)\n"
          "for _, distance in ipairs({1e41, 1e-15 * UNIT_AU, math.huge, 0/0}) do\n"
@@ -591,7 +600,21 @@
     _scripts.output = ^(NSString *text) {
         AppController *controller = weakSelf;
         if (!controller) return;
-        if ([text isEqualToString:@"__smoke_select_gc"] || [text isEqualToString:@"__smoke_select_nearby"]) {
+        if ([text isEqualToString:@"__smoke_galaxy_orientation"]) {
+            [controller->_solar displayIfNeeded];
+            const auto diag = [controller->_solar galaxyOverlayDiagnostics];
+            const auto expected = plus_orientation_basis(plus_orientation_normalized({0.123456789012345, 0, 0, 1}));
+            const auto close = [](const auto& a, const auto& b) {
+                return std::abs(a.x - b.x) < 1e-12 && std::abs(a.y - b.y) < 1e-12 &&
+                    std::abs(a.z - b.z) < 1e-12;
+            };
+            if (controller->_mode.selectedSegment != 1 || !diag.displayed ||
+                diag.display == mitaka::gui::GalaxyOverlayDisplay::none || !diag.displayed->camera.frame ||
+                !close(diag.displayed->camera.frame->outward, expected.outward) ||
+                !close(diag.displayed->camera.frame->right, expected.right) ||
+                !close(diag.displayed->camera.frame->up, expected.up))
+                interactionFailure = @"smoke: Lua orientation did not reach the displayed galaxy frame";
+        } else if ([text isEqualToString:@"__smoke_select_gc"] || [text isEqualToString:@"__smoke_select_nearby"]) {
             const auto record = [text isEqualToString:@"__smoke_select_gc"] ? *smokeCluster : *smokeNearby;
             NSString *selectionError = nil;
             if (![controller->_solar selectScriptGalaxyRecord:record error:&selectionError])

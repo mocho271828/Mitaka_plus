@@ -391,3 +391,9 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 ### P1-8 地表星座の Lua 読み戻し（独立作業）
 
 `35a32c7` 上で、実データの非地球地表における星座選択から `Camera.target` の読み戻し、`Camera:look` への受け渡し、選択解除、未対応 setter による選択保持を `script-place-controller-test` で確認した。モデル不一致は空として扱う。`make build`、`make test`、`make data-test`、`make reference-test` は成功。`make smoke` は GUI 枠未割当につき未実施。実画面操作と旧 Plus 比較、星座の `Camera.target` への指定・時間指定移動は未対応または未検証。
+
+## 2026-11-07: P1-6 Lua 姿勢の精度と銀河表示への伝達
+
+`Camera:getOrient()` の読み戻しで内部 quaternion を単精度に丸めず、内部の倍精度を保つ。Lua の任意姿勢を補間途中に再指定し、読み戻しと銀河 overlay の表示済みフレームの基底を照合する smoke を追加した。旧 Plus との精度や動作の比較、手動 GUI による画面確認は未実施。新規依存・原データ・全体方針の変更はない。
+
+基点 `f27914c` の隔離 checkout で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -C vendor/mitaka/native/gui plus-camera-orientation-test`、`make -C vendor/mitaka/native/gui script-test` が成功。LFS 実体が隔離 checkout に揃わないため、データ検証では共有 checkout の `resources/data` を `DATA_ROOT` に指定し、読み取り専用で使用した。同じ `DATA_ROOT` を用いた `make smoke` も成功し、Lua の読み戻しと銀河 overlay の表示済みフレームの基底を確認した。
