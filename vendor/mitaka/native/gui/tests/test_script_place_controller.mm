@@ -8,14 +8,29 @@ using namespace mitaka;
 using namespace mitaka::gui;
 static void require(bool ok, const char *message) { if (!ok) throw std::runtime_error(message); }
 
+@interface SolarSystemView (SurfaceSkySelection)
+- (void)applySurfaceSkyStar:(std::optional<std::size_t>)star constellation:(std::optional<std::size_t>)constellation;
+@end
+
 @interface SolarSystemView (PlaceIntegration)
 - (void)fixtureSurface:(std::size_t)body;
+- (BOOL)fixtureSkySelectionState:(int)kind;
 @end
 @implementation SolarSystemView (PlaceIntegration)
 - (void)fixtureSurface:(std::size_t)body {
     _navigation.set_site(SurfaceSite{body, 0, 0, minimum_surface_height_km, 0, 0});
     _surfaceActive = YES; _physicalSpaceActive = NO; _journeyActive = NO;
     _camera = _navigation.camera(_bodies); _selection = body;
+}
+- (BOOL)fixtureSkySelectionState:(int)kind {
+    _selection = 4; _smallBodySelection = 5; _satelliteSelection = 6; _spacecraftSelection = 7;
+    _following = YES;
+    [self setScriptEarthPlaceTarget:std::string("Planet.Mars.OlympusMons")];
+    const std::optional<std::size_t> star = kind == 1 ? std::optional<std::size_t>(0) : std::nullopt;
+    const std::optional<std::size_t> constellation = kind == 2 ? std::optional<std::size_t>(0) : std::nullopt;
+    [self applySurfaceSkyStar:star constellation:constellation];
+    return !_selection && !_smallBodySelection && !_satelliteSelection && !_spacecraftSelection && !_following &&
+        [self scriptEarthPlaceTarget].empty() && _surfaceStarSelection == star && _surfaceConstellationSelection == constellation;
 }
 @end
 
@@ -26,6 +41,7 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
 - (void)fixtureDefaultPlaces:(NSString *)path;
 - (void)fixtureHalfTransition;
 - (BOOL)fixtureRetargeted;
+- (std::int32_t)fixtureSkySelection:(int)kind;
 @end
 @implementation AppController (PlaceIntegration)
 - (void)prepareFixture:(NSString *)root {
@@ -38,6 +54,7 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
     _sky = [[SkyView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
     _horizon = [[HorizonView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
     [_solar setBodies:_solarBodies];
+    [_solar setSurfaceStarModel:_model catalogs:nullptr];
     [self configureScripts];
 }
 - (ScriptController *)fixtureScripts:(NSString *)helper {
@@ -47,6 +64,11 @@ static void require(bool ok, const char *message) { if (!ok) throw std::runtime_
 }
 - (void)fixtureSurface:(std::size_t)body { [self stopScriptPlaceTransition]; [_solar fixtureSurface:body]; }
 - (void)fixtureDefaultPlaces:(NSString *)path { _observerPlaces = std::make_shared<const ObserverPlaces>(load_observer_places(path.fileSystemRepresentation)); }
+- (std::int32_t)fixtureSkySelection:(int)kind {
+    require(!_model->stars().empty(), "real stars required");
+    require([_solar fixtureSkySelectionState:kind], "sky selection must replace old target and stop following");
+    return _model->stars().front().hip;
+}
 - (void)fixtureHalfTransition { require(_scriptPlaceTransition.has_value(), "transition missing"); _scriptPlaceTransition->start_time -= 50; }
 - (BOOL)fixtureRetargeted {
     if (!_scriptPlaceTransition) return NO;
@@ -122,6 +144,12 @@ int main(int argc, const char *argv[]) {
                 local ok=pcall(function() Camera.target='Planet.Earth.NorthPole' end)
                 assert(not ok); assert(Camera.target=='Satellite.Moon.SouthPole')
             )lua");
+            const auto selectedHIP = [app fixtureSkySelection:1];
+            run(scripts, [NSString stringWithFormat:@"assert(Camera.target=='Star.%d')", selectedHIP]);
+            [app fixtureSkySelection:2];
+            run(scripts, @"assert(Camera.target=='')");
+            [app fixtureSkySelection:0];
+            run(scripts, @"assert(Camera.target=='')");
             [scripts invalidate];
             require([files removeItemAtPath:temporary error:nil], "remove temporary directory");
             std::puts("Lua place controller integration passed");

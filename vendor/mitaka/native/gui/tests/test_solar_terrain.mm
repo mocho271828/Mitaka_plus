@@ -6,6 +6,8 @@
 #include <limits>
 #include <stdexcept>
 
+bool solar_scene_opaque_at(const SolarScene&, NSPoint);
+
 using namespace mitaka;
 using namespace mitaka::gui;
 
@@ -144,6 +146,7 @@ void interior_selection() {
     const NSPoint pixel = NSMakePoint(40.5, 40.5);
     (void)visible_solar_bodies(f.scene);
     check(pick_solar_body(f.scene, pixel) == std::optional<std::size_t>(3), "opaque fallback inside sphere was not selected");
+    check(solar_scene_opaque_at(f.scene, pixel), "opaque fallback failed to hide sky");
     auto snapshot=f.snapshot(3);
     snapshot->frame.mode=TerrainSurfaceMode::terrain;
     snapshot->frame.samples.resize(81*81);
@@ -151,10 +154,15 @@ void interior_selection() {
     sample.distance_au=1e-8;
     sample.normal_local={1,0,0};
     check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "visible inside-datum terrain cannot be picked");
+    check(solar_scene_opaque_at(f.scene, pixel), "terrain failed to hide sky");
     sample.distance_au=std::numeric_limits<double>::infinity();
     check(pick_solar_body(f.scene, pixel)!=std::optional<std::size_t>(3), "uncovered inside-datum pixel selected terrain");
+    check(!solar_scene_opaque_at(f.scene, pixel), "transparent terrain hid sky");
     snapshot->status=TerrainSnapshotStatus::failed;
     check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "failed snapshot did not select opaque fallback");
+    check(solar_scene_opaque_at(f.scene, pixel), "failed terrain fallback failed to hide sky");
+    f.scene.planet_display.visible = false;
+    check(!solar_scene_opaque_at(f.scene, pixel), "hidden planet hid sky");
 }
 void owned_scene_lifetime() {
     std::optional<SolarSceneOwner> stored;

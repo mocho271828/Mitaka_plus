@@ -1,5 +1,6 @@
 #include "surface_navigation.hpp"
 #include "surface_sky_site.hpp"
+#include "surface_star_pick.hpp"
 #include "mitaka/observation.hpp"
 #include "mitaka/lunar.hpp"
 
@@ -56,6 +57,36 @@ SolarBodies fixture() {
         bodies[i].position_au = j2000_ecliptic_to_equatorial({2, 3, -4});
     }
     return bodies;
+}
+
+void test_surface_star_pick() {
+    auto bodies = fixture();
+    bodies[4].orientation = planet_orientation(Planet::mars, 2460000.5);
+    SurfaceNavigation nav;
+    nav.set_site({4, 35, 139, 0.002, 42, 23, 0, 0});
+    const auto camera = nav.camera(bodies);
+    const ObservationFrame observation({35, 139}, bodies[4].orientation);
+    const auto direction = observation.to_equatorial({42, 23});
+    HipparcosRecord star{};
+    star.hip = 123;
+    star.right_ascension_degrees = direction.right_ascension_deg;
+    star.declination_degrees = direction.declination_deg;
+    star.apparent_v_magnitude = 1;
+    const auto point = project_surface_star({star.right_ascension_degrees, star.declination_degrees}, camera, 800, 600);
+    check(point.has_value(), "projected star missing");
+    std::vector<HipparcosRecord> stars{star};
+    const ScreenPoint click{point->x, point->y};
+    const auto visible = [](ScreenPoint) { return false; };
+    const auto occluded = [](ScreenPoint) { return true; };
+    check(pick_surface_star(stars,camera,800,600,click,true,2,visible) == 0, "visible star not selected");
+    check(!pick_surface_star(stars,camera,800,600,click,false,2,visible), "hidden stars selected");
+    check(!pick_surface_star(stars,camera,800,600,click,true,0,visible), "faint star selected");
+    check(!pick_surface_star(stars,camera,800,600,click,true,2,occluded), "occluded star selected");
+    const ScreenPoint groundClick{point->x + 4, point->y};
+    const auto ground = [&](ScreenPoint p) { return std::abs(p.x - groundClick.x) < 0.1; };
+    check(!pick_surface_star(stars,camera,800,600,groundClick,true,2,ground), "occluded click selected adjacent visible star");
+    check(!pick_surface_star(stars,camera,800,600,{point->x+9,point->y},true,2,visible), "distant star selected");
+    check(!pick_surface_star(stars,camera,800,600,{-1,0},true,2,visible), "outside click selected");
 }
 
 void test_surface_sky_below_datum() {
@@ -499,7 +530,7 @@ void test_camera_rays() {
 
 int main() {
     try {
-        test_non_earth_sky_projection(); test_surface_sky_below_datum(); test_terrain_offset();
+        test_surface_star_pick(); test_non_earth_sky_projection(); test_surface_sky_below_datum(); test_terrain_offset();
         test_terrain_offset_updates(); test_negative_terrain(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
         test_flight_interruptions(); test_manual_controls(); test_camera_rays();
         std::cout << "surface navigation tests passed\n";

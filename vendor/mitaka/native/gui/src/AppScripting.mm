@@ -445,6 +445,8 @@ static NSString *const scriptCompatibilityNote =
         AppController *controller = weakSelf;
         ScriptSnapshot state;
         if (!controller) return state;
+        // デフォルトの Sun を未選択時の実際の対象として返さない。
+        state.target.clear();
         [controller fillScriptTimeSnapshot:state];
         const NSUInteger selected = controller->_solar.selectedBodyIndex;
         if (![controller->_solar scriptOverviewTarget].empty())

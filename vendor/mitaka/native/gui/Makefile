@@ -19,7 +19,7 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,AppWindowCommands.o WindowPresentationContr
 OBJECTS += $(BUILD_DIR)/AppSatelliteSmokeTests.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,SpacecraftController.o SpacecraftRenderer.o spacecraft_browser_model.o SolarSpacecraft.o AppSpacecraftCommands.o small_body_display.o satellite_display.o constellation_display.o horizon_segments.o AppConstellationCommands.o small_body_orbit_model.o SmallBodyOrbitController.o)
 OBJECTS += $(BUILD_DIR)/ConstellationRenderer.o
-OBJECTS += $(BUILD_DIR)/horizon_objects.o
+OBJECTS += $(BUILD_DIR)/horizon_objects.o $(BUILD_DIR)/constellation_pick.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,satellite_orbit_geometry.o session_layers.o session_layers_json.o)
 OBJECTS += $(BUILD_DIR)/AppSessionSmokeTests.o $(BUILD_DIR)/AppGalaxySmokeTests.o
 OBJECTS += $(BUILD_DIR)/AppStarCommands.o
@@ -246,7 +246,8 @@ controller-test: $(BUILD_DIR)/test_spacecraft_controller $(BUILD_DIR)/test_solar
 	"$(BUILD_DIR)/test_display_output"
 	"$(BUILD_DIR)/test_window_presentation"
 
-test: $(BUILD_DIR)/test_horizon_objects $(BUILD_DIR)/test_spacecraft_browser_model $(BUILD_DIR)/test_spacecraft_renderer $(BUILD_DIR)/test_small_body_display $(BUILD_DIR)/test_satellite_display $(BUILD_DIR)/test_satellite_scene $(BUILD_DIR)/test_satellite_browser_model $(BUILD_DIR)/test_grid_geometry $(BUILD_DIR)/test_distance_scales $(BUILD_DIR)/test_grid_renderer $(BUILD_DIR)/test_renderer_quality $(BUILD_DIR)/test_html_bridge_policy $(BUILD_DIR)/test_display_rendering $(BUILD_DIR)/test_star_labels $(BUILD_DIR)/test_small_body_model $(BUILD_DIR)/test_media_catalog $(BUILD_DIR)/test_calendar_time $(BUILD_DIR)/test_sky_background $(BUILD_DIR)/test_gui_file_io $(BUILD_DIR)/test_observer_places $(BUILD_DIR)/test_catalog_browser_model $(BUILD_DIR)/test_extended_catalogs $(BUILD_DIR)/test_sky_catalog_index $(BUILD_DIR)/test_session_state $(BUILD_DIR)/test_sky_model $(BUILD_DIR)/test_solar_model $(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_planet_textures $(BUILD_DIR)/test_playback_clock $(BUILD_DIR)/test_surface_navigation $(BUILD_DIR)/test_interplanetary_flight $(BUILD_DIR)/test_constellation_display $(BUILD_DIR)/test_horizon_segments $(BUILD_DIR)/test_satellite_orbit_geometry $(BUILD_DIR)/test_session_layers $(BUILD_DIR)/test_small_body_orbit_model $(BUILD_DIR)/test_small_body_orbit_controller
+test: $(BUILD_DIR)/test_constellation_pick $(BUILD_DIR)/test_horizon_objects $(BUILD_DIR)/test_spacecraft_browser_model $(BUILD_DIR)/test_spacecraft_renderer $(BUILD_DIR)/test_small_body_display $(BUILD_DIR)/test_satellite_display $(BUILD_DIR)/test_satellite_scene $(BUILD_DIR)/test_satellite_browser_model $(BUILD_DIR)/test_grid_geometry $(BUILD_DIR)/test_distance_scales $(BUILD_DIR)/test_grid_renderer $(BUILD_DIR)/test_renderer_quality $(BUILD_DIR)/test_html_bridge_policy $(BUILD_DIR)/test_display_rendering $(BUILD_DIR)/test_star_labels $(BUILD_DIR)/test_small_body_model $(BUILD_DIR)/test_media_catalog $(BUILD_DIR)/test_calendar_time $(BUILD_DIR)/test_sky_background $(BUILD_DIR)/test_gui_file_io $(BUILD_DIR)/test_observer_places $(BUILD_DIR)/test_catalog_browser_model $(BUILD_DIR)/test_extended_catalogs $(BUILD_DIR)/test_sky_catalog_index $(BUILD_DIR)/test_session_state $(BUILD_DIR)/test_sky_model $(BUILD_DIR)/test_solar_model $(BUILD_DIR)/test_planet_surface $(BUILD_DIR)/test_planet_textures $(BUILD_DIR)/test_playback_clock $(BUILD_DIR)/test_surface_navigation $(BUILD_DIR)/test_interplanetary_flight $(BUILD_DIR)/test_constellation_display $(BUILD_DIR)/test_horizon_segments $(BUILD_DIR)/test_satellite_orbit_geometry $(BUILD_DIR)/test_session_layers $(BUILD_DIR)/test_small_body_orbit_model $(BUILD_DIR)/test_small_body_orbit_controller
+	"$(BUILD_DIR)/test_constellation_pick"
 	"$(BUILD_DIR)/test_horizon_objects"
 	"$(BUILD_DIR)/test_constellation_display"
 	"$(BUILD_DIR)/test_horizon_segments"
@@ -333,6 +334,9 @@ $(BUILD_DIR)/test_satellite_display: tests/test_satellite_display.cpp $(BUILD_DI
 
 $(BUILD_DIR)/test_constellation_display: tests/test_constellation_display.cpp $(BUILD_DIR)/constellation_display.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/constellation_display.o "$(CORE_LIBRARY)" $(LDFLAGS)  -o "$@"
+
+$(BUILD_DIR)/test_constellation_pick: tests/test_constellation_pick.cpp $(BUILD_DIR)/constellation_pick.o $(BUILD_DIR)/horizon_segments.o $(BUILD_DIR)/sky_model.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(filter %.o,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
 $(BUILD_DIR)/test_horizon_segments: tests/test_horizon_segments.cpp $(BUILD_DIR)/horizon_segments.o $(BUILD_DIR)/sky_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/horizon_segments.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS)  -o "$@"

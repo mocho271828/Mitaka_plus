@@ -251,6 +251,9 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     return YES;
 }
 - (std::optional<std::int32_t>)selectedScriptStarHIP {
+    if (_surfaceActive && _surfaceSkyModel && _surfaceStarSelection &&
+        *_surfaceStarSelection < _surfaceSkyModel->stars().size())
+        return _surfaceSkyModel->stars()[*_surfaceStarSelection].hip;
     const auto model = [_galaxyOverlay hipModel];
     if (!model || !_hipSelection || *_hipSelection >= model->points.size()) return std::nullopt;
     return model->points[*_hipSelection].hip;

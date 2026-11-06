@@ -59,7 +59,8 @@
 | 4j | `codex/mitaka-04j-galaxy-layer-picking` | `codex/mitaka-04i-galaxy-overlap` | P1-1: GAL-02, GAL-03 | 異なる点群レイヤーの重なりで描画順を選択に反映する | HIP・天の川・SDSS、preview・完成画像、非表示 | `local-only` | `partial` | yes* |
 | 8b | `codex/mitaka-08b-non-earth-sky` | `codex/mitaka-04j-galaxy-layer-picking` | P1-5: CAM-01 | 非地球 3D 地表の恒星・星座を天体姿勢と同じ視点で表示する | 火星・月、複数時刻・極・負標高・ロール、地球回帰 | `local-only` | `partial` | yes* |
 | 11b | `codex/mitaka-11b-planet-places` | `codex/mitaka-08b-non-earth-sky` | P1-8: CAM-06, P2: DATA-01 | 地球・火星・月の登録地点を Lua から指定し同一天体の地表を移動する | 有効ファイルの ID、移動の再指定、他天体間の拒否、実データと Lua | `local-only` | `partial` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-11b-planet-places` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
+| 8c | `codex/mitaka-08c-non-earth-picking` | `codex/mitaka-11b-planet-places` | P1-5: CAM-01 | 非地球 3D 地表の恒星・星座線の選択と地形遮蔽を揃える | 恒星と星座線、可視設定、地形・球面の遮蔽と描画一致 | `local-only` | `partial` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-08c-non-earth-picking` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |

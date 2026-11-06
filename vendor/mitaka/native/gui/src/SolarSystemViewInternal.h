@@ -70,6 +70,13 @@ struct LandingKey {
     std::optional<std::array<double, 11>> _surfaceBackgroundKey;
     mitaka::gui::StarDisplayOptions _surfaceStarOptions;
     double _surfaceMagnitudeLimit;
+    std::shared_ptr<SolarSceneOwner> _surfaceSkyPickScene;
+    std::shared_ptr<const mitaka::gui::SkyModel> _surfaceSkyPickModel;
+    mitaka::gui::StarDisplayOptions _surfaceSkyPickOptions;
+    mitaka::gui::ConstellationDisplayOptions _surfaceSkyPickConstellations;
+    std::optional<std::size_t> _surfaceConstellationSelection;
+    double _surfaceSkyPickMagnitudeLimit;
+    std::optional<std::size_t> _surfaceStarSelection;
     BOOL _hipVisible;
     std::optional<mitaka::gui::GalaxySpatialRecordId> _galaxySelection;
     std::optional<std::size_t> _hipSelection;
