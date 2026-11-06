@@ -58,7 +58,7 @@ TerrainLandingResult prepare_terrain_landing(const TerrainLandingRequest& reques
         // 視点が扱えない半径をメインキューへ成功として渡さない。
         if (result.radius_km) {
             SurfaceNavigation navigation;
-            navigation.update_terrain_offset(std::max(0.0, *result.radius_km-request.display_radius_km));
+            navigation.update_terrain_offset(*result.radius_km-request.display_radius_km);
         }
         result.status=TerrainSnapshotStatus::ready;
     } catch(const TerrainSurfaceCancelled&) { throw;

@@ -8,6 +8,7 @@
 #import "ConstellationRenderer.h"
 #import "ConstellationArtRenderer.h"
 #include "shared_camera.hpp"
+#include "surface_sky_site.hpp"
 #include "our_galaxy_navigation.hpp"
 #include "mitaka/astronomy.hpp"
 #include <algorithm>
@@ -808,9 +809,13 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         std::optional<SurfaceSite> earthSite;
         if (_surfaceStarRenderer && ((frame.surface_body && *frame.surface_body == 3) ||
                                      (_physicalSpaceActive && frame.physical_navigation && !frame.surface_body))) {
-            try { earthSite = surface_site_from_camera(frame.camera, frame.bodies, 3); }
+            try {
+                earthSite = frame.surface_body
+                    ? surface_sky_site_from_camera(frame.camera, frame.bodies, 3)
+                    : surface_site_from_camera(frame.camera, frame.bodies, 3);
+            }
             catch (const std::invalid_argument&) {
-                // ロールや地球からの距離により局所座標で表せない場合は通常の銀河描画を使う。
+                // 姿勢や地球からの距離を局所座標で表せない場合は通常の銀河描画を使う。
             }
         }
         const bool sharedStars = earthSite.has_value();

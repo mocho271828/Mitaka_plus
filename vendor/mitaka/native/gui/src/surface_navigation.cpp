@@ -129,7 +129,7 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
         || !std::isfinite(site.longitude_deg) || !std::isfinite(site.heading_deg)
         || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 90
         || !std::isfinite(site.roll_deg)
-        || !std::isfinite(site.terrain_offset_km) || site.terrain_offset_km < 0 || site.terrain_offset_km > maximum_height_km
+        || !std::isfinite(site.terrain_offset_km) || site.terrain_offset_km <= -surface_body_info(site.body_index).radius_km || site.terrain_offset_km > maximum_height_km
         || !std::isfinite(site.height_km) || site.height_km < minimum_surface_height_km
         || site.height_km > maximum_height_km)
         throw std::invalid_argument("invalid surface site");
@@ -141,7 +141,7 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
 }
 
 void SurfaceNavigation::update_terrain_offset(double offset_km) {
-    if (!std::isfinite(offset_km) || offset_km < 0 || offset_km > maximum_height_km)
+    if (!std::isfinite(offset_km) || offset_km <= -surface_body_info(site_.body_index).radius_km || offset_km > maximum_height_km)
         throw std::invalid_argument("invalid terrain offset");
     if (offset_km == site_.terrain_offset_km) return;
 

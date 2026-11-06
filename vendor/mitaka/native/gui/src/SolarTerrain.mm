@@ -110,7 +110,7 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     const double previousOffset = _navigation.site().terrain_offset_km;
     try {
         if (!std::isfinite(radius)) throw std::invalid_argument("non-finite terrain landing radius");
-        offset = std::max(0.0, radius - base);
+        offset = radius - base;
         _navigation.update_terrain_offset(offset);
     } catch (const std::invalid_argument& error) {
         _landingResult->status = TerrainSnapshotStatus::failed;
@@ -219,16 +219,16 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
 - (std::vector<std::string>)terrainDiagnostics {
     std::vector<std::string> result;
     if (_landingSuppressedBody && _landingResult && !_landingResult->diagnostic.empty())
-        result.push_back("Terrain: " + _landingResult->diagnostic + "（基準球面を表示）");
+        result.push_back("Terrain: " + _landingResult->diagnostic + "（基準球面または不透明な代替表示）");
     for (const auto index : terrainBodies) {
-        if (!_terrainErrors[index].empty()) result.push_back("Terrain: " + _terrainErrors[index] + "（基準球面を表示）");
+        if (!_terrainErrors[index].empty()) result.push_back("Terrain: " + _terrainErrors[index] + "（基準球面または不透明な代替表示）");
         else if (const auto& snapshot = _terrainSnapshots[index]) {
             if (!snapshot->diagnostic.empty()) result.push_back("Terrain: " +
                 terrain_source_relative_path(snapshot->request.body).string() + ": " + snapshot->diagnostic +
-                (snapshot->status == TerrainSnapshotStatus::ready ? "" : "（基準球面を表示）"));
+                (snapshot->status == TerrainSnapshotStatus::ready ? "" : "（基準球面または不透明な代替表示）"));
         } else if (_terrainRequests[index]) {
             result.push_back("Terrain: " + terrain_source_relative_path(_terrainRequests[index]->body).string() +
-                " を計算中（基準球面を表示）");
+                " を計算中（基準球面または不透明な代替表示）");
         }
     }
     return result;

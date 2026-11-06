@@ -27,7 +27,7 @@ struct SurfaceSite {
     double heading_deg = 0; // 北0、東90。
     double elevation_deg = 0; // 地平線0、天頂90。
     double roll_deg = 0;
-    // 描画地形の基準球からの外向きオフセット。海抜以下は0に留める。
+    // 描画地形の基準球からの符号付き半径オフセット。
     // height_kmはこの局所地表からの高さとして扱う。
     double terrain_offset_km = 0;
 };

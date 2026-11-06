@@ -138,6 +138,24 @@ void snapshot_guards() {
     snapshot->status = TerrainSnapshotStatus::unavailable;
     check(!solar_terrain_frame(f.scene, 3), "missing terrain rendered");
 }
+void interior_selection() {
+    Fixture f;
+    f.camera.distance_au = .999 * Fixture::radius();
+    const NSPoint pixel = NSMakePoint(40.5, 40.5);
+    (void)visible_solar_bodies(f.scene);
+    check(pick_solar_body(f.scene, pixel) == std::optional<std::size_t>(3), "opaque fallback inside sphere was not selected");
+    auto snapshot=f.snapshot(3);
+    snapshot->frame.mode=TerrainSurfaceMode::terrain;
+    snapshot->frame.samples.resize(81*81);
+    auto& sample=snapshot->frame.samples[40*81+40];
+    sample.distance_au=1e-8;
+    sample.normal_local={1,0,0};
+    check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "visible inside-datum terrain cannot be picked");
+    sample.distance_au=std::numeric_limits<double>::infinity();
+    check(pick_solar_body(f.scene, pixel)!=std::optional<std::size_t>(3), "uncovered inside-datum pixel selected terrain");
+    snapshot->status=TerrainSnapshotStatus::failed;
+    check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "failed snapshot did not select opaque fallback");
+}
 void owned_scene_lifetime() {
     std::optional<SolarSceneOwner> stored;
     std::weak_ptr<const PlanetTextures> weak_textures;
@@ -199,9 +217,11 @@ void owned_scene_lifetime() {
     check(weak_terrain.expired(), "replaced terrain retained after previous owner destruction");
 }
 }
-int main() {
+int main(int argc, char** argv) {
     @autoreleasepool {
         try {
+            if (argc == 2 && std::string(argv[1]) == "--pick-only") { interior_selection(); return 0; }
+            interior_selection();
             requests();
             snapshot_guards();
             owned_scene_lifetime();

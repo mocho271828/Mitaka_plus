@@ -20,14 +20,29 @@ double physicalRadius(std::size_t index) {
     return (index == 0 ? 696000.0 : surface_body_info(index).radius_km) / astronomical_unit_km;
 }
 
+std::optional<double> visibleSurfaceDistance(const SolarScene& scene, std::size_t index,
+                                             double x, double y) {
+    const auto width = scene.map.size.width, height = scene.map.size.height;
+    if (const auto* terrain = solar_terrain_frame(scene, index)) {
+        if (terrain->mode == TerrainSurfaceMode::none) return std::nullopt;
+        if (terrain->mode == TerrainSurfaceMode::terrain) {
+            if (x < 0 || x >= width || y < 0 || y >= height) return std::nullopt;
+            const auto pixel_x = static_cast<std::size_t>(x * terrain->width / width);
+            const auto pixel_y = static_cast<std::size_t>(y * terrain->height / height);
+            const double distance = terrain->samples.at(pixel_y * terrain->width + pixel_x).distance_au;
+            return std::isfinite(distance) && distance > 0 ? std::optional<double>(distance) : std::nullopt;
+        }
+    }
+    return surface_sphere_fallback_distance(scene.camera, solar_display_position(scene, index),
+                                            physicalRadius(index), x, y, width, height);
+}
+
 bool centerIsOccluded(const SolarScene& scene, std::size_t index, const SolarProjection& point) {
-    const auto target = sphere_hit_distance(scene.camera, solar_display_position(scene, index),
-        physicalRadius(index), point.x, point.y, scene.map.size.width, scene.map.size.height);
+    const auto target = visibleSurfaceDistance(scene, index, point.x, point.y);
     if (!target) return false;
     for (std::size_t other = 0; other < scene.bodies.size(); ++other) {
         if (other == index) continue;
-        const auto distance = sphere_hit_distance(scene.camera, solar_display_position(scene, other),
-            physicalRadius(other), point.x, point.y, scene.map.size.width, scene.map.size.height);
+        const auto distance = visibleSurfaceDistance(scene, other, point.x, point.y);
         if (distance && *distance < *target) return true;
     }
     return false;
@@ -388,9 +403,8 @@ std::optional<std::size_t> pick_solar_body(const SolarScene& scene, NSPoint clic
     if (scene.earth_moon || scene.physical_navigation) {
         for (std::size_t index = 0; index < scene.bodies.size(); ++index) {
             if (!scene.physical_navigation && index != 3 && index != 10) continue;
-            const auto distance = sphere_hit_distance(scene.camera, solar_display_position(scene, index),
-                physicalRadius(index),
-                click.x-scene.map.origin.x, click.y-scene.map.origin.y, scene.map.size.width, scene.map.size.height);
+            const auto distance = visibleSurfaceDistance(scene, index,
+                click.x-scene.map.origin.x, click.y-scene.map.origin.y);
             if (distance && *distance < surfaceDepth) { surface = index; surfaceDepth = *distance; }
         }
         if (surface) return surface;

@@ -136,7 +136,7 @@ static void invalid_source_radius_test() {
     require(result.status==TerrainSnapshotStatus::failed && result.diagnostic=="invalid terrain offset",
             "unusable radius from malformed terrain must be a diagnostic failure");
 }
-static void real_test(const char* root,TerrainBody body,std::size_t index,double lat,double lon) {
+static void real_test(const char* root,TerrainBody body,std::size_t index,double lat,double lon,bool negative=false) {
     TerrainLandingController *controller=[TerrainLandingController new];
     TerrainLandingRequest request; request.data_directory=root; request.body=body;
     request.latitude_deg=lat; request.longitude_deg=lon;
@@ -149,8 +149,8 @@ static void real_test(const char* root,TerrainBody body,std::size_t index,double
         }];
         wait_until(^{return done;},60);
         require(!failure && actual.status==TerrainSnapshotStatus::ready && actual.radius_km,"real data request failed");
-        const double offset=std::max(0.0,*actual.radius_km-request.display_radius_km);
-        require(offset>1,"test location must be high ground");
+        const double offset=*actual.radius_km-request.display_radius_km;
+        require(negative ? offset<-.01 : offset>1,"test location has wrong elevation");
         SurfaceNavigation nav; nav.set_site({index,lat,lon,minimum_surface_height_km,0,0,0,offset});
         SolarBodies bodies{}; bodies[index].orientation={{1,0,0},{0,1,0},{0,0,1}};
         auto camera=nav.camera(bodies);
@@ -165,6 +165,8 @@ int main(int argc,char** argv) { @autoreleasepool { try {
         source_boundary_test(argv[1]);
         real_test(argv[1],TerrainBody::earth,3,82.2,-84.7);
         real_test(argv[1],TerrainBody::mars,4,49.625,-81.6875);
+        real_test(argv[1],TerrainBody::earth,3,31.5,135,true);
+        real_test(argv[1],TerrainBody::mars,4,31.5,35.5,true);
     }
     std::cout<<"terrain landing controller tests passed\n"; return 0;
 } catch(const std::exception& error) { std::cerr<<error.what()<<'\n'; return 1; } } }

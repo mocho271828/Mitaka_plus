@@ -116,7 +116,7 @@ TerrainPatchMesh make_terrain_patch_mesh(TerrainFile& source, std::size_t patch_
 TerrainSurfaceMode terrain_surface_mode(Vec3 eye) {
     validate_eye(eye);
     const double distance=std::hypot(eye.x,eye.y,eye.z);
-    if (distance<=1) return TerrainSurfaceMode::none;
+    if (distance==0) return TerrainSurfaceMode::none;
     return 1/distance<std::tan(6*radians)?TerrainSurfaceMode::sphere:TerrainSurfaceMode::terrain;
 }
 

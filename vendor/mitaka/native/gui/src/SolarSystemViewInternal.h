@@ -144,6 +144,7 @@ struct LandingKey {
 @end
 
 @interface SolarSystemView (Internal)
+- (NSString *)suspendTerrainForFlightSmoke;
 - (void)refreshTerrain;
 - (void)refreshLanding;
 - (void)resetLanding;

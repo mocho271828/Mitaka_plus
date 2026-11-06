@@ -291,6 +291,8 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
 }
 
 - (void)runTravelSmokeTestAfterTerrain {
+    // 非同期標高反映は停止後もカメラを動かせるため、中断試験中は保留する。
+    NSString *savedTerrainDirectory = [_solar suspendTerrainForFlightSmoke];
     [_solar takeOffFromEarthAtLatitude:35.68 longitude:139.76];
     const double startDistance = [_solar cameraState].distance_au;
     if (!_solar.surfaceNavigationActive || !_solar.flightAnimating) {
@@ -328,7 +330,10 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
             if (self->_solar.flightAnimating || current.distance_au != paused.distance_au ||
                 current.target.x != paused.target.x || current.target.y != paused.target.y ||
                 current.target.z != paused.target.z) {
-                [self showError:@"smoke: interrupted flight changed the camera"]; return;
+                [self showError:[NSString stringWithFormat:
+                    @"smoke: interrupted flight changed the camera (flying=%d, distance %.17g -> %.17g, target (%.17g, %.17g, %.17g) -> (%.17g, %.17g, %.17g))",
+                    self->_solar.flightAnimating, paused.distance_au, current.distance_au,
+                    paused.target.x, paused.target.y, paused.target.z, current.target.x, current.target.y, current.target.z]]; return;
             }
             [self->_solar takeOff];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3400 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
@@ -338,6 +343,7 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
                     [self showError:@"smoke: flight did not complete"]; return;
                 }
                 std::printf("Moon/travel AppKit smoke passed: Moon orbit/spin, landing targets, real flight timer, interruption, completion\n");
+                [self->_solar setTerrainDataDirectory:savedTerrainDirectory];
                 [self runContinuousFlightSmokeTest];
             });
         });

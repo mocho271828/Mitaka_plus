@@ -506,6 +506,11 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     self.needsDisplay = YES;
     return passed;
 }
+- (NSString *)suspendTerrainForFlightSmoke {
+    NSString *savedDirectory = [_terrainDataDirectory copy];
+    [self setTerrainDataDirectory:nil];
+    return savedDirectory;
+}
 - (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion {
     if (!_hasData || !_terrainDataDirectory) { completion(NO); return; }
     [self leaveNavigation];

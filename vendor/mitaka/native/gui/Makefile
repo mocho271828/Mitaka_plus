@@ -562,8 +562,11 @@ $(BUILD_DIR)/test_terrain_real_render: tests/test_terrain_real_render.mm $(filte
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
 $(BUILD_DIR)/test_terrain_real_generation: tests/test_terrain_real_generation.mm $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(filter-out $(BUILD_DIR)/main.o,$(OBJECTS)) "$(CORE_LIBRARY)" $(LDFLAGS) -framework AppKit -framework UniformTypeIdentifiers $(IMAGE_FRAMEWORKS) $(MEDIA_FRAMEWORKS) $(WEB_FRAMEWORKS) -o "$@"
+$(BUILD_DIR)/test_terrain_negative_real: tests/test_terrain_negative_real.cpp $(TERRAIN_OBJECTS) $(BUILD_DIR)/terrain_landing.o $(BUILD_DIR)/surface_navigation.o $(BUILD_DIR)/solar_camera.o $(BUILD_DIR)/planet_surface.o $(BUILD_DIR)/earth_layers.o $(BUILD_DIR)/eclipse_surface.o $(BUILD_DIR)/surface_depth.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 .PHONY: terrain-real-data-test
-terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_terrain_real_generation $(BUILD_DIR)/test_terrain_landing_controller
+terrain-real-data-test: $(BUILD_DIR)/test_terrain_real_render $(BUILD_DIR)/test_terrain_real_generation $(BUILD_DIR)/test_terrain_landing_controller $(BUILD_DIR)/test_terrain_negative_real
+	"$(BUILD_DIR)/test_terrain_negative_real" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_landing_controller" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_render" "$${DATA_ROOT:?Set DATA_ROOT}"
 	"$(BUILD_DIR)/test_terrain_real_generation" "$${DATA_ROOT:?Set DATA_ROOT}"

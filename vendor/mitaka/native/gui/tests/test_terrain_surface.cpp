@@ -123,8 +123,9 @@ void mesh_tests(Temporary& temp) {
     }
     const auto seam=make_terrain_patch_mesh(poles,0,0);
     expect(seam.vertices().front().u<1 && seam.vertices()[4].u>1,"UV seam remains unwrapped");
-    expect(terrain_surface_mode({1,0,0})==TerrainSurfaceMode::none,"datum camera boundary");
-    expect(terrain_surface_mode({.9,0,0})==TerrainSurfaceMode::none,"inside camera boundary");
+    expect(terrain_surface_mode({1,0,0})==TerrainSurfaceMode::terrain,"datum camera boundary");
+    expect(terrain_surface_mode({.9,0,0})==TerrainSurfaceMode::terrain,"inside camera boundary");
+    expect(terrain_surface_mode({0,0,0})==TerrainSurfaceMode::none,"center camera boundary");
     expect(terrain_surface_mode({2,0,0})==TerrainSurfaceMode::terrain,"near terrain selection");
     expect(terrain_surface_mode({10,0,0})==TerrainSurfaceMode::sphere,"far six-degree selection");
     rejects([&]{terrain_surface_mode({NAN,0,0});},"nonfinite eye");
@@ -179,7 +180,9 @@ void rendering_tests(Temporary& temp) {
     near(rotated.samples[32*65+32].distance_au,center.distance_au,2e-15,"body orientation rotates position only");
     binding.orientation={};
     expect(render_terrain_surface(binding,camera(.01),8,8).mode==TerrainSurfaceMode::sphere,"far explicit sphere mode");
-    expect(render_terrain_surface(binding,camera(.001),8,8).samples.empty(),"inside datum explicit no surface");
+    const auto inside=render_terrain_surface(binding,camera(.00095),65,65);
+    expect(inside.mode==TerrainSurfaceMode::terrain,"inside datum terrain remains visible");
+    near(inside.samples[32*65+32].distance_au,.00005,2e-15,"inside datum negative terrain depth");
     TerrainSurfaceFrame unchanged=frame;
     for (int kind=0;kind<4;++kind) {
         TerrainSurfaceLimits limits;

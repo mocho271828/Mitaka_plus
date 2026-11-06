@@ -1,4 +1,5 @@
 #include "surface_navigation.hpp"
+#include "surface_sky_site.hpp"
 
 #include <array>
 #include <cmath>
@@ -55,6 +56,30 @@ SolarBodies fixture() {
     return bodies;
 }
 
+void test_surface_sky_below_datum() {
+    const auto bodies = fixture();
+    SurfaceNavigation nav;
+    nav.set_site({3, 35, 139, 0.002, 123, -20, 37});
+    const auto reference = nav.camera(bodies);
+    const auto expected = surface_site_from_camera_with_roll(reference, bodies, 3);
+    auto below = reference;
+    const auto center = j2000_equatorial_to_ecliptic(bodies[3].position_au);
+    const auto position = eye(reference);
+    const Vec3 radial{position.x-center.x, position.y-center.y, position.z-center.z};
+    const auto radius = std::hypot(radial.x, radial.y, radial.z);
+    below.translate_target_au(scaled(radial, -1.0 / astronomical_unit_km / radius));
+    rejects([&] { surface_site_from_camera_with_roll(below, bodies, 3); });
+    const auto actual = surface_sky_site_from_camera(below, bodies, 3);
+    near(actual.latitude_deg, expected.latitude_deg, 1e-6);
+    near(actual.longitude_deg, expected.longitude_deg, 1e-6);
+    near(actual.heading_deg, expected.heading_deg, 1e-6);
+    near(actual.elevation_deg, expected.elevation_deg, 1e-6);
+    near(actual.roll_deg, expected.roll_deg, 1e-6);
+    const auto unchanged = eye(below);
+    surface_sky_site_from_camera(below, bodies, 3);
+    same(eye(below), unchanged);
+}
+
 void test_terrain_offset() {
     const auto bodies=fixture();
     SurfaceNavigation nav;
@@ -75,9 +100,25 @@ void test_terrain_offset() {
     nav.advance(.5);
     nav.interrupt();
     near(nav.site().terrain_offset_km,1.25);
-    auto bad=nav.site(); bad.terrain_offset_km=-1;
+    auto bad=nav.site(); bad.terrain_offset_km=-surface_body_info(3).radius_km;
     rejects([&]{nav.set_site(bad);});
     near(nav.site().terrain_offset_km,1.25);
+}
+void test_negative_terrain() {
+    const auto bodies=fixture();
+    SurfaceNavigation nav;
+    nav.set_site({3,31.5,135,minimum_surface_height_km,0,0,0,-1.43853});
+    const auto pos=eye(nav.camera(bodies));
+    const auto center=j2000_equatorial_to_ecliptic(bodies[3].position_au);
+    near(std::hypot(pos.x-center.x,pos.y-center.y,pos.z-center.z)*astronomical_unit_km,
+         surface_body_info(3).radius_km-1.43853+minimum_surface_height_km,1e-6);
+    nav.begin_ascent(0,3); nav.advance(.5); nav.update_terrain_offset(-2);
+    check(nav.flying(),"negative terrain update interrupted ascent");
+    for (int i=2;i<=6;++i) nav.advance(i*.5);
+    nav.begin_descent(4,3);
+    for (int i=1;i<=6;++i) nav.advance(4+i*.5);
+    near(nav.site().height_km,minimum_surface_height_km);
+    near(nav.site().terrain_offset_km,-2);
 }
 void test_terrain_offset_updates() {
     SurfaceNavigation nav;
@@ -125,7 +166,7 @@ void test_terrain_offset_updates() {
 
     nav.begin_ascent(30,3);
     const auto saved=nav.site();
-    rejects([&]{nav.update_terrain_offset(-1);});
+    rejects([&]{nav.update_terrain_offset(-surface_body_info(3).radius_km);});
     rejects([&]{nav.update_terrain_offset(std::numeric_limits<double>::infinity());});
     rejects([&]{nav.update_terrain_offset(1e10);});
     same(nav.site(),saved);
@@ -407,8 +448,8 @@ void test_camera_rays() {
 
 int main() {
     try {
-        test_terrain_offset();
-        test_terrain_offset_updates(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
+        test_surface_sky_below_datum(); test_terrain_offset();
+        test_terrain_offset_updates(); test_negative_terrain(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
         test_flight_interruptions(); test_manual_controls(); test_camera_rays();
         std::cout << "surface navigation tests passed\n";
         return 0;
