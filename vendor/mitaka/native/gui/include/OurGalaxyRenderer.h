@@ -3,6 +3,9 @@
 #include "GalaxyRenderer.h"
 #include "mitaka/our_galaxy_model.hpp"
 #include "mitaka/our_galaxy_radiative.hpp"
+#include <cstddef>
+#include <functional>
+#include <optional>
 #include <string>
 
 namespace mitaka::gui {
@@ -13,6 +16,41 @@ struct OurGalaxyTransform {
     std::array<std::array<double, 3>, 3> matrix;
     NativeEclipticPositionPc offset;
 };
+enum class OurGalaxyPointDisplay { preview, complete };
+struct OurGalaxyPointId {
+    mitaka::OurGalaxyPointGroup group;
+    std::size_t ordinal;
+    bool operator==(const OurGalaxyPointId& other) const noexcept {
+        return group == other.group && ordinal == other.ordinal;
+    }
+    bool operator!=(const OurGalaxyPointId& other) const noexcept { return !(*this == other); }
+};
+struct OurGalaxyPointPick {
+    OurGalaxyPointId id;
+    NativeEclipticPositionPc position;
+    double distance_points;
+    double depth_pc;
+};
+
+std::size_t our_galaxy_preview_step(std::size_t count) noexcept;
+std::optional<NativeEclipticPositionPc> our_galaxy_transformed_position(
+    mitaka::OurGalaxyRawPositionPc position, const OurGalaxyTransform& transform);
+// 原順 ordinal を保つ。preview の間引きと座標妥当性を確認するが、画面内や吸収は確認しない。
+std::optional<NativeEclipticPositionPc> our_galaxy_point_position(
+    const mitaka::OurGalaxyModel& model, OurGalaxyPointId id,
+    OurGalaxyPointDisplay display, const OurGalaxyTransform& transform);
+// complete は対応する放射モデルが必要。alpha と画像世代は呼出側で確認する。
+bool our_galaxy_point_visible(const mitaka::OurGalaxyModel& model, OurGalaxyPointId id,
+    const OurGalaxyTransform& transform, OurGalaxyPointDisplay display, GalaxyCameraPc camera,
+    double width, double height, const mitaka::OurGalaxyRadiativeModel* radiative);
+// 画面距離、奥行き、群、原順の順に決定。取消時は部分結果を返さない。
+// complete では同一モデルから作成済みの radiative を再利用できる。
+// null の場合は候補があるときだけ内部で作成する。
+std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
+    const mitaka::OurGalaxyModel& model, const OurGalaxyTransform& transform,
+    OurGalaxyPointDisplay display, GalaxyCameraPc camera, double width, double height,
+    double x, double y, double radius, std::function<bool()> should_cancel = {},
+    const mitaka::OurGalaxyRadiativeModel* radiative = nullptr);
 struct OurGalaxyPointStyle {
     double red, green, blue, alpha, radius_points;
 };

@@ -122,12 +122,17 @@ void radiativeFailureKeepsOtherLayers() {
           "invalid OurGalaxy points prevented valid preview layers");
     check([overlay isHipDisplayed:0] && [overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, 0}],
           "invalid OurGalaxy points made surviving preview layers unselectable");
+    const OurGalaxyPointId valid{OurGalaxyPointGroup::disk1, 3};
+    check([overlay displayedOurGalaxyPointPosition:valid].has_value(),
+          "preview selects a valid source ordinal even if the radiative model is invalid");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "radiative failure prevented other layers from completing");
     const auto state = [overlay diagnostics];
     check(state.displayed_drawn > 0 && state.hip_drawn > 0, "radiative failure hid HIP or galaxy");
     check([overlay isHipDisplayed:0] && [overlay isRecordDisplayed:{GalaxySpatialFamily::sdss_galaxy, 0, 0}],
           "surviving layers must remain selectable");
+    check(![overlay displayedOurGalaxyPointPosition:valid],
+          "point is not selectable when complete image generation failed");
     check([[overlay status] containsString:@"天の川"] && [[overlay status] containsString:@"radiative maps must be 512 by 512"],
           "radiative failure reason must remain visible");
     // callback が設定する needsDisplay を監視し、同じ失敗要求の再投入を検出する。
@@ -186,7 +191,19 @@ void visibilityControls() {
         *selectedVisible = selection; *visible = true;
     }];
     waitFor([&] { return *visible; }, "visible OurGalaxy pick did not finish");
-    check(selectedVisible->our_galaxy, "visible OurGalaxy was not selectable");
+    check(selectedVisible->our_galaxy_point &&
+          *selectedVisible->our_galaxy_point == OurGalaxyPointId{OurGalaxyPointGroup::disk1, 0},
+          "visible OurGalaxy point must retain its source ordinal");
+    const auto staleOur = std::make_shared<bool>(false);
+    [ourOverlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:wide completion:^(GalaxyOverlaySelection) {
+        *staleOur = true;
+    }];
+    [ourOverlay setOurGalaxyModel:std::make_shared<OurGalaxyModel>()];
+    draw(ourOverlay, wide);
+    waitFor([&] { draw(ourOverlay, wide); return [ourOverlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "replacement OurGalaxy model did not finish");
+    check(!*staleOur, "pick from replaced OurGalaxy model must be discarded");
+    [ourOverlay setOurGalaxyModel:our];
     [ourOverlay setOurGalaxyVisible:NO];
     draw(ourOverlay, wide);
     check([ourOverlay diagnostics].our_galaxy_drawn == 0, "hidden OurGalaxy appeared in preview");
@@ -196,10 +213,62 @@ void visibilityControls() {
         *selectedOur = selection; *hiddenOur = true;
     }];
     waitFor([&] { return *hiddenOur; }, "hidden OurGalaxy pick did not finish");
-    check(!selectedOur->our_galaxy, "hidden OurGalaxy was selectable");
+    check(!selectedOur->our_galaxy && !selectedOur->our_galaxy_point,
+          "hidden OurGalaxy was selectable");
     waitFor([&] { draw(ourOverlay, wide); return [ourOverlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "all hidden layers never reached a complete frame");
     check([ourOverlay diagnostics].our_galaxy_drawn == 0, "hidden OurGalaxy appeared in complete frame");
+}
+void transparentOurGalaxyIsNotSelectable() {
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    auto model = std::make_shared<OurGalaxyModel>();
+    for (auto& map : model->maps) {
+        map.width = 512; map.height = 512; map.values.assign(512 * 512, 0);
+    }
+    model->groups[0].positions.push_back({0, 0, 0});
+    [overlay setOurGalaxyModel:model];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    const OurGalaxyPointId id{OurGalaxyPointGroup::disk1, 0};
+    draw(overlay, camera);
+    check([overlay displayedOurGalaxyPointPosition:id].has_value(), "point is visible in preview");
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "transparent OurGalaxy did not finish");
+    check(![overlay displayedOurGalaxyPointPosition:id], "transparent complete point must not be selectable");
+    const auto done = std::make_shared<bool>(false);
+    const auto selection = std::make_shared<GalaxyOverlaySelection>();
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+        *selection = result; *done = true;
+    }];
+    waitFor([&] { return *done; }, "transparent point pick did not finish");
+    check(!selection->our_galaxy_point, "transparent complete point was picked");
+}
+void ourGalaxyCompetesWithHip() {
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    auto hip = std::make_shared<HipSpatialModel>();
+    hip->points.push_back({0, 1, {0, 0, 0}});
+    [overlay setHipModel:hip];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    const auto pick = [&](OurGalaxyRawPositionPc p) {
+        auto model = std::make_shared<OurGalaxyModel>();
+        model->groups[0].positions.push_back(p);
+        [overlay setOurGalaxyModel:model];
+        draw(overlay, camera);
+        const auto done = std::make_shared<bool>(false);
+        const auto selected = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selected = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "preview competing point pick did not finish");
+        return *selected;
+    };
+    const auto tied = pick({0, 0, 0});
+    check(tied.hip && !tied.our_galaxy_point, "existing HIP wins exact point tie");
+    const auto nearer = pick({1, 0, 0});
+    check(nearer.our_galaxy_point && !nearer.hip, "nearer OurGalaxy point wins depth tie");
+    const auto displaced = pick({1, 0.05, 0});
+    check(displaced.hip && !displaced.our_galaxy_point, "screen distance takes precedence over depth");
 }
 void tests() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -288,6 +357,8 @@ void tests() {
             "replacement model did not converge");
     radiativeFailureKeepsOtherLayers();
     visibilityControls();
+    transparentOurGalaxyIsNotSelectable();
+    ourGalaxyCompetesWithHip();
 }
 } // namespace
 int main() {

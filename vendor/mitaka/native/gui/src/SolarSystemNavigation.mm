@@ -134,6 +134,9 @@ static double monotonicSeconds() {
         _earthMoonMode = _earthMoonFollowing = _following = NO;
         // 地形の非同期取得を待つ間も、以前の模式視点を表示しない。
         [self cancelTerrain];
+        // 成功した着陸・離陸では対象が天体に切り替わる。失敗時は元の選択を維持する。
+        [_galaxyOverlay invalidatePendingPicks];
+        _galaxySelection.reset(); _hipSelection.reset(); _ourGalaxyPointSelection.reset(); _ourGalaxySelected = NO;
         _selection = site.body_index;
         _smallBodySelection.reset();
         _satelliteSelection.reset(); _spacecraftSelection.reset();

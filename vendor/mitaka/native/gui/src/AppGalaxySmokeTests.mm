@@ -55,6 +55,24 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)receivedOurGalaxyModel { return _receivedOurGalaxyModel; }
 @end
 
+@interface GalaxyModeProbeView : SolarSystemView
+@property(nonatomic) NSUInteger pickInvalidations;
+@end
+@implementation GalaxyModeProbeView
+- (void)invalidatePendingGalaxyPicks {
+    ++_pickInvalidations;
+    [super invalidatePendingGalaxyPicks];
+}
+@end
+
+@interface GalaxyModeProbeController : AppController
+@end
+@implementation GalaxyModeProbeController
+- (void)updateEnabled {}
+- (void)refreshSmallBodies {}
+- (void)refreshBodyButtons {}
+@end
+
 @interface AppController (GalaxySmokePrivate)
 - (void)runGalaxySmokePhase:(GalaxySmokePhase)phase state:(std::shared_ptr<GalaxySmokeState>)state
     completion:(void (^)(void))completion;
@@ -65,6 +83,27 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
     try {
         auto state = std::make_shared<GalaxySmokeState>();
         state->require(NSThread.isMainThread, "host smoke must run on the main thread");
+        AppController *modeProbe = [[GalaxyModeProbeController alloc] initWithDataRoot:nil smokeTest:YES];
+        GalaxyModeProbeView *modeView = [[GalaxyModeProbeView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        modeProbe->_solar = modeView;
+        modeProbe->_mode = [[NSSegmentedControl alloc] init];
+        modeProbe->_mode.segmentCount = 3;
+        modeProbe->_mode.selectedSegment = 1;
+        [modeProbe changeMode:nil];
+        state->require(modeView.pickInvalidations == 0 && !modeView.hidden,
+                       "solar mode unexpectedly cancelled pending picks");
+        modeProbe->_mode.selectedSegment = 0;
+        [modeProbe changeMode:nil];
+        state->require(modeView.pickInvalidations == 1 && modeView.hidden,
+                       "leaving solar mode did not cancel pending picks");
+        modeProbe->_mode.selectedSegment = 1;
+        [modeProbe changeMode:nil];
+        state->require(modeView.pickInvalidations == 1 && !modeView.hidden,
+                       "returning to solar mode unexpectedly cancelled pending picks");
+        modeProbe->_mode.selectedSegment = 2;
+        [modeProbe changeMode:nil];
+        state->require(modeView.pickInvalidations == 2 && modeView.hidden,
+                       "leaving solar mode for the horizon did not cancel pending picks");
         state->corruptDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
         NSError *fixtureError = nil;
         state->require([[NSFileManager defaultManager] createDirectoryAtPath:state->corruptDirectory

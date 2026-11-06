@@ -1,5 +1,13 @@
 # 検証記録
 
+## 2026-11-06: P1-1 天の川点群の個別選択
+
+天の川の点を出典モデル内の群と原順 ordinal で識別し、描画中の preview / complete に対応した点を選択・注視追従できるようにした。preview の間引き、complete の座標変換と吸収、画面内判定を描画と揃える。距離と奥行き、群と原順で順位を決め、古い非同期結果は破棄する。点と既存天体名を結び付ける根拠はないため、名前を推測しない。選択は session v9 に保存しない。旧 Plus の選択操作・表示との一致は未確認であり、GAL-02 と P1-1 全体は部分実装のままである。[設計と制約](investigation/native-plus/our-galaxy-point-selection-design.md)。
+
+最終変更後の `make build`、`make test`、`make data-test`、`make reference-test` は成功した。`make smoke` は初回に銀河関連の確認を通過した後、月への連続飛行テストで失敗した。実画面検証用プロセスを終了後の単独再実行は全体で成功したが、初回失敗の原因は未確定である。ログは `/tmp/mitaka-galaxy-final-{build,test,data-test,reference-test,smoke}.log` と `/tmp/mitaka-galaxy-final-smoke-retry.log`。実画面では実データの銀河ブラウザーまで到達したが、その後 CUA がタイムアウトしたため、点の選択・追従操作は確認できていない。
+
+新規依存や方針原本の変更はない。今回 `resources/` と `vendor/mitaka/sources/` に Git 差分はないが、元データの全件再照合は実施していない。指定の `/simplifier-lai` は利用できず、類似の `simplify-lai` は LobbyAI 専用のため対象外。[policy gate の検証コピー](temp_gates/2026-11-06-21-44-55/)で判定した。変更ファイルと差分量を確認し、この作業単位を commit する。
+
 ## 2026-11-06: P1-1 地球地平図の視野角
 
 地球地平図に `Camera.fov`、`Camera:setFovTo`、45° 復帰操作を追加した。旧資料の画角が縦・横、全角・半角のいずれかは確定できないため、縦方向の全画角と仮定する。設定範囲は有限な 0° 超 90° 以下であり、従来の起動時表示は 180° を返す。補間の時間省略は `Camera.duration` を使い、再指定時は現在値から開始する。地平図以外、投影遷移中の FOV 操作は拒否する。状態保存は小さな画角と従来の v9 倍率の復元に対応する。

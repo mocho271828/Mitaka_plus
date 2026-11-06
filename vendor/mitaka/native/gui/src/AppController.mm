@@ -618,7 +618,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
     if (_mode.selectedSegment != 2) { [self stopScriptCameraAnimation]; [self stopScriptFovAnimation]; }
-    if (!solar) { [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
+    if (!solar) { [_solar invalidatePendingGalaxyPicks]; [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
     _solar.hidden = !solar;
