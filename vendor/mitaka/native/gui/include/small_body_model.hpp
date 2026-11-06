@@ -48,6 +48,7 @@ struct SmallBodySnapshot {
 std::shared_ptr<const SmallBodySnapshot> evaluate_small_body_snapshot(
     std::shared_ptr<const SmallBodyModel> model, double julian_date,
     bool evaluate_all = true, std::optional<std::size_t> selection = {});
+std::string small_body_summary(const SmallBodyModel& model);
 std::string small_body_description(const SmallBodyModel& model, std::size_t index,
                                   const SmallBodySnapshot* snapshot = nullptr);
 

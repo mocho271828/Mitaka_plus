@@ -30,10 +30,11 @@ void tests() {
     NSSearchField *search = (NSSearchField *)findView(root, ^bool(NSView *view) { return [view isKindOfClass:NSSearchField.class]; });
     NSTableView *table = (NSTableView *)findView(root, ^bool(NSView *view) { return [view isKindOfClass:NSTableView.class]; });
     NSTextField *count = (NSTextField *)findView(root, ^bool(NSView *view) { return [view.accessibilityIdentifier isEqualToString:@"small-body-result-count"]; });
+    NSTextField *summary = (NSTextField *)findView(root, ^bool(NSView *view) { return [view.accessibilityIdentifier isEqualToString:@"small-body-summary"]; });
     NSTextView *details = (NSTextView *)findView(root, ^bool(NSView *view) { return [view isKindOfClass:NSTextView.class]; });
     NSButton *next = button(root, @"次の500件"), *previous = button(root, @"前の500件");
     NSButton *select = button(root, @"選択・診断を表示"), *center = button(root, @"選択して3Dの中心へ");
-    require(search && table && count && details && next && previous && select && center, "browser controls are present");
+    require(search && table && count && summary && details && next && previous && select && center, "browser controls are present");
     auto dataset = std::make_shared<SmallBodyDataset>();
     dataset->records.resize(10037);
     for (std::size_t i = 0; i < dataset->records.size(); ++i) {
@@ -48,6 +49,8 @@ void tests() {
     auto frame = evaluate_small_body_snapshot(model, 2451545);
     auto display = std::make_shared<SmallBodyDisplayModel>(dataset);
     [controller setModel:model snapshot:frame];
+    require([summary.stringValue isEqualToString:@"原本 10037 件 · 位置評価候補（未対応を含む） 0 件 · 出典診断 1 件"],
+        "setSnapshot reports candidate counts without claiming support");
     [controller setDisplayModel:display];
     auto foreignDataset = std::make_shared<SmallBodyDataset>();
     auto foreignDisplay = std::make_shared<SmallBodyDisplayModel>(foreignDataset);
@@ -64,6 +67,8 @@ void tests() {
     auto prepared = [controller prepareSnapshot:frame display:display];
     [controller commitPreparedDate:std::move(prepared)];
     [controller finishDateUpdate];
+    require([summary.stringValue isEqualToString:@"原本 10037 件 · 位置評価候補（未対応を含む） 0 件 · 出典診断 1 件"],
+        "date update preserves the candidate summary");
     require(table.numberOfRows == 0 && !next.enabled, "search invalidates old rows immediately");
     waitForResult(count);
     require(table.numberOfRows == 500 && next.enabled && !previous.enabled, "first page uses bounded visible row references");

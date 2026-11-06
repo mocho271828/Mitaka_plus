@@ -129,6 +129,12 @@ std::shared_ptr<const SmallBodySnapshot> evaluate_small_body_snapshot(
     return frame;
 }
 
+std::string small_body_summary(const SmallBodyModel& model) {
+    return "原本 " + std::to_string(model.dataset().records.size())
+        + " 件 · 位置評価候補（未対応を含む） " + std::to_string(model.evaluable_indices().size())
+        + " 件 · 出典診断 " + std::to_string(model.dataset().diagnostics.size()) + " 件";
+}
+
 std::string small_body_description(const SmallBodyModel& model, std::size_t index, const SmallBodySnapshot* frame) {
     const auto& record = model.dataset().records.at(index);
     const auto evaluationMode = model.evaluation_mode(index);

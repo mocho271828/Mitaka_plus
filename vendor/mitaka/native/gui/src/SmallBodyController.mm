@@ -180,8 +180,7 @@ NSString *string(const std::string& text) {
 - (void)setSnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot {
     if (snapshot && snapshot->model != _model) throw std::invalid_argument("small-body snapshot/model mismatch");
     _snapshot = std::move(snapshot);
-    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
-        _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
+    _summary.stringValue = _model ? string(small_body_summary(*_model)) : @"データ未読込";
     if (self.window.visible) { [_table reloadData]; [self updateDetails]; }
 }
 - (SmallBodyBrowserDate)prepareSnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot
@@ -196,8 +195,7 @@ NSString *string(const std::string& text) {
     _display = std::move(prepared.display);
 }
 - (void)finishDateUpdate {
-    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
-        _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
+    _summary.stringValue = _model ? string(small_body_summary(*_model)) : @"データ未読込";
     [self updateOptions];
     [_table reloadData];
     [self updateSelectionControls];

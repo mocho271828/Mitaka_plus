@@ -435,3 +435,7 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 隔離 worktree で `make -j2 build`、`make -j2 test`、`make -j2 data-test`、`make -j2 reference-test`、`make -j2 smoke` はすべて成功。LFS 実体を共有 checkout の `resources/data` から読み取り専用で指定した。別 Mac の実画面確認は [記録](investigation/native-plus/minor-planet-individual-validation.md) を参照する。統合後の専用手動 GUI、旧 Plus との実行・画素比較、物理的時系と観測精度、37 byte・明示 n・非楕円の位置は未確認または未対応。原データ・旧環境は変更せず、新規依存なし。既存の C++ evaluator と標本化を使用する。`/simplifier-lai` は提供されておらず未実行。[gate 判定](temp_gates/2026-11-07-04-16-05/)を記録した。
 
 共有 checkout の `9b5537a` に統合した状態でも、`make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功した。Rust 移行文書の並行編集は index に含めず保持した。
+
+## 2026-11-07: 小天体一覧の評価候補数
+
+一覧の「位置計算対応」を「位置評価候補（未対応を含む）」に変更し、候補数に未対応形式が含まれることを明示した。明示 n、放物軌道、37 byte の候補が評価対象となっても位置計算済みと誤認されないことをモデルと controller の回帰試験で確認した。共有 checkout で `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功。旧 Plus 比較と専用の手動 GUI 確認は未実施。新規依存、原データ、全体方針の変更はない。[gate 判定](temp_gates/2026-11-07-04-30-00/)を記録した。
