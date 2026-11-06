@@ -262,3 +262,9 @@ gate は `temp_gates/` にコピーし、判定条件をチェックして YES �
 類似の `simplify-lai` は非 LobbyAI プロジェクトを適用対象外としているため使用していない。
 既存 Makefile と Git submodule の利用、不要な独自実装がないことを独立レビューで確認した。
 登録前に Git 状態・追加ファイル・差分量と `git diff --check` を確認し、初回ファイルと固定参照を commit / push する。
+
+## 2026-11-07: P1-4 37 byte の契約隔離
+
+`mp2.dat`・`TNO2.dat` の 37 byte 行は原行と flag を保持し、フレームと時系を外から設定しても汎用位置評価で位置を返さない。隔離コピーの回帰試験で部分末尾の入力拒否と他ファイルの継続読み込み、汎用軌道の位置・線分なしを確認した。実データでは 37 byte 8,510 行を検証し、catalog 46,432 checks、orbit 17,352 checks が成功した。旧 Plus がこれらのファイルを使用したか、flag や位置計算の契約は未確認であり、Mitaka++ の解釈を同一視しない。
+
+同一 checkout で `make -j4 build`, `make test`, `make data-test`, `make reference-test` は成功。`make smoke` は飛行中断後のカメラ不変条件で失敗し、原因を調査中。手動 GUI と旧 Plus 比較は未実施。新規依存や原データの変更はない。

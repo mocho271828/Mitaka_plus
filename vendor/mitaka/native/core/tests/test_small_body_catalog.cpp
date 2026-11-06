@@ -82,6 +82,55 @@ void preservation() {
     expect(source(data,"mp.dat").bytes==packed(1,false)+packed(1,false),"entire original bytes");
 }
 
+void packed_37_contract() {
+    using namespace mitaka;
+    Fixture f;
+    f.write("mp.dat", packed(12, false));
+    f.write("TNO.dat", packed(12, false));
+    const std::string mp37 = packed(12, true, 1);
+    const std::string tno37 = packed(12, true, 2);
+    for (const std::string& key : {std::string("mp2.dat"), std::string("TNO2.dat")}) {
+        for (std::size_t trailing = 1; trailing < 37; ++trailing) {
+            f.write("mp2.dat", mp37);
+            f.write("TNO2.dat", tno37);
+            const std::string malformed = mp37 + mp37.substr(0, trailing);
+            f.write(key, malformed);
+            const auto data = load_small_body_dataset(f.root);
+            const auto& bad = source(data, key);
+            expect(!bad.loaded && bad.record_count == 0 && bad.bytes == malformed,
+                   "truncated 37-byte source rejected atomically and preserved");
+            expect(data.records.size() == 3, "other packed sources still load");
+            expect(std::none_of(data.records.begin(), data.records.end(), [&](const auto& r) {
+                return r.id.source_key == key;
+            }), "partial 37-byte source yields no rows");
+            expect(std::any_of(data.diagnostics.begin(), data.diagnostics.end(), [&](const auto& d) {
+                return d.source_key == key && d.code == SmallBodyDiagnosticCode::invalid_source;
+            }), "truncated source diagnosed by identity");
+        }
+    }
+    std::string flags;
+    for (unsigned flag : {0U, 1U, 2U, 127U, 128U, 255U}) flags += packed(12, true, static_cast<std::uint8_t>(flag));
+    f.write("mp2.dat", flags);
+    f.write("TNO2.dat", tno37);
+    const auto data = load_small_body_dataset(f.root);
+    std::size_t ordinal = 0;
+    for (auto record : data.records) {
+        if (record.id.source_key != "mp2.dat") continue;
+        expect(record.id.record_ordinal == ordinal, "duplicate numbers keep source ordinal identity");
+        expect(record.raw_record_bytes == flags.substr(ordinal * 37, 37), "flag row retained byte for byte");
+        expect(record.raw_flag && *record.raw_flag == static_cast<std::uint8_t>(flags[ordinal * 37 + 4]),
+               "unsigned flag values retained without meaning inference");
+        record.frame = SmallBodyFrame::heliocentric_j2000_ecliptic;
+        record.time_scale = SmallBodyTimeScale::tdb;
+        const auto result = evaluate_small_body(record, 2451545.0);
+        expect(!result.state, "37-byte position remains unavailable even with caller-provided frame and time scale");
+        expect(diagnostic(result.diagnostics, SmallBodyDiagnosticCode::invalid_source),
+               "unresolved 37-byte position contract diagnosed");
+        ++ordinal;
+    }
+    expect(ordinal == 6, "all raw flags retained");
+}
+
 void time_and_evaluation() {
     using namespace mitaka;
     Fixture f; f.write("comets.dat",halley);
@@ -146,10 +195,20 @@ void real_data(const std::filesystem::path& path) {
     const auto data=load_small_body_dataset(path);
     for(const auto& d:data.diagnostics) std::cerr<<d.source_key<<": "<<d.message<<'\n';
     expect(data.diagnostics.empty(),"real sources complete");
-    std::size_t evaluatable=0,elliptic=0,parabolic=0,hyperbolic=0;
+    std::size_t evaluatable=0,elliptic=0,parabolic=0,hyperbolic=0,unresolved37=0;
     for(const auto& r:data.records) {
         const auto& s=source(data,r.id.source_key);
         expect(s.bytes.substr(r.source_offset,r.raw_record_bytes.size())==r.raw_record_bytes,"real record source match");
+        if (r.encoding == SmallBodyEncoding::packed_37) {
+            expect(r.raw_record_bytes.size() == 37 && r.raw_flag.has_value(), "real 37-byte row and flag retained");
+            auto attempted = r;
+            attempted.frame = SmallBodyFrame::heliocentric_j2000_ecliptic;
+            attempted.time_scale = SmallBodyTimeScale::tdb;
+            const auto evaluated = evaluate_small_body(attempted, 2451545.0);
+            expect(!evaluated.state && diagnostic(evaluated.diagnostics, SmallBodyDiagnosticCode::invalid_source),
+                   "real 37-byte row remains unresolved even after frame and time assignment");
+            ++unresolved37;
+        }
         if(const auto* e=std::get_if<PerihelionElements>(&r.orbit)) {
             const auto evaluated=evaluate_small_body(r,e->perihelion_jd);
             expect(evaluated.state.has_value(),"real comet perihelion calculation");
@@ -158,13 +217,14 @@ void real_data(const std::filesystem::path& path) {
             for(double jd:{2415020.5,2451545.0,2488069.5}) expect(evaluate_small_body(r,jd).state.has_value(),"real comet finite state across GUI interval");
         }
     }
+    expect(unresolved37 > 0, "real 37-byte sources exercised");
     std::cout<<"small-body real data: sources="<<data.sources.size()<<" records="<<data.records.size()
-             <<" evaluatable="<<evaluatable<<" elliptic="<<elliptic<<" parabolic="<<parabolic<<" hyperbolic="<<hyperbolic<<'\n';
+             <<" unresolved37="<<unresolved37<<" evaluatable="<<evaluatable<<" elliptic="<<elliptic<<" parabolic="<<parabolic<<" hyperbolic="<<hyperbolic<<'\n';
 }
 } // namespace
 int main(int argc,char** argv) {
     try {
-        preservation(); time_and_evaluation(); malformed_and_limits();
+        preservation(); packed_37_contract(); time_and_evaluation(); malformed_and_limits();
         if(argc==2) real_data(argv[1]);
         std::cout<<"small-body catalog: "<<checks<<" checks passed\n";
     } catch(const std::exception& error) { std::cerr<<"small-body catalog failure: "<<error.what()<<'\n'; return 1; }
