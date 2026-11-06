@@ -1,6 +1,7 @@
 #import "SolarSceneRenderer.h"
 #import "TerrainSurfaceController.h"
 #include "surface_navigation.hpp"
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -9,36 +10,45 @@ using namespace mitaka::gui;
 
 static void require(bool c, const char *message) { if (!c) throw std::runtime_error(message); }
 static std::vector<unsigned char> render(const SolarScene &scene) {
-    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr pixelsWide:81 pixelsHigh:81 bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:0 bytesPerRow:324 bitsPerPixel:32];
+    const auto width=static_cast<int>(scene.map.size.width), height=static_cast<int>(scene.map.size.height);
+    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr pixelsWide:width pixelsHigh:height bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:0 bytesPerRow:width*4 bitsPerPixel:32];
     require(bitmap != nil, "bitmap allocation failed");
     [NSGraphicsContext saveGraphicsState];
     NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap];
     const auto context = NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(context, 0, 0, 0, 1);
-    CGContextFillRect(context, CGRectMake(0, 0, 81, 81));
+    CGContextFillRect(context, CGRectMake(0, 0, width, height));
     auto diagnostics = draw_solar_scene(context, scene);
     [NSGraphicsContext restoreGraphicsState];
     require(diagnostics.empty(), "solar scene reported drawing diagnostic");
-    return {bitmap.bitmapData, bitmap.bitmapData + 81 * 81 * 4};
+    return {bitmap.bitmapData, bitmap.bitmapData + width * height * 4};
 }
-static void run(std::size_t index, const char *root) {
+static void run(std::size_t index, const char *root, std::optional<double> elevation = std::nullopt) {
     SolarBodies bodies{}; SolarOrbits orbits{}; std::vector<Vec3> lunar; PlanetTextures textures;
     const std::array<Body,11> ids{Body::sun,Body::mercury,Body::venus,Body::earth,Body::mars,Body::jupiter,Body::saturn,Body::uranus,Body::neptune,Body::pluto,Body::moon};
     for (std::size_t i=0;i<bodies.size();++i) { bodies[i].id=ids[i]; bodies[i].position_au={1,100+double(i),0}; textures.images[i]=TextureImage{1,1,{200,200,200,255}}; }
     bodies[0].position_au={0,0,0}; bodies[index].position_au={1,0,0};
     SolarCamera camera{{1,0,0},180,0,3*surface_body_info(index).radius_km / astronomical_unit_km};
+    if (elevation) {
+        SurfaceNavigation navigation;
+        navigation.set_site({index, 0, 0, minimum_surface_height_km, 45, *elevation, 0});
+        camera = navigation.camera(bodies);
+    }
     std::array<std::shared_ptr<const TerrainSurfaceSnapshot>,11> snapshots{};
-    SolarScene scene{bodies,orbits,lunar,camera,&textures,{},NSMakeRect(0,0,81,81),1,false,{},{}};
+    SolarScene scene{bodies,orbits,lunar,camera,&textures,{},elevation ? NSMakeRect(0,0,400,300) : NSMakeRect(0,0,81,81),1,false,{},{}};
     scene.physical_navigation=true; scene.planet_display={true,false,false,false}; scene.grid_display.circle_scales=false;
+    if (elevation) scene.surface_body=index;
     scene.earth_layers={false,false}; scene.atmosphere.mode=AtmosphereMode::none; scene.eclipse_options={false,false,false,false}; scene.terrain=&snapshots;
     auto baseline=render(scene);
     auto req=solar_terrain_request(scene,index,root); require(bool(req), "terrain request absent");
     TerrainSurfaceController *controller=[TerrainSurfaceController new];
     __block bool done=false; __block std::shared_ptr<const TerrainSurfaceSnapshot> snapshot; __block NSString *failure=nil;
+    const auto start=std::chrono::steady_clock::now();
     [controller requestSurface:*req completion:^(std::shared_ptr<const TerrainSurfaceSnapshot> result, NSString *error) { snapshot=std::move(result); failure=[error copy]; done=true; }];
     NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:60];
     while (!done && deadline.timeIntervalSinceNow>0) [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
     require(done, "controller timed out");
+    const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
     if (failure) throw std::runtime_error(failure.UTF8String);
     require(snapshot && snapshot->status==TerrainSnapshotStatus::ready, snapshot ? snapshot->diagnostic.c_str() : "missing snapshot");
     require(snapshot->frame.mode==TerrainSurfaceMode::terrain, "not terrain mode");
@@ -48,6 +58,6 @@ static void run(std::size_t index, const char *root) {
     auto actual=render(scene); std::size_t changed=0;
     for(std::size_t i=0;i<actual.size();i+=4) if(actual[i]!=baseline[i] || actual[i+1]!=baseline[i+1] || actual[i+2]!=baseline[i+2]) ++changed;
     require(changed>0, "terrain image did not change");
-    std::cout << (index==3 ? "Earth" : "Mars") << ": status=ready mode=terrain patches=" << snapshot->frame.patches_read << " hits=" << hits << " differing_pixels=" << changed << " path=" << snapshot->source_path << std::endl;
+    std::cout << (index==3 ? "Earth" : "Mars") << (elevation ? " ground elevation="+std::to_string(*elevation) : " orbit") << ": status=ready mode=terrain patches=" << snapshot->frame.patches_read << " triangles=" << snapshot->frame.triangles_visited << " pixel_tests=" << snapshot->frame.pixel_tests << " hits=" << hits << " differing_pixels=" << changed << " elapsed_seconds=" << elapsed << " path=" << snapshot->source_path << std::endl;
 }
-int main(int argc,char **argv) { @autoreleasepool { [NSApplication sharedApplication]; try { require(argc==2,"expected data root"); run(3,argv[1]); run(4,argv[1]); return 0; } catch(const std::exception &e) { std::cerr << e.what() << std::endl; return 1; } } }
+int main(int argc,char **argv) { @autoreleasepool { [NSApplication sharedApplication]; try { require(argc==2,"expected data root"); run(3,argv[1]); run(4,argv[1]); run(4,argv[1],-20); run(4,argv[1],20); return 0; } catch(const std::exception &e) { std::cerr << e.what() << std::endl; return 1; } } }

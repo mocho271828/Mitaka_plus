@@ -177,6 +177,17 @@ int main(int argc, const char *argv[]) {
                         }
                         state.target = action.text; break;
                     case ScriptActionKind::set_camera_distance: state.camera_distance_au = action.number; break;
+                    // この fixture は姿勢・モードを再現しないため、未対応操作を明示的に拒否する。
+                    case ScriptActionKind::set_camera_orientation:
+                    case ScriptActionKind::set_camera_euler:
+                    case ScriptActionKind::add_camera_euler:
+                    case ScriptActionKind::animate_camera_orientation:
+                    case ScriptActionKind::animate_camera_euler:
+                    case ScriptActionKind::animate_add_camera_euler:
+                    case ScriptActionKind::set_camera_mode:
+                    case ScriptActionKind::set_camera_mode_duration:
+                    case ScriptActionKind::set_camera_zoom_mode:
+                        *error = @"Camera orientation and mode are unavailable in this fixture"; return NO;
                     case ScriptActionKind::set_constellation_lines: state.constellation_lines = action.enabled; break;
                     case ScriptActionKind::set_constellation_boundaries: state.constellation_boundaries = action.enabled; break;
                     case ScriptActionKind::set_constellation_labels: state.constellation_labels = action.enabled; break;

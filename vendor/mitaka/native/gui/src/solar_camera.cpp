@@ -7,7 +7,6 @@
 namespace mitaka::gui {
 namespace {
 constexpr double radians_per_degree = 3.14159265358979323846 / 180;
-constexpr double tangent_half_fov = 0.41421356237309504880;
 constexpr double minimum_distance = 0.000005;
 constexpr double maximum_distance = maximum_solar_distance_au;
 
@@ -90,7 +89,7 @@ Vec3 camera_point(Vec3 position, const SolarCamera& camera, const SolarCameraBas
 
 std::optional<SolarProjection> project_point(Vec3 point, double near, double width, double height) {
     if (!finite(point) || point.z < near) return std::nullopt;
-    const double scale = (height / 2) / tangent_half_fov / point.z;
+    const double scale = (height / 2) / solar_camera_tangent_half_fov / point.z;
     const double x = width / 2 + point.x * scale;
     const double y = height / 2 - point.y * scale;
     if (!std::isfinite(x) || !std::isfinite(y)) return std::nullopt;
@@ -108,8 +107,8 @@ Vec3 solar_camera_ray(const SolarCamera& camera, double x, double y, double widt
     dimensions(width, height);
     deltas(x, y);
     const auto axes = basis(camera);
-    const double horizontal = ((x - width / 2) / height) * (2 * tangent_half_fov);
-    const double vertical = ((height / 2 - y) / height) * (2 * tangent_half_fov);
+    const double horizontal = ((x - width / 2) / height) * (2 * solar_camera_tangent_half_fov);
+    const double vertical = ((height / 2 - y) / height) * (2 * solar_camera_tangent_half_fov);
     const Vec3 ray{-axes.outward.x + horizontal * axes.right.x + vertical * axes.up.x,
                    -axes.outward.y + horizontal * axes.right.y + vertical * axes.up.y,
                    -axes.outward.z + horizontal * axes.right.z + vertical * axes.up.z};
@@ -161,7 +160,7 @@ void SolarCamera::pan(double dx_points, double dy_points, double width, double h
     dimensions(width, height);
     deltas(dx_points, dy_points);
     const auto axes = basis(*this);
-    const double scale = 2 * distance_au * tangent_half_fov / height;
+    const double scale = 2 * distance_au * solar_camera_tangent_half_fov / height;
     const double horizontal = dx_points * scale, vertical = dy_points * scale;
     const Vec3 next{target.x - axes.right.x * horizontal + axes.up.x * vertical,
                     target.y - axes.right.y * horizontal + axes.up.y * vertical,

@@ -6,6 +6,7 @@
 
 namespace mitaka::gui {
 
+constexpr double solar_camera_tangent_half_fov = 0.41421356237309504880;
 constexpr double maximum_solar_distance_au = (648000.0 / 3.14159265358979323846) * 1e40;
 
 // outwardは視線の逆方向。right/up/outwardは右手正規直交基底。

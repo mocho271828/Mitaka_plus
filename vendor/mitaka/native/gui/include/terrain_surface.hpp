@@ -47,7 +47,7 @@ public:
 };
 
 // 同editionの明示sourceだけを使う純CPU描画。terrain以外ではsamplesは空。
-// terrainでは全patchを1個ずつ読み、投影/near切断は既存SolarCamera APIに委譲する。
+// terrainでは画錐外と確定できないpatchを1個ずつ読み、投影/near切断は既存SolarCamera APIに委譲する。
 // 出力は三角形面のperspective-correct depth/normal/UV。透明度・照明・textureは別責務。
 // 負標高を保持するため、統合側は同天体のanalytic datum sphereをopaque passから除く。
 // その上で他天体/地形の最短正距離と比較し、確定depthを大気・雲へ引き渡す。

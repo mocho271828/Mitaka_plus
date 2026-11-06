@@ -28,7 +28,7 @@ void curve(EquatorialCoordinates a,EquatorialCoordinates b,const ObservationFram
         double t=i/4000.;auto p=equatorial_coordinates({(1-t)*start.x+t*end.x,(1-t)*start.y+t*end.y,(1-t)*start.z+t*end.z});
         if(frame){auto h=frame->to_horizontal(p);p={360-h.azimuth_deg,h.altitude_deg};}
         if(std::abs(p.declination_deg)>89.99999)continue;
-        auto screen=project_sky(p,viewport,width,height);if(!screen)continue;
+        auto screen=frame?project_horizon(p,viewport,width,height):project_sky(p,viewport,width,height);if(!screen)continue;
         double nearest=std::numeric_limits<double>::infinity();
         for(auto s:result.segments){nearest=std::min(nearest,distance(*screen,s));if(viewport.zoom==1)for(double dx:{-width,width})nearest=std::min(nearest,distance({screen->x+dx,screen->y},s));}
         check(nearest<=.3,"dense spatial-line oracle outside tolerance");

@@ -259,11 +259,66 @@ void interpolated_attributes_test(Temporary& temp) {
     }
     expect(covered>100,"sloped mesh visible samples");
 }
+void view_culling_tests(Temporary& temp) {
+    const std::vector<Patch> patches{{-1,1,1,-1,1},{89,91,1,-1,1},{-91,-89,1,-1,1}};
+    for (const int elevation : {-32768,32767}) {
+        auto all=TerrainFile::open(temp.write("cull-all.dat",fixture(patches,elevation)));
+        auto front=TerrainFile::open(temp.write("cull-front.dat",fixture({patches[0]},elevation)));
+        const TerrainSurfaceBinding a{all,{0,0,0},{},.001,.001};
+        const TerrainSurfaceBinding b{front,{0,0,0},{},.001,.001};
+        const auto actual=render_terrain_surface(a,camera(.002),65,65);
+        const auto expected=render_terrain_surface(b,camera(.002),65,65);
+        expect(actual.patches_read==1 && actual.triangles_visited==32,"offscreen patches do not consume triangle budget");
+        for (std::size_t i=0;i<actual.samples.size();++i) {
+            expect(actual.samples[i].distance_au==expected.samples[i].distance_au,"culling preserves visible extreme elevations");
+        }
+    }
+    for (const auto large : {Patch{100169,100171,1,-1,1},Patch{-100171,-100169,1,-1,1}}) {
+        auto unusual=TerrainFile::open(temp.write("cull-large-longitude.dat",fixture({large},0)));
+        const auto frame=render_terrain_surface({unusual,{0,0,0},{},.001,0},camera(.002),65,65);
+        expect(frame.patches_read==1,"large longitude falls back to full mesh evaluation");
+    }
+    // 標高が常にゼロなので倍率による形状の差はなく、倍率1は境界を
+    // 保証できず選別を無効にする。全patchと描いた結果を全画素で比較する。
+    std::vector<Patch> globe;
+    for (int lat=90;lat>-90;lat-=15) for (int lon=-180;lon<180;lon+=15)
+        globe.push_back({float(lon),float(lon+15),float(lat),float(lat-15),1});
+    auto full=TerrainFile::open(temp.write("cull-globe.dat",fixture(globe,0)));
+    const double angle=.4, c=std::cos(angle), s=std::sin(angle);
+    const BodyOrientation orientation{{c,s,0},{-s,c,0},{0,0,1+1e-9}};
+    for (int scenario=0;scenario<3;++scenario) {
+        auto view=camera(.0018);
+        int width=65, height=65;
+        if (scenario==1) { width=80; height=45; view.yaw_deg=37; view.pitch_deg=16; }
+        if (scenario==2) {
+            width=45; height=80;
+            // 既存APIが許す範囲で厳密には直交しないカメラ基底。
+            view.frame=SolarCameraBasis{{1,0,0},{1e-9,1,0},{0,0,1}};
+        }
+        const auto culled=render_terrain_surface({full,{0,0,0},orientation,.001,0},view,width,height);
+        const auto unculled=render_terrain_surface({full,{0,0,0},orientation,.001,1},view,width,height);
+        expect(culled.patches_read<unculled.patches_read && unculled.patches_read==globe.size(),
+            "comparison must exercise culling and full patch traversal");
+        std::size_t visible=0;
+        for (std::size_t i=0;i<culled.samples.size();++i) {
+            const auto& a=culled.samples[i]; const auto& b=unculled.samples[i];
+            if (std::isfinite(a.distance_au)) ++visible;
+            expect(a.distance_au==b.distance_au && a.normal_local.x==b.normal_local.x &&
+                a.normal_local.y==b.normal_local.y && a.normal_local.z==b.normal_local.z && a.u==b.u && a.v==b.v,
+                "culling preserves all sample attributes for rotated views and viewport boundaries");
+        }
+        expect(visible>0,"comparison fixture must cover visible pixels");
+    }
+    // 倍率が大きく安全な正半径を保証できないときは選別しない。
+    auto uncertain=TerrainFile::open(temp.write("cull-uncertain.dat",fixture({patches[1]},0)));
+    const auto fallback=render_terrain_surface({uncertain,{0,0,0},{},.001,1},camera(),65,65);
+    expect(fallback.patches_read==1,"uncertain elevation range must not be culled");
+}
 void real_data(const std::filesystem::path& path) {
     auto source=TerrainFile::open(path);
     const auto begin=std::chrono::steady_clock::now();
     const auto frame=render_terrain_surface({source,{0,0,0},{},.001},camera(),64,64);
-    expect(frame.patches_read==source.patches().size(),"all selected real-source patches consumed");
+    expect(frame.patches_read>0 && frame.patches_read<=source.patches().size(),"visible real-source patches consumed");
     std::size_t covered=0;
     for (const auto& s:frame.samples) if (std::isfinite(s.distance_au)) {
         ++covered; expect(s.distance_au>0,"real positive depth");
@@ -332,7 +387,7 @@ void clipping_and_order_tests(Temporary& temp) {
 }
 int main(int argc,char** argv) {
     try {
-        Temporary temp; mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp);
+        Temporary temp; mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp); view_culling_tests(temp);
         for(int i=1;i<argc;++i) real_data(argv[i]);
         std::cout<<"terrain surface: "<<checks<<" checks passed\n";
         return 0;

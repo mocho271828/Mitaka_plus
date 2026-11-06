@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace mitaka::gui {
@@ -30,6 +31,38 @@ void validate(const TerrainSurfaceBinding& b, int width, int height) {
     if (std::abs(dot(o.x_axis,o.y_axis))>1e-8 || std::abs(dot(o.x_axis,o.north_axis))>1e-8 ||
         std::abs(dot(o.y_axis,o.north_axis))>1e-8 || dot(cross(o.x_axis,o.y_axis),o.north_axis)<1-1e-8)
         throw std::invalid_argument("terrain orientation must be right-handed and orthogonal");
+}
+// 全int16標高と球面区画を包む球を用い、画錐外が確実な場合だけ省く。
+// 球は凸なので、各頂点を結ぶ三角形もこの境界の内側にある。
+bool outside_view(const TerrainPatch& patch, const TerrainHeader& header, double elevation_factor,
+    Vec3 target, double distance, const BodyOrientation& orientation,
+    const std::array<Vec3,4>& planes, const std::array<double,4>& slopes) {
+    constexpr double radians=3.14159265358979323846/180;
+    // メッシュの経度補間と剰余計算との丸め差が拡大する範囲は判定しない。
+    if (patch.longitude_begin_deg < -360 || patch.longitude_end_deg > 360) return false;
+    const double factor=double(header.elevation_unit_m)/header.radius_m*elevation_factor;
+    const double radial_margin=32768*factor;
+    // この場合は不正な頂点の検出も従来どおりメッシュ生成に任せる。
+    if (!std::isfinite(radial_margin) || radial_margin>=1) return false;
+    const double lon=std::remainder((double(patch.longitude_begin_deg)+patch.longitude_end_deg)*.5,360.0)*radians;
+    const double lat=(double(patch.latitude_begin_deg)+patch.latitude_end_deg)*.5*radians;
+    const double angle=std::min(3.14159265358979323846,
+        (double(patch.longitude_end_deg)-patch.longitude_begin_deg+
+         double(patch.latitude_begin_deg)-patch.latitude_end_deg)*.5*radians);
+    const Vec3 center{std::cos(lat)*std::cos(lon),std::cos(lat)*std::sin(lon),std::sin(lat)};
+    const double radius=radial_margin+2*(1+radial_margin)*std::sin(angle*.5);
+    const auto relative=subtract(world(center,orientation),target);
+    if (!finite(relative) || !std::isfinite(radius)) return false;
+    for (std::size_t i=0;i<planes.size();++i) {
+        const auto plane=planes[i];
+        const double signed_distance=dot(relative,plane)+slopes[i]*distance;
+        // orientation は単位直交の検査に 1e-8 の許容差がある。
+        const double bound=radius*(1+3e-8)*std::hypot(plane.x,plane.y,plane.z);
+        // 丸め誤差の境界は捨てない。
+        const double tolerance=1e-12*(1+std::hypot(relative.x,relative.y,relative.z)+bound);
+        if (std::isfinite(signed_distance) && std::isfinite(bound) && signed_distance < -bound-tolerance) return true;
+    }
+    return false;
 }
 struct ScreenPoint { double x,y; };
 struct Vertex { Vec3 position,normal; double u,v; std::optional<SolarProjection> screen; };
@@ -147,8 +180,20 @@ TerrainSurfaceFrame render_terrain_surface(const TerrainSurfaceBinding& binding,
     if (count>limits.frame_bytes/sizeof(TerrainSurfaceSample))
         throw std::invalid_argument("terrain frame memory limit exceeded");
     result.samples.resize(count);
+    // 投影と同じ視野角係数を使用。camera frame の丸めを仮定しない。
+    const double horizontal=solar_camera_tangent_half_fov*width/height;
+    const double vertical=solar_camera_tangent_half_fov;
+    const auto forward=scale(axes.outward,-1);
+    const std::array<Vec3,4> planes{
+        add(axes.right,scale(forward,horizontal)),
+        add(scale(axes.right,-1),scale(forward,horizontal)),
+        add(axes.up,scale(forward,vertical)),
+        add(scale(axes.up,-1),scale(forward,vertical))};
+    const std::array<double,4> slopes{horizontal,horizontal,vertical,vertical};
     for (std::size_t p=0;p<binding.source.patches().size();++p) {
         check_cancelled();
+        if (outside_view(binding.source.patches()[p],binding.source.header(),binding.elevation_factor,scale(relative_camera.target,1/binding.display_radius_au),
+            camera.distance_au/binding.display_radius_au,binding.orientation,planes,slopes)) continue;
         const auto level=terrain_level_index(binding.source.patches()[p],local_eye,binding.low_resolution);
         const auto mesh=make_terrain_patch_mesh(binding.source,p,level,binding.elevation_factor,limits.mesh_bytes);
         ++result.patches_read;

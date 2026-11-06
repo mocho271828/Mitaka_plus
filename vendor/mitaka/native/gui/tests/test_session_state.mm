@@ -58,6 +58,13 @@ void test_roundtrip() {
     [old_session[@"solar_camera"] removeObjectForKey:@"roll_deg"];
     check(decode_session_state(json_bytes(old_session)).solar_camera.roll_deg == 0,
           "previous v9 camera did not restore its default roll");
+    state.horizon_viewport.roll_deg = 37;
+    check(decode_session_state(encode_session_state(state)).horizon_viewport.roll_deg == 37,
+          "horizon roll did not roundtrip");
+    [old_session[@"horizon_viewport"] removeObjectForKey:@"roll_deg"];
+    check(decode_session_state(json_bytes(old_session)).horizon_viewport.roll_deg == 0,
+          "previous v9 horizon did not restore its default roll");
+    state.horizon_viewport.roll_deg = 0;
     for (int level = 1; level <= 5; ++level) {
         state.terrain_amplification = static_cast<TerrainAmplification>(level);
         check(decode_session_state(encode_session_state(state)).terrain_amplification == state.terrain_amplification,
@@ -195,6 +202,7 @@ void test_missing_null_and_types() {
         for (NSString *key in keys) {
             if ([parent isEqualToString:@"solar_camera"] &&
                 ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"])) continue;
+            if ([parent isEqualToString:@"horizon_viewport"] && [key isEqualToString:@"roll_deg"]) continue;
             object = session_object();
             [object[parent] removeObjectForKey:key];
             rejects([&] { decode_session_state(json_bytes(object)); });
@@ -218,7 +226,8 @@ void test_ranges_and_camera() {
     }
     for (NSDictionary *change in @[@{@"zoom": @0}, @{@"zoom": @181}, @{@"zoom": @1.0, @"center_altitude_deg": @(-90.1)},
                                    @{@"center_azimuth_deg": @(-0.1)}, @{@"center_azimuth_deg": @360},
-                                   @{@"center_altitude_deg": @90.1}, @{@"center_altitude_deg": @YES}]) {
+                                   @{@"center_altitude_deg": @90.1}, @{@"center_altitude_deg": @YES},
+                                   @{@"roll_deg": @YES}, @{@"roll_deg": NSNull.null}, @{@"roll_deg": @"1"}]) {
         NSMutableDictionary *object = session_object();
         [object[@"horizon_viewport"] addEntriesFromDictionary:change];
         rejects([&] { decode_session_state(json_bytes(object)); });
