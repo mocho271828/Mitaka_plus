@@ -7,6 +7,17 @@ using namespace mitaka::gui;
 
 namespace {
 constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
+bool sameLandingSite(const LandingKey& a, const LandingKey& b) {
+    if (a.root != b.root || a.body != b.body || a.factor != b.factor) return false;
+    constexpr double radians = 3.14159265358979323846 / 180;
+    const double lat1 = a.latitude * radians, lat2 = b.latitude * radians;
+    const double lon1 = a.longitude * radians, lon2 = b.longitude * radians;
+    const double c1 = std::cos(lat1), c2 = std::cos(lat2);
+    // 視点の往復変換の丸めを吸収し、極で不定の経度を同一地点と扱う。
+    return std::hypot(c1 * std::cos(lon1) - c2 * std::cos(lon2),
+                      c1 * std::sin(lon1) - c2 * std::sin(lon2),
+                      std::sin(lat1) - std::sin(lat2)) <= 2e-11;
+}
 }
 
 @implementation SolarSystemView (Terrain)
@@ -40,6 +51,7 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     _landingKey.reset();
     _landingResult.reset();
     _landingSuppressedBody.reset();
+    _landingParked = NO;
 }
 - (void)refreshLanding {
     // 地形を非表示にして基準球を描く間は、視点もその球面に合わせる。
@@ -52,10 +64,18 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
         [self notifyCamera];
     };
     if ((!_surfaceActive && !_journeyActive) || !_terrainDataDirectory) {
-        if (_landingKey) { [self resetLanding]; [self cancelTerrain]; }
+        if (_landingKey && _physicalSpaceActive && _terrainDataDirectory) {
+            if (!_landingParked) {
+                _landingParked = YES;
+                _landingSuppressedBody.reset();
+                [self cancelTerrain];
+            }
+        } else if (_landingKey) { [self resetLanding]; [self cancelTerrain]; }
         if (!_terrainDataDirectory) useReferenceSurface();
         return;
     }
+    const BOOL wasParked = _landingParked;
+    _landingParked = NO;
     const auto site = _journeyActive ? _journey.destination() : _navigation.site();
     TerrainBody body;
     switch (site.body_index) {
@@ -70,7 +90,10 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
     }
     LandingKey key{_terrainDataDirectory.fileSystemRepresentation, site.body_index,
         site.latitude_deg, site.longitude_deg, terrain_amplification_factor(_terrainAmplification)};
-    if (!_landingKey || !(*_landingKey == key)) {
+    if (wasParked && _landingKey && sameLandingSite(*_landingKey, key) &&
+        (!_landingResult || _landingResult->status == TerrainSnapshotStatus::failed))
+        _landingSuppressedBody = key.body;
+    if (!_landingKey || !sameLandingSite(*_landingKey, key)) {
         if (!_landingController) _landingController = [TerrainLandingController new];
         _landingKey = key;
         _landingResult.reset();
@@ -88,7 +111,7 @@ constexpr std::array<std::size_t, 4> terrainBodies{3, 10, 1, 4};
         try {
             [_landingController requestLanding:request completion:^(TerrainLandingResult result, NSString *error) {
                 SolarSystemView *strongSelf = weakSelf;
-                if (!strongSelf || !strongSelf->_landingKey || !(*strongSelf->_landingKey == key)) return;
+                if (!strongSelf || !strongSelf->_landingKey || !sameLandingSite(*strongSelf->_landingKey, key)) return;
                 if (error) result.diagnostic = error.UTF8String ? error.UTF8String : "terrain landing failed";
                 strongSelf->_landingResult = std::move(result);
                 [strongSelf refreshLanding];

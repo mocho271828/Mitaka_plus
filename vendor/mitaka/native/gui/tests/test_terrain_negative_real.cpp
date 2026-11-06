@@ -24,6 +24,13 @@ int main(int argc,char** argv) {
             SolarBodies bodies{};
             bodies[index].position_au={1,0,0};
             bodies[index].orientation={{1,0,0},{0,1,0},{0,0,1}};
+            const auto known_site=navigation.site();
+            const auto space_camera=navigation.camera(bodies);
+            const auto restored=surface_site_from_camera_with_known_terrain(space_camera,bodies,index,known_site);
+            if (!restored || restored->terrain_offset_km!=known_site.terrain_offset_km)
+                throw std::runtime_error("negative terrain space roundtrip failed");
+            navigation.set_site(*restored);
+            navigation.begin_descent_preserving_look(0,0);
             TerrainSurfaceRequest request;
             request.data_directory=argv[1]; request.body=body; request.center_au={1,0,0};
             request.display_radius_au=landing.display_radius_km/astronomical_unit_km;

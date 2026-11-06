@@ -39,6 +39,11 @@ SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodie
 // 通常降下ではロールを保持したまま地表の局所姿勢へ変換する。
 SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const SolarBodies& bodies,
                                                std::size_t body_index);
+// 直前の地表視点と同じ位置に限り、既知の符号付き地形高を引き継ぐ。
+// 一致しなければ nullopt を返し、任意の球内視点を地表と誤認しない。
+std::optional<SurfaceSite> surface_site_from_camera_with_known_terrain(
+    const SolarCamera& camera, const SolarBodies& bodies, std::size_t body_index,
+    const SurfaceSite& known_site);
 
 // 遠距離等からの強制着陸は天体中心から見た視点方向に着陸し、ロールを捨てる。
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,

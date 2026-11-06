@@ -177,8 +177,10 @@ static double monotonicSeconds() {
 - (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error {
     if (!_hasData || _journeyActive) return NO;
     try {
-        const auto site = _surfaceActive && _navigation.site().body_index == 3
-            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, 3);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, 3, _navigation.site()) : std::nullopt;
+        const auto site = _surfaceActive && _navigation.site().body_index == 3 ? _navigation.site()
+            : known ? *known : surface_site_from_camera_with_roll(_camera, _bodies, 3);
         if (site.height_km > 8 * surface_body_info(3).radius_km + 1e-6)
             throw std::invalid_argument("地球の近くに移動してください。");
         return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
@@ -191,8 +193,10 @@ static double monotonicSeconds() {
     if (!_hasData || _journeyActive || !_selection || *_selection == 0) return NO;
     try {
         const auto body = *_selection;
-        const auto site = _surfaceActive && _navigation.site().body_index == body
-            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, body);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, body, _navigation.site()) : std::nullopt;
+        const auto site = _surfaceActive && _navigation.site().body_index == body ? _navigation.site()
+            : known ? *known : surface_site_from_camera_with_roll(_camera, _bodies, body);
         if (site.height_km > 8 * surface_body_info(body).radius_km + 1e-6)
             throw std::invalid_argument("選択した天体の近くに移動してください。");
         return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
@@ -314,8 +318,10 @@ static double monotonicSeconds() {
     }
     try {
         const auto body = *_selection;
-        auto site = _surfaceActive && _navigation.site().body_index == body
-            ? _navigation.site() : forced_surface_site_from_camera(_camera, _bodies, body);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, body, _navigation.site()) : std::nullopt;
+        auto site = _surfaceActive && _navigation.site().body_index == body ? _navigation.site()
+            : known ? *known : forced_surface_site_from_camera(_camera, _bodies, body);
         site.height_km = minimum_surface_height_km;
         if (_journeyActive) {
             [self interruptFlight];

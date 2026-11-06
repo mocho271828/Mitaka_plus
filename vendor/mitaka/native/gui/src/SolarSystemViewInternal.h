@@ -131,6 +131,7 @@ struct LandingKey {
     std::optional<LandingKey> _landingKey;
     std::optional<mitaka::gui::TerrainLandingResult> _landingResult;
     std::optional<std::size_t> _landingSuppressedBody;
+    BOOL _landingParked;
     NSString *_terrainDataDirectory;
     NSArray<TerrainSurfaceController *> *_terrainControllers;
     std::array<std::optional<mitaka::gui::TerrainSurfaceRequest>, 11> _terrainRequests;

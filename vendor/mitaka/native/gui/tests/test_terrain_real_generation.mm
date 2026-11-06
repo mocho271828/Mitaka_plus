@@ -7,12 +7,67 @@ using namespace mitaka::gui;
 struct Record { double date; double yaw; bool coherent; bool realTerrain; };
 @interface SolarSystemView (Validation)
 - (void)configureNearBody:(std::size_t)index;
+- (void)checkNegativeRoundtrip:(std::size_t)index root:(const char *)root;
 @end
 @implementation SolarSystemView (Validation)
 - (void)configureNearBody:(std::size_t)index {
     _earthMoonMode=NO; _earthMoonFollowing=NO; _physicalSpaceActive=YES;
     _camera={{1,0,0},180,0,3*surface_body_info(index).radius_km/astronomical_unit_km};
     self.needsDisplay=YES;
+}
+- (void)checkNegativeRoundtrip:(std::size_t)index root:(const char *)root {
+    TerrainLandingRequest request;
+    request.body=index==3 ? TerrainBody::earth : TerrainBody::mars;
+    request.data_directory=root;
+    request.latitude_deg=31.5;
+    request.longitude_deg=index==3 ? 135 : 35.5;
+    request.display_radius_km=surface_body_info(index).radius_km;
+    const auto result=prepare_terrain_landing(request);
+    if (result.status!=TerrainSnapshotStatus::ready || !result.radius_km ||
+        *result.radius_km>=request.display_radius_km) throw std::runtime_error("no negative real terrain");
+    SurfaceSite site{index,request.latitude_deg,request.longitude_deg,minimum_surface_height_km,0,-30,15};
+    site.terrain_offset_km=*result.radius_km-request.display_radius_km;
+    _navigation.set_site(site); _camera=_navigation.camera(_bodies);
+    _selection=index; _surfaceActive=YES; _physicalSpaceActive=NO; _journeyActive=NO;
+    [self refreshLanding];
+    NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:30];
+    while ((!_landingResult || _landingResult->status!=TerrainSnapshotStatus::ready)
+           && deadline.timeIntervalSinceNow>0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
+    if (!_landingResult || _navigation.site().terrain_offset_km>=0)
+        throw std::runtime_error("negative landing did not load");
+    const double before=_navigation.site().terrain_offset_km;
+    NSString *error=nil;
+    if (![self forceSurfaceMode:NO bodyIndex:nullptr error:&error]) throw std::runtime_error("space switch failed");
+    [self refreshLanding];
+    if (![self descendToSelectedSurfaceWithDuration:0 error:&error]) throw std::runtime_error("negative restore failed");
+    [self refreshLanding];
+    if (std::abs(_navigation.site().terrain_offset_km-before)>1e-10)
+        throw std::runtime_error("negative restored camera jumped to datum");
+    if (![self forceSurfaceMode:NO bodyIndex:nullptr error:&error]) throw std::runtime_error("second space switch failed");
+    [self refreshLanding];
+    if (![self forceSurfaceMode:YES bodyIndex:nullptr error:&error]) throw std::runtime_error("forced restore failed");
+    [self refreshLanding];
+    if (std::abs(_navigation.site().terrain_offset_km-before)>1e-10)
+        throw std::runtime_error("forced negative restore jumped to datum");
+    // 取得待ちで宇宙へ移ったとき、宇宙の地形は抑止せず、復帰時は結果が出るまで抑止する。
+    _landingResult.reset(); _landingSuppressedBody=index;
+    if (![self forceSurfaceMode:NO bodyIndex:nullptr error:&error]) throw std::runtime_error("pending space switch failed");
+    [self refreshLanding];
+    if (_landingSuppressedBody) throw std::runtime_error("pending landing suppressed space terrain");
+    if (![self forceSurfaceMode:YES bodyIndex:nullptr error:&error]) throw std::runtime_error("pending restore failed");
+    [self refreshLanding];
+    if (!_landingSuppressedBody || _navigation.site().terrain_offset_km!=before)
+        throw std::runtime_error("pending restored terrain state invalid");
+    _landingResult=result; [self refreshLanding];
+    if (_landingSuppressedBody) throw std::runtime_error("completed landing remained suppressed");
+    auto moved=_navigation.site(); moved.latitude_deg+=1;
+    _navigation.set_site(moved); _camera=_navigation.camera(_bodies);
+    [self refreshLanding];
+    if (!_landingKey || _landingKey->latitude!=moved.latitude_deg || _navigation.site().terrain_offset_km!=0)
+        throw std::runtime_error("changed site reused old terrain");
+    [self leaveNavigation]; [self refreshLanding];
+    if (_landingKey) throw std::runtime_error("leaving navigation retained terrain cache");
 }
 @end
 @interface RealTerrainView : SolarSystemView
@@ -35,6 +90,7 @@ static void run(std::size_t index, const char *root) {
     for(std::size_t i=0;i<bodies.size();++i) { bodies[i].id=ids[i]; bodies[i].position_au={1,100+double(i),0}; }
     bodies[0].position_au={0,0,0}; bodies[index].position_au={1,0,0}; if(index==3) bodies[10].position_au={1.0026,0,0};
     [view setBodies:bodies]; view.bodyIndex=index; view.planetDisplayOptions={true,false,false,false}; [view setTerrainDataDirectory:[NSString stringWithUTF8String:root]]; [view configureNearBody:index];
+    [view checkNegativeRoundtrip:index root:root]; [view configureNearBody:index];
     [view setObservationSite:{35,139} julianDate:2451545]; [view refreshTerrain];
     for(int i=1;i<=20;++i) { [view beginSceneUpdate]; [view setObservationSite:{35,139} julianDate:2451545]; [view orbitByX:1 y:0]; [view endSceneUpdate]; [view refreshTerrain]; }
     NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:60];

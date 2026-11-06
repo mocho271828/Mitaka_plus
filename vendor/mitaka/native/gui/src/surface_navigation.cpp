@@ -36,7 +36,8 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
 }
 
 static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, const SolarBodies& bodies,
-                                                 std::size_t body_index, bool preserve_roll) {
+                                                 std::size_t body_index, bool preserve_roll,
+                                                 double terrain_offset_km = 0) {
     const auto info = surface_body_info(body_index);
     const auto& body = bodies.at(body_index);
     const auto basis = solar_camera_basis(camera);
@@ -45,15 +46,16 @@ static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, cons
                       camera.target.y + basis.outward.y * camera.distance_au - center.y,
                       camera.target.z + basis.outward.z * camera.distance_au - center.z};
     const double distance = std::hypot(offset.x, offset.y, offset.z);
-    double height = distance * astronomical_unit_km - info.radius_km;
+    double height = distance * astronomical_unit_km - info.radius_km - terrain_offset_km;
     // AU 座標の減算で 2 m の境界をわずかに下回る丸め誤差を補う。
     if (height >= minimum_surface_height_km - 1e-6) height = std::max(height, minimum_surface_height_km);
     if (!std::isfinite(height) || height < minimum_surface_height_km || height > maximum_height_km)
         throw std::invalid_argument("camera height cannot be represented by surface navigation");
     const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
     const Vec3 up{offset.x / distance, offset.y / distance, offset.z / distance};
-    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
-    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double x = dot(up, body.orientation.x_axis), y = dot(up, body.orientation.y_axis);
+    const double latitude = std::atan2(dot(up, body.orientation.north_axis), std::hypot(x, y));
+    const double longitude = std::atan2(y, x);
     const double clat = std::cos(latitude), slat = std::sin(latitude);
     const double clon = std::cos(longitude), slon = std::sin(longitude);
     const auto east = transform({-slon, clon, 0}, body.orientation);
@@ -67,6 +69,7 @@ static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, cons
         : std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
     SurfaceSite site{body_index, latitude / radians_per_degree, longitude / radians_per_degree,
                      height, azimuth, elevation};
+    site.terrain_offset_km = terrain_offset_km;
     SurfaceNavigation candidate;
     candidate.set_site(site);
     const auto restored = solar_camera_basis(candidate.camera(bodies));
@@ -88,6 +91,25 @@ SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const 
     return surface_site_from_camera_impl(camera, bodies, body_index, true);
 }
 
+std::optional<SurfaceSite> surface_site_from_camera_with_known_terrain(
+    const SolarCamera& camera, const SolarBodies& bodies, std::size_t body_index,
+    const SurfaceSite& known_site) {
+    if (known_site.body_index != body_index || known_site.terrain_offset_km >= 0) return std::nullopt;
+    SurfaceNavigation previous;
+    previous.set_site(known_site);
+    const auto previous_camera = previous.camera(bodies);
+    const auto eye = [](const SolarCamera& c) {
+        const auto outward = solar_camera_basis(c).outward;
+        return Vec3{c.target.x + outward.x * c.distance_au,
+                    c.target.y + outward.y * c.distance_au,
+                    c.target.z + outward.z * c.distance_au};
+    };
+    const auto a = eye(camera), b = eye(previous_camera);
+    // AU 座標の丸めを許す一方、約 1.5 mm 以上離れた地点には古い地形高を使わない。
+    if (!(std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) <= 1e-14)) return std::nullopt;
+    return surface_site_from_camera_impl(camera, bodies, body_index, true, known_site.terrain_offset_km);
+}
+
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
                                             std::size_t body_index) {
     surface_body_info(body_index);
@@ -103,8 +125,9 @@ SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const Sol
     const Vec3 up = distance > 1e-15 ? Vec3{offset.x / distance, offset.y / distance, offset.z / distance}
                                      : body.orientation.x_axis;
     const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
-    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
-    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double x = dot(up, body.orientation.x_axis), y = dot(up, body.orientation.y_axis);
+    const double latitude = std::atan2(dot(up, body.orientation.north_axis), std::hypot(x, y));
+    const double longitude = std::atan2(y, x);
     const double clat = std::cos(latitude), slat = std::sin(latitude);
     const double clon = std::cos(longitude), slon = std::sin(longitude);
     const auto east = transform({-slon, clon, 0}, body.orientation);
