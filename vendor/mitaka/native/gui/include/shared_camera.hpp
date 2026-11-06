@@ -21,6 +21,7 @@ struct SharedCamera {
     double roll_deg = 0;
     bool frame_is_orbit = false;
     std::optional<PreciseCameraTarget> precise_target;
+    double vertical_fov_deg = 45;
 
     // 値域は 1e-12 AU から 1e40 pc 相当。無効な値や操作は invalid_argument。
     // 各描画系への変換時にはその描画系固有の距離制限が別途適用される。

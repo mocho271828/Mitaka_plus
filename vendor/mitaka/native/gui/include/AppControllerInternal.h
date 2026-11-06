@@ -57,6 +57,7 @@ struct ScriptPlaceTransition {
     mitaka::Vec3 start, tangent;
     double angle, start_time, duration, latitude, longitude;
     NSInteger mode;
+    std::size_t body_index;
     std::string target;
 };
 
@@ -82,6 +83,7 @@ struct ScriptLookTarget {
     SolarSystemView *_solar;
     PlaybackController *_playback;
     NSSegmentedControl *_mode;
+    NSUInteger _modeGeneration;
     NSArray<NSButton *> *_cameraButtons, *_travelButtons;
     NSButton *_journeyButton, *_resumeJourneyButton;
     BOOL _pendingEarthDescent;
@@ -109,6 +111,7 @@ struct ScriptLookTarget {
     NSTimer *_scriptCameraTimer;
     NSTimer *_scriptFovTimer;
     std::optional<ScriptCameraAnimation> _scriptFovAnimation;
+    NSInteger _scriptFovMode;
     NSTimer *_scriptPlaceTimer;
     std::optional<ScriptPlaceTransition> _scriptPlaceTransition;
     std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;
@@ -118,6 +121,7 @@ struct ScriptLookTarget {
     std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
     std::optional<double> _scriptCameraDuration;
     int _scriptCameraZoomMode;
+    int _scriptTargetSelectionMode;
     std::optional<double> _scriptCameraModeDuration;
     std::optional<std::int32_t> _scriptStarHIP;
     std::string _scriptStarTarget;

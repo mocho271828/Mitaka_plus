@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <thread>
 
 namespace {
 constexpr double epoch = 2451545.0;
@@ -464,6 +465,265 @@ void test_clock_tracking() {
     fixture.expect_quiet();
 }
 
+void test_tracking_reentrant_playback_restart() {
+    TrackingFixture fixture;
+    PlaybackController *controller = fixture.controller;
+    __block bool restart = true;
+    __weak PlaybackController *weakController = controller;
+    controller.stateChanged = ^{
+        PlaybackController *active = weakController;
+        if (restart && !active.playing && !active.clockTracking) {
+            restart = false;
+            [active play];
+        }
+    };
+    [controller play];
+    check(controller.playing, "reentrant tracking fixture did not start playback");
+    check(![controller setClockTracking:YES], "tracking succeeded after callback restarted playback");
+    check(controller.playing && !controller.clockTracking, "reentrant restart left two time modes active");
+    controller.stateChanged = nil;
+}
+
+void test_play_reentrant_tracking_restart() {
+    TrackingFixture fixture;
+    PlaybackController *controller = fixture.controller;
+    check([controller setClockTracking:YES], "tracking fixture did not start");
+    __block bool restart = true;
+    __weak PlaybackController *weakController = controller;
+    controller.stateChanged = ^{
+        PlaybackController *active = weakController;
+        if (restart && !active.playing && !active.clockTracking) {
+            restart = false;
+            check([active setClockTracking:YES], "reentrant tracking restart failed");
+        }
+    };
+    [controller play];
+    check(!controller.playing && controller.clockTracking,
+          "reentrant tracking restart left two time modes active");
+    controller.stateChanged = nil;
+}
+
+void test_play_reentrant_animation_start() {
+    TrackingFixture fixture;
+    PlaybackController *controller = fixture.controller;
+    check([controller setClockTracking:YES], "tracking fixture did not start");
+    __block bool restart = true;
+    __weak PlaybackController *weakController = controller;
+    controller.stateChanged = ^{
+        PlaybackController *active = weakController;
+        if (restart && !active.playing && !active.clockTracking) {
+            restart = false;
+            check([active animateToJulianDate:epoch + 5 duration:10
+                curve:mitaka::gui::PlusTimeAnimationCurve::linear
+                sameTargetPolicy:mitaka::gui::PlusTimeAnimationSameTarget::replace error:nullptr],
+                "reentrant animation start failed");
+        }
+    };
+    [controller play];
+    check(!controller.playing && controller.timeAnimating && !controller.clockTracking,
+          "reentrant animation was superseded by the older play request");
+    controller.stateChanged = nil;
+}
+
+void test_tracking_reentrant_same_mode() {
+    TrackingFixture fixture;
+    PlaybackController *controller = fixture.controller;
+    __block bool restart = true;
+    __weak PlaybackController *weakController = controller;
+    controller.stateChanged = ^{
+        PlaybackController *active = weakController;
+        if (restart && !active.playing && !active.clockTracking) {
+            restart = false;
+            check([active setClockTracking:YES], "reentrant tracking start failed");
+        }
+    };
+    [controller play];
+    check([controller setClockTracking:YES], "already restarted tracking should succeed");
+    check(!controller.playing && controller.clockTracking && fixture.attempts == 1,
+          "reentrant tracking was started or sampled twice");
+    controller.stateChanged = nil;
+}
+
+void test_configure_reentrant_notifications() {
+    for (bool stop_callback : {false, true}) for (int operation = 0; operation != 3; ++operation) {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "configuration fixture did not start tracking");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        void (^callback)(void) = ^{
+            PlaybackController *active = weakController;
+            if (invoked) return;
+            invoked = true;
+            check(active.julianDate == epoch + 9.5, "configuration notification saw old date");
+            if (operation == 0) check([active setClockTracking:YES], "configuration could not use new range");
+            if (operation == 1) [active play];
+            if (operation == 2) check([active animateToJulianDate:epoch + 10 duration:10
+                curve:mitaka::gui::PlusTimeAnimationCurve::linear
+                sameTargetPolicy:mitaka::gui::PlusTimeAnimationSameTarget::replace error:nullptr],
+                "configuration could not start animation in new range");
+        };
+        if (stop_callback) controller.didStop = callback; else controller.stateChanged = callback;
+        [controller configureWithJulianDate:epoch + 9.5 range:{epoch + 9, epoch + 11} enabled:YES];
+        check(invoked, "configuration stop notification was not delivered");
+        if (operation == 0) check(controller.clockTracking && !controller.playing &&
+            controller.julianDate == fixture.current_jd() && fixture.accepted_jd == controller.julianDate,
+            "configuration overwrote the newer tracking operation");
+        if (operation == 1) check(controller.playing && !controller.clockTracking && controller.julianDate == epoch + 9.5,
+            "configuration overwrote the newer playback operation");
+        if (operation == 2) check(controller.timeAnimating && !controller.playing && controller.julianDate == epoch + 9.5,
+            "configuration overwrote the newer animation operation");
+        controller.stateChanged = nil; controller.didStop = nil;
+    }
+    {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "disabled configuration fixture did not start");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            PlaybackController *active = weakController;
+            if (invoked) return;
+            invoked = true;
+            check(![active setClockTracking:YES], "tracking restarted against disabled configuration");
+            [active play];
+        };
+        [controller configureWithJulianDate:epoch + 3 range:{0, 1} enabled:NO];
+        check(invoked && !controller.clockTracking && !controller.playing && controller.julianDate == epoch + 3,
+              "disabled configuration was not applied before notification");
+        controller.stateChanged = nil;
+    }
+    {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "recursive configuration fixture did not start");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            if (invoked) return;
+            invoked = true;
+            [weakController configureWithJulianDate:epoch + 7 range:{epoch, epoch + 20} enabled:YES];
+        };
+        [controller configureWithJulianDate:epoch + 5 range:{epoch, epoch + 15} enabled:YES];
+        check(invoked && controller.julianDate == epoch + 7 && !controller.clockTracking,
+              "outer configuration overwrote recursive configuration");
+        controller.stateChanged = nil;
+    }
+}
+
+void test_rate_reentrant_notifications() {
+    for (int operation = 0; operation != 6; ++operation) {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "rate fixture did not start tracking");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            PlaybackController *active = weakController;
+            if (invoked || active.clockTracking || active.playing || active.timeAnimating) return;
+            invoked = true;
+            switch (operation) {
+                case 0: check([active setClockTracking:YES], "tracking restart failed"); break;
+                case 1: [active setSimulationRate:60]; break;
+                case 2: [active play]; break;
+                case 3: [active invalidate]; break;
+                case 5: [active setSimulationRate:3600]; break;
+                case 4: check([active animateToJulianDate:epoch + 20 duration:10
+                    curve:mitaka::gui::PlusTimeAnimationCurve::linear
+                    sameTargetPolicy:mitaka::gui::PlusTimeAnimationSameTarget::replace error:nullptr],
+                    "animation restart failed"); break;
+            }
+        };
+        [controller setSimulationRate:86400];
+        check(invoked, "rate stop notification was not delivered");
+        if (operation == 0) check(controller.clockTracking && controller.simulationRate == 3600,
+                                  "rate change overwrote resumed tracking");
+        if (operation == 1) check(controller.simulationRate == 60 && !controller.clockTracking,
+                                  "outer rate overwrote recursive rate");
+        if (operation == 2) check(controller.playing && controller.simulationRate == 3600,
+                                  "outer rate overwrote resumed playback");
+        if (operation == 3) check(controller.simulationRate == 3600 && !find_control(controller.view, false).enabled,
+                                  "rate changed after invalidation");
+        if (operation == 5) check(controller.simulationRate == 3600, "outer rate overwrote same-rate request");
+        if (operation == 4) check(controller.timeAnimating && controller.simulationRate == 3600,
+                                  "rate change overwrote resumed animation");
+        controller.stateChanged = nil;
+    }
+    {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        [controller play];
+        fixture.accept = false;
+        const auto attempts = fixture.attempts;
+        __block bool restarted = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            PlaybackController *active = weakController;
+            if (!restarted && !active.playing) { restarted = true; [active play]; }
+        };
+        // サンプルが整数 JD から進む時間を確保し、applyDate の拒否を誘発する。
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        [controller setSimulationRate:86400];
+        check(fixture.attempts > attempts && restarted && controller.playing && controller.simulationRate == 3600,
+              "rejected sample overwrote playback restarted by stop notification");
+        controller.stateChanged = nil;
+    }
+}
+
+void test_composed_rate_reentrant_notifications() {
+    for (int command = 0; command != 3; ++command) for (bool animate : {false, true}) {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "composed rate fixture did not start tracking");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            PlaybackController *active = weakController;
+            if (invoked || active.clockTracking) return;
+            invoked = true;
+            if (animate) {
+                check([active animateToJulianDate:epoch + 20 duration:10
+                    curve:mitaka::gui::PlusTimeAnimationCurve::linear
+                    sameTargetPolicy:mitaka::gui::PlusTimeAnimationSameTarget::replace error:nullptr],
+                    "composed rate animation failed");
+            } else {
+                check([active setClockTracking:YES], "composed rate tracking restart failed");
+            }
+        };
+        if (command == 0) [controller playForward];
+        if (command == 1) [controller playBackward];
+        if (command == 2) [controller playRealtime];
+        check(invoked && !controller.playing && controller.simulationRate == 3600 &&
+              (animate ? controller.timeAnimating : controller.clockTracking),
+              "composed rate command overwrote newer callback operation");
+        controller.stateChanged = nil;
+    }
+}
+
+void test_rate_controls_reentrant_same_rate() {
+    for (bool direction : {false, true}) {
+        TrackingFixture fixture;
+        PlaybackController *controller = fixture.controller;
+        check([controller setClockTracking:YES], "rate control fixture did not start tracking");
+        __block bool invoked = false;
+        __weak PlaybackController *weakController = controller;
+        controller.stateChanged = ^{
+            if (invoked) return;
+            invoked = true;
+            check([weakController setSimulationRate:3600], "same-rate callback failed");
+        };
+        NSPopUpButton *rates = (NSPopUpButton *)find_control(controller.view, true);
+        NSSegmentedControl *segments = find_direction_control(controller.view);
+        if (direction) { segments.selectedSegment = 0; send_action(segments); }
+        else { [rates selectItemAtIndex:3]; send_action(rates); }
+        check(invoked && !controller.clockTracking && controller.simulationRate == 3600 &&
+              [rates.selectedItem.representedObject doubleValue] == 3600 && segments.selectedSegment == 1,
+              "rate controls disagree with the reentrant same-rate request");
+        check(fixture.stops == 1, "same-rate callback suppressed the stop notification");
+        controller.stateChanged = nil;
+    }
+}
+
 void test_tracking_sleep_and_hidden_window() {
     TrackingFixture fixture;
     auto *controller = fixture.controller;
@@ -544,6 +804,14 @@ int main() {
             test_interrupt_and_invalidate();
             test_plus_time_state();
             test_clock_tracking();
+            test_tracking_reentrant_playback_restart();
+            test_tracking_reentrant_same_mode();
+            test_play_reentrant_tracking_restart();
+            test_play_reentrant_animation_start();
+            test_configure_reentrant_notifications();
+            test_rate_reentrant_notifications();
+            test_composed_rate_reentrant_notifications();
+            test_rate_controls_reentrant_same_rate();
             test_tracking_sleep_and_hidden_window();
             test_tracking_failures_and_invalidation();
             std::cout << "PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, "

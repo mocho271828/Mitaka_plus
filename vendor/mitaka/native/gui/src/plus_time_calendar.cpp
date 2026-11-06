@@ -1,5 +1,6 @@
 #include "plus_time_calendar.hpp"
 #include "plus_time_step.hpp"
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cmath>
@@ -39,8 +40,22 @@ std::int32_t read_integer(std::string_view& text) {
     return negative ? -static_cast<std::int32_t>(magnitude) : static_cast<std::int32_t>(magnitude);
 }
 
-GregorianDateTime integer_calendar(double jd) {
-    auto result = gregorian_date_time(jd);
+double ulp(double value) {
+    return std::nextafter(value, std::numeric_limits<double>::infinity()) - value;
+}
+
+double calendar_allowance(double jd, double source_jd) {
+    return jd == source_jd ? ulp(jd) : 2 * std::max(ulp(jd), ulp(source_jd));
+}
+
+GregorianDateTime integer_calendar(double jd, double source_jd) {
+    // JD の量子化と地方時オフセットの加減算に伴う誤差幅では、整数秒の
+    // 直前の値と厳密な整数秒を区別できない。範囲内では整数秒と扱う。
+    // それ以外の小数秒は切り捨てる。遠い UTC からの桁落ちも考慮する。
+    (void)gregorian_date_time(jd);
+    const double allowance = calendar_allowance(jd, source_jd);
+    const double adjusted = jd + allowance;
+    auto result = adjusted < 5373484.5 ? gregorian_date_time(adjusted) : gregorian_date_time(jd);
     result.second = std::trunc(result.second);
     return result;
 }
@@ -53,7 +68,7 @@ double offset_days(PlusTimeZone zone) {
 
 GregorianDateTime plus_local_time(double utc_jd, PlusTimeZone zone) {
     (void)gregorian_date_time(utc_jd);
-    return integer_calendar(utc_jd - offset_days(zone));
+    return integer_calendar(utc_jd - offset_days(zone), utc_jd);
 }
 
 double plus_local_julian_date(const GregorianDateTime& local, PlusTimeZone zone) {
@@ -65,7 +80,13 @@ double plus_local_julian_date(const GregorianDateTime& local, PlusTimeZone zone)
 std::optional<double> plus_local_component_julian_date(double utc_jd, PlusTimeZone zone,
     PlusTimeComponent component, std::int32_t value) {
     (void)gregorian_date_time(utc_jd);
-    auto date = gregorian_date_time(utc_jd - offset_days(zone));
+    const double local_jd = utc_jd - offset_days(zone);
+    auto date = gregorian_date_time(local_jd);
+    const auto integer_date = integer_calendar(local_jd, utc_jd);
+    // getter が量子化誤差内とみなす整数秒は setter でも同じ値とする。
+    // 十分離れた小数秒は保持し、明示的な秒の変更でのみ切り捨てる。
+    if (std::abs(local_jd - plus_julian_date(integer_date)) <= calendar_allowance(local_jd, utc_jd))
+        date = integer_date;
     switch (component) {
         case PlusTimeComponent::year: if (date.year == value) return std::nullopt; date.year = value; break;
         case PlusTimeComponent::month: if (date.month == value) return std::nullopt; date.month = value; break;
@@ -84,7 +105,7 @@ std::optional<double> plus_local_component_julian_date(double utc_jd, PlusTimeZo
 }
 
 std::string plus_time_string(double jd) {
-    const auto date = integer_calendar(jd);
+    const auto date = integer_calendar(jd, jd);
     const std::array<int, 6> components{{date.year, date.month, date.day, date.hour, date.minute,
                                        static_cast<int>(date.second)}};
     std::string result;

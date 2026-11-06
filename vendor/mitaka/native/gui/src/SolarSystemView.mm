@@ -1,5 +1,8 @@
+#include "surface_star_pick.hpp"
+#include "constellation_pick.hpp"
 #import "RendererQuality.h"
 #import "SolarSystemViewInternal.h"
+bool solar_scene_opaque_at(const SolarScene& scene, NSPoint point);
 #import "SkyView.h"
 #import "SolarSceneRenderer.h"
 #import "SmallBodyRenderer.h"
@@ -8,6 +11,7 @@
 #import "ConstellationRenderer.h"
 #import "ConstellationArtRenderer.h"
 #include "shared_camera.hpp"
+#include "surface_sky_site.hpp"
 #include "our_galaxy_navigation.hpp"
 #include "mitaka/astronomy.hpp"
 #include <algorithm>
@@ -32,15 +36,48 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (a.precise_target.has_value() != b.precise_target.has_value() ||
         (a.precise_target && (!sameVector(a.precise_target->anchor_pc, b.precise_target->anchor_pc) ||
                               !sameVector(a.precise_target->offset_au, b.precise_target->offset_au))) ||
-        !sameVector(a.target, b.target) || a.distance_au != b.distance_au || a.frame_is_orbit != b.frame_is_orbit) return false;
+        !sameVector(a.target, b.target) || a.distance_au != b.distance_au || a.frame_is_orbit != b.frame_is_orbit ||
+        a.vertical_fov_deg != b.vertical_fov_deg) return false;
     const auto x = solar_camera_basis(a), y = solar_camera_basis(b);
     return sameVector(x.outward, y.outward) && sameVector(x.right, y.right) && sameVector(x.up, y.up);
 }
 
 @implementation SolarSystemView
 
+- (void)setTargetSelectionMode:(NSInteger)mode {
+    if (_targetSelectionMode == mode) return;
+    _targetSelectionMode = mode;
+    [_galaxyOverlay invalidatePendingPicks];
+    [self updateTrackingAreas];
+}
+- (void)updateTrackingAreas {
+    if (_targetSelectionTrackingArea) [self removeTrackingArea:_targetSelectionTrackingArea];
+    _targetSelectionTrackingArea = nil;
+    if (_targetSelectionMode == 1) {
+        _targetSelectionTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+            options:NSTrackingMouseMoved | NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect owner:self userInfo:nil];
+        [self addTrackingArea:_targetSelectionTrackingArea];
+        self.window.acceptsMouseMovedEvents = YES;
+    }
+    [super updateTrackingAreas];
+}
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (_targetSelectionMode == 1) self.window.acceptsMouseMovedEvents = YES;
+}
+- (void)mouseMoved:(NSEvent *)event {
+    if (_targetSelectionMode == 1 && !self.hidden)
+        [self pickBodyAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+}
+
+- (void)mouseExited:(NSEvent *)event {
+    (void)event;
+    if (_targetSelectionMode == 1) [_galaxyOverlay invalidatePendingPicks];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _targetSelectionMode = 2;
         _galaxyOverlay = [[GalaxyOverlay alloc] initWithView:self];
         _hipVisible = YES;
         _surfaceMagnitudeLimit = 6;
@@ -114,11 +151,18 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     _julianDate = julianDate;
     self.needsDisplay = YES;
 }
-- (void)dealloc { [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
+- (void)dealloc { [_landingController invalidate]; [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
 - (BOOL)scriptPlanetariumMode {
     return _surfaceActive && !_navigation.flying()
         && _navigation.site().height_km <= minimum_surface_height_km + 1e-9;
+}
+- (BOOL)setScriptSurfaceFov:(double)degrees {
+    if (![self scriptPlanetariumMode] || !std::isfinite(degrees) || degrees <= 0 || degrees > 90) return NO;
+    _camera.vertical_fov_deg = degrees;
+    [self notifyCamera];
+    self.needsDisplay = YES;
+    return YES;
 }
 - (BOOL)journeyActive { return _journeyActive; }
 - (BOOL)flightAnimating { return _navigation.flying() || (_journeyActive && _journey.flying()); }
@@ -163,6 +207,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)setSurfaceStarModel:(std::shared_ptr<const SkyModel>)model
                   catalogs:(std::shared_ptr<const ExtendedCatalogs>)catalogs {
+    _surfaceStarSelection.reset();
+    _surfaceConstellationSelection.reset();
+    _surfaceSkyPickModel.reset();
     _surfaceSkyModel = model;
     _surfaceStarRenderer = [[StarRenderer alloc] initWithModel:std::move(model) catalogs:std::move(catalogs)];
     self.needsDisplay = YES;
@@ -233,6 +280,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     self.needsDisplay = YES;
 }
 - (void)clearGalaxySelection {
+    _surfaceStarSelection.reset();
+    _surfaceConstellationSelection.reset();
     [self stopScriptTargetTransition];
     _scriptOverviewTarget.clear();
     _scriptEarthPlaceTarget.clear();
@@ -295,14 +344,16 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (_journeyActive) {
         if (_journey.flying()) [self updateJourneyAtTime:_lastFlightTime];
     } else if (_surfaceActive) {
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         if (_navigation.flying()) [self restoreFlightOrientation];
     }
     else if (_earthMoonMode && _earthMoonFollowing) {
         const Vec3 earth = [self displayPosition:3], moon = [self displayPosition:10];
         _camera.set_target_au({(earth.x + moon.x) / 2, (earth.y + moon.y) / 2, (earth.z + moon.z) / 2});
     } else if (_following && _selection) {
-        _camera.set_target_au(_scriptSpacePlace && *_selection == 3
+        _camera.set_target_au(_scriptSpacePlace && *_selection == _scriptSpacePlace->body_index
             ? [self scriptSpacePlacePositionForBodies:_bodies] : [self displayPosition:*_selection]);
     }
     else if (_following && _smallBodySelection && _smallBodySnapshot) {
@@ -339,6 +390,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)selectBody:(NSUInteger)index {
     if (!_hasData || index >= _bodies.size()) return;
     [self clearGalaxySelection];
+    _surfaceStarSelection.reset();
     _selection = index;
     _smallBodySelection.reset();
     _satelliteSelection.reset();
@@ -357,7 +409,19 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             self.satelliteSelectionChanged(satelliteSelection ? *satelliteSelection : NSNotFound);
     }
     NSString *description = @"天体をクリックして選択します。\n「選択を中心」で視点の中心に移動します。";
-    if (_hasData && _selection) {
+    if (_surfaceActive && _surfaceConstellationSelection && _surfaceSkyModel &&
+        *_surfaceConstellationSelection < _surfaceSkyModel->constellations().size()) {
+        const auto& constellation = _surfaceSkyModel->constellations()[*_surfaceConstellationSelection];
+        NSString *name = [[NSString alloc] initWithBytes:constellation.japanese_hiragana_bytes.data()
+            length:constellation.japanese_hiragana_bytes.size()
+            encoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingDOSJapanese)];
+        if (!name.length || [name isEqualToString:@"*"])
+            name = [NSString stringWithUTF8String:constellation.abbreviation.c_str()];
+        description = [NSString stringWithFormat:@"星座: %@", name ? name : @"（名称なし）"];
+    } else if (_surfaceActive && _surfaceStarSelection && _surfaceSkyModel && *_surfaceStarSelection < _surfaceSkyModel->stars().size()) {
+        const auto& star = _surfaceSkyModel->stars()[*_surfaceStarSelection];
+        description = [NSString stringWithFormat:@"HIP %d\nV 等級 %.2f", star.hip, star.apparent_v_magnitude];
+    } else if (_hasData && _selection) {
         const auto& body = _bodies[*_selection];
         const Vec3 p = [self displayPosition:*_selection];
         NSString *surface = _textures && _textures->images[*_selection] ? @"表面画像あり" : @"表面画像なし（色で表示）";
@@ -389,6 +453,22 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         if (row.position) description = [NSString stringWithFormat:@"%@ · 出典 %lu · 原行 %lu\n日心黄道 X %+.6g pc\n日心黄道 Y %+.6g pc\n日心黄道 Z %+.6g pc",
             families[static_cast<NSUInteger>(id.family)], id.source_index + 1, id.ordinal + 1,
             row.position->x_pc, row.position->y_pc, row.position->z_pc];
+        // 元の ID だけを表示する。座標や近接する描画点から天体名を推定しない。
+        NSString *identity = nil;
+        const auto& source = model->sources().at(id.source_index);
+        if (const auto* catalog = std::get_if<PlusGlobularClusterCatalog>(&source)) {
+            const auto& bytes = catalog->records.at(id.ordinal).name_bytes;
+            const auto end = std::find(bytes.begin(), bytes.end(), 0);
+            identity = [[NSString alloc] initWithBytes:bytes.data() length:std::distance(bytes.begin(), end)
+                                             encoding:NSUTF8StringEncoding];
+        } else if (const auto* catalog = std::get_if<PlusNearbyGalaxyCatalog>(&source)) {
+            const auto& record = catalog->records.at(id.ordinal);
+            if (record.catalog_code >= 33 && record.catalog_code <= 126)
+                identity = [NSString stringWithFormat:@"原 ID %c%d", record.catalog_code, record.catalog_number];
+            else
+                identity = [NSString stringWithFormat:@"原 code %u · 番号 %d", unsigned(record.catalog_code), record.catalog_number];
+        }
+        if (identity.length) description = [NSString stringWithFormat:@"%@\n%@", identity, description];
     }
     if (self.selectionChanged) self.selectionChanged(description);
     if (self.navigationChanged) self.navigationChanged();
@@ -573,6 +653,12 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)zoomOut { [self zoomBy:0.25]; }
 - (void)showOurGalaxyOverview {
     if (![_galaxyOverlay ourGalaxyModel] || ![_galaxyOverlay isOurGalaxyVisible]) return;
+    [self showGalaxyOverviewSelectingOurGalaxy:YES];
+}
+- (void)showGalaxyCatalogOverview {
+    [self showGalaxyOverviewSelectingOurGalaxy:NO];
+}
+- (void)showGalaxyOverviewSelectingOurGalaxy:(BOOL)selectOurGalaxy {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
     try {
@@ -582,7 +668,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [self leaveNavigation];
         [self clearGalaxySelection];
         _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
-        _ourGalaxySelected = YES; _following = YES;
+        _ourGalaxySelected = selectOurGalaxy; _following = selectOurGalaxy;
         [self notifySelection];
         [self changeCamera:^(SolarCamera& next) { next = solar; }];
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
@@ -684,7 +770,10 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)rightMouseDown:(NSEvent *)event { [self mouseDown:event]; }
 - (void)rightMouseDragged:(NSEvent *)event { [self mouseDragged:event]; }
-- (void)rightMouseUp:(NSEvent *)event { (void)event; }
+- (void)rightMouseUp:(NSEvent *)event {
+    (void)event;
+    if (_dragged) { _dragged = NO; self.needsDisplay = YES; }
+}
 - (void)scrollWheel:(NSEvent *)event {
     const double scale = event.hasPreciseScrollingDeltas ? 0.012 : 0.1;
     [self zoomBy:event.scrollingDeltaY * scale];
@@ -692,17 +781,64 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)magnifyWithEvent:(NSEvent *)event { [self zoomBy:-event.magnification]; }
 - (void)rotateWithEvent:(NSEvent *)event { [self rollByDegrees:event.rotation]; }
 - (void)mouseUp:(NSEvent *)event {
-    if (_dragged || !_hasData) return;
+    if (_dragged) { _dragged = NO; self.needsDisplay = YES; return; }
+    if (!_hasData || _targetSelectionMode != 2) return;
     [self pickBodyAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
 }
+- (void)applySurfaceSkyStar:(std::optional<std::size_t>)star constellation:(std::optional<std::size_t>)constellation {
+    // 古い選択・追従を解除してから新しい表示上の選択を設定する。
+    [self clearGalaxySelection];
+    _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
+    _following = NO; _surfacePreview = NO;
+    _surfaceStarSelection = star;
+    _surfaceConstellationSelection = constellation;
+    [self notifySelection]; [self notifyCamera]; self.needsDisplay = YES;
+}
 - (void)pickBodyAtPoint:(NSPoint)click {
-    // 地表では地面の向こうの天体を選ばないよう、一覧による選択に限定する。
-    if (!_hasData || !NSPointInRect(click, [self mapRect])) return;
+    // 矩形外へのホバーも直前の非同期選択より新しい操作として扱う。
     [_galaxyOverlay invalidatePendingPicks];
+    if (!_hasData || !NSPointInRect(click, [self mapRect])) return;
     try {
         const auto displayedOwner = _publishedScene;
         const auto scene = displayedOwner ? displayedOwner->scene() : [self scene];
-        if (scene.surface_body || scene.physical_navigation || !NSEqualRects(scene.map, [self mapRect])) return;
+        if (!NSEqualRects(scene.map, [self mapRect])) return;
+        if (scene.surface_body) {
+            // 地表と同一の描画済みフレームだけを選択する。未描画の状態には触れない。
+            if (!_surfaceSkyPickScene || !_surfaceSkyPickModel || _surfaceSkyPickModel != _surfaceSkyModel) return;
+            const auto skyScene = _surfaceSkyPickScene->scene();
+            if (!skyScene.surface_body || !NSEqualRects(skyScene.map, [self mapRect])) return;
+            const auto star = pick_surface_star(_surfaceSkyPickModel->stars(), skyScene.camera,
+                skyScene.map.size.width, skyScene.map.size.height,
+                {click.x - skyScene.map.origin.x, click.y - skyScene.map.origin.y},
+                _surfaceSkyPickOptions.visible, _surfaceSkyPickMagnitudeLimit, [&](ScreenPoint point) {
+                    return solar_scene_opaque_at(skyScene, NSMakePoint(skyScene.map.origin.x + point.x,
+                                                                      skyScene.map.origin.y + point.y));
+                });
+            std::optional<std::size_t> constellation;
+            if (!star) {
+                const auto site = surface_sky_site_from_camera(skyScene.camera, skyScene.bodies, *skyScene.surface_body);
+                const ObservationFrame observation({site.latitude_deg, site.longitude_deg},
+                                                   skyScene.bodies[site.body_index].orientation);
+                const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg, skyScene.camera.vertical_fov_deg};
+                const auto result = pick_horizon_constellation(_surfaceSkyPickModel->constellations(),
+                    [&](std::int32_t hip) -> std::optional<EquatorialCoordinates> {
+                        const auto index = _surfaceSkyPickModel->star_index(hip);
+                        if (!index) return std::nullopt;
+                        const auto& star = _surfaceSkyPickModel->stars()[*index];
+                        return EquatorialCoordinates{star.right_ascension_degrees, star.declination_degrees};
+                    }, _surfaceSkyPickConstellations, observation, viewport,
+                    skyScene.map.size.width, skyScene.map.size.height,
+                    {click.x - skyScene.map.origin.x, click.y - skyScene.map.origin.y}, 6,
+                    [&](ScreenPoint point) {
+                        return !solar_scene_opaque_at(skyScene, NSMakePoint(skyScene.map.origin.x + point.x,
+                                                                          skyScene.map.origin.y + point.y));
+                    });
+                if (result) constellation = result->record_index;
+            }
+            [self applySurfaceSkyStar:star constellation:constellation];
+            return;
+        }
+        if (scene.physical_navigation) return;
         const auto picked = pick_solar_body(scene, click);
         if (picked) [self selectBody:*picked];
         else {
@@ -784,45 +920,37 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
         NSString *galaxyStatus = nil;
         bool galaxyDrawn = false;
-        // 離陸完了後も、地球の局所座標で表せる間は同じ星空を維持する。
-        std::optional<SurfaceSite> earthSite;
-        if (_surfaceStarRenderer && ((frame.surface_body && *frame.surface_body == 3) ||
-                                     (_physicalSpaceActive && frame.physical_navigation && !frame.surface_body))) {
-            try { earthSite = surface_site_from_camera(frame.camera, frame.bodies, 3); }
-            catch (const std::invalid_argument&) {
-                // ロールや地球からの距離により局所座標で表せない場合は通常の銀河描画を使う。
-            }
-        }
-        const bool sharedStars = earthSite.has_value();
-        {
+        // 地表は同じ公開フレーム内の天体姿勢を使い、星・星座と3Dカメラを揃える。
+        // 離陸後の宇宙視点は従来どおり地球の局所座標で表せる間だけ共有する。
+        std::optional<SurfaceSite> skySite;
+        if (_surfaceStarRenderer && (frame.surface_body ||
+                                     (_physicalSpaceActive && frame.physical_navigation))) {
             try {
-                const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(frame.camera));
-                [_galaxyOverlay setHipVisible:_hipVisible && !sharedStars];
-                [_galaxyOverlay drawInRect:frame.map camera:galaxyCamera quality:frame.renderer_display
-                                    scale:frame.backing_scale];
-                galaxyDrawn = true;
-                galaxyStatus = _galaxyOverlay.status;
-            } catch (const std::exception& error) {
-                galaxyStatus = [NSString stringWithFormat:@"銀河を表示できません: %s", error.what()];
+                skySite = frame.surface_body
+                    ? surface_sky_site_from_camera(frame.camera, frame.bodies, *frame.surface_body)
+                    : surface_site_from_camera(frame.camera, frame.bodies, 3);
+            }
+            catch (const std::invalid_argument&) {
+                // 局所座標を復元できない場合は通常の銀河描画を使う。
             }
         }
-        if (sharedStars) {
-            // 公開済みの地形フレームと同じ視点から座標を復元し、線と星のずれを避ける。
-            const auto& site = *earthSite;
-            const ObservationFrame observation({site.latitude_deg, site.longitude_deg}, frame.julian_date);
-            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
-            if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
-                const double maximumDimension = self.flightAnimating ? 512 : 1024;
+        const bool sharedStars = skySite.has_value();
+        // 同じ全天画像を宇宙視点でも使い、銀河の 3D 描画へ徐々に引き継ぐ。
+        if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
+            const double opacity = solar_background_opacity(frame.camera);
+            if (opacity > 0) {
+                const double maximumDimension = (self.flightAnimating || _dragged) ? 512 : 1024;
                 const double scale = std::min(1.0, maximumDimension / std::max(frame.map.size.width, frame.map.size.height));
                 const auto width = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.width * scale), 1.0, maximumDimension));
                 const auto height = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.height * scale), 1.0, maximumDimension));
-                // AU 座標からの再計算誤差で、垂直移動中に同じ背景を毎フレーム生成しない。
-                const auto stable = [](double value) { return std::round(value * 1e7) / 1e7; };
-                const std::array<double, 8> key{stable(site.latitude_deg), stable(site.longitude_deg),
-                    stable(site.heading_deg), stable(site.elevation_deg), stable(site.roll_deg), frame.julian_date,
-                    static_cast<double>(width), static_cast<double>(height)};
+                const auto axes = solar_camera_basis(frame.camera);
+                const auto stable = [](double value) { return std::round(value * 1e10) / 1e10; };
+                const std::array<double, 12> key{stable(axes.outward.x), stable(axes.outward.y), stable(axes.outward.z),
+                    stable(axes.right.x), stable(axes.right.y), stable(axes.right.z),
+                    stable(axes.up.x), stable(axes.up.y), stable(axes.up.z),
+                    static_cast<double>(width), static_cast<double>(height), frame.camera.vertical_fov_deg};
                 if (!_surfaceBackgroundKey || *_surfaceBackgroundKey != key) {
-                    const auto pixels = render_horizon_background(*texture, viewport, observation, width, height);
+                    const auto pixels = render_solar_background(*texture, frame.camera, width, height);
                     NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
                         pixelsWide:width pixelsHigh:height bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
                         isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
@@ -838,8 +966,27 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 RendererQualityScope clipped(context, frame.renderer_display);
                 CGContextClipToRect(context, frame.map);
                 [_surfaceBackgroundImage drawInRect:frame.map fromRect:NSZeroRect operation:NSCompositingOperationPlusLighter
-                    fraction:1 respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
+                    fraction:opacity respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
             }
+        }
+        {
+            try {
+                const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(frame.camera));
+                [_galaxyOverlay setHipVisible:_hipVisible && !sharedStars];
+                [_galaxyOverlay drawInRect:frame.map camera:galaxyCamera quality:frame.renderer_display
+                                    scale:frame.backing_scale];
+                galaxyDrawn = true;
+                galaxyStatus = _galaxyOverlay.status;
+            } catch (const std::exception& error) {
+                galaxyStatus = [NSString stringWithFormat:@"銀河を表示できません: %s", error.what()];
+            }
+        }
+        if (sharedStars) {
+            // 公開済みの地形フレームと同じ視点から座標を復元し、線と星のずれを避ける。
+            const auto& site = *skySite;
+            const ObservationFrame observation({site.latitude_deg, site.longitude_deg},
+                                               frame.bodies[site.body_index].orientation);
+            const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg, frame.camera.vertical_fov_deg};
             if (_surfaceConstellationArt)
                 draw_horizon_constellation_art(context, *_surfaceConstellationArt, _surfaceConstellationOptions,
                     frame.renderer_display, observation, viewport, frame.map);
@@ -851,23 +998,33 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             [_surfaceStarRenderer drawInRect:frame.map magnitudeLimit:_surfaceMagnitudeLimit
                 options:_surfaceStarOptions quality:frame.renderer_display
                 projector:[&](EquatorialCoordinates coordinates) -> std::optional<StarProjection> {
-                    constexpr double radians = 3.14159265358979323846 / 180;
-                    const double ra = coordinates.right_ascension_deg * radians;
-                    const double dec = coordinates.declination_deg * radians;
-                    const auto direction = j2000_equatorial_to_ecliptic(
-                        {std::cos(dec) * std::cos(ra), std::cos(dec) * std::sin(ra), std::sin(dec)});
-                    // 星を無限遠に置き、現在の太陽系カメラの向きだけで投影する。
-                    constexpr double distance = 1e6;
-                    const Vec3 position{frame.camera.target.x + direction.x * distance,
-                                        frame.camera.target.y + direction.y * distance,
-                                        frame.camera.target.z + direction.z * distance};
-                    const auto point = project_solar(position, frame.camera, frame.map.size.width, frame.map.size.height);
-                    if (!point || point->x < 0 || point->x > frame.map.size.width ||
-                        point->y < 0 || point->y > frame.map.size.height) return std::nullopt;
+                    const auto point = project_surface_star(coordinates, frame.camera,
+                                                            frame.map.size.width, frame.map.size.height);
+                    if (!point) return std::nullopt;
                     return StarProjection{{point->x, point->y}, 1};
                 }];
         }
         auto diagnostics = draw_solar_scene(context, frame);
+        _surfaceSkyPickScene = sharedStars && frame.surface_body ? frameOwner : nullptr;
+        _surfaceSkyPickModel = _surfaceSkyPickScene ? _surfaceSkyModel : nullptr;
+        _surfaceSkyPickOptions = _surfaceStarOptions;
+        _surfaceSkyPickConstellations = _surfaceConstellationOptions;
+        _surfaceSkyPickMagnitudeLimit = _surfaceMagnitudeLimit;
+        if (sharedStars && frame.surface_body && _surfaceStarOptions.visible && _surfaceStarSelection &&
+            _surfaceSkyModel && *_surfaceStarSelection < _surfaceSkyModel->stars().size()) {
+            const auto& star = _surfaceSkyModel->stars()[*_surfaceStarSelection];
+            const auto point = project_surface_star({star.right_ascension_degrees, star.declination_degrees},
+                                                   frame.camera, frame.map.size.width, frame.map.size.height);
+            if (point && star.apparent_v_magnitude <= _surfaceMagnitudeLimit &&
+                !solar_scene_opaque_at(frame, NSMakePoint(frame.map.origin.x + point->x, frame.map.origin.y + point->y))) {
+                RendererQualityScope clipped(context, frame.renderer_display);
+                CGContextClipToRect(context, frame.map);
+                [[NSColor systemYellowColor] setStroke];
+                NSBezierPath *marker = [NSBezierPath bezierPathWithOvalInRect:
+                    NSMakeRect(frame.map.origin.x + point->x - 6, frame.map.origin.y + point->y - 6, 12, 12)];
+                marker.lineWidth = 1; [marker stroke];
+            }
+        }
         if (galaxyDrawn && _ourGalaxyPointSelection) {
             const auto position = [_galaxyOverlay displayedOurGalaxyPointPosition:*_ourGalaxyPointSelection];
             if (position) {

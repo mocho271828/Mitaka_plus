@@ -1,4 +1,5 @@
 #import "AppControllerInternal.h"
+#import "SolarSystemViewInternal.h"
 #include "galaxy_spatial_load.hpp"
 #include "mitaka/our_galaxy_model.hpp"
 
@@ -13,6 +14,10 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     return [lines componentsJoinedByString:@"\n"];
 }
 }
+
+@interface AppController (GalaxyStatusPresentation)
+- (void)refreshPresentation;
+@end
 
 @implementation AppController (GalaxyCommands)
 - (void)prepareGalaxyForDataRoot:(NSString *)path {
@@ -44,16 +49,21 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
 - (void)loadPlusGalaxyCatalogs:(id)sender {
     if (!_extendedCatalogs || _loading || _galaxyLoading) return;
     // この操作を選んだ場合だけ、同名の通常版ファイルとは異なるPlus形式として読む。
-    [self loadGalaxyIncludingPlus:YES];
-    [self showGalaxyBrowser:sender];
+    (void)sender;
+    [self loadGalaxyIncludingPlus:YES showMainWhenReady:YES];
 }
 - (void)loadGalaxyIncludingPlus:(BOOL)includePlus {
+    [self loadGalaxyIncludingPlus:includePlus showMainWhenReady:NO];
+}
+- (void)loadGalaxyIncludingPlus:(BOOL)includePlus showMainWhenReady:(BOOL)showMainWhenReady {
     if (!_extendedCatalogs || !_activePath || _loading) return;
     if (_galaxyCancellation) _galaxyCancellation->store(true);
     const auto cancellation = std::make_shared<std::atomic_bool>(false);
     _galaxyCancellation = cancellation;
     _galaxyLoading = YES;
     const NSUInteger generation = ++_galaxyGeneration, dataGeneration = _loadGeneration;
+    const NSUInteger modeGeneration = _modeGeneration;
+    const NSInteger initialMode = _mode.selectedSegment;
     const auto catalogs = _extendedCatalogs;
     // NSString は空文字を fileSystemRepresentation に変換できない。
     // 空の出典はローダー側でエラーにし、表示中のモデルを保持する。
@@ -62,6 +72,7 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     NSString *progress = includePlus ? @"SDSSと、選択フォルダの旧Plus形式を読み込み中…"
                                     : @"読み込み済みSDSSから3D位置を計算中…";
     [_galaxyBrowser setModel:_galaxyModel diagnostics:progress];
+    if (_model && !_loading) [self refreshPresentation];
     __weak AppController *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         GalaxySpatialLoadResult result;
@@ -99,8 +110,16 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
                 controller->_galaxyDiagnostics = diagnosticText(result.diagnostics);
                 [controller->_solar setGalaxyModel:controller->_galaxyModel];
                 if (ourGalaxy) [controller->_solar setOurGalaxyModel:ourGalaxy];
+                // 読込中にモード変更された場合は、後着した結果で操作を覆さない。
+                if (showMainWhenReady && !result.plus_source_failed && initialMode != 1 &&
+                    controller->_modeGeneration == modeGeneration && controller->_mode.selectedSegment == initialMode) {
+                    controller->_mode.selectedSegment = 1;
+                    [controller changeMode:nil];
+                    [controller->_solar showGalaxyCatalogOverview];
+                }
             }
             [controller->_galaxyBrowser setModel:controller->_galaxyModel diagnostics:controller->_galaxyDiagnostics];
+            if (controller->_model && !controller->_loading) [controller refreshPresentation];
             [NSApp.mainMenu update];
         });
     });
@@ -111,6 +130,7 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     _galaxyCancellation.reset();
     _galaxyLoading = NO;
     [_galaxyBrowser setModel:_galaxyModel diagnostics:_galaxyDiagnostics ? _galaxyDiagnostics : @""];
+    if (_model && !_loading) [self refreshPresentation];
 }
 - (void)invalidateGalaxy {
     [self cancelGalaxyLoading];
@@ -121,5 +141,6 @@ NSString *diagnosticText(const std::vector<std::string>& diagnostics) {
     [_solar setOurGalaxyModel:nullptr];
     [_galaxyBrowser invalidate];
     [_galaxyBrowser setModel:nullptr diagnostics:_galaxyDiagnostics];
+    if (_model && !_loading) [self refreshPresentation];
 }
 @end

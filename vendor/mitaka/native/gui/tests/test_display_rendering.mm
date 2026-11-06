@@ -5,6 +5,7 @@
 #import "SmallBodyRenderer.h"
 #import "SkyCatalogRenderer.h"
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -273,6 +274,106 @@ void small_body_orbit_rendering_tests() {
     check(outsideIsBlank, "comet orbit escaped its drawing rectangle");
 }
 
+void real_packed_orbit_rendering_tests(const char* directory) {
+    const auto dataset = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
+    const auto model = std::make_shared<SmallBodyModel>(dataset);
+    const NSRect map = NSMakeRect(20, 30, 360, 240);
+    for (const auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian}) {
+        const auto found = std::find_if(dataset->records.begin(), dataset->records.end(), [&](const auto& record) {
+            return record.kind == kind && record.encoding == SmallBodyEncoding::packed_36;
+        });
+        check(found != dataset->records.end(), "local dataset has no packed36 row for this kind");
+        const auto row = static_cast<std::size_t>(found - dataset->records.begin());
+        const auto display = std::make_shared<SmallBodyDisplayModel>(dataset);
+        display->set_selected_ids({found->id});
+        for (const auto other : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet})
+            display->set_kind_options(other, {false, false, false, true});
+        display->set_kind_options(kind, {true, false, true, true});
+        const auto orbits = evaluate_small_body_orbit_snapshot(model, display, {2451362, 2451728, 129});
+        check(orbits->requested_count == 1 && orbits->minor_planet_paths[row] && !orbits->paths[row],
+              "real packed36 row should use its own orbit evaluator");
+        const auto& path = *orbits->minor_planet_paths[row];
+        check(path.samples.size() == 129 && path.samples.front().position,
+              "real packed36 orbit must contain its epoch position");
+        auto snapshot = evaluate_small_body_snapshot(model, path.samples.front().julian_date);
+        check(snapshot->positions[row].has_value(), "real packed36 epoch marker must evaluate");
+        const auto position = *snapshot->positions[row];
+        const auto endpoint = *path.samples.front().position;
+        check(std::hypot(position.x-endpoint.x, position.y-endpoint.y, position.z-endpoint.z) < 1e-10,
+              "real packed36 marker and orbit must agree at the epoch");
+        SolarCamera camera;
+        camera.distance_au = kind == SmallBodyKind::asteroid ? 20 : 200;
+        const auto visible = visible_small_bodies(*snapshot, *display, camera, map);
+        check(visible.size() == 1 && visible[0].index == row, "only the chosen real source row is visible");
+        check(pick_small_body(*snapshot, *display, camera, map,
+                NSMakePoint(visible[0].point.x, visible[0].point.y)) == row,
+              "real packed36 marker must be selectable at its displayed position");
+        std::vector<SmallBodyProjectedOrbitSegment> segments;
+        visit_small_body_orbit_segments(*snapshot, *display, orbits.get(), camera, map,
+            [&](const auto& segment) { segments.push_back(segment); });
+        check(!segments.empty() && segments.front().index == row,
+              "real packed36 selected row must produce visible orbit segments");
+        check(std::hypot(segments.front().first.x-visible[0].point.x,
+                         segments.front().first.y-visible[0].point.y) < 1e-8,
+              "real packed36 orbit projection must start at the visible marker");
+        for (const double jd : {2451545.0, 2461350.5}) {
+            auto at_date = evaluate_small_body_snapshot(model, jd);
+            const auto points = visible_small_bodies(*at_date, *display, camera, map);
+            check(points.size() == 1 && points[0].index == row, "real packed36 marker must remain visible at a non-epoch date");
+            check(pick_small_body(*at_date, *display, camera, map, NSMakePoint(points[0].point.x, points[0].point.y)) == row,
+                  "real packed36 marker must remain selectable at a non-epoch date");
+            double nearest = std::numeric_limits<double>::infinity();
+            visit_small_body_orbit_segments(*at_date, *display, orbits.get(), camera, map, [&](const auto& seg) {
+                const double dx=seg.second.x-seg.first.x, dy=seg.second.y-seg.first.y;
+                const double q=dx*dx+dy*dy;
+                const double t=q ? std::clamp(((points[0].point.x-seg.first.x)*dx+(points[0].point.y-seg.first.y)*dy)/q, 0.0, 1.0) : 0.0;
+                nearest=std::min(nearest,std::hypot(points[0].point.x-seg.first.x-t*dx, points[0].point.y-seg.first.y-t*dy));
+            });
+            check(nearest < 0.25, "real packed36 marker should lie near its rendered orbit at a non-epoch date");
+        }
+        // 点を取り除き、軌道線自体が画素を生成したことを検証する。
+        SmallBodySnapshot orbit_only = *snapshot;
+        orbit_only.positions[row].reset();
+        const auto draw = [&] { return render([&](CGContextRef context) {
+            draw_small_bodies(context, orbit_only, *display, orbits.get(), camera, map, {}, {});
+        }); };
+        const auto blank = render([](CGContextRef) {});
+        const auto shown = draw();
+        check(shown != blank, "real packed36 orbit produced no pixels");
+        display->set_selected_ids({});
+        check(draw() == blank, "removing source membership must hide the real packed36 orbit");
+        display->set_selected_ids({found->id});
+        check(draw() == shown, "restoring source membership must restore the real packed36 orbit");
+    }
+}
+
+void high_eccentricity_probe(const char* directory) {
+    auto dataset = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
+    auto model = std::make_shared<SmallBodyModel>(dataset);
+    auto display = std::make_shared<SmallBodyDisplayModel>(dataset);
+    auto found=std::find_if(dataset->records.begin(),dataset->records.end(),[](const auto& r) { return r.id.source_key=="TNO.dat" && r.id.record_ordinal==1111; });
+    check(found!=dataset->records.end(), "high eccentricity row missing");
+    auto row=static_cast<std::size_t>(found-dataset->records.begin());
+    display->set_selected_ids({found->id});
+    for(auto kind : {SmallBodyKind::asteroid, SmallBodyKind::trans_neptunian, SmallBodyKind::comet}) display->set_kind_options(kind,{false,false,false,true});
+    display->set_kind_options(SmallBodyKind::trans_neptunian,{true,false,true,true});
+    auto path=evaluate_small_body_orbit_snapshot(model,display,{2451362,2451728,129});
+    auto snap=evaluate_small_body_snapshot(model,2461350.5);
+    check(snap->positions[row].has_value(), "high eccentricity position missing");
+    NSRect map=NSMakeRect(20,30,360,240);
+    for(double distance:{20.,100.,500.}) for(double yaw:{0.,90.,180.}) {
+        SolarCamera camera; camera.set_target_au(*snap->positions[row]); camera.distance_au=distance; camera.yaw_deg=yaw;
+        auto points=visible_small_bodies(*snap,*display,camera,map); check(points.size()==1,"high eccentricity point absent");
+        double best=std::numeric_limits<double>::infinity();
+        visit_small_body_orbit_segments(*snap,*display,path.get(),camera,map,[&](const auto& seg) {
+            double dx=seg.second.x-seg.first.x,dy=seg.second.y-seg.first.y,q=dx*dx+dy*dy;
+            double t=q?std::clamp(((points[0].point.x-seg.first.x)*dx+(points[0].point.y-seg.first.y)*dy)/q,0.,1.):0.;
+            best=std::min(best,std::hypot(points[0].point.x-seg.first.x-t*dx,points[0].point.y-seg.first.y-t*dy));
+        });
+        check(best < 2.0, "high-e real marker stays near its sampled orbit");
+    }
+}
+
 void star_tests(const char* directory) {
     auto model = std::make_shared<SkyModel>(SkyModel::load(directory));
     const auto binary = std::find_if(model->stars().begin(), model->stars().end(),
@@ -446,7 +547,7 @@ int main(int argc, char** argv) {
             solar_tests();
             small_body_quality_tests();
             small_body_orbit_rendering_tests();
-            if (argc == 2) star_tests(argv[1]);
+            if (argc == 2) { real_packed_orbit_rendering_tests(argv[1]); high_eccentricity_probe(argv[1]); star_tests(argv[1]); }
             std::cout << "display rendering tests passed (" << checks << " checks)\n";
         } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }

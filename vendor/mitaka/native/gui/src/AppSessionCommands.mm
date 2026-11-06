@@ -46,6 +46,8 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     state.sky_viewport = [_sky viewport];
     state.horizon_viewport = [_horizon viewport];
     state.solar_camera = [_solar cameraState];
+    SurfaceSite surface;
+    if ([_solar scriptSurfaceSite:&surface]) state.surface_site = surface;
     const NSUInteger selected = _solar.selectedBodyIndex;
     state.selected_body = selected < _solarBodies.size() ? _solarBodies[selected].id : Body::sun;
     if (_sky.selectedBodyIndex < _bodies.size()) state.sky_selected_body = _bodies[_sky.selectedBodyIndex].id;
@@ -60,6 +62,11 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         // 全項目と日時範囲を先に検査し、不正ファイルで部分的な状態変更を起こさない。
         const auto state = decode_session_state(encode_session_state(value));
         (void)_model->bodies(state.julian_date);
+        if (state.surface_site) {
+            SurfaceNavigation surface;
+            surface.set_site(*state.surface_site);
+            (void)surface.camera(_model->solar_bodies(state.julian_date));
+        }
         if (!_smallBodyModel || !_smallBodyDisplay || !_satelliteDisplay || !_starNameSelection)
             throw std::invalid_argument("session state: display catalogs are unavailable");
         (void)prepare_display_layers(state, *_model, *_smallBodyModel, *_smallBodyDisplay, *_satelliteDisplay, *_starNameSelection);
@@ -87,6 +94,13 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         }
         [_playback setPlusTimeZone:state.plus_time_zone];
         [_solar setCameraState:state.solar_camera];
+        if (state.surface_site) {
+            NSString *failure = nil;
+            if (![_solar restoreSurfaceSite:*state.surface_site error:&failure]) {
+                const char *message = failure.UTF8String;
+                throw std::logic_error(message ? message : "validated surface site could not be restored");
+            }
+        }
         for (NSUInteger i = 0; i < _solarBodies.size(); ++i)
             if (_solarBodies[i].id == state.selected_body) [_solar selectBody:i];
         [_sky setViewport:state.sky_viewport];

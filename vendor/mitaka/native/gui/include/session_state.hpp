@@ -2,6 +2,7 @@
 
 #include "sky_model.hpp"
 #include "solar_camera.hpp"
+#include "surface_navigation.hpp"
 #include "horizon_viewport.hpp"
 #include "calendar_time.hpp"
 #include "sky_background.hpp"
@@ -37,6 +38,8 @@ struct SessionState {
     SkyViewport sky_viewport;
     HorizonViewport horizon_viewport;
     SolarCamera solar_camera;
+    // 停止中の地表を復元するときは、この地表固定座標がカメラ位置・姿勢に優先する。
+    std::optional<SurfaceSite> surface_site;
     Body selected_body = Body::sun;
     std::optional<Body> sky_selected_body;
     std::optional<Body> horizon_selected_body;

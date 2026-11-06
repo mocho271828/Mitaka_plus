@@ -44,6 +44,28 @@ void rejects_field(NSString *field, id value) {
     rejects([&] { decode_session_state(json_bytes(object)); });
 }
 
+void test_surface_session() {
+    SessionState state;
+    check(!decode_session_state(encode_session_state(state)).surface_site, "old session acquired surface state");
+    state.surface_site = SurfaceSite{4, -35, 139, minimum_surface_height_km, 210, -30, 42, -3};
+    const auto json = encode_session_state(state);
+    const auto restored = decode_session_state(json);
+    check(restored.surface_site && restored.surface_site->body_index == 4 &&
+          restored.surface_site->terrain_offset_km == -3 && restored.surface_site->roll_deg == 42 &&
+          encode_session_state(restored) == json, "surface site did not roundtrip");
+    for (const auto bad : {SurfaceSite{0}, SurfaceSite{11}, SurfaceSite{4, 91},
+                           SurfaceSite{4, 0, 0, 0.1}, SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 91},
+                           SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 0, 0, -4000}}) {
+        state.surface_site = bad;
+        rejects([&] { encode_session_state(state); });
+    }
+    auto object = session_object();
+    object[@"surface_site"] = NSNull.null;
+    rejects([&] { decode_session_state(json_bytes(object)); });
+    object[@"surface_site"] = @{@"body_index": @4};
+    rejects([&] { decode_session_state(json_bytes(object)); });
+}
+
 void test_roundtrip() {
     SessionState state;
     auto json = encode_session_state(state);
@@ -51,6 +73,20 @@ void test_roundtrip() {
     check(encode_session_state(initial) == json, "default state did not roundtrip exactly");
     check(initial.version == 9 && initial.simulation_rate == 3600 && !initial.solar_camera.frame,
           "default values changed");
+    for (const double fov : {0.001, 45.0, 90.0}) {
+        state.solar_camera.vertical_fov_deg = fov;
+        check(decode_session_state(encode_session_state(state)).solar_camera.vertical_fov_deg == fov,
+              "solar camera FOV did not roundtrip");
+    }
+    NSMutableDictionary *old_fov = session_object();
+    [old_fov[@"solar_camera"] removeObjectForKey:@"fov_deg"];
+    check(decode_session_state(json_bytes(old_fov)).solar_camera.vertical_fov_deg == 45,
+          "legacy solar FOV default");
+    for (const double fov : {0.0, -1.0, 90.1}) {
+        state.solar_camera.vertical_fov_deg = fov;
+        rejects([&] { encode_session_state(state); });
+    }
+    state.solar_camera.vertical_fov_deg = 45;
     state.solar_camera.roll(37);
     check(decode_session_state(encode_session_state(state)).solar_camera.roll_deg == 37,
           "camera roll did not roundtrip");
@@ -225,7 +261,7 @@ void test_missing_null_and_types() {
         NSArray *keys = [object[parent] allKeys];
         for (NSString *key in keys) {
             if ([parent isEqualToString:@"solar_camera"] &&
-                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"])) continue;
+                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"] || [key isEqualToString:@"fov_deg"])) continue;
             if ([parent isEqualToString:@"horizon_viewport"] &&
                 ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"fov_deg"])) continue;
             object = session_object();
@@ -451,6 +487,8 @@ void test_plus_time_zone() {
     check(!decode_session_state(default_json).plus_time_zone, "default timezone was inferred");
     check(session_object()[@"plus_time_zone"] == NSNull.null, "absent timezone was not encoded as null");
     SessionState state;
+    // 整数秒が JD の浮動小数点で近似されても保存・復元で値を変えない。
+    state.julian_date = mitaka::julian_date({2000,1,2,3,4,5});
     state.time_settings.utc_offset_minutes = 540;
     check(!decode_session_state(encode_session_state(state)).plus_time_zone,
           "UI offset was copied into an unset Plus timezone");
@@ -459,6 +497,8 @@ void test_plus_time_zone() {
         state.plus_time_zone = PlusTimeZone(seconds);
         const auto json = encode_session_state(state);
         const auto restored = decode_session_state(json);
+        check(restored.julian_date == state.julian_date,
+              "calendar-adjacent Julian date changed during session restore");
         check(restored.plus_time_zone && restored.plus_time_zone->seconds_west_of_utc == seconds,
               "explicit Plus timezone changed or became unset");
         check(restored.time_settings.utc_offset_minutes == 540,
@@ -600,6 +640,7 @@ void test_layer_roundtrip_and_boundaries() {
 int main() {
     @autoreleasepool {
         try {
+            test_surface_session();
             test_roundtrip();
             test_missing_null_and_types();
             test_ranges_and_camera();

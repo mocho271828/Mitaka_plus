@@ -26,7 +26,7 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
     // 公式mtk_planets.cppの赤道半径。月はmtk_satellites.hの定数による球近似。
     // 木土天海の「着陸」は固体地表ではなく、この基準半径への移動を意味する。
     static constexpr std::array<SurfaceBodyInfo, 10> bodies{{
-        {2439.7, false}, {6051.8, false}, {6378.1366, false}, {3396.19, false},
+        {2439.7, false}, {6051.8, false}, {earth_reference_radius_km, false}, {3396.19, false},
         {71492, true}, {60268, true}, {25559, true}, {24764, true},
         {1185, false}, {1738.092, false}
     }};
@@ -36,7 +36,8 @@ SurfaceBodyInfo surface_body_info(std::size_t body_index) {
 }
 
 static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, const SolarBodies& bodies,
-                                                 std::size_t body_index, bool preserve_roll) {
+                                                 std::size_t body_index, bool preserve_roll,
+                                                 double terrain_offset_km = 0) {
     const auto info = surface_body_info(body_index);
     const auto& body = bodies.at(body_index);
     const auto basis = solar_camera_basis(camera);
@@ -45,15 +46,16 @@ static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, cons
                       camera.target.y + basis.outward.y * camera.distance_au - center.y,
                       camera.target.z + basis.outward.z * camera.distance_au - center.z};
     const double distance = std::hypot(offset.x, offset.y, offset.z);
-    double height = distance * astronomical_unit_km - info.radius_km;
+    double height = distance * astronomical_unit_km - info.radius_km - terrain_offset_km;
     // AU 座標の減算で 2 m の境界をわずかに下回る丸め誤差を補う。
     if (height >= minimum_surface_height_km - 1e-6) height = std::max(height, minimum_surface_height_km);
     if (!std::isfinite(height) || height < minimum_surface_height_km || height > maximum_height_km)
         throw std::invalid_argument("camera height cannot be represented by surface navigation");
     const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
     const Vec3 up{offset.x / distance, offset.y / distance, offset.z / distance};
-    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
-    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double x = dot(up, body.orientation.x_axis), y = dot(up, body.orientation.y_axis);
+    const double latitude = std::atan2(dot(up, body.orientation.north_axis), std::hypot(x, y));
+    const double longitude = std::atan2(y, x);
     const double clat = std::cos(latitude), slat = std::sin(latitude);
     const double clon = std::cos(longitude), slon = std::sin(longitude);
     const auto east = transform({-slon, clon, 0}, body.orientation);
@@ -67,6 +69,7 @@ static SurfaceSite surface_site_from_camera_impl(const SolarCamera& camera, cons
         : std::atan2(-dot(basis.right, north), dot(basis.right, east)) / radians_per_degree;
     SurfaceSite site{body_index, latitude / radians_per_degree, longitude / radians_per_degree,
                      height, azimuth, elevation};
+    site.terrain_offset_km = terrain_offset_km;
     SurfaceNavigation candidate;
     candidate.set_site(site);
     const auto restored = solar_camera_basis(candidate.camera(bodies));
@@ -88,6 +91,25 @@ SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const 
     return surface_site_from_camera_impl(camera, bodies, body_index, true);
 }
 
+std::optional<SurfaceSite> surface_site_from_camera_with_known_terrain(
+    const SolarCamera& camera, const SolarBodies& bodies, std::size_t body_index,
+    const SurfaceSite& known_site) {
+    if (known_site.body_index != body_index || known_site.terrain_offset_km >= 0) return std::nullopt;
+    SurfaceNavigation previous;
+    previous.set_site(known_site);
+    const auto previous_camera = previous.camera(bodies);
+    const auto eye = [](const SolarCamera& c) {
+        const auto outward = solar_camera_basis(c).outward;
+        return Vec3{c.target.x + outward.x * c.distance_au,
+                    c.target.y + outward.y * c.distance_au,
+                    c.target.z + outward.z * c.distance_au};
+    };
+    const auto a = eye(camera), b = eye(previous_camera);
+    // AU 座標の丸めを許す一方、約 1.5 mm 以上離れた地点には古い地形高を使わない。
+    if (!(std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) <= 1e-14)) return std::nullopt;
+    return surface_site_from_camera_impl(camera, bodies, body_index, true, known_site.terrain_offset_km);
+}
+
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
                                             std::size_t body_index) {
     surface_body_info(body_index);
@@ -103,8 +125,9 @@ SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const Sol
     const Vec3 up = distance > 1e-15 ? Vec3{offset.x / distance, offset.y / distance, offset.z / distance}
                                      : body.orientation.x_axis;
     const auto dot = [](Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; };
-    const double latitude = std::asin(std::clamp(dot(up, body.orientation.north_axis), -1.0, 1.0));
-    const double longitude = std::atan2(dot(up, body.orientation.y_axis), dot(up, body.orientation.x_axis));
+    const double x = dot(up, body.orientation.x_axis), y = dot(up, body.orientation.y_axis);
+    const double latitude = std::atan2(dot(up, body.orientation.north_axis), std::hypot(x, y));
+    const double longitude = std::atan2(y, x);
     const double clat = std::cos(latitude), slat = std::sin(latitude);
     const double clon = std::cos(longitude), slon = std::sin(longitude);
     const auto east = transform({-slon, clon, 0}, body.orientation);
@@ -129,6 +152,7 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
         || !std::isfinite(site.longitude_deg) || !std::isfinite(site.heading_deg)
         || !std::isfinite(site.elevation_deg) || std::abs(site.elevation_deg) > 90
         || !std::isfinite(site.roll_deg)
+        || !std::isfinite(site.terrain_offset_km) || site.terrain_offset_km <= -surface_body_info(site.body_index).radius_km || site.terrain_offset_km > maximum_height_km
         || !std::isfinite(site.height_km) || site.height_km < minimum_surface_height_km
         || site.height_km > maximum_height_km)
         throw std::invalid_argument("invalid surface site");
@@ -137,6 +161,36 @@ void SurfaceNavigation::set_site(SurfaceSite site) {
     site.roll_deg = std::remainder(site.roll_deg, 360);
     site_ = site;
     interrupt();
+}
+
+void SurfaceNavigation::update_terrain_offset(double offset_km) {
+    if (!std::isfinite(offset_km) || offset_km <= -surface_body_info(site_.body_index).radius_km || offset_km > maximum_height_km)
+        throw std::invalid_argument("invalid terrain offset");
+    if (offset_km == site_.terrain_offset_km) return;
+
+    const double old_offset = site_.terrain_offset_km;
+    // 地表に立っている場合は新地形に追従する。上空では可能な限り
+    // 半径を維持するが、新たな地形の内部に入る場合は安全な地上へ戻す。
+    const double height = site_.height_km == minimum_surface_height_km
+        ? minimum_surface_height_km
+        : std::clamp(site_.height_km + old_offset - offset_km,
+                     minimum_surface_height_km, maximum_height_km);
+    if (flight_) {
+        auto& flight = *flight_;
+        const double progress = std::clamp((flight.previous_time - flight.start_time) / flight.duration, 0.0, 1.0);
+        const double remaining = flight.duration * (1.0 - progress);
+        // 着陸は地上2mを目標に保ち、離陸は可能な限り元の半径を保つ。
+        if (flight.end_height != minimum_surface_height_km)
+            flight.end_height = std::clamp(flight.end_height + old_offset - offset_km,
+                                           minimum_surface_height_km, maximum_height_km);
+        flight.start_time = flight.previous_time;
+        flight.duration = remaining;
+        flight.start_height = height;
+        flight.start_elevation = site_.elevation_deg;
+        flight.start_roll = site_.roll_deg;
+    }
+    site_.terrain_offset_km = offset_km;
+    site_.height_km = height;
 }
 
 SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
@@ -169,7 +223,7 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
     const auto right = frame.right, cameraUp = frame.up;
     frame.right = {right.x * cr + cameraUp.x * sr, right.y * cr + cameraUp.y * sr, right.z * cr + cameraUp.z * sr};
     frame.up = {cameraUp.x * cr - right.x * sr, cameraUp.y * cr - right.y * sr, cameraUp.z * cr - right.z * sr};
-    const double distance = (info.radius_km + site_.height_km) / astronomical_unit_km;
+    const double distance = (info.radius_km + site_.terrain_offset_km + site_.height_km) / astronomical_unit_km;
     SolarCamera result;
     result.distance_au = distance;
     result.target = {center.x + (up.x + forward.x) * distance,
@@ -200,8 +254,10 @@ void SurfaceNavigation::begin_flight(double time, double height, double elevatio
 }
 
 void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_seconds) {
-    begin_flight(monotonic_seconds, std::max(site_.height_km,
-                 surface_body_info(site_.body_index).radius_km * 8), -80, site_.roll_deg, duration_seconds);
+    // 読み込みの前後で地形 offset が変わっても、到達先は基準球から同じ距離にする。
+    const double target_height = surface_body_info(site_.body_index).radius_km * 8 - site_.terrain_offset_km;
+    begin_flight(monotonic_seconds, std::max(site_.height_km, target_height),
+                 -80, site_.roll_deg, duration_seconds);
 }
 
 void SurfaceNavigation::begin_descent(double monotonic_seconds, double duration_seconds) {
@@ -248,7 +304,7 @@ void SurfaceNavigation::look(double dx_points, double dy_points) {
     auto next = site_;
     next.heading_deg = heading(next.heading_deg - std::remainder(dx_points, 360 / 0.35) * 0.35);
     next.elevation_deg = std::clamp(next.elevation_deg + std::clamp(dy_points, -1000.0, 1000.0) * 0.35,
-                                  -89.0, 89.0);
+                                  -90.0, 90.0);
     set_site(next);
 }
 

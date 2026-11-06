@@ -26,13 +26,15 @@ bool has(const MinorPlanetPositionEvaluation& result, Code code) {
     return std::any_of(result.diagnostics.begin(), result.diagnostics.end(),
         [=](const auto& item) { return item.code == code; });
 }
-void position(const MinorPlanetPositionEvaluation& result, Vec3 expected, double tolerance = 2e-13) {
+void position(const MinorPlanetPositionEvaluation& result, Vec3 expected, double tolerance = 2e-13,
+              std::string_view contract = minor_planet_packed_position_contract) {
     expect(result.heliocentric_j2000_ecliptic_au.has_value(), "position available");
     const auto actual = *result.heliocentric_j2000_ecliptic_au;
     near(actual.x, expected.x, tolerance); near(actual.y, expected.y, tolerance); near(actual.z, expected.z, tolerance);
-    expect(result.contract == minor_planet_packed_position_contract, "successful contract identified");
+    expect(result.contract == contract && result.status == MinorPlanetPositionStatus::success,
+           "successful contract identified");
     expect(has(result, Code::unresolved_time_scale), "physical time uncertainty retained");
-    expect(!has(result, Code::unresolved_frame), "dedicated contract resolves packed spatial frame");
+    expect(!has(result, Code::unresolved_frame), "dedicated contract resolves spatial frame");
 }
 void rejected(const MinorPlanetPositionEvaluation& result, Code code) {
     expect(!result.heliocentric_j2000_ecliptic_au && result.contract.empty(), "failure exposes no position or successful contract");
@@ -126,7 +128,7 @@ void invalid_and_unverified() {
     rejected(evaluate_minor_planet_position(item, 2451547), Code::calculation_failed);
     item = base; elements(item).epoch_jd = -std::numeric_limits<double>::max();
     rejected(evaluate_minor_planet_position(item, std::numeric_limits<double>::max()), Code::calculation_failed);
-    for (auto encoding : {SmallBodyEncoding::packed_37, SmallBodyEncoding::element_text, SmallBodyEncoding::comet_fixed_width}) {
+    for (auto encoding : {SmallBodyEncoding::packed_37, SmallBodyEncoding::comet_fixed_width}) {
         item = base; item.encoding = encoding;
         rejected(evaluate_minor_planet_position(item, 2451545), Code::invalid_source);
     }
@@ -170,6 +172,7 @@ struct Fixture {
     Fixture() { std::filesystem::create_directories(root); }
     ~Fixture() { std::error_code ec; std::filesystem::remove_all(root, ec); }
     void write(const std::string& name, const std::string& bytes) const {
+        std::filesystem::create_directories((root/name).parent_path());
         std::ofstream out(root/name, std::ios::binary); out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         if (!out) throw std::runtime_error("fixture write failed");
     }
@@ -224,23 +227,105 @@ void loaded_custom_records() {
     expect(source(data, "mp.dat").bytes == many && data.records.front().raw_record_bytes == bytes, "loaded snapshot retains original after file changes");
 }
 
+void loaded_element_records() {
+    Fixture fixture;
+    const std::string body = "Name: Custom\r\nNo: -1\r\nEpoch: 2451545.25\r\na: 4\r\ne: 0\r\n"
+                             "M0: 0\r\nw: 0\r\nnode: 0\r\ni: 0\r\nVisible: 0\r\nSize: 1 2 3\r\n";
+    const auto asteroid = "Type: Asteroid\r\n" + body;
+    fixture.write("orbits/asteroids/a.dat", asteroid);
+    fixture.write("orbits/asteroids/a_jp.dat", asteroid + "DisplayName: \x83\x5a\x83\x8c\x83\x58\r\n");
+    fixture.write("orbits/asteroids/tno.dat", "Type: TNObject\r\n" + body);
+    auto explicit_n = asteroid;
+    explicit_n.replace(explicit_n.find("a: 4"), 4, "a: 2");
+    explicit_n += "n: 90\r\n";
+    fixture.write("orbits/asteroids/explicit-n.dat", explicit_n);
+    const auto data = load_small_body_dataset(fixture.root);
+    expect(data.records.size() == 4, "individual and language source rows are never merged by number");
+    for (const auto& item : data.records) {
+        const auto original = item.raw_record_bytes;
+        expect(original == source(data, item.id.source_key).bytes && item.id.record_ordinal == 0
+               && item.number == -1, "individual source bytes and identity retained");
+        const auto& orbit = std::get<OrbitalElements>(item.orbit);
+        expect(orbit.epoch_jd == 2451545.25, "individual Epoch remains numeric JD");
+        if (item.id.source_key == "orbits/asteroids/explicit-n.dat") {
+            near(orbit.mean_motion_deg_per_day, 90, 0);
+            const Vec3 expected[]{{2,0,0},{0,2,0},{-2,0,0},{0,-2,0},{2,0,0}};
+            for (int day = 0; day <= 4; ++day)
+                position(evaluate_minor_planet_position(item, orbit.epoch_jd + day), expected[day],
+                         2e-13, minor_planet_element_position_contract);
+            for (const std::string invalid : {"0", "-1", "nan", "inf", "invalid", "90 trailing"}) {
+                auto changed = item;
+                auto field = std::find_if(changed.fields.begin(), changed.fields.end(),
+                                          [](const auto& f) { return f.key == "n"; });
+                expect(field != changed.fields.end(), "explicit n field retained");
+                field->value_bytes = invalid;
+                rejected(evaluate_minor_planet_position(changed, orbit.epoch_jd), Code::invalid_source);
+            }
+            auto mismatch = item;
+            elements(mismatch).mean_motion_deg_per_day = 45;
+            rejected(evaluate_minor_planet_position(mismatch, orbit.epoch_jd), Code::invalid_source);
+            expect(item.raw_record_bytes == explicit_n && source(data, item.id.source_key).bytes == explicit_n,
+                   "explicit n evaluation preserves source bytes");
+            continue;
+        }
+        near(orbit.mean_motion_deg_per_day, 0.123200958625, 0);
+        const double period = 360 / orbit.mean_motion_deg_per_day;
+        for (int quarter = -1; quarter <= 4; ++quarter) {
+            const Vec3 expected[]{{4,0,0},{0,4,0},{-4,0,0},{0,-4,0}};
+            position(evaluate_minor_planet_position(item, orbit.epoch_jd + quarter * period / 4),
+                     expected[(quarter + 4) % 4], 2e-11, minor_planet_element_position_contract);
+        }
+        auto rotated = item;
+        elements(rotated).inclination_deg = 90;
+        elements(rotated).argument_of_periapsis_deg = 90;
+        position(evaluate_minor_planet_position(rotated, orbit.epoch_jd), {0,0,4}, 2e-13,
+                 minor_planet_element_position_contract);
+        for (double eccentricity : {0.5, std::nextafter(1., 0.)}) {
+            auto changed = item; elements(changed).eccentricity = eccentricity;
+            position(evaluate_minor_planet_position(changed, orbit.epoch_jd), {4*(1-eccentricity),0,0},
+                     2e-13, minor_planet_element_position_contract);
+        }
+        for (double eccentricity : {1., std::nextafter(1., 2.)}) {
+            auto changed = item; elements(changed).eccentricity = eccentricity;
+            rejected(evaluate_minor_planet_position(changed, orbit.epoch_jd), Code::calculation_failed);
+        }
+        for (int invalid = 0; invalid < 3; ++invalid) {
+            auto changed = item;
+            if (invalid == 0) changed.raw_record_bytes.clear();
+            if (invalid == 1) changed.raw_flag = 0;
+            if (invalid == 2) changed.kind = SmallBodyKind::comet;
+            rejected(evaluate_minor_planet_position(changed, orbit.epoch_jd), Code::invalid_source);
+        }
+        expect(item.raw_record_bytes == original && item.frame == SmallBodyFrame::unresolved
+               && item.time_scale == SmallBodyTimeScale::unresolved,
+               "successful individual evaluation never rewrites unresolved source metadata");
+        expect(has(evaluate_minor_planet_position(item, orbit.epoch_jd), Code::unknown_field),
+               "unknown display fields do not prevent position or acquire inferred semantics");
+    }
+}
+
 void real_data(const std::filesystem::path& directory) {
     expect(std::filesystem::is_directory(directory), "real data directory exists");
     const auto data = load_small_body_dataset(directory);
-    std::size_t candidates = 0, evaluated = 0, retained_other = 0;
+    std::size_t candidates = 0, individual = 0, evaluated = 0, retained_other = 0;
     for (const auto& item : data.records) {
         const auto& original = source(data, item.id.source_key);
         expect(original.bytes.substr(item.source_offset, item.raw_record_bytes.size()) == item.raw_record_bytes, "real bytes unchanged");
         const auto result = evaluate_minor_planet_position(item, 2451545);
         expect(result.id.source_key == item.id.source_key && result.id.record_ordinal == item.id.record_ordinal, "real source/ordinal unchanged");
-        if (item.encoding != SmallBodyEncoding::packed_36) {
+        const bool text = item.encoding == SmallBodyEncoding::element_text
+            && item.kind != SmallBodyKind::comet;
+        if (item.encoding != SmallBodyEncoding::packed_36 && !text) {
             rejected(result, Code::invalid_source); ++retained_other; continue;
         }
         ++candidates;
+        if (text) ++individual;
         const auto* orbit = std::get_if<OrbitalElements>(&item.orbit);
-        expect(orbit != nullptr, "parsed packed row has elements");
+        expect(orbit != nullptr, "parsed eligible row has elements");
         if (orbit->eccentricity >= 1) { rejected(result, Code::calculation_failed); continue; }
         expect(result.heliocentric_j2000_ecliptic_au.has_value(), "valid real ellipse evaluated");
+        expect(result.contract == (text ? minor_planet_element_position_contract
+                                       : minor_planet_packed_position_contract), "real encoding contract identified");
         ++evaluated;
         for (double jd : {orbit->epoch_jd, orbit->epoch_jd-123.5, orbit->epoch_jd+123.5}) {
             const auto at = evaluate_minor_planet_position(item, jd);
@@ -261,14 +346,14 @@ void real_data(const std::filesystem::path& directory) {
         expect(bytes == original.bytes, "real original source remains unchanged");
     }
     std::cout << "minor-planet real data: sources=" << data.sources.size() << " source diagnostics=" << data.diagnostics.size()
-              << " records=" << data.records.size() << " packed36=" << candidates
+              << " records=" << data.records.size() << " packed36=" << candidates-individual << " individual=" << individual
               << " evaluated=" << evaluated << " other retained=" << retained_other << '\n';
 }
 } // namespace
 
 int main(int argc, char** argv) {
     try {
-        analytic_geometry(); invalid_and_unverified(); periods_and_preservation(); loaded_custom_records();
+        analytic_geometry(); invalid_and_unverified(); periods_and_preservation(); loaded_custom_records(); loaded_element_records();
         for (int i = 1; i < argc; ++i) real_data(argv[i]);
         std::cout << "minor-planet position: " << checks << " checks passed\n";
     } catch (const std::exception& error) {

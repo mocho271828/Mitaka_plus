@@ -1,8 +1,10 @@
 #import "AppControllerInternal.h"
 #include "star_brightness.hpp"
+#include "script_object_identity.hpp"
 #include "SpacecraftRenderer.h"
 #include "our_galaxy_navigation.hpp"
 #include "shared_camera.hpp"
+#include "galaxy_script_identity.hpp"
 #include "mitaka/extended_catalog.hpp"
 #import "HtmlBrowserController.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -60,13 +62,6 @@ static HorizonViewport horizonWithOrientation(HorizonViewport viewport, mitaka::
     return viewport;
 }
 
-static std::string resolveScriptGalaxyAlias(const std::string& target) {
-    if (target == "Other.M31") return "Galaxy.Andromeda Galaxy";
-    if (target == "Other.M13") return "GC.NGC 6205";
-    if (target == "Other.M87") return "Galaxy.M87";
-    return target;
-}
-
 static std::string resolveScriptStarTarget(const std::string& target, NSString *dataPath) {
     const std::string name = target.substr(5);
     if (!name.empty() && std::all_of(name.begin(), name.end(), [](unsigned char ch) { return ch >= '0' && ch <= '9'; }))
@@ -85,48 +80,12 @@ static std::string resolveScriptStarTarget(const std::string& target, NSString *
 
 static std::optional<std::size_t> resolveScriptSmallBody(const std::string& target,
                                                           const mitaka::gui::SmallBodyModel& model) {
-    mitaka::SmallBodyKind kind;
-    std::size_t prefix;
-    if (target.compare(0, 10, "Asteroids.") == 0) { kind = mitaka::SmallBodyKind::asteroid; prefix = 10; }
-    else if (target.compare(0, 4, "TNO.") == 0) { kind = mitaka::SmallBodyKind::trans_neptunian; prefix = 4; }
-    else if (target.compare(0, 6, "Comet.") == 0) { kind = mitaka::SmallBodyKind::comet; prefix = 6; }
-    else return std::nullopt;
-    const std::string name = target.substr(prefix);
-    if (name.empty()) throw std::invalid_argument("Empty small-body target");
-    std::int32_t number = 0;
-    const auto parsed = std::from_chars(name.data(), name.data() + name.size(), number);
-    const bool isNumber = kind != mitaka::SmallBodyKind::comet && parsed.ec == std::errc{} &&
-                          parsed.ptr == name.data() + name.size() && number > 0;
-    std::optional<std::size_t> match;
-    const auto& records = model.dataset().records;
-    for (std::size_t index = 0; index < records.size(); ++index) {
-        const auto& record = records[index];
-        if (record.kind != kind) continue;
-        const bool matches = isNumber ? record.number == number :
-            record.name_bytes == name || std::find(record.alias_bytes.begin(), record.alias_bytes.end(), name) != record.alias_bytes.end();
-        if (!matches) continue;
-        if (match) throw std::invalid_argument("Ambiguous small-body target: " + target);
-        match = index;
-    }
-    if (!match) throw std::invalid_argument("Unknown small-body target: " + target);
-    return match;
+    return mitaka::gui::resolveScriptSmallBody(target, model.dataset());
 }
 
 static std::size_t resolveScriptSpacecraft(const std::string& target,
                                             const mitaka::gui::SpacecraftBrowserModel& model) {
-    const std::string name = target.substr(11);
-    if (name.empty()) throw std::invalid_argument("Empty spacecraft target");
-    std::optional<std::size_t> match;
-    const auto& definitions = model.model().dataset().definitions;
-    for (std::size_t index = 0; index < definitions.size(); ++index) {
-        const auto* display = mitaka::unique_spacecraft_field(definitions[index], "DisplayName");
-        const auto* internal = mitaka::unique_spacecraft_field(definitions[index], "Name");
-        if ((!display || display->value_bytes != name) && (!internal || internal->value_bytes != name)) continue;
-        if (match) throw std::invalid_argument("Ambiguous spacecraft target: " + target);
-        match = index;
-    }
-    if (!match) throw std::invalid_argument("Unknown spacecraft target: " + target);
-    return *match;
+    return mitaka::gui::resolveScriptSpacecraft(target, model.model().dataset());
 }
 
 static std::size_t resolveScriptSatellite(const std::string& target,
@@ -147,63 +106,14 @@ static std::size_t resolveScriptSatellite(const std::string& target,
 
 static mitaka::gui::GalaxySpatialRecordId resolveScriptGlobularCluster(
     const std::string& target, const mitaka::gui::GalaxySpatialModel& model) {
-    const auto name = target.substr(3);
-    if (name.empty()) throw std::invalid_argument("Empty globular-cluster target");
-    std::optional<mitaka::gui::GalaxySpatialRecordId> match;
-    for (std::size_t source = 0; source < model.sources().size(); ++source) {
-        const auto* catalog = std::get_if<mitaka::PlusGlobularClusterCatalog>(&model.sources()[source]);
-        if (!catalog) continue;
-        for (std::size_t ordinal = 0; ordinal < catalog->records.size(); ++ordinal) {
-            const auto& bytes = catalog->records[ordinal].name_bytes;
-            const auto end = std::find(bytes.begin(), bytes.end(), 0);
-            const std::string candidate(bytes.begin(), end);
-            if (candidate != name) continue;
-            if (match) throw std::invalid_argument("Ambiguous globular-cluster target: " + target);
-            match = mitaka::gui::GalaxySpatialRecordId{mitaka::gui::GalaxySpatialFamily::globular_cluster, source, ordinal};
-        }
-    }
-    if (!match) throw std::invalid_argument("Unknown globular-cluster target: " + target);
-    return *match;
+    return mitaka::gui::resolve_script_globular_cluster(target, model);
 }
 
 static mitaka::gui::GalaxySpatialRecordId resolveScriptNearbyGalaxy(
     const std::string& target, NSString *dataPath, const mitaka::gui::GalaxySpatialModel& model) {
-    const auto name = target.substr(7);
-    if (name.empty()) throw std::invalid_argument("Empty galaxy target");
-    if (!dataPath) throw std::invalid_argument("Galaxy-name catalog is unavailable");
-    const auto path = std::filesystem::path(dataPath.fileSystemRepresentation) / "nearby_galaxies_name.dat";
-    std::optional<mitaka::gui::GalaxySpatialRecordId> match;
-    for (const auto& line : mitaka::load_galaxy_name_table(path).lines) {
-        if (line.kind != mitaka::GalaxyNameLineKind::entry || line.key_bytes.size() < 2) continue;
-        // 英語名の後ろには間隔を置いて CP932 の日本語名が続く。
-        auto end = line.payload_bytes.find("  ");
-        const auto nonAscii = std::find_if(line.payload_bytes.begin(), line.payload_bytes.end(),
-                                           [](unsigned char ch) { return ch >= 0x80; });
-        end = std::min(end, static_cast<std::size_t>(nonAscii - line.payload_bytes.begin()));
-        auto candidate = line.payload_bytes.substr(0, end);
-        const auto last = candidate.find_last_not_of(" \t\r");
-        if (last == std::string::npos) continue;
-        candidate.resize(last + 1);
-        if (candidate != name) continue;
-        std::int32_t number = 0;
-        const char *first = line.key_bytes.data() + 1, *lastKey = line.key_bytes.data() + line.key_bytes.size();
-        const auto parsed = std::from_chars(first, lastKey, number);
-        if (parsed.ec != std::errc{} || parsed.ptr != lastKey || number <= 0) continue;
-        for (std::size_t source = 0; source < model.sources().size(); ++source) {
-            const auto* catalog = std::get_if<mitaka::PlusNearbyGalaxyCatalog>(&model.sources()[source]);
-            if (!catalog) continue;
-            for (std::size_t ordinal = 0; ordinal < catalog->records.size(); ++ordinal) {
-                const auto& record = catalog->records[ordinal];
-                if (record.catalog_code != static_cast<unsigned char>(line.key_bytes.front()) ||
-                    record.catalog_number != number) continue;
-                const mitaka::gui::GalaxySpatialRecordId id{mitaka::gui::GalaxySpatialFamily::nearby_galaxy, source, ordinal};
-                if (match && !(*match == id)) throw std::invalid_argument("Ambiguous galaxy target: " + target);
-                match = id;
-            }
-        }
-    }
-    if (!match) throw std::invalid_argument("Unknown galaxy target: " + target);
-    return *match;
+    const std::optional<std::filesystem::path> path = dataPath
+        ? std::optional{std::filesystem::path(dataPath.fileSystemRepresentation)} : std::nullopt;
+    return mitaka::gui::resolve_script_nearby_galaxy(target, path, model);
 }
 
 static std::size_t resolveScriptConstellation(const std::string& target, const mitaka::gui::SkyModel& model) {
@@ -247,23 +157,25 @@ static NSString *const scriptCompatibilityNote =
         state.start.z * std::cos(angle) + state.tangent.z * std::sin(angle)};
     const double latitude = progress >= 1 ? state.latitude : std::atan2(position.z, std::hypot(position.x, position.y)) * 180 / pi;
     const double longitude = progress >= 1 ? state.longitude : std::atan2(position.y, position.x) * 180 / pi;
-    if (state.mode == 1 && ![_solar moveScriptEarthSurfaceLatitude:latitude longitude:longitude]) {
+    if (state.mode == 1 && ![_solar moveScriptSurfaceBody:state.body_index latitude:latitude longitude:longitude]) {
         [self stopScriptPlaceTransition];
         return;
     }
-    _observerLatitude = latitude;
-    _observerLongitude = longitude;
-    [_horizon setObserverSite:{latitude, longitude}];
-    [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
-    [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+    if (state.body_index == 3) {
+        _observerLatitude = latitude;
+        _observerLongitude = longitude;
+        [_horizon setObserverSite:{latitude, longitude}];
+        [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
+        [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+    }
     if (progress >= 1) {
-        [_horizon setObserverPlaceIdentifier:state.target];
+        if (state.body_index == 3) [_horizon setObserverPlaceIdentifier:state.target];
         _scriptPlaceTransition.reset();
         [self stopScriptPlaceTransition];
     }
 }
 - (void)startScriptPlaceTransitionToLatitude:(double)latitude longitude:(double)longitude
-                                  duration:(double)duration target:(const std::string&)target {
+                                  duration:(double)duration body:(std::size_t)body target:(const std::string&)target {
     [self stopScriptPlaceTransition];
     auto unit = [](double lat, double lon) {
         constexpr double r = 3.14159265358979323846 / 180;
@@ -286,8 +198,8 @@ static NSString *const scriptCompatibilityNote =
     }
     tangent = {tangent.x / length, tangent.y / length, tangent.z / length};
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    _scriptPlaceTransition = ScriptPlaceTransition{start, tangent, std::acos(dot), now, duration, latitude, longitude, _mode.selectedSegment, target};
-    [_horizon setObserverPlaceIdentifier:std::string{}];
+    _scriptPlaceTransition = ScriptPlaceTransition{start, tangent, std::acos(dot), now, duration, latitude, longitude, _mode.selectedSegment, body, target};
+    if (body == 3) [_horizon setObserverPlaceIdentifier:std::string{}];
     __weak AppController *weakSelf = self;
     _scriptPlaceTimer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
         AppController *controller = weakSelf;
@@ -384,8 +296,10 @@ static NSString *const scriptCompatibilityNote =
         if (_scriptLookSpacecraftSnapshot) position = spacecraft_scene_position(*_scriptLookSpacecraftSnapshot, target.index);
     }
     if (!position) return NO;
-    return surface ? surfaceLook(*position, true)
-                   : [_horizon viewportForHeliocentricPosition:*position julianDate:_jd result:result];
+    if (surface) return surfaceLook(*position, true);
+    if (target.kind == ScriptLookTarget::Kind::small_body || target.kind == ScriptLookTarget::Kind::spacecraft)
+        return [_horizon viewportForTopocentricHeliocentricPosition:*position julianDate:_jd result:result];
+    return [_horizon viewportForHeliocentricPosition:*position julianDate:_jd result:result];
 }
 - (void)stopScriptCameraAnimation {
     _scriptAzimuthAnimation.reset();
@@ -478,36 +392,45 @@ static NSString *const scriptCompatibilityNote =
     [_scriptFovTimer invalidate];
     _scriptFovTimer = nil;
 }
+- (BOOL)scriptFovAvailable {
+    return (_mode.selectedSegment == 1 && [_solar scriptPlanetariumMode]) ||
+        (_mode.selectedSegment == 2 && !_horizonProjectionTimer && [_horizon viewport].perspective_blend == 0);
+}
+- (double)scriptFovValue {
+    return _mode.selectedSegment == 1 ? [_solar cameraState].vertical_fov_deg : [_horizon viewport].vertical_fov_deg;
+}
+- (void)setScriptFovValue:(double)value {
+    if (_mode.selectedSegment == 1) {
+        [_solar setScriptSurfaceFov:value];
+    } else {
+        auto viewport = [_horizon viewport];
+        viewport.vertical_fov_deg = value;
+        [_horizon setViewport:viewport];
+    }
+}
 - (void)updateScriptFovAnimation {
     if (!_scriptFovAnimation) return;
-    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0) {
-        [self stopScriptFovAnimation];
-        return;
-    }
+    if (_mode.selectedSegment != _scriptFovMode || ![self scriptFovAvailable]) { [self stopScriptFovAnimation]; return; }
     const auto animation = *_scriptFovAnimation;
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     const double t = std::clamp((now - animation.start_time) / animation.duration, 0.0, 1.0);
-    auto viewport = [_horizon viewport];
-    viewport.vertical_fov_deg = t >= 1 ? animation.target : animation.start + (animation.target - animation.start) * t;
-    [_horizon setViewport:viewport];
+    [self setScriptFovValue:t >= 1 ? animation.target : animation.start + (animation.target - animation.start) * t];
     if (t >= 1) [self stopScriptFovAnimation];
 }
 - (BOOL)animateScriptFovTo:(double)target duration:(double)duration error:(NSString **)error {
-    if (_mode.selectedSegment != 2 || _horizonProjectionTimer || [_horizon viewport].perspective_blend != 0 ||
-        !std::isfinite(target) || target <= 0 || target > 90 || !std::isfinite(duration) || duration < 0) {
-        if (error) *error = @"視野角は地平図で 0 より大きく 90 度以下、時間は 0 秒以上にしてください。";
+    if (![self scriptFovAvailable] || !std::isfinite(target) || target <= 0 || target > 90 || !std::isfinite(duration) || duration < 0) {
+        if (error) *error = @"視野角はプラネタリウムで 0 より大きく 90 度以下、時間は 0 秒以上にしてください。";
         return NO;
     }
     if (_scriptFovAnimation) [self updateScriptFovAnimation];
-    const double initial = [_horizon viewport].vertical_fov_deg;
+    const double initial = [self scriptFovValue];
     [self stopScriptFovAnimation];
     if (duration == 0 || initial == target) {
-        auto viewport = [_horizon viewport];
-        viewport.vertical_fov_deg = target;
-        [_horizon setViewport:viewport];
+        [self setScriptFovValue:target];
         return YES;
     }
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    _scriptFovMode = _mode.selectedSegment;
     _scriptFovAnimation = ScriptCameraAnimation{initial, target, now, duration, false};
     __weak AppController *weakSelf = self;
     _scriptFovTimer = [NSTimer timerWithTimeInterval:1.0 / 30.0 repeats:YES block:^(NSTimer *timer) {
@@ -531,29 +454,67 @@ static NSString *const scriptCompatibilityNote =
         AppController *controller = weakSelf;
         ScriptSnapshot state;
         if (!controller) return state;
+        // デフォルトの Sun を未選択時の実際の対象として返さない。
+        state.target.clear();
         [controller fillScriptTimeSnapshot:state];
         const NSUInteger selected = controller->_solar.selectedBodyIndex;
         if (![controller->_solar scriptOverviewTarget].empty())
             state.target = [controller->_solar scriptOverviewTarget];
-        else if (selected == 3 && ![controller->_solar scriptEarthPlaceTarget].empty())
+        else if (selected < scriptBodyNames.size() && ![controller->_solar scriptEarthPlaceTarget].empty())
             state.target = [controller->_solar scriptEarthPlaceTarget];
         else if (selected < scriptBodyNames.size()) state.target = scriptBodyNames[selected];
         else if (const auto hip = [controller->_solar selectedScriptStarHIP]) {
             state.target = controller->_scriptStarHIP == hip ? controller->_scriptStarTarget : "Star." + std::to_string(*hip);
         }
-        else if (controller->_scriptSmallBodyIndex &&
-                 controller->_solar.selectedSmallBodyIndex == *controller->_scriptSmallBodyIndex)
-            state.target = controller->_scriptSmallBodyTarget;
-        else if (controller->_scriptSpacecraftIndex &&
-                 controller->_solar.selectedSpacecraftIndex == *controller->_scriptSpacecraftIndex)
-            state.target = controller->_scriptSpacecraftTarget;
+        else if (const auto constellation = [controller->_solar selectedScriptConstellationInModel:controller->_model]) {
+            const auto& record = controller->_model->constellations()[*constellation];
+            // look と同じ名前解決で一意な ID だけを返す。
+            for (const auto& name : {record.abbreviation, record.english_name}) {
+                if (name.empty()) continue;
+                const auto& records = controller->_model->constellations();
+                const auto matches = std::count_if(records.begin(), records.end(), [&](const auto& candidate) {
+                    return candidate.abbreviation == name || candidate.english_name == name;
+                });
+                if (matches == 1) {
+                    state.target = "Constel." + name;
+                    break;
+                }
+            }
+        }
+        else if (controller->_solar.selectedSmallBodyIndex != NSNotFound) {
+            const auto index = controller->_solar.selectedSmallBodyIndex;
+            state.target.clear();
+            if (controller->_smallBodyModel) {
+                auto& snapshot = controller->_scriptLookSmallBodySnapshot;
+                if (!snapshot || snapshot->model != controller->_smallBodyModel || snapshot->julian_date != controller->_jd ||
+                    index >= snapshot->positions.size() || !snapshot->positions[index])
+                    snapshot = evaluate_small_body_snapshot(controller->_smallBodyModel, controller->_jd, false, index);
+                if (index < snapshot->positions.size() && snapshot->positions[index])
+                    state.target = mitaka::gui::smallBodySnapshotTarget(&controller->_smallBodyModel->dataset(), index,
+                        controller->_scriptSmallBodyIndex, controller->_scriptSmallBodyTarget);
+            }
+        }
+        else if (controller->_solar.selectedSpacecraftIndex != NSNotFound) {
+            const auto index = controller->_solar.selectedSpacecraftIndex;
+            state.target.clear();
+            if (controller->_spacecraftModel) {
+                auto& snapshot = controller->_scriptLookSpacecraftSnapshot;
+                if (!snapshot || snapshot->model != controller->_spacecraftModel || snapshot->julian_date != controller->_jd)
+                    snapshot = [controller spacecraftSnapshotAtDate:controller->_jd];
+                if (snapshot && spacecraft_scene_position(*snapshot, index))
+                    state.target = mitaka::gui::spacecraftSnapshotTarget(&controller->_spacecraftModel->model().dataset(), index,
+                        controller->_scriptSpacecraftIndex, controller->_scriptSpacecraftTarget);
+            }
+        }
         else if (controller->_satelliteModel &&
                  controller->_solar.selectedSatelliteIndex < controller->_satelliteModel->model().records().size())
             state.target = "Satellite." + controller->_satelliteModel->model().records()[controller->_solar.selectedSatelliteIndex].identifier_bytes;
-        else if (const auto galaxy = [controller->_solar selectedScriptGalaxyRecord]; galaxy &&
-                 controller->_scriptGalaxyModel == controller->_galaxyModel && controller->_scriptGalaxyRecord &&
-                 *galaxy == *controller->_scriptGalaxyRecord)
-            state.target = controller->_scriptGalaxyTarget;
+        else if (const auto galaxy = [controller->_solar selectedScriptGalaxyRecord]) {
+            state.target = mitaka::gui::script_galaxy_target_for_snapshot(
+                controller->_galaxyModel.get(), *galaxy, controller->_scriptGalaxyModel.get(),
+                controller->_scriptGalaxyRecord, controller->_scriptGalaxyTarget,
+                controller->_activePath ? std::optional{std::filesystem::path(controller->_activePath.fileSystemRepresentation)} : std::nullopt);
+        }
         else if ([controller->_solar isScriptOurGalaxySelected] && !controller->_scriptOurGalaxyTarget.empty())
             state.target = controller->_scriptOurGalaxyTarget;
         state.camera_distance_au = [controller->_solar cameraState].distance_au;
@@ -598,11 +559,10 @@ static NSString *const scriptCompatibilityNote =
         const double azimuth = scriptViewport.center_azimuth_deg;
         state.camera_azimuth_deg = azimuth > 180 ? azimuth - 360 : azimuth;
         state.camera_altitude_deg = scriptViewport.center_altitude_deg;
-        if (controller->_mode.selectedSegment == 2 && !controller->_horizonProjectionTimer &&
-            [controller->_horizon viewport].perspective_blend == 0)
-            state.camera_fov = [controller->_horizon viewport].vertical_fov_deg;
+        if ([controller scriptFovAvailable]) state.camera_fov = [controller scriptFovValue];
         state.camera_duration = controller->_scriptCameraDuration;
         state.camera_zoom_mode = controller->_scriptCameraZoomMode;
+        state.target_selection_mode = controller->_scriptTargetSelectionMode;
         if (controller->_mode.selectedSegment == 1)
             state.camera_mode = controller->_solar.scriptPlanetariumMode ? 0 : 1;
         else if (controller->_mode.selectedSegment == 2) state.camera_mode = 0;
@@ -613,8 +573,7 @@ static NSString *const scriptCompatibilityNote =
                 ? horizonOrientation([controller->_horizon viewport], controller->_horizon.observerSite, controller->_solarBodies)
                 : [controller->_solar scriptCameraOrientation];
             const auto e = plus_orientation_to_euler(q);
-            state.camera_orientation = std::array<double, 4>{static_cast<float>(q.x), static_cast<float>(q.y),
-                static_cast<float>(q.z), static_cast<float>(q.w)};
+            state.camera_orientation = std::array<double, 4>{q.x, q.y, q.z, q.w};
             state.camera_euler = std::array<double, 3>{e.heading, e.pitch, e.roll};
         }
         state.target_browser = controller->_browser.window.visible;
@@ -775,37 +734,49 @@ static NSString *const scriptCompatibilityNote =
                     throw std::invalid_argument("Camera target duration must be finite and nonnegative");
                 const auto initial = [_solar cameraState];
                 const auto previousRadius = [_solar scriptTargetRadiusAU];
-                if (action.text.compare(0, 13, "Planet.Earth.") == 0) {
+                const bool placeTarget = action.text.compare(0, 13, "Planet.Earth.") == 0
+                    || action.text.compare(0, 12, "Planet.Mars.") == 0
+                    || action.text.compare(0, 15, "Satellite.Moon.") == 0;
+                if (placeTarget) {
                     if (!_observerPlaces) throw std::invalid_argument("Observer place catalog is unavailable");
                     const auto place = std::find_if(_observerPlaces->places.begin(), _observerPlaces->places.end(),
-                        [&](const auto& candidate) { return candidate.target_name == action.text && observer_place_is_earth(candidate); });
-                    if (place == _observerPlaces->places.end()) throw std::invalid_argument("Unknown Earth place: " + action.text);
+                        [&](const auto& candidate) { return candidate.target_name == action.text && observer_place_body_index(candidate).has_value(); });
+                    if (place == _observerPlaces->places.end()) throw std::invalid_argument("Unknown place: " + action.text);
+                    const std::size_t body = *observer_place_body_index(*place);
                     const bool horizon = _mode.selectedSegment == 2;
                     const bool surface = _mode.selectedSegment == 1 && [_solar scriptPlanetariumMode];
                     const double latitude = place->latitude_degrees;
                     const double longitude = std::remainder(place->longitude_degrees, 360.0);
+                    if (!std::isfinite(latitude) || std::abs(latitude) > 90 || !std::isfinite(longitude))
+                        throw std::invalid_argument("Invalid place coordinates: " + action.text);
+                    if (horizon && body != 3)
+                        throw std::invalid_argument("Place selection requires an observer on the same body");
+                    SurfaceSite site;
+                    if (surface && (![_solar scriptSurfaceSite:&site] || site.body_index != body))
+                        throw std::invalid_argument("Place selection requires an observer on the same body");
+                    // 再指定時は現在時刻の補間位置を確定してから新しい遷移を始める。
+                    if (_scriptPlaceTransition) [self advanceScriptPlaceTransition];
                     if ((horizon || surface) && action.enabled && action.duration_seconds > 0) {
-                        SurfaceSite site;
-                        if (surface && (![_solar scriptSurfaceSite:&site] || site.body_index != 3))
-                            throw std::invalid_argument("Animated Earth place selection requires an Earth observer");
                         [self stopScriptPlaceTransition];
                         if (horizon) [_solar selectBody:3];
                         [_solar setScriptEarthPlaceTarget:action.text];
-                        [self startScriptPlaceTransitionToLatitude:latitude longitude:longitude duration:action.duration_seconds target:action.text];
+                        [self startScriptPlaceTransitionToLatitude:latitude longitude:longitude duration:action.duration_seconds body:body target:action.text];
                         break;
                     }
                     [self stopScriptPlaceTransition];
                     if (horizon) {
                         [_solar selectBody:3];
-                    } else if (![_solar selectScriptEarthPlaceLatitude:latitude longitude:longitude surface:surface error:error]) {
+                    } else if (![_solar selectScriptPlaceBody:body latitude:latitude longitude:longitude surface:surface error:error]) {
                         return NO;
                     }
-                    _observerLatitude = latitude;
-                    _observerLongitude = longitude;
-                    [_horizon setObserverSite:{latitude, longitude}];
-                    [_horizon setObserverPlaceIdentifier:action.text];
-                    [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
-                    [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+                    if (body == 3) {
+                        _observerLatitude = latitude;
+                        _observerLongitude = longitude;
+                        [_horizon setObserverSite:{latitude, longitude}];
+                        [_horizon setObserverPlaceIdentifier:action.text];
+                        [_sky setObservationSite:{latitude, longitude} julianDate:_jd];
+                        [_solar setObservationSite:{latitude, longitude} julianDate:_jd];
+                    }
                     if (!horizon && !surface) {
                         _mode.selectedSegment = 1;
                         [self changeMode:nil];
@@ -823,7 +794,7 @@ static NSString *const scriptCompatibilityNote =
                     if (action.enabled) [_solar animateScriptPlaceTargetFrom:initial duration:action.duration_seconds];
                     break;
                 }
-                const auto galaxyTarget = resolveScriptGalaxyAlias(action.text);
+                const auto galaxyTarget = mitaka::gui::resolve_script_galaxy_alias(action.text);
                 if (action.text == "Other.OurGalaxyCenter" || action.text == "Other.OurGalaxy") {
                     if (![_solar selectScriptOurGalaxyOverview:(action.text == "Other.OurGalaxy") error:error]) return NO;
                     _scriptOurGalaxyTarget = action.text;
@@ -938,7 +909,7 @@ static NSString *const scriptCompatibilityNote =
                     throw std::invalid_argument("Invalid Camera look duration");
                 std::optional<ScriptLookTarget> look;
                 HorizonViewport target;
-                const auto galaxyTarget = resolveScriptGalaxyAlias(action.text);
+                const auto galaxyTarget = mitaka::gui::resolve_script_galaxy_alias(action.text);
                 if (action.text == "Other.OurGalaxyCenter" || action.text == "Other.OurGalaxy") {
                     look = ScriptLookTarget{ScriptLookTarget::Kind::our_galaxy, 0};
                 } else if (galaxyTarget.compare(0, 3, "GC.") == 0 || galaxyTarget.compare(0, 7, "Galaxy.") == 0) {
@@ -979,7 +950,8 @@ static NSString *const scriptCompatibilityNote =
                 if (!look || ![self scriptLookViewport:*look result:&target])
                     throw std::invalid_argument("Unsupported or unavailable Camera:look target: " + action.text);
                 if (_mode.selectedSegment == 1 && [_solar scriptPlanetariumMode]) [_solar stopScriptOrientation];
-                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _horizonOrientationAnimation) [self updateScriptCameraAnimations];
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _horizonOrientationAnimation || _scriptLookTarget)
+                    [self updateScriptCameraAnimations];
                 const auto start = [self scriptCameraViewport];
                 target.roll_deg = start.roll_deg;
                 [self stopScriptCameraAnimation];
@@ -1197,6 +1169,12 @@ static NSString *const scriptCompatibilityNote =
             case ScriptActionKind::set_nebulae: _sky.showsNebulae = action.enabled; break;
             case ScriptActionKind::set_distant_galaxies: _sky.showsGalaxies = action.enabled; break;
             case ScriptActionKind::set_quasars: _sky.showsQuasars = action.enabled; break;
+            case ScriptActionKind::set_target_selection_mode:
+                _scriptTargetSelectionMode = static_cast<int>(action.number);
+                _sky.targetSelectionMode = _scriptTargetSelectionMode;
+                _horizon.targetSelectionMode = _scriptTargetSelectionMode;
+                _solar.targetSelectionMode = _scriptTargetSelectionMode;
+                break;
             case ScriptActionKind::set_camera_zoom_mode:
                 _scriptCameraZoomMode = static_cast<int>(action.number);
                 break;
@@ -1273,6 +1251,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 auto viewport = [self scriptCameraViewport];
                 double start = azimuth ? viewport.center_azimuth_deg : viewport.center_altitude_deg;
@@ -1301,6 +1281,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 _scriptAzimuthAnimation.reset();
                 auto viewport = [self scriptCameraViewport];
@@ -1321,6 +1303,8 @@ static NSString *const scriptCompatibilityNote =
                     [self updateScriptCameraAnimations];
                     [self stopScriptCameraAnimation];
                 }
+                // 再指定時の始点と他軸は、直前の timer tick ではなく現在時刻で確定する。
+                if (_scriptAzimuthAnimation || _scriptAltitudeAnimation || _scriptLookTarget) [self updateScriptCameraAnimations];
                 _scriptLookTarget.reset();
                 _scriptAltitudeAnimation.reset();
                 auto viewport = [self scriptCameraViewport];

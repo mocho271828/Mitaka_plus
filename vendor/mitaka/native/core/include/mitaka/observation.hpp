@@ -1,10 +1,10 @@
 #pragma once
 
-#include "mitaka/astronomy.hpp"
+#include "mitaka/rotation.hpp"
 
 namespace mitaka {
 
-// 球面地球上の地点。緯度は [-90,90]、東経は [-180,180]、単位は度。
+// 球面天体上の地点。緯度は [-90,90]、東経は [-180,180]、単位は度。
 struct ObserverSite {
     double latitude_deg;
     double longitude_deg;
@@ -17,18 +17,21 @@ struct HorizontalCoordinates {
     double altitude_deg;
 };
 
-// 一つの地点・JD の変換基底を保持し、多数の恒星で歳差・自転を再計算しない。
-// planet_orientation(earth, JD) と同じ公式 Mitaka の表示用歳差・自転を使う。
+// 一つの地点・姿勢の変換基底を保持し、多数の恒星で歳差・自転を再計算しない。
+// JD 指定では planet_orientation(earth, JD) と同じ公式 Mitaka の表示用歳差・自転を使う。
 // 入出力は J2000 赤道方向。屈折・視差・章動・極運動・時系変換は含まない。
 // JD の数値範囲は先発 Gregorian 年 -4712..9999（精度保証範囲ではない）。
 // 不正地点/非有限値は std::invalid_argument、JD 範囲外は std::out_of_range。
 class ObservationFrame {
 public:
     ObservationFrame(ObserverSite site, double julian_date);
+    // 指定天体の同一時刻の姿勢を使う。右手正規直交基底以外は拒否する。
+    ObservationFrame(ObserverSite site, const BodyOrientation& orientation);
     HorizontalCoordinates to_horizontal(EquatorialCoordinates coordinates) const;
     EquatorialCoordinates to_equatorial(HorizontalCoordinates coordinates) const;
 
 private:
+    void initialize(ObserverSite site, const BodyOrientation& orientation);
     Vec3 east_, north_, up_;
 };
 

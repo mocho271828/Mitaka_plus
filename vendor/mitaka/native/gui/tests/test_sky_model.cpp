@@ -198,6 +198,33 @@ void test_projection() {
          360 - std::atan(0.4142135623730950488 * 4 / 3) * 180 / 3.14159265358979323846);
 }
 
+void test_perspective_field_of_view() {
+    constexpr double width = 360, height = 180;
+    for (const double fov : {1e-6, 20., 45., 90.}) {
+        for (const double blend : {0.0, 0.5, 1.0}) {
+            const HorizonProjectionViewport view{73, 32, 90, blend, 15, fov};
+            const HorizonRasterProjection raster(view, width, height);
+            for (const ScreenPoint point : {ScreenPoint{20.5, 20.5}, {180.5, 90.5}, {340.5, 160.5}}) {
+                const auto direction = unproject_horizon(point, view, width, height);
+                const auto raster_direction = raster.direction(static_cast<std::size_t>(point.x), static_cast<std::size_t>(point.y));
+                near(raster_direction.right_ascension_deg, direction.right_ascension_deg, 1e-9);
+                near(raster_direction.declination_deg, direction.declination_deg, 1e-9);
+                const auto projected = project_horizon(direction, view, width, height);
+                check(projected.has_value(), "perspective direction should project");
+                near(projected->x, point.x, fov < 0.001 ? 1e-4 : 1e-7);
+                near(projected->y, point.y, fov < 0.001 ? 1e-4 : 1e-7);
+            }
+        }
+        const HorizonProjectionViewport view{0, 0, 180, 1, 0, fov};
+        near(unproject_horizon({width / 2, 0}, view, width, height).declination_deg, fov / 2, 1e-9);
+    }
+    for (const double fov : {0., -1., 90.01, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()}) {
+        const HorizonProjectionViewport view{0, 0, 180, 1, 0, fov};
+        rejects<std::invalid_argument>([&] { unproject_horizon({10, 10}, view, width, height); });
+        rejects<std::invalid_argument>([&] { normalize_horizon_viewport(view); });
+    }
+}
+
 void test_horizon_field_of_view() {
     constexpr double pi = 3.14159265358979323846;
     constexpr double perspective_scale = 0.4142135623730950488;
@@ -492,6 +519,7 @@ int main(int argc, char** argv) {
     try {
         test_projection();
         test_horizon_field_of_view();
+        test_perspective_field_of_view();
         test_navigation();
         test_model(directory);
         test_constellations(directory);

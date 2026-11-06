@@ -32,7 +32,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(view, @"探査機ブラウザ…", @selector(showSpacecraftBrowser:), self);
     command(view, @"銀河・球状星団の3D表示…", @selector(showGalaxyBrowser:), self);
     command(view, @"天の川銀河の全景（近似）", @selector(showOurGalaxyOverview:), self);
-    command(view, @"旧Plus形式の球状星団・近傍銀河を読み込む", @selector(loadPlusGalaxyCatalogs:), self);
+    command(view, @"旧Plus形式の球状星団・近傍銀河を主画面に読み込む", @selector(loadPlusGalaxyCatalogs:), self);
     command(view, @"画像・動画・音声ブラウザ…", @selector(showMediaBrowser:), self);
     command(view, @"太陽系の小天体を表示", @selector(toggleSmallBodies:), self);
     command(view, @"太陽系の衛星を表示", @selector(toggleSatellites:), self);

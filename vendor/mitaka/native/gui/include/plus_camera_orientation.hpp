@@ -18,9 +18,14 @@ struct PlusOrientationEuler {
 };
 
 inline PlusOrientationQuaternion plus_orientation_normalized(PlusOrientationQuaternion q) {
-    const double length = std::hypot(std::hypot(q.x, q.y), std::hypot(q.z, q.w));
-    if (!std::isfinite(length) || length == 0)
+    if (!std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z) || !std::isfinite(q.w))
         throw std::invalid_argument("camera orientation must be a finite nonzero quaternion");
+    const double scale = std::max({std::abs(q.x), std::abs(q.y), std::abs(q.z), std::abs(q.w)});
+    if (scale == 0)
+        throw std::invalid_argument("camera orientation must be a finite nonzero quaternion");
+    // 先に最大成分で縮尺を揃え、ノルム計算の overflow と subnormal の丸めを防ぐ。
+    q = {q.x / scale, q.y / scale, q.z / scale, q.w / scale};
+    const double length = std::hypot(std::hypot(q.x, q.y), std::hypot(q.z, q.w));
     return {q.x / length, q.y / length, q.z / length, q.w / length};
 }
 

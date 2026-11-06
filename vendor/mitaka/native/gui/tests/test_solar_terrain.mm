@@ -2,9 +2,12 @@
 #import "SolarSceneOwner.h"
 #include "satellite_browser_model.hpp"
 #include "surface_navigation.hpp"
+#include "surface_depth.hpp"
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+
+bool solar_scene_opaque_at(const SolarScene&, NSPoint);
 
 using namespace mitaka;
 using namespace mitaka::gui;
@@ -138,6 +141,54 @@ void snapshot_guards() {
     snapshot->status = TerrainSnapshotStatus::unavailable;
     check(!solar_terrain_frame(f.scene, 3), "missing terrain rendered");
 }
+void interior_selection() {
+    Fixture f;
+    f.camera.distance_au = .999 * Fixture::radius();
+    const NSPoint pixel = NSMakePoint(40.5, 40.5);
+    (void)visible_solar_bodies(f.scene);
+    check(pick_solar_body(f.scene, pixel) == std::optional<std::size_t>(3), "opaque fallback inside sphere was not selected");
+    check(solar_scene_opaque_at(f.scene, pixel), "opaque fallback failed to hide sky");
+    auto snapshot=f.snapshot(3);
+    snapshot->frame.mode=TerrainSurfaceMode::terrain;
+    snapshot->frame.samples.resize(81*81);
+    auto& sample=snapshot->frame.samples[40*81+40];
+    sample.distance_au=1e-8;
+    sample.normal_local={1,0,0};
+    check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "visible inside-datum terrain cannot be picked");
+    check(solar_scene_opaque_at(f.scene, pixel), "terrain failed to hide sky");
+    sample.distance_au=std::numeric_limits<double>::infinity();
+    check(pick_solar_body(f.scene, pixel)!=std::optional<std::size_t>(3), "uncovered inside-datum pixel selected terrain");
+    check(!solar_scene_opaque_at(f.scene, pixel), "transparent terrain hid sky");
+    snapshot->status=TerrainSnapshotStatus::failed;
+    check(pick_solar_body(f.scene, pixel)==std::optional<std::size_t>(3), "failed snapshot did not select opaque fallback");
+    check(solar_scene_opaque_at(f.scene, pixel), "failed terrain fallback failed to hide sky");
+    f.scene.planet_display.visible = false;
+    check(!solar_scene_opaque_at(f.scene, pixel), "hidden planet hid sky");
+}
+void raster_edge_selection() {
+    Fixture f;
+    const auto center = solar_display_position(f.scene, 3);
+    for (double fov : {45.0, 60.0, 75.0, 90.0}) {
+        f.camera.vertical_fov_deg = fov;
+        bool foundOpaque = false, foundTransparent = false;
+        for (int y = 0; y < 81 && !(foundOpaque && foundTransparent); ++y)
+            for (int x = 0; x < 81 && !(foundOpaque && foundTransparent); ++x) {
+                const bool rendered = bool(surface_sphere_fallback_distance(f.camera, center,
+                    Fixture::radius(), x + 0.5, y + 0.5, 81, 81));
+                for (double ox : {0.01, 0.99}) for (double oy : {0.01, 0.99}) {
+                    const NSPoint click = NSMakePoint(x + ox, y + oy);
+                    const bool analytic = bool(surface_sphere_fallback_distance(f.camera, center,
+                        Fixture::radius(), click.x, click.y, 81, 81));
+                    if (rendered == analytic || (rendered ? foundOpaque : foundTransparent)) continue;
+                    check(solar_scene_opaque_at(f.scene, click) == rendered, "fixture opacity must match raster");
+                    check((pick_solar_body(f.scene, click) == std::optional<std::size_t>(3)) == rendered,
+                        "surface pick must use the rasterized pixel at the limb");
+                    (rendered ? foundOpaque : foundTransparent) = true;
+                }
+            }
+        check(foundOpaque && foundTransparent, "fixture must cross the raster limb in both directions");
+    }
+}
 void owned_scene_lifetime() {
     std::optional<SolarSceneOwner> stored;
     std::weak_ptr<const PlanetTextures> weak_textures;
@@ -199,9 +250,12 @@ void owned_scene_lifetime() {
     check(weak_terrain.expired(), "replaced terrain retained after previous owner destruction");
 }
 }
-int main() {
+int main(int argc, char** argv) {
     @autoreleasepool {
         try {
+            if (argc == 2 && std::string(argv[1]) == "--pick-only") { interior_selection(); return 0; }
+            interior_selection();
+            raster_edge_selection();
             requests();
             snapshot_guards();
             owned_scene_lifetime();

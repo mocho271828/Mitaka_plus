@@ -40,6 +40,7 @@ SolarCamera direction_camera(GalaxyCameraPc camera) {
     result.pitch_deg = camera.pitch_deg;
     result.frame = camera.frame;
     result.roll_deg = camera.roll_deg;
+    result.vertical_fov_deg = camera.vertical_fov_deg;
     return result;
 }
 NativeEclipticPositionPc eye_position(GalaxyCameraPc camera) {

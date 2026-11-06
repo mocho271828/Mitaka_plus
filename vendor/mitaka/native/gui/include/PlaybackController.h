@@ -52,7 +52,8 @@
 - (void)pause;
 // 中断時は新しい日時を計算せず、最後に反映できた表示時刻を保持する。
 - (void)interruptWithMessage:(NSString *)message;
-- (void)setSimulationRate:(double)rate;
+// 再入による新しい操作が優先された場合や無効値では NO。
+- (BOOL)setSimulationRate:(double)rate;
 // 破棄前に呼ぶと、以降の再生操作を無効にする。
 - (void)invalidate;
 @end

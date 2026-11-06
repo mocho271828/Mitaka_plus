@@ -53,7 +53,8 @@ void validate(const SolarCamera& camera) {
     if (!finite(camera.target) || !std::isfinite(camera.yaw_deg)
         || !std::isfinite(camera.pitch_deg) || std::abs(camera.pitch_deg) > 89 || !std::isfinite(camera.roll_deg)
         || !std::isfinite(camera.distance_au) || camera.distance_au < minimum(camera)
-        || camera.distance_au > maximum_distance)
+        || camera.distance_au > maximum_distance || !std::isfinite(camera.vertical_fov_deg)
+        || camera.vertical_fov_deg <= 0 || camera.vertical_fov_deg > 90)
         throw std::invalid_argument("invalid solar camera");
     if (camera.precise_target &&
         (!valid_anchor(camera.precise_target->anchor_pc) || !finite(camera.precise_target->offset_au) ||
@@ -120,9 +121,9 @@ Vec3 camera_point(Vec3 position, const SolarCamera& camera, const SolarCameraBas
             camera.distance_au - dot(relative, axes.outward)};
 }
 
-std::optional<SolarProjection> project_point(Vec3 point, double near, double width, double height) {
+std::optional<SolarProjection> project_point(Vec3 point, double near, double width, double height, double tangent) {
     if (!finite(point) || point.z < near) return std::nullopt;
-    const double scale = (height / 2) / solar_camera_tangent_half_fov / point.z;
+    const double scale = (height / 2) / tangent / point.z;
     const double x = width / 2 + point.x * scale;
     const double y = height / 2 - point.y * scale;
     if (!std::isfinite(x) || !std::isfinite(y)) return std::nullopt;
@@ -190,6 +191,12 @@ void SolarCamera::translate_target_au(Vec3 delta_au) {
     precise_target = next;
 }
 
+double solar_camera_tangent(const SolarCamera& camera) {
+    validate(camera);
+    if (camera.vertical_fov_deg == 45) return solar_camera_tangent_half_fov;
+    return std::tan(std::max(camera.vertical_fov_deg, 1e-9) * radians_per_degree / 2);
+}
+
 SolarCameraBasis solar_camera_basis(const SolarCamera& camera) {
     validate(camera);
     return basis(camera);
@@ -200,8 +207,9 @@ Vec3 solar_camera_ray(const SolarCamera& camera, double x, double y, double widt
     dimensions(width, height);
     deltas(x, y);
     const auto axes = basis(camera);
-    const double horizontal = ((x - width / 2) / height) * (2 * solar_camera_tangent_half_fov);
-    const double vertical = ((height / 2 - y) / height) * (2 * solar_camera_tangent_half_fov);
+    const double tangent = solar_camera_tangent(camera);
+    const double horizontal = ((x - width / 2) / height) * (2 * tangent);
+    const double vertical = ((height / 2 - y) / height) * (2 * tangent);
     const Vec3 ray{-axes.outward.x + horizontal * axes.right.x + vertical * axes.up.x,
                    -axes.outward.y + horizontal * axes.right.y + vertical * axes.up.y,
                    -axes.outward.z + horizontal * axes.right.z + vertical * axes.up.z};
@@ -253,7 +261,7 @@ void SolarCamera::pan(double dx_points, double dy_points, double width, double h
     dimensions(width, height);
     deltas(dx_points, dy_points);
     const auto axes = basis(*this);
-    const double scale = 2 * distance_au * solar_camera_tangent_half_fov / height;
+    const double scale = 2 * distance_au * solar_camera_tangent(*this) / height;
     const double horizontal = dx_points * scale, vertical = dy_points * scale;
     translate_target_au({-axes.right.x * horizontal + axes.up.x * vertical,
                          -axes.right.y * horizontal + axes.up.y * vertical,
@@ -274,7 +282,7 @@ std::optional<SolarProjection> project_solar(Vec3 position, const SolarCamera& c
     validate(camera);
     dimensions(width, height);
     return project_point(camera_point(position, camera, basis(camera)),
-                         near_plane(camera), width, height);
+                         near_plane(camera), width, height, solar_camera_tangent(camera));
 }
 
 std::optional<std::array<SolarProjection, 2>> project_solar_segment(
@@ -294,8 +302,8 @@ std::optional<std::array<SolarProjection, 2>> project_solar_segment(
         if (a.z < near) a = clipped;
         else b = clipped;
     }
-    const auto projected_a = project_point(a, near, width, height);
-    const auto projected_b = project_point(b, near, width, height);
+    const auto projected_a = project_point(a, near, width, height, solar_camera_tangent(camera));
+    const auto projected_b = project_point(b, near, width, height, solar_camera_tangent(camera));
     if (!projected_a || !projected_b) return std::nullopt;
     return std::array<SolarProjection, 2>{*projected_a, *projected_b};
 }

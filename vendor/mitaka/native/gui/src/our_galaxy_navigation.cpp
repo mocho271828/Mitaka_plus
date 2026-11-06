@@ -8,7 +8,6 @@ namespace mitaka::gui {
 namespace {
 constexpr double radius_pc = 8000.0;
 constexpr double pi = 3.14159265358979323846;
-constexpr double tangent_half_fov = 0.41421356237309504880;
 
 Vec3 add(Vec3 a, Vec3 b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
 Vec3 sub(Vec3 a, Vec3 b) { return {a.x-b.x, a.y-b.y, a.z-b.z}; }
@@ -78,12 +77,14 @@ bool hit_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera,
     direction_camera.pitch_deg = camera.pitch_deg;
     direction_camera.frame = camera.frame;
     direction_camera.roll_deg = camera.roll_deg;
+    direction_camera.vertical_fov_deg = camera.vertical_fov_deg;
     const auto axes = solar_camera_basis(direction_camera);
     const Vec3 delta = add(sub({camera.target.x_pc,camera.target.y_pc,camera.target.z_pc},
                                {center.x_pc,center.y_pc,center.z_pc}),
                            mul(camera.target_offset_au, 1 / astronomical_units_per_parsec));
     const Vec3 r0 = add(delta, mul(axes.outward,camera.distance_pc));
     if (dot(r0,r0) < 2*radius_pc*radius_pc) return false;
+    const double tangent_half_fov = solar_camera_tangent(direction_camera);
     const double horizontal = (x-width/2)/height * (2*tangent_half_fov);
     const double vertical = (height/2-y)/height * (2*tangent_half_fov);
     const auto galactic = official_axes();
@@ -118,7 +119,9 @@ GalaxyCameraPc frame_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc cam
     if (!std::isfinite(visible_radius_pc) || visible_radius_pc <= 0)
         throw std::invalid_argument("invalid OurGalaxy framing radius");
     camera = center_our_galaxy(placement,camera);
-    const double tangent = tangent_half_fov * std::min(1.0,width/height);
+    SolarCamera direction_camera;
+    direction_camera.vertical_fov_deg = camera.vertical_fov_deg;
+    const double tangent = solar_camera_tangent(direction_camera) * std::min(1.0,width/height);
     camera.distance_pc = visible_radius_pc*std::hypot(1.0,tangent)/tangent;
     return checked_galaxy_camera(camera);
 }

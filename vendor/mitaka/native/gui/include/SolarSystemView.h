@@ -28,6 +28,8 @@ namespace mitaka { struct OurGalaxyModel; }
 namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeometry; struct GalaxySpatialVisibility; class GalaxySpatialModel; struct HipSpatialModel; }
 
 @interface SolarSystemView : NSView
+@property(nonatomic) NSInteger targetSelectionMode;
+@property(nonatomic, strong) NSTrackingArea *targetSelectionTrackingArea;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
 @property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
 @property(nonatomic) mitaka::gui::TerrainAmplification terrainAmplification;
@@ -87,6 +89,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)showOurGalaxyOverview;
 - (void)showSurface;
 - (NSString *)cameraStateDescription;
+- (BOOL)setScriptSurfaceFov:(double)degrees;
 - (mitaka::gui::SolarCamera)cameraState;
 - (void)setCameraState:(const mitaka::gui::SolarCamera&)camera;
 // 検証に失敗した場合は、視点・追従・飛行状態を変更しない。
@@ -104,6 +107,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)stopScriptTargetTransition;
 - (void)animateScriptTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
 - (void)animateScriptPlaceTargetFrom:(const mitaka::gui::SolarCamera&)initial duration:(double)duration;
+- (BOOL)selectScriptPlaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error;
+- (BOOL)moveScriptSurfaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude;
 - (BOOL)selectScriptEarthPlaceLatitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error;
 - (BOOL)moveScriptEarthSurfaceLatitude:(double)latitude longitude:(double)longitude;
 - (void)setScriptEarthPlaceTarget:(const std::string&)target;
@@ -112,6 +117,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)selectScriptOverviewTarget:(const std::string&)target error:(NSString **)error;
 - (BOOL)selectScriptStarTarget:(const std::string&)target error:(NSString **)error;
 - (std::optional<std::int32_t>)selectedScriptStarHIP;
+- (std::optional<std::size_t>)selectedScriptConstellationInModel:(const std::shared_ptr<const mitaka::gui::SkyModel>&)model;
 - (std::optional<mitaka::gui::GalaxySpatialRecordId>)selectedScriptGalaxyRecord;
 - (BOOL)isScriptOurGalaxySelected;
 - (BOOL)selectScriptGalaxyRecord:(mitaka::gui::GalaxySpatialRecordId)record error:(NSString **)error;
@@ -169,6 +175,8 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)earthSurfaceSite:(mitaka::gui::SurfaceSite *)site;
 - (BOOL)scriptSurfaceSite:(mitaka::gui::SurfaceSite *)site;
+// 読込済みの同一 JD の天体位置を使い、検証済み地表視点を停止状態で復元する。
+- (BOOL)restoreSurfaceSite:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude;
 - (BOOL)scriptBodyEclipticPosition:(NSUInteger)index result:(mitaka::Vec3 *)result;
 - (BOOL)scriptSurfaceLookVector:(mitaka::Vec3)vector position:(BOOL)isPosition result:(mitaka::gui::SurfaceSite *)result;
@@ -177,8 +185,10 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @end
 
 @interface SolarSystemView (SmokeTests)
+- (NSString *)flightNoticeForSmokeTest;
 - (BOOL)runContinuousFlightSmokeTest;
 - (BOOL)runSurfaceNavigationSmokeTest;
+- (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion;
 - (BOOL)runCameraSmokeTest;
 - (BOOL)runTextureSmokeTest;
 - (BOOL)runRotationSmokeTest:(const mitaka::BodyOrientation&)laterEarthOrientation;

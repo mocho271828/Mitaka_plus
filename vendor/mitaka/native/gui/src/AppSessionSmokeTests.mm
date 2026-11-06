@@ -110,6 +110,25 @@ void requireSession(bool condition, const char *message) {
                        sameSessionSmokeJSON(encode_session_state([self sessionState]), savedJSON),
                        "v9 layer settings did not restore from JSON");
 
+        auto surface = saved;
+        surface.mode = 1;
+        surface.solar_camera.vertical_fov_deg = 30;
+        surface.surface_site = SurfaceSite{4, -20, 45, minimum_surface_height_km, 125, 15, 22, -2};
+        requireSession([self applySessionState:decode_session_state(encode_session_state(surface))],
+                       "surface session did not restore");
+        SurfaceSite restoredSite;
+        requireSession([_solar scriptSurfaceSite:&restoredSite] && restoredSite.body_index == 4 &&
+                       restoredSite.latitude_deg == -20 && restoredSite.longitude_deg == 45 &&
+                       restoredSite.height_km == minimum_surface_height_km &&
+                       std::isfinite(restoredSite.terrain_offset_km) &&
+                       restoredSite.heading_deg == 125 && restoredSite.elevation_deg == 15 &&
+                       restoredSite.roll_deg == 22 &&
+                       [_solar cameraState].vertical_fov_deg == 30 &&
+                       [self sessionState].surface_site.has_value(),
+                       "surface view, orientation, terrain or FOV was lost");
+        requireSession([self applySessionState:saved] && ![_solar scriptSurfaceSite:nullptr],
+                       "legacy camera did not clear surface state");
+
         auto precise = saved;
         precise.solar_camera.set_target_pc({1e9, -2e9, 3e9});
         precise.solar_camera.translate_target_au({0.001, -0.002, 0.003});

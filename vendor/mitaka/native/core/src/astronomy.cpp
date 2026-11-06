@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 #include "mitaka/astronomy.hpp"
+#include "kepler_solver.hpp"
 
 #include <algorithm>
 #include <array>
@@ -80,6 +81,8 @@ Vec3 orbital_to_reference(Vec3 v, const OrbitalElements& e) {
     return rotate_z(v, std::remainder(e.ascending_node_deg, 360.0) * radians);
 }
 
+} // namespace
+namespace detail {
 // 単調な方程式を二分法で解き、近放物線軌道で Newton 法が停滞する場合も反復を有界にする。
 double eccentric_anomaly(double eccentricity, double mean_anomaly) {
     const bool elliptic = eccentricity < 1.0;
@@ -103,6 +106,8 @@ double eccentric_anomaly(double eccentricity, double mean_anomaly) {
     throw std::runtime_error("astronomy: Kepler equation did not converge");
 }
 
+} // namespace detail
+namespace {
 struct MeanElements { double a, e, inclination, node, perihelion, longitude; };
 constexpr std::array<MeanElements, 9> mean_elements{{
     {0.38710, 0.20563, 7.0050, 48.3665, 77.5028, 55.4500},
@@ -172,7 +177,7 @@ OrbitalState orbital_state(const OrbitalElements& e, double jd) {
     const double mean_anomaly = std::fma(e.mean_motion_deg_per_day, jd - e.epoch_jd,
                                        e.mean_anomaly_deg) * radians;
     if (!std::isfinite(mean_anomaly)) throw std::out_of_range("astronomy: anomaly overflow");
-    const double anomaly = eccentric_anomaly(e.eccentricity, mean_anomaly);
+    const double anomaly = detail::eccentric_anomaly(e.eccentricity, mean_anomaly);
     const double a = e.semi_major_axis_au, eccentricity = e.eccentricity;
     Vec3 position{}, velocity{};
     if (eccentricity < 1) {

@@ -1,5 +1,9 @@
 #import "AppControllerInternal.h"
+#import "SolarSystemViewInternal.h"
 #include "small_body_orbit_model.hpp"
+#include "script_object_identity.hpp"
+#include "galaxy_script_identity.hpp"
+#include "mitaka/galaxy_catalog.hpp"
 
 #include <cstdio>
 #include <chrono>
@@ -15,6 +19,72 @@
     const SessionState original = [self sessionState];
     const ScriptSnapshot originalScriptState = _scripts.snapshot();
     const HorizonViewport originalHorizon = [_horizon viewport];
+    // GUI 選択した出典行を Lua の対象名として読み戻し、同じ行へ再指定できるか確認する。
+    bool objectTargetsValid = true;
+    const auto previousSmallIndex = _scriptSmallBodyIndex;
+    const auto previousSmallTarget = _scriptSmallBodyTarget;
+    const auto previousShipIndex = _scriptSpacecraftIndex;
+    const auto previousShipTarget = _scriptSpacecraftTarget;
+    _scriptSmallBodyIndex.reset();
+    _scriptSpacecraftIndex.reset();
+    if (_smallBodySnapshot) {
+        for (std::size_t i = 0; i < _smallBodySnapshot->positions.size(); ++i) {
+            const auto target = smallBodyScriptTarget(_smallBodyModel->dataset(), i);
+            if (target.empty() || !_smallBodySnapshot->positions[i]) continue;
+            [_solar selectSmallBody:i];
+            objectTargetsValid = _solar.selectedSmallBodyIndex == i && _scripts.snapshot().target == target;
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = [self applyScriptAction:select error:&targetError] &&
+                _solar.selectedSmallBodyIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            break;
+        }
+    }
+    if (_spacecraftModel && _spacecraftSnapshot) {
+        for (std::size_t i = 0; i < _spacecraftSnapshot->positions.size(); ++i) {
+            const auto target = spacecraftScriptTarget(_spacecraftModel->model().dataset(), i);
+            if (target.empty() || !spacecraft_scene_position(*_spacecraftSnapshot, i)) continue;
+            [_solar selectSpacecraft:i];
+            objectTargetsValid = _solar.selectedSpacecraftIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = [self applyScriptAction:select error:&targetError] &&
+                _solar.selectedSpacecraftIndex == i && _scripts.snapshot().target == target && objectTargetsValid;
+            break;
+        }
+    }
+    // 位置を確定できない選択は、Lua で再指定できる識別子として返さない。
+    if (_smallBodySnapshot) {
+        for (std::size_t i = 0; i < _smallBodySnapshot->positions.size(); ++i) {
+            const auto target = smallBodyScriptTarget(_smallBodyModel->dataset(), i);
+            if (target.empty()) continue;
+            const auto evaluated = evaluate_small_body_snapshot(_smallBodyModel, _jd, false, i);
+            if (evaluated->positions[i]) continue;
+            [_solar selectSmallBody:i];
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = _scripts.snapshot().target.empty() &&
+                ![self applyScriptAction:select error:&targetError] && objectTargetsValid;
+            break;
+        }
+    }
+    if (_spacecraftModel && _spacecraftSnapshot) {
+        for (std::size_t i = 0; i < _spacecraftSnapshot->positions.size(); ++i) {
+            const auto target = spacecraftScriptTarget(_spacecraftModel->model().dataset(), i);
+            if (target.empty() || spacecraft_scene_position(*_spacecraftSnapshot, i)) continue;
+            [_solar selectSpacecraft:i];
+            ScriptAction select{}; select.kind = ScriptActionKind::select_target; select.text = target;
+            NSString *targetError = nil;
+            objectTargetsValid = _scripts.snapshot().target.empty() &&
+                ![self applyScriptAction:select error:&targetError] && objectTargetsValid;
+            break;
+        }
+    }
+    _scriptSmallBodyIndex = previousSmallIndex;
+    _scriptSmallBodyTarget = previousSmallTarget;
+    _scriptSpacecraftIndex = previousShipIndex;
+    _scriptSpacecraftTarget = previousShipTarget;
+    if (!objectTargetsValid) { [self showError:@"smoke: selected object target roundtrip failed"]; return; }
     // 表示中のモードを通して検査し、背後の太陽系カメラを更新しないことを確認する。
     bool zoomModesValid = true;
     const auto blockedZoom = [&] {
@@ -182,6 +252,90 @@
         [self showError:@"smoke: camera FOV behavior failed"];
         return;
     }
+    // GUI からの選択と Lua RPC の往復は、同梱カタログを読み取る。
+    const auto originalGalaxyModel = _galaxyModel;
+    const auto dataRoot = std::filesystem::path(_activePath.fileSystemRepresentation);
+    const auto smokeGalaxyModel = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{
+        mitaka::load_plus_globular_clusters(dataRoot / "globular_cluster.dat"),
+        mitaka::load_plus_nearby_galaxies(dataRoot / "NBG.dat")});
+    const auto smokeNearby = resolve_raw_galaxy_target("Galaxy.#N224", *smokeGalaxyModel);
+    std::optional<GalaxySpatialRecordId> smokeCluster;
+    const auto& clusters = std::get<mitaka::PlusGlobularClusterCatalog>(smokeGalaxyModel->sources()[0]);
+    for (std::size_t ordinal = 0; ordinal < clusters.records.size(); ++ordinal) {
+        const GalaxySpatialRecordId candidate{GalaxySpatialFamily::globular_cluster, 0, ordinal};
+        if (script_galaxy_target_identity(*smokeGalaxyModel, candidate) == "GC.NGC 6205") smokeCluster = candidate;
+    }
+    if (!smokeNearby || !smokeCluster) {
+        [self showError:@"smoke: real galaxy target fixture unavailable"];
+        return;
+    }
+    // timer が遅れても、方位・高度の再指定は現在時刻まで進めた位置から始まる。
+    _mode.selectedSegment = 2;
+    [self changeMode:nil];
+    auto retargetViewport = [_horizon viewport];
+    retargetViewport.center_azimuth_deg = 0;
+    retargetViewport.center_altitude_deg = 0;
+    [_horizon setViewport:retargetViewport];
+    ScriptAction retarget{};
+    retarget.kind = ScriptActionKind::animate_camera_azimuth;
+    retarget.number = 100;
+    retarget.duration_seconds = 10;
+    NSString *retargetError = nil;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAzimuthAnimation) {
+        [self showError:@"smoke: azimuth retarget setup failed"]; return;
+    }
+    _scriptAzimuthAnimation->start_time -= 5;
+    retarget.number = 150;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAzimuthAnimation ||
+        _scriptAzimuthAnimation->start < 49.9 || _scriptAzimuthAnimation->start > 55.0) {
+        [self showError:[NSString stringWithFormat:@"smoke: azimuth retarget start=%f", _scriptAzimuthAnimation ? _scriptAzimuthAnimation->start : -999.0]]; return;
+    }
+    [self stopScriptCameraAnimation];
+    retarget.kind = ScriptActionKind::animate_camera_altitude;
+    retarget.number = 80;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAltitudeAnimation) {
+        [self showError:@"smoke: altitude retarget setup failed"]; return;
+    }
+    _scriptAltitudeAnimation->start_time -= 5;
+    retarget.number = -30;
+    if (![self applyScriptAction:retarget error:&retargetError] || !_scriptAltitudeAnimation ||
+        _scriptAltitudeAnimation->start < 39.9 || _scriptAltitudeAnimation->start > 44.0) {
+        [self showError:@"smoke: altitude retarget did not advance to current position"]; return;
+    }
+    [self stopScriptCameraAnimation];
+    // 補間完了後に追跡だけが残っていても、操作時に対象の現在位置を反映する。
+    for (const auto kind : {ScriptActionKind::animate_camera_azimuth,
+                            ScriptActionKind::set_camera_azimuth,
+                            ScriptActionKind::set_camera_altitude}) {
+        HorizonViewport target;
+        if (![_horizon viewportForBody:Body::sun result:&target]) {
+            [self showError:@"smoke: tracking target unavailable"]; return;
+        }
+        auto stale = target;
+        stale.center_azimuth_deg = std::remainder(target.center_azimuth_deg + 30, 360.0);
+        stale.center_altitude_deg = std::clamp(target.center_altitude_deg + 20, -90.0, 90.0);
+        [_horizon setViewport:stale];
+        _scriptLookTarget = ScriptLookTarget{ScriptLookTarget::Kind::body, 0};
+        retarget.kind = kind;
+        retarget.number = 10;
+        retarget.duration_seconds = 10;
+        if (![self applyScriptAction:retarget error:&retargetError] || _scriptLookTarget ||
+            (kind == ScriptActionKind::animate_camera_azimuth && !_scriptAzimuthAnimation)) {
+            [self showError:@"smoke: tracking retarget failed"]; return;
+        }
+        const auto current = [_horizon viewport];
+        const double actualAzimuth = kind == ScriptActionKind::animate_camera_azimuth
+            ? _scriptAzimuthAnimation->start : current.center_azimuth_deg;
+        const bool azimuthCorrect = kind == ScriptActionKind::set_camera_azimuth ||
+            std::abs(std::remainder(actualAzimuth - target.center_azimuth_deg, 360.0)) < 1e-6;
+        const bool altitudeCorrect = kind == ScriptActionKind::set_camera_altitude ||
+            std::abs(current.center_altitude_deg - target.center_altitude_deg) < 1e-6;
+        if (!azimuthCorrect || !altitudeCorrect) {
+            [self showError:@"smoke: tracking retarget used stale viewport"]; return;
+        }
+        [self stopScriptCameraAnimation];
+    }
+    if (![self applySessionState:original]) return;
     const auto range = _model->time_range();
     auto date = mitaka::gregorian_date_time((range.first + range.second) / 2);
     date.hour = 12; date.minute = 34; date.second = 56;
@@ -227,6 +381,22 @@
          "assert(Camera.target == 'Planet.Earth')\n"
          "Camera.target = 'Satellite.Moon'\n"
          "assert(Camera.target == 'Satellite.Moon')\n"
+         "print('__smoke_select_gc')\n"
+         "assert(Camera.target == 'GC.NGC 6205')\n"
+         "print('__smoke_select_nearby')\n"
+         "assert(Camera.target == 'Galaxy.#N224')\n"
+         "Camera.target = 'Galaxy.#N224'; assert(Camera.target == 'Galaxy.#N224')\n"
+         "Camera.target = 'Galaxy.Andromeda Galaxy'; assert(Camera.target == 'Galaxy.Andromeda Galaxy')\n"
+         "Camera.target = 'GC.NGC 6205'; assert(Camera.target == 'GC.NGC 6205')\n"
+         "Camera.target = 'Satellite.Moon'; assert(Camera.target == 'Satellite.Moon')\n"
+         "local q=0.123456789012345; local norm=math.sqrt(1+q*q)\n"
+         "Camera:setEulerTo(35,12,20,1,false); waitTime(0.15)\n"
+         "Camera:setOrient(q,0,0,1)\n"
+         "local x,y,z,w=Camera:getOrient()\n"
+         "assert(math.abs(x-q/norm)<1e-14 and y==0 and z==0 and math.abs(w-1/norm)<1e-14)\n"
+         "waitTime(0.15); x,y,z,w=Camera:getOrient()\n"
+         "assert(math.abs(x-q/norm)<1e-14 and y==0 and z==0 and math.abs(w-1/norm)<1e-14)\n"
+         "print('__smoke_galaxy_orientation')\n"
          "Camera.zoom = 2 * mtk.UNIT_AU\n"
          "assert(math.abs(Camera.zoom - 2 * UNIT_AU) < 1e-16)\n"
          "for _, distance in ipairs({1e41, 1e-15 * UNIT_AU, math.huge, 0/0}) do\n"
@@ -368,6 +538,13 @@
         return;
     }
 
+    // 起動時の自動 SDSS 読込が fixture を置き換えないよう一時停止する。
+    // この smoke は起動直後にのみ実行され、進行中の要求は通常 SDSS 読込である。
+    const BOOL restartGalaxyLoading = _galaxyLoading;
+    [self cancelGalaxyLoading];
+    _galaxyModel = smokeGalaxyModel;
+    [_solar setGalaxyModel:smokeGalaxyModel];
+
     void (^originalCompletion)(BOOL, NSString *) = _scripts.completion;
     void (^originalOutput)(NSString *) = _scripts.output;
     NSURL *originalWorkingDirectory = _scripts.workingDirectoryURL;
@@ -386,6 +563,8 @@
         AppController *controller = weakSelf;
         if (controller) {
             [controller->_scripts cancel];
+            controller->_galaxyModel = originalGalaxyModel;
+            [controller->_solar setGalaxyModel:originalGalaxyModel];
             controller->_scripts.completion = originalCompletion;
             controller->_scripts.output = originalOutput;
             controller->_scripts.workingDirectoryURL = originalWorkingDirectory;
@@ -406,8 +585,13 @@
         if (!controller) return;
         if (consoleWasVisible) [controller showScriptConsole:nil];
         else [controller->_scriptWindow orderOut:nil];
-        if (failure) { [controller showError:failure]; return; }
+        if (failure) {
+            if (restartGalaxyLoading) [controller loadGalaxyIncludingPlus:NO];
+            [controller showError:failure];
+            return;
+        }
         if (![controller applySessionState:original]) return;
+        if (restartGalaxyLoading) [controller loadGalaxyIncludingPlus:NO];
         std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,radius,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
             asteroidBudgetExceeded ? "rejection-tested" : "acceptance-tested");
         completion();
@@ -416,7 +600,26 @@
     _scripts.output = ^(NSString *text) {
         AppController *controller = weakSelf;
         if (!controller) return;
-        if ([text isEqualToString:@"__smoke_time_info"]) {
+        if ([text isEqualToString:@"__smoke_galaxy_orientation"]) {
+            [controller->_solar displayIfNeeded];
+            const auto diag = [controller->_solar galaxyOverlayDiagnostics];
+            const auto expected = plus_orientation_basis(plus_orientation_normalized({0.123456789012345, 0, 0, 1}));
+            const auto close = [](const auto& a, const auto& b) {
+                return std::abs(a.x - b.x) < 1e-12 && std::abs(a.y - b.y) < 1e-12 &&
+                    std::abs(a.z - b.z) < 1e-12;
+            };
+            if (controller->_mode.selectedSegment != 1 || !diag.displayed ||
+                diag.display == mitaka::gui::GalaxyOverlayDisplay::none || !diag.displayed->camera.frame ||
+                !close(diag.displayed->camera.frame->outward, expected.outward) ||
+                !close(diag.displayed->camera.frame->right, expected.right) ||
+                !close(diag.displayed->camera.frame->up, expected.up))
+                interactionFailure = @"smoke: Lua orientation did not reach the displayed galaxy frame";
+        } else if ([text isEqualToString:@"__smoke_select_gc"] || [text isEqualToString:@"__smoke_select_nearby"]) {
+            const auto record = [text isEqualToString:@"__smoke_select_gc"] ? *smokeCluster : *smokeNearby;
+            NSString *selectionError = nil;
+            if (![controller->_solar selectScriptGalaxyRecord:record error:&selectionError])
+                interactionFailure = [@"smoke: simulated GUI galaxy selection failed: " stringByAppendingString:(selectionError ? selectionError : @"unknown")];
+        } else if ([text isEqualToString:@"__smoke_time_info"]) {
             if ([controller timeInfoVisible] || !controller->_dateLabel.hidden ||
                 controller->_horizon.showsTimeInfo || controller->_solar.showsTimeInfo ||
                 !controller->_playback.clockTracking)

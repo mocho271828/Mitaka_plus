@@ -1,0 +1,10 @@
+BUILD_DIR=build/p1-4-sanitize SANITIZE=address,undefined; build and all 6 runs exit 0; no sanitizer diagnostics
+small-body catalog: 78 checks passed
+small-body real data: sources=67 records=19475 evaluatable=2388 elliptic=859 parabolic=1298 hyperbolic=231
+small-body catalog: 29106 checks passed
+minor-planet position: 90969 checks passed
+minor-planet real data: sources=67 source diagnostics=0 records=19475 packed36=8451 individual=57 evaluated=8508 other retained=10967
+minor-planet position: 262526 checks passed
+minor_planet_orbit_path: 1101 checks passed
+real packed rows=8451 individual rows=57 points=1097532
+minor_planet_orbit_path: 2230198 checks passed

@@ -80,7 +80,9 @@ static double monotonicSeconds() {
         const BOOL interrupted = !std::isfinite(time) || time < _lastFlightTime || time-_lastFlightTime > 1;
         _navigation.advance(time);
         _lastFlightTime = time;
+        const double fov = _camera.vertical_fov_deg;
         _camera = _navigation.camera(_bodies);
+        _camera.vertical_fov_deg = fov;
         [self restoreFlightOrientation];
         if (!_navigation.flying()) {
             if (_exitSurfaceAfterAscent && !interrupted) {
@@ -119,7 +121,8 @@ static double monotonicSeconds() {
         if (ascending) next.begin_ascent(time, duration);
         else if (preserveLook) next.begin_descent_preserving_look(time, duration);
         else next.begin_descent(time, duration);
-        const SolarCamera camera = next.camera(_bodies);
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
         [self stopScriptTargetTransition];
         [self stopScriptOrientation];
         _flightOrientation.reset();
@@ -177,8 +180,10 @@ static double monotonicSeconds() {
 - (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error {
     if (!_hasData || _journeyActive) return NO;
     try {
-        const auto site = _surfaceActive && _navigation.site().body_index == 3
-            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, 3);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, 3, _navigation.site()) : std::nullopt;
+        const auto site = _surfaceActive && _navigation.site().body_index == 3 ? _navigation.site()
+            : known ? *known : surface_site_from_camera_with_roll(_camera, _bodies, 3);
         if (site.height_km > 8 * surface_body_info(3).radius_km + 1e-6)
             throw std::invalid_argument("地球の近くに移動してください。");
         return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
@@ -191,8 +196,10 @@ static double monotonicSeconds() {
     if (!_hasData || _journeyActive || !_selection || *_selection == 0) return NO;
     try {
         const auto body = *_selection;
-        const auto site = _surfaceActive && _navigation.site().body_index == body
-            ? _navigation.site() : surface_site_from_camera_with_roll(_camera, _bodies, body);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, body, _navigation.site()) : std::nullopt;
+        const auto site = _surfaceActive && _navigation.site().body_index == body ? _navigation.site()
+            : known ? *known : surface_site_from_camera_with_roll(_camera, _bodies, body);
         if (site.height_km > 8 * surface_body_info(body).radius_km + 1e-6)
             throw std::invalid_argument("選択した天体の近くに移動してください。");
         return [self beginFlightAtSite:site ascending:NO preserveLook:YES duration:duration error:error];
@@ -226,13 +233,39 @@ static double monotonicSeconds() {
     if (site) *site = _navigation.site();
     return YES;
 }
+- (BOOL)restoreSurfaceSite:(SurfaceSite)site error:(NSString **)error {
+    if (!_hasData) return NO;
+    try {
+        SurfaceNavigation next;
+        next.set_site(site);
+        if (site.height_km > minimum_surface_height_km + 1e-9)
+            throw std::invalid_argument("surface restore requires a stationary surface site");
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
+        [self leaveNavigation];
+        [self cancelTerrain];
+        _navigation = next;
+        _camera = camera;
+        _surfaceActive = YES;
+        _following = NO;
+        if (self.navigationChanged) self.navigationChanged();
+        [self notifyCamera];
+        self.needsDisplay = YES;
+        return YES;
+    } catch (const std::exception& exception) {
+        if (error) *error = [NSString stringWithUTF8String:exception.what()];
+        return NO;
+    }
+}
 - (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude {
     SurfaceSite site;
     if (![self scriptSurfaceSite:&site]) return NO;
     site.heading_deg = azimuth;
     site.elevation_deg = altitude;
     _navigation.set_site(site);
+    const double fov = _camera.vertical_fov_deg;
     _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = fov;
     [self notifyCamera];
     self.needsDisplay = YES;
     return YES;
@@ -297,7 +330,9 @@ static double monotonicSeconds() {
         }
         if (_surfaceActive) {
             [self interruptFlight];
+            const double fov = _camera.vertical_fov_deg;
             _camera = _navigation.camera(_bodies);
+            _camera.vertical_fov_deg = fov;
             _surfaceActive = NO;
             _physicalSpaceActive = YES;
             _flightOrientation.reset();
@@ -314,8 +349,10 @@ static double monotonicSeconds() {
     }
     try {
         const auto body = *_selection;
-        auto site = _surfaceActive && _navigation.site().body_index == body
-            ? _navigation.site() : forced_surface_site_from_camera(_camera, _bodies, body);
+        const auto known = _physicalSpaceActive
+            ? surface_site_from_camera_with_known_terrain(_camera, _bodies, body, _navigation.site()) : std::nullopt;
+        auto site = _surfaceActive && _navigation.site().body_index == body ? _navigation.site()
+            : known ? *known : forced_surface_site_from_camera(_camera, _bodies, body);
         site.height_km = minimum_surface_height_km;
         if (_journeyActive) {
             [self interruptFlight];
@@ -367,7 +404,8 @@ static double monotonicSeconds() {
         auto next = _navigation;
         if (dx != 0 || dy != 0) next.look(dx, dy);
         if (zoom != 0) next.zoom(zoom);
-        const auto camera = next.camera(_bodies);
+        auto camera = next.camera(_bodies);
+        camera.vertical_fov_deg = _camera.vertical_fov_deg;
         _navigation = next;
         _camera = camera;
         [self notifyCamera];
@@ -379,7 +417,9 @@ static double monotonicSeconds() {
     if (!_journeyActive || !_journey.flying()) { [self invalidateFlightTimer]; return; }
     _journey.advance(time, _bodies);
     _lastFlightTime = time;
+    const double fov = _camera.vertical_fov_deg;
     _camera = _journey.camera();
+    _camera.vertical_fov_deg = fov;
     if (_journey.flying()) { [self restoreFlightOrientation]; return; }
     [self invalidateFlightTimer];
     if (_journey.completed()) {
@@ -419,7 +459,9 @@ static double monotonicSeconds() {
         _navigation.interrupt();
         _exitSurfaceAfterAscent = NO;
         _journey = std::move(next);
+        const double fov = _camera.vertical_fov_deg;
         _camera = _journey.camera();
+        _camera.vertical_fov_deg = fov;
         _journeyActive = YES;
         _surfaceActive = _surfacePreview = NO;
         _physicalSpaceActive = NO;

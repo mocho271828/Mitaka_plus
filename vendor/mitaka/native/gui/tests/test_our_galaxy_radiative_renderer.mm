@@ -80,9 +80,11 @@ int main() {
         assert(std::abs(int(buffer[c])-expected) <= 2);
     }
     // 画像データの先頭行と最終行は左上原点の視線を使う。
+    camera.vertical_fov_deg = 90;
     const auto rows = render_our_galaxy_radiative(model, camera, 1, 2);
     const auto rows_mult = pixels(rows->multiplier()), rows_emiss = pixels(rows->emission());
     SolarCamera directional; directional.yaw_deg = camera.yaw_deg; directional.pitch_deg = camera.pitch_deg;
+    directional.vertical_fov_deg = camera.vertical_fov_deg;
     for (std::size_t y = 0; y < 2; ++y) {
         const auto direction = solar_camera_ray(directional, .5, y+.5, 1, 2);
         const auto target = our_galaxy_galactic_position({12000+direction.x*1000, direction.y*1000, direction.z*1000});
