@@ -47,8 +47,48 @@ void full_period() {
         expect(record.raw_record_bytes == std::string(36, '\0'), "source preserved");
     }
 }
+void high_eccentricity_sampling() {
+    auto record = asteroid();
+    auto& orbit = std::get<OrbitalElements>(record.orbit);
+    orbit.eccentricity = 0.99;
+    orbit.mean_anomaly_deg = 0;
+    auto path = sample_minor_planet_orbit_path(record, 129);
+    expect(path.samples.size() == 129 && path.failures.empty(), "high-e full sample count");
+    expect(path.samples.front().julian_date == orbit.epoch_jd &&
+           path.samples.back().julian_date == orbit.epoch_jd + 360, "high-e full period");
+    expect(path.samples[1].julian_date - orbit.epoch_jd < 0.1, "periapsis receives denser samples");
+    for (std::size_t i = 1; i < path.samples.size(); ++i)
+        expect(path.samples[i].julian_date > path.samples[i-1].julian_date, "dates increase");
+    orbit.eccentricity = 0.9999999999;
+    orbit.mean_motion_deg_per_day = 360.0 / 0.00001;
+    path = sample_minor_planet_orbit_path(record, 129);
+    expect(path.samples.size() == 129, "short period falls back instead of duplicating times");
+    expect(path.samples[1].julian_date == orbit.epoch_jd +
+           (path.samples.back().julian_date - orbit.epoch_jd) / 128, "short period uses equal-time fallback");
+    for (std::size_t i = 1; i < path.samples.size(); ++i)
+        expect(path.samples[i].julian_date > path.samples[i-1].julian_date, "fallback dates increase");
+}
+void large_mean_anomaly_sampling() {
+    auto record = asteroid();
+    auto& orbit = std::get<OrbitalElements>(record.orbit);
+    orbit.eccentricity = 0.99;
+    orbit.mean_anomaly_deg = 1e18;
+    orbit.ascending_node_deg = orbit.inclination_deg = orbit.argument_of_periapsis_deg = 0;
+    const auto path = sample_minor_planet_orbit_path(record, 5);
+    expect(path.samples.size() == 5 && path.samples.front().position, "large mean anomaly is evaluable");
+    const auto position = *path.samples.front().position;
+    const double phase = std::atan2(position.y / std::sqrt((1-orbit.eccentricity)*(1+orbit.eccentricity)),
+                                    position.x + orbit.eccentricity);
+    constexpr double tau = 6.283185307179586476925286766559;
+    const double delta = tau / 4;
+    const double expected = orbit.epoch_jd + 360.0 / orbit.mean_motion_deg_per_day *
+        (delta - orbit.eccentricity * (std::sin(phase + delta) - std::sin(phase))) / tau;
+    expect(std::abs(path.samples[1].julian_date - expected) < 1e-8,
+           "large mean anomaly orbit sampling agrees with epoch position");
+}
 void failures_and_gaps() {
     auto record = asteroid();
+    std::get<OrbitalElements>(record.orbit).eccentricity = 0;
     record.declared_time_range = SmallBodyTimeRange{2451635, 2451815};
     auto path = sample_minor_planet_orbit_path(record, 5);
     expect(path.samples.size() == 5 && path.failures.size() == 2, "range failures retained");
@@ -147,7 +187,7 @@ void local_data(const std::filesystem::path& root) {
 }
 int main(int argc, char** argv) {
     try {
-        full_period(); failures_and_gaps(); cancellation_and_count();
+        full_period(); high_eccentricity_sampling(); large_mean_anomaly_sampling(); failures_and_gaps(); cancellation_and_count();
         if (argc == 2) local_data(argv[1]);
         else if (argc != 1) throw std::invalid_argument("usage: test_minor_planet_orbit_path [data_directory]");
         std::cout << "minor_planet_orbit_path: " << checks << " checks passed\n";

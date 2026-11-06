@@ -1,4 +1,5 @@
 #include "mitaka/minor_planet_orbit_path.hpp"
+#include "kepler_solver.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -60,11 +61,34 @@ MinorPlanetOrbitPath sample_minor_planet_orbit_path(const SmallBodyRecord& recor
         add_period_failure(path);
         return path;
     }
+    // 同じ評価回数でも近点付近の大きな弦誤差を避けるため、離心近点角で等分する。
+    constexpr double tau = 6.283185307179586476925286766559;
+    // 位置評価と同じ順序で変換し、大きな角度で余りの丸めが食い違わないようにする。
+    const double mean_at_epoch = orbit->mean_anomaly_deg * (tau / 360.0);
+    const double eccentric_at_epoch = detail::eccentric_anomaly(orbit->eccentricity, mean_at_epoch);
+    const double sine_at_epoch = std::sin(eccentric_at_epoch);
+    // 隣接時刻の丸めによる重複は従来の等時間標本へ戻し、以前扱えた短周期を維持する。
+    std::vector<double> dates(sample_count);
+    dates.front() = epoch;
+    dates.back() = end;
+    bool distinct = true;
+    for (std::size_t i = 1; i + 1 < sample_count; ++i) {
+        if (cancelled && cancelled()) { path.cancelled = true; return path; }
+        const double delta = tau * (static_cast<double>(i) / (sample_count - 1));
+        const double mean_delta = delta - orbit->eccentricity
+            * (std::sin(eccentric_at_epoch + delta) - sine_at_epoch);
+        dates[i] = epoch + period * (mean_delta / tau);
+        if (!std::isfinite(dates[i]) || dates[i] <= dates[i - 1] || dates[i] >= end)
+            distinct = false;
+    }
+    if (!distinct) {
+        for (std::size_t i = 1; i + 1 < sample_count; ++i)
+            dates[i] = epoch + (end - epoch) * (static_cast<double>(i) / (sample_count - 1));
+    }
     path.samples.reserve(sample_count);
     for (std::size_t i = 0; i < sample_count; ++i) {
         if (cancelled && cancelled()) { path.cancelled = true; return path; }
-        const double date = i == sample_count - 1 ? end
-            : epoch + (end - epoch) * (static_cast<double>(i) / (sample_count - 1));
+        const double date = dates[i];
         retain_evaluation(path, i == 0 ? std::move(first)
                                        : evaluate_minor_planet_position(record, date));
     }
