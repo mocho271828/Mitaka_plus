@@ -34,6 +34,11 @@ bool sameRequest(const GalaxyOverlayRequest& a, const GalaxyOverlayRequest& b) {
         a.visibility.globular_clusters == b.visibility.globular_clusters && a.visibility.nearby_galaxies == b.visibility.nearby_galaxies &&
         a.hip_visible == b.hip_visible && a.our_galaxy_visible == b.our_galaxy_visible;
 }
+// 完成画像と同じ距離フェード。放射モデルの範囲外では点を表示しない。
+float previewOurGalaxyAlpha(GalaxyCameraPc camera) {
+    try { return our_galaxy_alpha(camera); }
+    catch (const std::out_of_range&) { return 0; }
+}
 // 旧 Plus と native の座標変換・測光は未解明。画面にも仮定を表示する。
 const OurGalaxyRenderSettings ourSettings{
     {{{{1,0,0},{0,1,0},{0,0,1}}}, {0,0,0}},
@@ -275,6 +280,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     const auto position = our_galaxy_point_position(*_ourGalaxyModel, point, mode, ourSettings.transform);
     if (!position) return std::nullopt;
     const auto& request = *_diagnostics.displayed;
+    if (mode == OurGalaxyPointDisplay::preview && previewOurGalaxyAlpha(request.camera) <= 0) return std::nullopt;
     if (!our_galaxy_point_visible(*_ourGalaxyModel, point, ourSettings.transform, mode, request.camera,
                                   request.size.width, request.size.height, _renderedOurGalaxyRadiative.get())) return std::nullopt;
     return position;
@@ -294,8 +300,12 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     const auto ourRadiative = _renderedOurGalaxyRadiative;
     const bool galaxyDisplayed = mode == GalaxyOverlayDisplay::preview || _image != nil;
     const bool hipDisplayed = request.hip_visible && (mode == GalaxyOverlayDisplay::preview || _hipImage != nil);
-    const bool ourDisplayed = request.our_galaxy_visible && ourModel && (mode == GalaxyOverlayDisplay::preview || _ourGalaxyMultiplier != nil);
-    const bool ourPointsDisplayed = request.our_galaxy_visible && ourModel && (mode == GalaxyOverlayDisplay::preview || _ourGalaxyImage != nil);
+    const bool previewOurVisible = mode == GalaxyOverlayDisplay::preview && ourModel &&
+        previewOurGalaxyAlpha(request.camera) > 0;
+    const bool ourDisplayed = request.our_galaxy_visible && ourModel &&
+        (mode == GalaxyOverlayDisplay::preview ? previewOurVisible : _ourGalaxyMultiplier != nil);
+    const bool ourPointsDisplayed = request.our_galaxy_visible && ourModel &&
+        (mode == GalaxyOverlayDisplay::preview ? previewOurVisible : _ourGalaxyImage != nil);
     const auto picks = _pickGeneration;
     const auto expected = picks->load(std::memory_order_relaxed);
     const auto generation = _generation;
@@ -421,11 +431,15 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         // 完成画像が古い視点を指す間は、現在のカメラで間引いた位置を即時投影する。
         // 完成画像をそのまま残すと移動中の天体位置が実際の視点と一致しない。
         const GalaxyProjector projector(camera, rect.size.width, rect.size.height);
-        if (_ourGalaxyModel && _ourGalaxyVisible) {
+        const float previewOurAlpha = _ourGalaxyModel && _ourGalaxyVisible ? previewOurGalaxyAlpha(camera) : 0;
+        if (previewOurAlpha > 0) {
+            [NSGraphicsContext saveGraphicsState];
+            // フェード直後の暗い点が画面端で量子化により消えないよう、プレビューだけ平滑化しない。
+            [[NSGraphicsContext currentContext] setShouldAntialias:NO];
             for (std::size_t group = 0; group < _ourGalaxyModel->groups.size(); ++group) {
                 const auto& positions = _ourGalaxyModel->groups[group].positions;
                 const auto& style = ourSettings.styles[group];
-                [[NSColor colorWithSRGBRed:style.red green:style.green blue:style.blue alpha:style.alpha] setFill];
+                [[NSColor colorWithSRGBRed:style.red green:style.green blue:style.blue alpha:style.alpha * previewOurAlpha] setFill];
                 const auto step = our_galaxy_preview_step(positions.size());
                 for (std::size_t index = 0; index < positions.size(); index += step) {
                     const auto& raw = positions[index];
@@ -435,11 +449,13 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     if (!valid(raw.x_pc) || !valid(raw.y_pc) || !valid(raw.z_pc)) continue;
                     const auto point = projector.project({raw.x_pc, raw.y_pc, raw.z_pc});
                     if (point && projector.contains(*point)) {
-                        NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
+                        NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x - .75, rect.origin.y + point->y - .75, 1.5, 1.5),
+                                                 NSCompositingOperationPlusLighter);
                         ++_diagnostics.our_galaxy_drawn;
                     }
                 }
             }
+            [NSGraphicsContext restoreGraphicsState];
         }
         if (_hipModel && _hipVisible) {
             [[NSColor colorWithSRGBRed:1 green:1 blue:1 alpha:.8] setFill];

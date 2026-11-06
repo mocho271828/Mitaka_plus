@@ -1,5 +1,6 @@
 #import "../src/GalaxyOverlay.h"
 #include "our_galaxy_navigation.hpp"
+#include "OurGalaxyRadiativeRenderer.h"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -52,14 +53,19 @@ std::shared_ptr<const GalaxySpatialModel> fixture() {
     return std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{
         GalaxySdssSource{snapshot, 0}, GalaxySdssSource{snapshot, 1}, clusters, galaxies});
 }
-NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera) {
+NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera, bool opaqueBackground = false, int scale = 1) {
     NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
-        pixelsWide:512 pixelsHigh:512 bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
+        pixelsWide:512 * scale pixelsHigh:512 * scale bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
         isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
     NSGraphicsContext *context = [NSGraphicsContext graphicsContextWithBitmapImageRep:image];
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:context];
-    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:{} scale:1];
+    CGContextScaleCTM(context.CGContext, scale, scale);
+    if (opaqueBackground) {
+        [[NSColor colorWithSRGBRed:.1 green:.2 blue:.3 alpha:1] setFill];
+        NSRectFill(NSMakeRect(0, 0, 512, 512));
+    }
+    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:{} scale:scale];
     [NSGraphicsContext restoreGraphicsState];
     return image;
 }
@@ -179,7 +185,7 @@ void radiativeFailureKeepsOtherLayers() {
     [overlay setModel:galaxy];
     [overlay setHipModel:hip];
     [overlay setOurGalaxyModel:invalidRadiative];
-    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 3000};
     draw(overlay, camera);
     const auto preview = [overlay diagnostics];
     check(preview.display == GalaxyOverlayDisplay::preview && preview.our_galaxy_drawn == 1 &&
@@ -296,7 +302,15 @@ void transparentOurGalaxyIsNotSelectable() {
     const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
     const OurGalaxyPointId id{OurGalaxyPointGroup::disk1, 0};
     draw(overlay, camera);
-    check([overlay displayedOurGalaxyPointPosition:id].has_value(), "point is visible in preview");
+    check(![overlay displayedOurGalaxyPointPosition:id], "transparent preview point must not be selectable");
+    check([overlay diagnostics].our_galaxy_drawn == 0, "transparent preview point must not be drawn");
+    const auto previewDone = std::make_shared<bool>(false);
+    const auto previewSelection = std::make_shared<GalaxyOverlaySelection>();
+    [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+        *previewSelection = result; *previewDone = true;
+    }];
+    waitFor([&] { return *previewDone; }, "transparent preview point pick did not finish");
+    check(!previewSelection->our_galaxy_point, "transparent preview point was picked");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "transparent OurGalaxy did not finish");
     check(![overlay displayedOurGalaxyPointPosition:id], "transparent complete point must not be selectable");
@@ -308,13 +322,161 @@ void transparentOurGalaxyIsNotSelectable() {
     waitFor([&] { return *done; }, "transparent point pick did not finish");
     check(!selection->our_galaxy_point, "transparent complete point was picked");
 }
+void previewOurGalaxyViewportBoundaries() {
+    auto model = std::make_shared<OurGalaxyModel>();
+    // 最も暗い群と距離フェード閾値直上で、境界の画素が量子化で消えないことも確かめる。
+    model->groups[2].positions.push_back({0, 0, 0});
+    const OurGalaxyPointId id{OurGalaxyPointGroup::disk_ob, 0};
+    const double tanFov = 0.41421356237309504880;
+    for (int scale : {1, 2}) for (int sx : {-1, 1}) for (int sy : {-1, 1}) {
+        const double distance = 1035 / std::sqrt(1 + 2 * tanFov * tanFov);
+        const GalaxyCameraPc camera{{0, -sx * tanFov * distance, sy * tanFov * distance}, 0, 0, distance};
+        const auto point = GalaxyProjector(camera, 512, 512).project({0, 0, 0});
+        check(point && std::abs(point->x - (sx > 0 ? 512 : 0)) < 1e-9 &&
+              std::abs(point->y - (sy > 0 ? 512 : 0)) < 1e-9, "point must be at viewport corner");
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        [overlay setOurGalaxyModel:model];
+        const auto image = drawImage(overlay, camera, false, scale);
+        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "boundary test must inspect preview");
+        double maxPixelAlpha = 0;
+        const int x0 = sx > 0 ? 509 * scale : 0, y0 = sy > 0 ? 0 : 509 * scale;
+        for (int y = y0; y < y0 + 3 * scale; ++y) for (int x = x0; x < x0 + 3 * scale; ++x)
+            maxPixelAlpha = std::max(maxPixelAlpha, double([[image colorAtX:x y:y] alphaComponent]));
+        check(maxPixelAlpha > 0 && [overlay displayedOurGalaxyPointPosition:id],
+              "viewport corner point must be drawn and selectable");
+        const auto done = std::make_shared<bool>(false);
+        const auto selection = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(point->x, point->y) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selection = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "viewport corner pick did not finish");
+        check(selection->our_galaxy_point && *selection->our_galaxy_point == id,
+              "visible corner point must be selected");
+    }
+}
+void previewOurGalaxyDistanceFade() {
+    auto model = std::make_shared<OurGalaxyModel>();
+    model->groups[0].positions.push_back({0, 0, 0});
+    const OurGalaxyPointId id{OurGalaxyPointGroup::disk1, 0};
+    for (double distance : {1000.0, 1033.0, 1035.0, 1850.0, 2700.0}) {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        [overlay setOurGalaxyModel:model];
+        const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, distance};
+        const auto image = drawImage(overlay, camera);
+        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "distance fade must inspect preview");
+        const float alpha = our_galaxy_alpha(camera);
+        check((alpha > 0) == (distance >= 1035), "Sun distance fade threshold changed");
+        check((alpha > 0) == [overlay displayedOurGalaxyPointPosition:id].has_value(),
+              "preview point visibility must follow distance alpha");
+        check(([overlay diagnostics].our_galaxy_drawn > 0) == (alpha > 0),
+              "preview drawn count must follow distance alpha");
+        double maxPixelAlpha = 0;
+        for (int y = 254; y <= 258; ++y) for (int x = 254; x <= 258; ++x) {
+            NSColor *pixel = [[image colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+            maxPixelAlpha = std::max(maxPixelAlpha, double(pixel.alphaComponent));
+        }
+        check((maxPixelAlpha > 0) == (alpha > 0),
+              "threshold preview must not be fully transparent");
+        check(std::abs(maxPixelAlpha - .4 * alpha) < .004,
+              "preview point opacity must follow distance alpha");
+        const auto done = std::make_shared<bool>(false);
+        const auto selection = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selection = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "distance fade pick did not finish");
+        check(selection->our_galaxy_point.has_value() == (alpha > 0),
+              "preview pick must follow distance alpha");
+    }
+}
+void previewOurGalaxyCenterFade() {
+    const auto center = our_galaxy_center({{0, 0, 0}});
+    auto model = std::make_shared<OurGalaxyModel>();
+    model->groups[0].positions.push_back({float(center.x_pc), float(center.y_pc), float(center.z_pc)});
+    const OurGalaxyPointId id{OurGalaxyPointGroup::disk1, 0};
+    for (double distance : {1000.0, 1020.0, 1050.0, 2700.0}) {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        [overlay setOurGalaxyModel:model];
+        const GalaxyCameraPc camera{center, 0, 0, distance};
+        draw(overlay, camera);
+        const float alpha = our_galaxy_alpha(camera);
+        check((alpha > 0) == (distance >= 1050), "galactic center fade threshold changed");
+        check((alpha > 0) == [overlay displayedOurGalaxyPointPosition:id].has_value(),
+              "preview point visibility must follow galactic center fade");
+        check(([overlay diagnostics].our_galaxy_drawn > 0) == (alpha > 0),
+              "preview drawing must follow galactic center fade");
+    }
+}
+void previewOurGalaxyPreservesOpaqueBackground() {
+    auto model = std::make_shared<OurGalaxyModel>();
+    model->groups[0].positions.push_back({0, 0, 0});
+    for (double distance : {1035.0, 1850.0}) {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        [overlay setOurGalaxyModel:model];
+        const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, distance};
+        const auto image = drawImage(overlay, camera, true);
+        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview,
+              "background blend test must inspect preview");
+        NSColor *background = [[image colorAtX:250 y:250] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+        double maxBrightening = 0;
+        for (int y = 254; y <= 258; ++y) for (int x = 254; x <= 258; ++x) {
+            NSColor *pixel = [[image colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+            check(pixel.alphaComponent > .999, "preview must preserve opaque background alpha");
+            check(pixel.redComponent + .001 >= background.redComponent &&
+                  pixel.greenComponent + .001 >= background.greenComponent &&
+                  pixel.blueComponent + .001 >= background.blueComponent,
+                  "preview must not darken background");
+            maxBrightening = std::max({maxBrightening, pixel.redComponent - background.redComponent,
+                                      pixel.greenComponent - background.greenComponent,
+                                      pixel.blueComponent - background.blueComponent});
+        }
+        check(maxBrightening >= 1.0 / 255.0, "preview point did not brighten the background");
+    }
+}
+void outOfRangePreviewSkipsInvisibleOurGalaxy() {
+    const auto center = our_galaxy_center({{0, 0, 0}});
+    const GalaxyCameraPc camera{center, 0, 0, 1e8};
+    check(hit_our_galaxy({{0, 0, 0}}, camera, 256, 256, 512, 512),
+          "test ray must intersect the invisible galaxy fallback");
+    for (bool includeHip : {false, true}) {
+        NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+        GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+        auto model = std::make_shared<OurGalaxyModel>();
+        for (auto& map : model->maps) {
+            map.width = 512; map.height = 512; map.values.assign(512 * 512, 0);
+        }
+        [overlay setOurGalaxyModel:model];
+        if (includeHip) {
+            auto hip = std::make_shared<HipSpatialModel>();
+            hip->points.push_back({0, 1, center});
+            [overlay setHipModel:hip];
+        }
+        draw(overlay, camera);
+        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview,
+              "out-of-range selection must inspect preview");
+        const auto done = std::make_shared<bool>(false);
+        const auto selection = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selection = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "out-of-range preview pick did not finish");
+        check(!selection->our_galaxy && !selection->our_galaxy_point,
+              "out-of-range preview selected invisible OurGalaxy");
+        check(selection->hip.has_value() == includeHip,
+              "out-of-range OurGalaxy must not interfere with HIP selection");
+    }
+}
 void ourGalaxyCompetesWithHip() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
     GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
     auto hip = std::make_shared<HipSpatialModel>();
     hip->points.push_back({0, 1, {0, 0, 0}});
     [overlay setHipModel:hip];
-    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 3000};
     const auto pick = [&](OurGalaxyRawPositionPc p) {
         auto model = std::make_shared<OurGalaxyModel>();
         model->groups[0].positions.push_back(p);
@@ -423,6 +585,11 @@ void tests() {
     radiativeFailureKeepsOtherLayers();
     visibilityControls();
     transparentOurGalaxyIsNotSelectable();
+    previewOurGalaxyViewportBoundaries();
+    previewOurGalaxyDistanceFade();
+    previewOurGalaxyCenterFade();
+    previewOurGalaxyPreservesOpaqueBackground();
+    outOfRangePreviewSkipsInvisibleOurGalaxy();
     ourGalaxyCompetesWithHip();
 }
 } // namespace

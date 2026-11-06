@@ -39,7 +39,7 @@
 | 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-03 | 同梱通常版原典に基づく SDSS 銀河の分類色を preview と完成画像へ反映する | eClass 境界・無効値、原典参照色、描画画素、実データ分布 | `submitted-now` | `implemented` | yes* |
 | 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `implemented` | yes* |
 | 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `in-progress` | yes* |
-| 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `not-started` | yes* |
+| 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `in-progress` | yes* |
 | 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `not-started` | yes* |
 | 4f | `codex/mitaka-04f-survey-rendering` | `codex/mitaka-04e-local-group` | P1-1: GAL-03 | 実観測の分布を保った遠方銀河の表示詳細度とフェードを改善する | 各距離、原行と選択、観測範囲、移動時・完成時、性能 | `local-only` | `not-started` | yes* |
 | 5 | `codex/mitaka-05-ground-small-bodies` | `codex/mitaka-04f-survey-rendering` | P1-2: OBJ-15 | 地上に小天体・有効な探査機を時刻連動で表示・選択する | 実データ、時刻変更、可視切替、描画選択一致、PPI の未確定記録 | `local-only` | `not-started` | yes* |
@@ -157,6 +157,14 @@
 - 独立検証: **YES**。実 SDSS 天体を追従しながら 1000 AU と 1 pc を往復し、各操作後のカメラ・要求・選択 ID を確認する。実画面および描画の収束は別途判定する。
 - 親依存の明確さ: **YES**。第 4b 単位の精密な共有カメラと実データ選択を利用する。
 - 作業都合のみの分割ではない: **YES**。距離遷移時の追従・画面要求の整合は、精度表現や銀河の透明度の契約と独立して検証できる。
+
+## 第 4d 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。天の川モデルの preview と完成画像で距離に応じた透明度と選択条件を整合させる。外観比較の残りは完了扱いにしない。
+- named seam: **YES**。`GalaxyOverlay` と `OurGalaxyRenderer` の表示・合成・選択条件。
+- 独立検証: **YES**。透明度境界、背景との加算合成、不可視時の選択拒否を確認し、関連 renderer と実データを検証する。
+- 親依存の明確さ: **YES**。第 4c 単位までの共有カメラと追従を用いる。
+- 作業都合のみの分割ではない: **YES**。天の川モデルの可視性契約は遠方 SDSS の重なりや近傍銀河の識別と独立する。
 
 ## 対象ファイルと依存
 
