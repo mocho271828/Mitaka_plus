@@ -27,4 +27,4 @@
 
 YES
 
-検証対象: 35a32c7 上の P1-8 地表星座の Lua 読み戻し。対象外の既存項目は基点の判定を引き継ぐ。新規依存、同梱データ、外部公開範囲、信頼境界、全体方針の変更なし。make build/test/data-test/reference-test と実データの script-place-controller-test は成功。make smoke は GUI 枠未割当のため未実施。旧 Plus 比較・実画面操作は未実施。星座の Camera.target setter は未対応。
+検証対象: 35a32c7 上の P1-8 地表星座の Lua 読み戻し。対象外の既存項目は基点の判定を引き継ぐ。新規依存、同梱データ、外部公開範囲、信頼境界、全体方針の変更なし。make build/test/data-test/reference-test と実データの script-place-controller-test は成功。make smoke は成功。ただし地表星座クリック後の Lua 読み戻し専用の実画面操作、旧 Plus 比較は未実施。星座の Camera.target setter は未対応。

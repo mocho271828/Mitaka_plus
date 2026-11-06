@@ -390,7 +390,7 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 独立作業の親は `09196de`。隔離 worktree で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。その後、実装を変えず拡大惑星の回帰試験を追加し、対象の HorizonView 試験を再実行した。LFS 実体は共有 checkout の `resources/data` を読み取り専用の `DATA_ROOT` に指定した。`make smoke` は各 AppKit smoke の一部が成功した後、`flight did not complete` で失敗。原因は未確定で再検証が必要。
 ### P1-8 地表星座の Lua 読み戻し（独立作業）
 
-`35a32c7` 上で、実データの非地球地表における星座選択から `Camera.target` の読み戻し、`Camera:look` への受け渡し、選択解除、未対応 setter による選択保持を `script-place-controller-test` で確認した。モデル不一致は空として扱う。`make build`、`make test`、`make data-test`、`make reference-test` は成功。`make smoke` は GUI 枠未割当につき未実施。実画面操作と旧 Plus 比較、星座の `Camera.target` への指定・時間指定移動は未対応または未検証。
+`35a32c7` 上で、実データの非地球地表における星座選択から `Camera.target` の読み戻し、`Camera:look` への受け渡し、選択解除、未対応 setter による選択保持を `script-place-controller-test` で確認した。モデル不一致は空として扱う。`make build`、`make test`、`make data-test`、`make reference-test` は成功。`make smoke` も成功したが、地表星座をクリックして Lua で読み戻す専用の実画面操作は含まない。旧 Plus 比較、星座の `Camera.target` への指定・時間指定移動は未対応または未検証。
 
 ## 2026-11-07: P1-6 Lua 姿勢の精度と銀河表示への伝達
 
