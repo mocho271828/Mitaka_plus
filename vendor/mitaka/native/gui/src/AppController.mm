@@ -159,6 +159,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [_scripts cancel];
     [_solar stopScriptOrientation];
     [_solar stopScriptTargetTransition];
+    [_solar stopScriptZoomAnimation];
     [_starBrightness cancel];
     [self stopScriptCameraAnimation];
     [self stopScriptPlaceTransition];
@@ -248,6 +249,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     [_solar cancelTerrain];
     [_scripts cancel];
     [_starBrightness cancel];
+    [_solar stopScriptZoomAnimation];
     [_solar interruptFlight];
     [_playback interruptWithMessage:@"データ読み込みのため一時停止"];
     _loading = YES;
@@ -612,7 +614,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
     if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
-    if (!solar) { [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
+    if (!solar) { [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
     _solar.hidden = !solar;

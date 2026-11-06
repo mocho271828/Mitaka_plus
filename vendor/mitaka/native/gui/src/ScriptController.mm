@@ -295,7 +295,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             ![message[@"enabled"] isKindOfClass:NSNumber.class] || ![message[@"text"] isKindOfClass:NSString.class])
             throw std::runtime_error("Invalid script action");
         const double kind = [message[@"kind"] doubleValue];
-        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_camera_zoom_mode))
+        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::animate_camera_zoom))
             throw std::runtime_error("Unknown script action");
         if (![message[@"hips"] isKindOfClass:NSArray.class] || [message[@"hips"] count] > 2048)
             throw std::runtime_error("Invalid star identifier list");

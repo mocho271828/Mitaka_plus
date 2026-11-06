@@ -14,6 +14,60 @@
     const SessionState original = [self sessionState];
     const ScriptSnapshot originalScriptState = _scripts.snapshot();
     const HorizonViewport originalHorizon = [_horizon viewport];
+    // 表示中のモードを通して検査し、背後の太陽系カメラを更新しないことを確認する。
+    bool zoomModesValid = true;
+    const auto blockedZoom = [&] {
+        const auto before = [_solar cameraState];
+        const auto basis = solar_camera_basis(before);
+        const BOOL surface = _solar.surfaceNavigationActive;
+        const BOOL flight = _solar.flightAnimating;
+        const NSInteger mode = _mode.selectedSegment;
+        for (const int operation : {0, 1, 2}) {
+            ScriptAction action{};
+            action.kind = operation == 0 ? ScriptActionKind::set_camera_distance : ScriptActionKind::animate_camera_zoom;
+            action.number = 1;
+            action.duration_seconds = operation == 0 ? 0 : 1;
+            action.enabled = operation == 2;
+            NSString *error = nil;
+            const BOOL accepted = [self applyScriptAction:action error:&error];
+            const auto after = [_solar cameraState];
+            const auto afterBasis = solar_camera_basis(after);
+            zoomModesValid = zoomModesValid && !accepted && error.length && _mode.selectedSegment == mode &&
+                _solar.surfaceNavigationActive == surface && _solar.flightAnimating == flight &&
+                before.distance_au == after.distance_au && before.target.x == after.target.x &&
+                before.target.y == after.target.y && before.target.z == after.target.z &&
+                basis.outward.x == afterBasis.outward.x && basis.outward.y == afterBasis.outward.y &&
+                basis.outward.z == afterBasis.outward.z && basis.right.x == afterBasis.right.x &&
+                basis.right.y == afterBasis.right.y && basis.right.z == afterBasis.right.z;
+        }
+    };
+    for (const NSInteger mode : {NSInteger(0), NSInteger(2)}) {
+        _mode.selectedSegment = mode;
+        [self changeMode:nil];
+        blockedZoom();
+    }
+    _mode.selectedSegment = 1;
+    [self changeMode:nil];
+    [_solar selectBody:3];
+    NSString *zoomError = nil;
+    zoomModesValid = [_solar forceSurfaceMode:YES bodyIndex:nullptr error:&zoomError] && zoomModesValid;
+    zoomModesValid = _solar.surfaceNavigationActive && zoomModesValid;
+    blockedZoom();
+    zoomModesValid = [_solar forceSurfaceMode:NO bodyIndex:nullptr error:&zoomError] && zoomModesValid;
+    ScriptAction spaceZoom{};
+    spaceZoom.kind = ScriptActionKind::set_camera_distance;
+    spaceZoom.number = 1;
+    zoomModesValid = [self applyScriptAction:spaceZoom error:&zoomError] && zoomModesValid;
+    spaceZoom.kind = ScriptActionKind::animate_camera_zoom;
+    spaceZoom.number = 2;
+    spaceZoom.duration_seconds = 0;
+    zoomModesValid = [self applyScriptAction:spaceZoom error:&zoomError] &&
+        [_solar cameraState].distance_au == 2 && zoomModesValid;
+    if (![self applySessionState:original]) return;
+    if (!zoomModesValid) {
+        [self showError:@"smoke: camera distance mode guard failed"];
+        return;
+    }
     const auto range = _model->time_range();
     auto date = mitaka::gregorian_date_time((range.first + range.second) / 2);
     date.hour = 12; date.minute = 34; date.second = 56;

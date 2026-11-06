@@ -33,6 +33,7 @@ static double monotonicSeconds() {
     }
 }
 - (void)leaveNavigation {
+    [self stopScriptZoomAnimation];
     [self stopScriptTargetTransition];
     [self stopScriptOrientation];
     _flightOrientation.reset();
@@ -99,6 +100,7 @@ static double monotonicSeconds() {
     }
 }
 - (void)startFlightTimer {
+    [self stopScriptZoomAnimation];
     [self invalidateFlightTimer];
     if (!self.flightAnimating) return;
     __weak SolarSystemView *weakSelf = self;
@@ -277,6 +279,7 @@ static double monotonicSeconds() {
         return NO;
     }
     if (!surface) {
+        [self stopScriptZoomAnimation];
         [self stopScriptTargetTransition];
         [self stopScriptOrientation];
         if (_journeyActive) {
