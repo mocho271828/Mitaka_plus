@@ -27,4 +27,4 @@
 
 YES
 
-検証対象: 親 62bbc36 への P1-3 基準球外縁修正統合。原データ・依存・全体方針は変更せず、共有 checkout の resources/data を読み取り専用で使用。build・test・data-test・reference-test は成功。smoke は GUI 枠の順番待ち。手動 GUI・旧 Plus 比較は未実施。Rust 移行文書は対象外。
+検証対象: 親 62bbc36 への P1-3 基準球外縁修正統合。原データ・依存・全体方針は変更せず、共有 checkout の resources/data を読み取り専用で使用。build・test・data-test・reference-test は成功。smoke は初回に飛行完了待機で失敗し、再試行は成功。原因は未確定。親 a5be624 への共有 checkout 統合でも 5 種 make は成功。手動 GUI・旧 Plus 比較は未実施。Rust 移行文書は対象外。

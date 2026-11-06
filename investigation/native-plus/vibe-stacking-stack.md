@@ -272,3 +272,4 @@
 - 独立検証・依存: **YES**。8c の遮蔽・描画に依存し、球外縁の両側における画素端クリックを単独試験できる。旧版比較と実画面操作は未実施。
 
 - 基準球外縁修正の独立作業 `98c4f90` は親 `e5d34fc`、統合は `62bbc36` を親とする `codex/mitaka-p13-integration`。独立作業の検証と FOV を含む統合後の検証は `VALIDATION.md` で区別する。
+- 共有 checkout への統合は、地平風景の選択遮蔽を含む `a5be624` を親とする `codex/mitaka-06d-surface-edge-integrated`。隔離統合 smoke の初回失敗・再試行と共有 checkout の検証結果も `VALIDATION.md` に記録する。

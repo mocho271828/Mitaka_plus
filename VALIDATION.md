@@ -379,4 +379,6 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 
 隔離 worktree にて `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。地球・火星の LFS 実体は主 worktree の `resources/data` を `DATA_ROOT` に指定して読み取り専用で使用した。`make smoke` も成功。
 
-統合検証: 親 `62bbc36` に P1-3 の `98c4f90` を適用し、FOV 変更を含む統合状態で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。`solar terrain: 91 checks PASS` にて 45°・60°・75°・90° の球外縁で描画と選択の一致を確認。`make smoke` は GUI 枠の順番待ち。上記の 5 種 make は独立 worktree 時の結果である。
+統合検証: 親 `62bbc36` に P1-3 の `98c4f90` を適用し、FOV 変更を含む隔離統合状態で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。`solar terrain: 91 checks PASS` にて 45°・60°・75°・90° の球外縁で描画と選択の一致を確認。`make smoke` は初回に飛行完了の待機で失敗し、再試行は成功した。失敗の原因は未確定。
+
+共有 checkout では、地平風景の選択遮蔽を含む親 `a5be624` に統合し、`make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` が成功した。
