@@ -19,3 +19,5 @@ JSON v9 に任意の `surface_site` を加え、停止中の地表の天体、�
 P1-3 を含む再統合は `a82fd3a` を親とする。`make build`、`make test`、`make data-test`、`make reference-test` は成功。地表セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功。`make smoke` も成功し、地表セッション復元、地形着陸、flight を通過した。前段の検証コピーは P1-3 の同名ディレクトリとの衝突を避けるため `2026-11-07-03-06-47` から `2026-11-07-03-06-48` に移した。
 
 共有 checkout への統合後、`make -j6 smoke` ではセッションと地形着陸の検証が成功した後、`flight did not complete` で失敗した。原因は未確定であり、共有 checkout での再検証が必要。
+
+共有 checkout で再度 `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test` を実行し、すべて成功した。その後の `make -j6 smoke` 再試行も、地表セッション復元・地形着陸・flight を含めて成功した。先の flight 失敗の原因は引き続き未確定である。
