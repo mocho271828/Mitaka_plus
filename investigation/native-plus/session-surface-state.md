@@ -16,4 +16,4 @@ JSON v9 に任意の `surface_site` を加え、停止中の地表の天体、�
 
 統合の実際の親は `62bbc36`（第 5b 単位）で、`a8b4a65` の FOV を祖先として含む。この統合版でも `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功した。統合版の smoke では地表セッション復元、地形着陸と flight 完了を通過した。
 
-P1-3 を含む再統合は `a82fd3a` を親とする。`make build`、`make test`、`make data-test`、`make reference-test` は成功。地表セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功。GUI smoke は順番待ち。前段の検証コピーは P1-3 の同名ディレクトリとの衝突を避けるため `2026-11-07-03-06-47` から `2026-11-07-03-06-48` に移した。
+P1-3 を含む再統合は `a82fd3a` を親とする。`make build`、`make test`、`make data-test`、`make reference-test` は成功。地表セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功。`make smoke` も成功し、地表セッション復元、地形着陸、flight を通過した。前段の検証コピーは P1-3 の同名ディレクトリとの衝突を避けるため `2026-11-07-03-06-47` から `2026-11-07-03-06-48` に移した。
