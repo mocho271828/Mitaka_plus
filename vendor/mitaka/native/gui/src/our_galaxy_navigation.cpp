@@ -79,8 +79,9 @@ bool hit_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera,
     direction_camera.frame = camera.frame;
     direction_camera.roll_deg = camera.roll_deg;
     const auto axes = solar_camera_basis(direction_camera);
-    const Vec3 delta = sub({camera.target.x_pc,camera.target.y_pc,camera.target.z_pc},
-                           {center.x_pc,center.y_pc,center.z_pc});
+    const Vec3 delta = add(sub({camera.target.x_pc,camera.target.y_pc,camera.target.z_pc},
+                               {center.x_pc,center.y_pc,center.z_pc}),
+                           mul(camera.target_offset_au, 1 / astronomical_units_per_parsec));
     const Vec3 r0 = add(delta, mul(axes.outward,camera.distance_pc));
     if (dot(r0,r0) < 2*radius_pc*radius_pc) return false;
     const double horizontal = (x-width/2)/height * (2*tangent_half_fov);
@@ -108,6 +109,7 @@ bool hit_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera,
 GalaxyCameraPc center_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera) {
     camera = checked_galaxy_camera(camera);
     camera.target = our_galaxy_center(placement);
+    camera.target_offset_au = {};
     return checked_galaxy_camera(camera);
 }
 GalaxyCameraPc frame_our_galaxy(OurGalaxyPlacement placement, GalaxyCameraPc camera,

@@ -21,6 +21,8 @@ template<class F> void rejects(F action) {
 }
 bool same(const GalaxyCameraPc& a, const GalaxyCameraPc& b) {
     return a.target.x_pc == b.target.x_pc && a.target.y_pc == b.target.y_pc && a.target.z_pc == b.target.z_pc &&
+           a.target_offset_au.x == b.target_offset_au.x && a.target_offset_au.y == b.target_offset_au.y &&
+           a.target_offset_au.z == b.target_offset_au.z &&
            a.yaw_deg == b.yaw_deg && a.pitch_deg == b.pitch_deg && a.distance_pc == b.distance_pc;
 }
 void close(double actual, long double expected, long double scale) {
@@ -119,10 +121,51 @@ void movement_tests() {
                                                          std::numeric_limits<double>::infinity());
     rejects([&] { (void)solar_camera_basis(solar); });
 }
+void remote_anchor_tests() {
+    // 実 GAL の一座標に相当する大きさでは 1 AU 距離の 1 point が pc 基準点の ULP より小さい。
+    const NativeEclipticPositionPc point{-1003390485.606666, 0, 0};
+    GalaxyCameraPc camera{point, 90, 0, 1 / astronomical_units_per_parsec};
+    const auto first = GalaxyProjector(camera, 1024, 600).project(point);
+    check(first && std::abs(first->x - 512) < 1e-9 && std::abs(first->y - 300) < 1e-9,
+          "remote anchor starts at screen center");
+    camera.pan(1, 0, 1024, 600);
+    const auto moved = GalaxyProjector(camera, 1024, 600).project(point);
+    check(moved && std::abs(moved->x - 513) < 1e-9 && std::abs(moved->y - 300) < 1e-9,
+          "one point pan preserved at remote anchor");
+    check(camera.target.x_pc == point.x_pc && camera.target_offset_au.x != 0,
+          "pan retains source coordinate and stores offset");
+    camera.pan(-1, 0, 1024, 600);
+    const auto returned = GalaxyProjector(camera, 1024, 600).project(point);
+    check(returned && std::abs(returned->x - 512) < 1e-9 && std::abs(returned->y - 300) < 1e-9,
+          "opposite pan restores remote projection");
+    auto invalid = camera;
+    invalid.target_offset_au.x = std::numeric_limits<double>::infinity();
+    rejects([&] { (void)checked_galaxy_camera(invalid); });
+    invalid.target_offset_au.x = std::numeric_limits<double>::quiet_NaN();
+    rejects([&] { (void)checked_galaxy_camera(invalid); });
+}
+void large_offset_tests() {
+    GalaxyCameraPc camera{{0, 0, 0}, 90, 0, 1 / astronomical_units_per_parsec};
+    camera.target_offset_au.x = 1e15;
+    const NativeEclipticPositionPc point{camera.target_offset_au.x / astronomical_units_per_parsec, 0, 0};
+    const double difference_au = std::fma(point.x_pc, astronomical_units_per_parsec, -camera.target_offset_au.x);
+    const double expected_x = 512 - difference_au * 600 / (2 * solar_camera_tangent_half_fov);
+    const auto initial = GalaxyProjector(camera, 1024, 600).project(point);
+    check(initial && std::abs(initial->x - expected_x) < 1e-8,
+          "projection preserves source difference after a large displacement");
+    camera.pan(1, 0, 1024, 600);
+    const auto moved = GalaxyProjector(camera, 1024, 600).project(point);
+    check(moved && std::abs(moved->x - expected_x - 1) < 1e-8,
+          "small pan after large displacement retains one point");
+    camera.pan(-1, 0, 1024, 600);
+    const auto returned = GalaxyProjector(camera, 1024, 600).project(point);
+    check(returned && std::abs(returned->x - expected_x) < 1e-8,
+          "reverse pan after rebasing restores the projection");
+}
 } // namespace
 int main() {
     try {
-        projection_tests(); boundary_and_operation_tests(); movement_tests();
+        projection_tests(); boundary_and_operation_tests(); movement_tests(); remote_anchor_tests(); large_offset_tests();
         std::cout << "Galaxy camera: " << checks << " checks PASS\n";
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

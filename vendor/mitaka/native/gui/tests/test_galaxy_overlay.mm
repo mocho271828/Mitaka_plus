@@ -85,6 +85,21 @@ void asynchronousRedrawDoesNotInvalidateScene() {
     draw(overlay, camera);
     check([overlay diagnostics].display == GalaxyOverlayDisplay::complete,
           "published redraw did not show the completed image");
+    const auto stale = std::make_shared<PickResult>();
+    [overlay pickAtPoint:NSMakePoint(256, 256) camera:camera completion:^(std::optional<GalaxySpatialRecordId> selection) {
+        stale->picked = selection; stale->called = true;
+    }];
+    auto panned = camera;
+    panned.pan(1, 0, 512, 512);
+    draw(overlay, panned);
+    auto diagnostics = [overlay diagnostics];
+    check(diagnostics.requested && diagnostics.requested->camera.target_offset_au.y != 0,
+          "pan residual was omitted from request");
+    check(diagnostics.display == GalaxyOverlayDisplay::preview,
+          "pan residual incorrectly reused the old image");
+    waitFor([&] { draw(overlay, panned); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "pan residual did not produce a complete image");
+    check(!stale->called, "pan residual did not invalidate an old pick");
 
     OrdinaryTestView *plainView = [[OrdinaryTestView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
     GalaxyOverlay *plainOverlay = [[GalaxyOverlay alloc] initWithView:plainView];

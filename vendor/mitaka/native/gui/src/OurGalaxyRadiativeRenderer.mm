@@ -45,9 +45,9 @@ SolarCamera direction_camera(GalaxyCameraPc camera) {
 NativeEclipticPositionPc eye_position(GalaxyCameraPc camera) {
     camera = checked_galaxy_camera(camera);
     const auto out = solar_camera_basis(direction_camera(camera)).outward;
-    return {camera.target.x_pc + camera.distance_pc * out.x,
-            camera.target.y_pc + camera.distance_pc * out.y,
-            camera.target.z_pc + camera.distance_pc * out.z};
+    return {camera.target.x_pc + camera.target_offset_au.x / astronomical_units_per_parsec + camera.distance_pc * out.x,
+            camera.target.y_pc + camera.target_offset_au.y / astronomical_units_per_parsec + camera.distance_pc * out.y,
+            camera.target.z_pc + camera.target_offset_au.z / astronomical_units_per_parsec + camera.distance_pc * out.z};
 }
 double dot(Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
 Vec3 galactic_components(Vec3 v) {

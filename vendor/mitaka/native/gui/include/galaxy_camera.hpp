@@ -18,6 +18,8 @@ struct GalaxyCameraPc {
     std::optional<SolarCameraBasis> frame = std::nullopt;
     double roll_deg = 0;
     bool frame_is_orbit = false;
+    // target は pc の基準点。小さな移動は AU の差分として保持する。
+    Vec3 target_offset_au{0, 0, 0};
     void orbit(double dx_points, double dy_points);
     void roll(double degrees);
     void pan(double dx_points, double dy_points, double width, double height);

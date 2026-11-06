@@ -169,7 +169,7 @@ TerrainSurfaceFrame render_terrain_surface(const TerrainSurfaceBinding& binding,
     const auto axes=solar_camera_basis(camera);
     // 大きい世界原点を各頂点に加えてから引く精度損失を避ける。
     auto relative_camera=camera;
-    relative_camera.target=subtract(camera.target,binding.center_au);
+    relative_camera.set_target_au(subtract(camera.target,binding.center_au));
     const auto eye=add(relative_camera.target,scale(axes.outward,camera.distance_au));
     const auto local_eye=scale(local(eye,binding.orientation),1/binding.display_radius_au);
     TerrainSurfaceFrame result;

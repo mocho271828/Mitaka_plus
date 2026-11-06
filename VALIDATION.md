@@ -1,5 +1,15 @@
 # 検証記録
 
+## 2026-11-06: P1-1 遠方対象付近の共有カメラ精度
+
+遠方の対象を単一の AU 座標に丸めると、1 AU 距離での小さな pan が消えるため、pc の基準点と AU の差分を太陽系・銀河・共有カメラで保持する。投影・選択・描画要求の比較、Lua 対象移動、追従、拡散銀河描画にも同じ位置を伝える。差分が距離に比べ大きい場合は標準 C++ の FMA と加算誤差を用いて再基準化する。JSON v9 は任意の精密位置を追加し、既存の近似 AU `target` も残す。精密位置があれば優先し、なければ従来値を使う。不完全・非有限な精密値は全体適用前に拒否する。二つの double にも精度限界があり、極端な移動量と小距離の組合せで任意の微小移動を保証しない。
+
+`make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功した。追加した実データ試験を含む最終 `make data-test` は GAL と QSO の各原行 0 を読み、1 AU 距離の描画画素・元の選択 ID・pan 往復を確認した。これは自動描画試験であり、実画面操作の確認ではない。カメラの極端な移動後の 1 point pan、共有カメラの最小距離での 3 種の姿勢と pan、セッション保存・復元、不正値、Lua 移動の中断・再指定、追従先の太陽系帰還を回帰試験で検証した。地形要求の一致判定にも姿勢と精密位置を追加し、残差だけが異なる場合の再生成を単体試験で検証した。最終変更前の smoke は月への連続飛行で失敗し、単独の再実行は成功した。失敗原因は未確定。ログは `/tmp/mitaka-precision-final-smoke.log`、`/tmp/mitaka-precision-final-smoke-retry.log` および最終変更後の `/tmp/mitaka-precision-terrain-{build,test,data-test,reference-test,smoke}.log`。
+
+実画面でアプリ起動を確認したが、同梱 data フォルダを選択しても Open が有効にならず、その画面での遠方移動は確認できなかった。実操作時の描画収束、距離間の連続性、旧 Plus との比較は次の作業に残る。既存 smoke の表示カメラ比較は残差と roll を比較しないため、古い frame を誤認する可能性があり、次の連続性作業で検証する。P1-1 は部分実装のまま。
+
+新規依存はなく、精密位置の方針を `IMPLEMENTATION_POLICY.md` と `policy_gates/shared_implementation.md` に追加した。`resources/` と `vendor/mitaka/sources/` に Git 差分はないが、原本全件の再照合はしていない。指定 `/simplifier-lai` は利用できず、類似の `simplify-lai` は LobbyAI 専用で対象外。[policy gate の検証コピー](temp_gates/2026-11-06-22-33-13/)に判定を記録した。
+
 ## 2026-11-06: P1-1 SDSS 銀河の eClass 配色
 
 SDSS 銀河の `eClass` を視等級ではなく分類値として扱い、同梱の通常 Mitaka 1.3.1 の `mtk_galaxies.cpp` にある 5 分類と B−V 色を基に、preview と complete の両描画に配色を追加した。非有限の分類値を描画対象外とするのは現行実装の判断であり、旧 Plus の仕様と確認したものではない。QSO は従来の赤方偏移に基づく色を維持する。データの出典・原行 ID を保持し、座標から実在天体の名前を推測しない。通常版の色の根拠は `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_galaxies.cpp` と `common/graphics/color.cpp`、データの解釈は [出典記録](vendor/mitaka/native/core/EXTENDED_CATALOG_PROVENANCE.md)を参照。

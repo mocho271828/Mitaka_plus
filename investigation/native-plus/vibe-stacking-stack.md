@@ -37,7 +37,7 @@
 | 2 | `codex/mitaka-02-camera-fov` | `codex/mitaka-01-camera-zoom` | P1-1: CAM-03 | 地平図の画角・補間・45°復帰を投影と選択に整合させる | 0°拒否、90°、再指定、投影・選択・モード往復 | `submitted-now` | `implemented` | yes* |
 | 3 | `codex/mitaka-03-galaxy-selection` | `codex/mitaka-02-camera-fov` | P1-1: GAL-02 | OurGalaxy 描画点を出典内 ID で個別選択し、注視追従する | 群・原順、preview/complete と可視性、重複・選択順位、取消・モデル交換、透明、追従解除、実データ、旧版比較 | `submitted-now` | `implemented` | yes* |
 | 4 | `codex/mitaka-04-large-scale-view` | `codex/mitaka-03-galaxy-selection` | P1-1: GAL-03 | 同梱通常版原典に基づく SDSS 銀河の分類色を preview と完成画像へ反映する | eClass 境界・無効値、原典参照色、描画画素、実データ分布 | `submitted-now` | `implemented` | yes* |
-| 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `not-started` | yes* |
+| 4b | `codex/mitaka-04b-large-scale-precision` | `codex/mitaka-04-large-scale-view` | P1-1: GAL-02, GAL-03 | 遠方天体付近の共有カメラと選択の位置精度を維持する | 実 GAL/QSO、1 AU 距離の描画・選択・pan、保存復元、太陽系帰還 | `submitted-now` | `implemented` | yes* |
 | 4c | `codex/mitaka-04c-large-scale-continuity` | `codex/mitaka-04b-large-scale-precision` | P1-1: GAL-02, GAL-03 | 実データの各距離における共有視点と描画の連続性を仕上げる | 1〜10,000 AU・1〜10,000 光年・大規模構造を往復し、入力中・停止直後・完成時の背景、可視性、最新 frame、描画選択と表示復帰を確認。背景欠落は再現確認から開始 | `submitted-now` | `not-started` | yes* |
 | 4d | `codex/mitaka-04d-milky-way-appearance` | `codex/mitaka-04c-large-scale-continuity` | P1-1: GAL-02 | 既存モデルの銀河系の外観と縮尺を比較・改善する | 正面・横、腕・バルジ・暗黒帯・太陽位置、移動中と完成後、性能 | `local-only` | `not-started` | yes* |
 | 4e | `codex/mitaka-04e-local-group` | `codex/mitaka-04d-milky-way-appearance` | P1-1: GAL-02 | 実カタログの局部銀河群・球状星団の画像と名称を 3D 表示へ接続する | NBG/GC の明示読込、実 ID と描画・選択・Lua、重複・不明キー、点への切替 | `local-only` | `not-started` | yes* |
@@ -141,6 +141,14 @@
 - 独立検証: **YES**。通常 Mitaka の同梱原典を根拠に区分と色を確認し、境界値・無効値・出力画素・実データでの分類分布を検査する。旧 Plus での一致は別途検証し、推定と区別する。
 - 親依存の明確さ: **YES**。第 3 単位までの描画・選択基盤を用いる。
 - 作業都合のみの分割ではない: **YES**。分類色の契約はカメラの精度表現や遠距離移動の連続性から独立してレビューできる。
+
+## 第 4b 単位の branch admission 判定
+
+- 単一レビュー理由: **YES**。遠方の共有カメラ対象について、近距離の描画・選択・移動に必要な位置精度を保つ。
+- named seam: **YES**。`SolarCamera`・`SharedCamera`・`GalaxyCameraPc` の pc 基準と AU 差分、renderer・picker・JSON v9 の対象表現。
+- 独立検証: **YES**。実 GAL/QSO 各原行の 1 AU 描画画素・選択 ID・pan 往復、セッション復元、不正値、追従、Lua 中断・再指定を確認する。実画面と旧版の比較は未検証として記録する。
+- 親依存の明確さ: **YES**。第 4 単位までの共有カメラと銀河表示・選択を用いる。
+- 作業都合のみの分割ではない: **YES**。精度表現とその保存契約は、距離間の描画収束・表示連続性とは独立して検証できる。
 
 ## 対象ファイルと依存
 

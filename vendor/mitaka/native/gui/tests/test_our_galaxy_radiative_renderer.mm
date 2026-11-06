@@ -45,6 +45,11 @@ int main() {
     const auto origin = our_galaxy_camera_origin(camera);
     const auto direct = our_galaxy_galactic_position({12000, 0, 0});
     assert(origin.x == direct.x && origin.y == direct.y && origin.z == direct.z);
+    auto shifted = camera;
+    shifted.target_offset_au = {1000 * astronomical_units_per_parsec, 0, 0};
+    const auto moved_origin = our_galaxy_camera_origin(shifted);
+    const auto moved_direct = our_galaxy_galactic_position({13000, 0, 0});
+    assert(moved_origin.x == moved_direct.x && moved_origin.y == moved_direct.y && moved_origin.z == moved_direct.z);
     assert(our_galaxy_alpha(camera) > 0);
     const auto rendered = render_our_galaxy_radiative(model, camera, 1, 1);
     assert(rendered && rendered->alpha() == our_galaxy_alpha(camera));

@@ -185,6 +185,7 @@ bool GalaxySpatialScene::focus_selection(GalaxyCameraPc& camera) const {
     if (!row.position) return false;
     auto next = camera;
     next.target = *row.position;
+    next.target_offset_au = {};
     camera = checked_galaxy_camera(next);
     return true;
 }

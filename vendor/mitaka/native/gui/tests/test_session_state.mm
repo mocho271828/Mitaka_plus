@@ -306,6 +306,62 @@ void test_ranges_and_camera() {
     rejects([&] { encode_session_state(bad); });
 }
 
+void test_precise_camera() {
+    SessionState state;
+    state.solar_camera.set_target_pc({1e9, -2e9, 3e9});
+    state.solar_camera.translate_target_au({0.001, -0.002, 0.003});
+    const auto json = encode_session_state(state);
+    const auto restored = decode_session_state(json);
+    check(encode_session_state(restored) == json && restored.solar_camera.precise_target &&
+          restored.solar_camera.precise_target->anchor_pc.x == 1e9 &&
+          restored.solar_camera.precise_target->anchor_pc.y == -2e9 &&
+          restored.solar_camera.precise_target->anchor_pc.z == 3e9 &&
+          restored.solar_camera.precise_target->offset_au.x == 0.001 &&
+          restored.solar_camera.precise_target->offset_au.y == -0.002 &&
+          restored.solar_camera.precise_target->offset_au.z == 0.003,
+          "precise camera target did not roundtrip");
+
+    NSData *data = [NSData dataWithBytes:json.data() length:json.size()];
+    auto object = (NSMutableDictionary *)[NSJSONSerialization JSONObjectWithData:data
+        options:NSJSONReadingMutableContainers error:nil];
+    object[@"solar_camera"][@"target"] = @[@1, @2, @3];
+    const auto authoritative = decode_session_state(json_bytes(object));
+    check(authoritative.solar_camera.precise_target &&
+          authoritative.solar_camera.precise_target->anchor_pc.x == 1e9 &&
+          authoritative.solar_camera.target.x != 1,
+          "precise target was not authoritative over legacy target");
+    object[@"solar_camera"][@"target"] = @[@1, @YES, @3];
+    rejects([&] { decode_session_state(json_bytes(object)); });
+    object[@"solar_camera"][@"target"] = @[@1, @2, @3];
+    [object[@"solar_camera"] removeObjectForKey:@"precise_target"];
+    const auto legacy = decode_session_state(json_bytes(object));
+    check(!legacy.solar_camera.precise_target && legacy.solar_camera.target.x == 1 &&
+          legacy.solar_camera.target.y == 2 && legacy.solar_camera.target.z == 3,
+          "legacy v9 target was not restored in AU");
+
+    SessionState edge;
+    edge.solar_camera.set_target_pc({1e40, -1e40, 0});
+    edge.solar_camera.translate_target_au({1e-10, -1e-10, 1e-10});
+    const auto edgeRestored = decode_session_state(encode_session_state(edge));
+    check(edgeRestored.solar_camera.precise_target &&
+          edgeRestored.solar_camera.precise_target->offset_au.x == 1e-10,
+          "precise camera boundary did not roundtrip");
+
+    for (id value in @[NSNull.null, @YES, @1, @"target", @[], @{},
+        @{@"anchor_pc": @[@1, @2, @3]}, @{@"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @2], @"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @YES, @3], @"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @2, @3], @"offset_au": @[@1, @"2", @3]},
+        @{@"anchor_pc": @[@(std::numeric_limits<double>::max()), @0, @0], @"offset_au": @[@0, @0, @0]}]) {
+        auto invalid = session_object();
+        invalid[@"solar_camera"][@"precise_target"] = value;
+        rejects([&] { decode_session_state(json_bytes(invalid)); });
+    }
+    auto invalid = state;
+    invalid.solar_camera.precise_target->offset_au.x = std::numeric_limits<double>::infinity();
+    rejects([&] { encode_session_state(invalid); });
+}
+
 void test_display_option_boundaries() {
     for (NSString *parent in @[@"planets", @"stars", @"grids", @"renderer", @"earth_layers", @"eclipse"]) {
         for (NSString *key in [session_object()[parent] allKeys]) {
@@ -547,6 +603,7 @@ int main() {
             test_roundtrip();
             test_missing_null_and_types();
             test_ranges_and_camera();
+            test_precise_camera();
             test_display_option_boundaries();
             test_v6_display_boundaries();
             test_plus_time_zone();

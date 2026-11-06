@@ -12,6 +12,28 @@
 using namespace mitaka;
 using namespace mitaka::gui;
 
+namespace {
+void setCameraTarget(SolarCamera& camera, const SolarCamera& source) {
+    if (source.precise_target) {
+        camera.set_target_pc(source.precise_target->anchor_pc);
+        camera.translate_target_au(source.precise_target->offset_au);
+    } else camera.set_target_au(source.target);
+}
+
+// 同じ遠方基準の間の小さな移動は、絶対 AU を合算する前に差を取る。
+Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial) {
+    if (destination.precise_target && initial.precise_target) {
+        const auto& a = destination.precise_target.value();
+        const auto& b = initial.precise_target.value();
+        return {(a.anchor_pc.x - b.anchor_pc.x) * astronomical_units_per_parsec + (a.offset_au.x - b.offset_au.x),
+                (a.anchor_pc.y - b.anchor_pc.y) * astronomical_units_per_parsec + (a.offset_au.y - b.offset_au.y),
+                (a.anchor_pc.z - b.anchor_pc.z) * astronomical_units_per_parsec + (a.offset_au.z - b.offset_au.z)};
+    }
+    return {destination.target.x - initial.target.x, destination.target.y - initial.target.y,
+            destination.target.z - initial.target.z};
+}
+}
+
 @interface SolarSystemView (ScriptTargetAnimationInternal)
 - (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration includeOrientation:(BOOL)includeOrientation;
 @end
@@ -80,12 +102,14 @@ using namespace mitaka::gui;
 }
 - (void)advanceScriptTargetTransition {
     if (!_targetAnimation) return;
+    try {
     const auto state = *_targetAnimation;
     const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     const double t = std::clamp((now - state.start_time) / state.duration, 0.0, 1.0);
     constexpr double pi = 3.14159265358979323846;
     const double weight = (1.0 - std::cos(pi * t)) / 2.0;
-    Vec3 target = state.body ? [self displayPosition:*state.body] : state.target;
+    auto destination = state.target;
+    Vec3 target = state.body ? [self displayPosition:*state.body] : destination.target;
     if (_scriptSpacePlace && state.body && *state.body == 3)
         target = [self scriptSpacePlacePositionForBodies:_bodies];
     if (state.small_body) {
@@ -118,24 +142,34 @@ using namespace mitaka::gui;
         [self stopScriptTargetTransition];
         return;
     }
-    _camera.target = {state.initial.x + (target.x - state.initial.x) * weight,
-                      state.initial.y + (target.y - state.initial.y) * weight,
-                      state.initial.z + (target.z - state.initial.z) * weight};
+    if (state.body || state.small_body || state.spacecraft || state.satellite)
+        destination.set_target_au(target);
+    const Vec3 delta = targetDifference(destination, state.initial);
+    const auto& base = weight < 0.5 ? state.initial : destination;
+    const double factor = weight < 0.5 ? weight : weight - 1;
+    auto next = _camera;
+    setCameraTarget(next, base);
+    if (t < 1) next.translate_target_au({delta.x * factor, delta.y * factor, delta.z * factor});
     if (state.updates_distance)
-        _camera.distance_au = state.initial_distance + (state.target_distance - state.initial_distance) * weight;
+        next.distance_au = state.initial_distance + (state.target_distance - state.initial_distance) * weight;
     if (state.initial_orientation && state.target_orientation) {
         const auto orientation = plus_orientation_interpolate(*state.initial_orientation, *state.target_orientation, weight, false);
-        _camera.frame = plus_orientation_basis(orientation);
-        _camera.frame_is_orbit = true;
-        _camera.roll_deg = 0;
+        next.frame = plus_orientation_basis(orientation);
+        next.frame_is_orbit = true;
+        next.roll_deg = 0;
     }
-    [self keepCameraOutsideBodies:_camera];
+    [self keepCameraOutsideBodies:next];
+    _camera = next;
     if (t >= 1) {
         _following = YES;
         [self stopScriptTargetTransition];
     }
     [self notifyCamera];
     self.needsDisplay = YES;
+    } catch (const std::exception& error) {
+        [self stopScriptTargetTransition];
+        [self reportNavigationError:error.what()];
+    }
 }
 - (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration {
     [self animateScriptTargetFrom:initial duration:duration includeOrientation:NO];
@@ -154,7 +188,7 @@ using namespace mitaka::gui;
         initialOrientation = plus_orientation_from_basis(solar_camera_basis(initial));
         targetOrientation = plus_orientation_from_basis(solar_camera_basis(destination));
     }
-    _targetAnimation = ScriptTargetAnimation{initial.target, destination.target, initial.distance_au,
+    _targetAnimation = ScriptTargetAnimation{initial, destination, initial.distance_au,
                                               destination.distance_au, now, duration, _selection, _smallBodySelection, _spacecraftSelection, _satelliteSelection, _galaxySelection, static_cast<bool>(_ourGalaxySelected), initialOrientation, targetOrientation};
     _camera = initial;
     _following = NO;
@@ -198,7 +232,7 @@ using namespace mitaka::gui;
             [self selectBody:3];
             site.height_km = minimum_surface_height_km;
             _scriptSpacePlace = site;
-            camera.target = [self scriptSpacePlacePositionForBodies:_bodies];
+            camera.set_target_au([self scriptSpacePlacePositionForBodies:_bodies]);
             _camera = camera;
             _physicalSpaceActive = YES;
             _following = YES;
@@ -278,7 +312,7 @@ using namespace mitaka::gui;
     if (target == "Other.SolarSystem") _selection = 0;
     _scriptOverviewTarget = target;
     _following = YES;
-    _camera.target = [self displayPosition:0];
+    _camera.set_target_au([self displayPosition:0]);
     _camera.frame = frame;
     _camera.frame_is_orbit = true;
     _camera.roll_deg = 0;
@@ -320,9 +354,7 @@ using namespace mitaka::gui;
     }
     const auto position = model->points[*index].position;
     auto camera = _camera;
-    camera.target = {position.x_pc * astronomical_units_per_parsec,
-                     position.y_pc * astronomical_units_per_parsec,
-                     position.z_pc * astronomical_units_per_parsec};
+    camera.set_target_pc({position.x_pc, position.y_pc, position.z_pc});
     try {
         (void)solar_camera_basis(camera);
     } catch (const std::exception& failure) {

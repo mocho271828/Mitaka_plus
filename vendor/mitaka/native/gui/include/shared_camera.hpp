@@ -7,7 +7,6 @@ namespace mitaka::gui {
 // 暫定前提: 太陽系の AU 座標と native J2000 黄道 pc 座標は原点・軸が共通。
 // 通常版 Mitaka の mtk_galaxies.cpp は SDSS 座標を日心黄道座標と記すが、
 // 旧 Plus バイナリでも同一かは未確認。原点オフセットは適用しない。
-constexpr double astronomical_units_per_parsec = 648000.0 / 3.14159265358979323846;
 constexpr double minimum_shared_distance_au = 1e-12;
 constexpr double maximum_shared_distance_au = maximum_galaxy_coordinate_pc * astronomical_units_per_parsec;
 
@@ -21,6 +20,7 @@ struct SharedCamera {
     std::optional<SolarCameraBasis> frame;
     double roll_deg = 0;
     bool frame_is_orbit = false;
+    std::optional<PreciseCameraTarget> precise_target;
 
     // 値域は 1e-12 AU から 1e40 pc 相当。無効な値や操作は invalid_argument。
     // 各描画系への変換時にはその描画系固有の距離制限が別途適用される。

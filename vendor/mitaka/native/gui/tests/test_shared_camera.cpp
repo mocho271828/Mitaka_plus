@@ -153,11 +153,69 @@ void close_solar_projection() {
         previous = star;
     }
 }
+void far_source_pan_and_roundtrip() {
+    // 同梱 SDSS GAL の座標規模では単一 AU double の 1 ULP が 1 point pan より大きい。
+    const NativeEclipticPositionPc source{-1003390485.606666, 0, 0};
+    SolarCamera solar;
+    solar.set_target_pc({source.x_pc, source.y_pc, source.z_pc});
+    solar.distance_au = 1;
+    solar.yaw_deg = 90;
+    auto shared = shared_camera_from_solar(solar);
+    auto projection = [&] {
+        return GalaxyProjector(galaxy_camera_from_shared(shared), 1024, 600).project(source);
+    };
+    const auto before = projection();
+    check(before.has_value(), "far source initially visible");
+    shared.pan(1, 0, 1024, 600);
+    const auto after = projection();
+    check(after.has_value() && std::abs(std::abs(after->x - before->x) - 1) < 1e-9,
+          "far source did not move by one point");
+    solar = solar_camera_from_shared(shared_camera_from_galaxy(galaxy_camera_from_shared(shared)));
+    const auto recovered = GalaxyProjector(galaxy_camera_from_shared(shared_camera_from_solar(solar)), 1024, 600).project(source);
+    check(recovered && std::abs(recovered->x - after->x) < 1e-9, "far position lost in bridge");
+    shared.pan(-1, 0, 1024, 600);
+    const auto reversed = projection();
+    check(reversed && std::abs(reversed->x - before->x) < 1e-9, "inverse pan lost precision");
+    auto inconsistent = shared;
+    inconsistent.target_au.x += 1;
+    rejects([&] { (void)galaxy_camera_from_shared(inconsistent); });
+    solar.set_target_au({1, 2, 3});
+    check(!solar.precise_target, "near target retained stale residual");
+}
+void pan_at_shared_minimum() {
+    const NativeEclipticPositionPc source{-1003390485.606666, 0, 0};
+    SolarCamera solar;
+    solar.set_target_pc({source.x_pc, source.y_pc, source.z_pc});
+    auto initial = shared_camera_from_solar(solar);
+    initial.distance_au = minimum_shared_distance_au;
+    for (int frame_mode = 0; frame_mode < 3; ++frame_mode) {
+        auto camera = initial;
+        if (frame_mode != 0) {
+            camera.frame = SolarCameraBasis{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+            camera.frame_is_orbit = frame_mode == 1;
+        }
+        if (frame_mode != 2) rejects([&] { (void)solar_camera_from_shared(camera); });
+        else (void)solar_camera_from_shared(camera);
+        auto projection = [&] {
+            return GalaxyProjector(galaxy_camera_from_shared(camera), 1024, 600).project(source);
+        };
+        const auto before = projection();
+        check(before.has_value(), "minimum-distance source initially visible");
+        camera.pan(1, 0, 1024, 600);
+        const auto after = projection();
+        check(after && std::abs(std::abs(after->x - before->x) - 1) < 1e-9,
+              "minimum-distance pan lost one point");
+        camera.pan(-1, 0, 1024, 600);
+        const auto reversed = projection();
+        check(reversed && std::abs(reversed->x - before->x) < 1e-9,
+              "minimum-distance inverse pan lost precision");
+    }
+}
 } // namespace
 
 int main() {
     try {
-        conversion_and_projection(); limits_and_validation(); movement_across_scales(); close_solar_projection();
+        conversion_and_projection(); limits_and_validation(); movement_across_scales(); close_solar_projection(); far_source_pan_and_roundtrip(); pan_at_shared_minimum();
         std::cout << "Shared camera: PASS\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;

@@ -341,7 +341,7 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                     if (![self->_solar ourGalaxyModel]) failGalaxySmoke("real OurGalaxy model was not loaded");
                     [self setMilkyWayMode:MilkyWayMode::normal];
                     auto camera = [self->_solar cameraState];
-                    camera.target = {0, 0, 0};
+                    camera.set_target_au({0, 0, 0});
                     camera.distance_au = 20000 * astronomical_units_per_parsec;
                     camera.frame.reset();
                     [self->_solar setCameraState:camera];
@@ -391,9 +391,7 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 if (hip && !hip->points.empty()) {
                     const auto position = hip->points.front().position;
                     auto camera = [self->_solar cameraState];
-                    camera.target = {position.x_pc * astronomical_units_per_parsec,
-                                     position.y_pc * astronomical_units_per_parsec,
-                                     position.z_pc * astronomical_units_per_parsec};
+                    camera.set_target_pc({position.x_pc, position.y_pc, position.z_pc});
                     camera.distance_au = astronomical_units_per_parsec;
                     camera.frame.reset();
                     [self->_solar setCameraState:camera];
@@ -438,7 +436,7 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
                 const double x = star.x_pc - 1.0 / astronomical_units_per_parsec;
                 const double y = star.y_pc, z = star.z_pc;
                 auto closeCamera = [self->_solar cameraState];
-                closeCamera.target = {1, 0, 0};
+                closeCamera.set_target_au({1, 0, 0});
                 closeCamera.distance_au = 1;
                 closeCamera.frame.reset();
                 closeCamera.yaw_deg = std::atan2(-y, -x) * 180 / std::acos(-1);
@@ -468,9 +466,7 @@ bool solarGalaxyCameraMatches(const GalaxyCameraPc& displayed, const SolarCamera
             }
             if (state->phase == 12) {
                 auto camera = [self->_solar cameraState];
-                camera.target = {state->position.x_pc * astronomical_units_per_parsec,
-                                 state->position.y_pc * astronomical_units_per_parsec,
-                                 state->position.z_pc * astronomical_units_per_parsec};
+                camera.set_target_pc({state->position.x_pc, state->position.y_pc, state->position.z_pc});
                 camera.distance_au = astronomical_units_per_parsec;
                 auto framed = camera;
                 framed.yaw_deg = 12;
