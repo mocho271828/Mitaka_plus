@@ -61,7 +61,8 @@
 | 11b | `codex/mitaka-11b-planet-places` | `codex/mitaka-08b-non-earth-sky` | P1-8: CAM-06, P2: DATA-01 | 地球・火星・月の登録地点を Lua から指定し同一天体の地表を移動する | 有効ファイルの ID、移動の再指定、他天体間の拒否、実データと Lua | `local-only` | `partial` | yes* |
 | 8c | `codex/mitaka-08c-non-earth-picking` | `codex/mitaka-11b-planet-places` | P1-5: CAM-01 | 非地球 3D 地表の恒星・星座線の選択と地形遮蔽を揃える | 恒星と星座線、可視設定、地形・球面の遮蔽と描画一致 | `local-only` | `partial` | yes* |
 | 8d | `codex/mitaka-08d-surface-fov` | `codex/mitaka-08c-non-earth-picking` | P1-1: CAM-03, P1-5: CAM-01 | 非地球 3D 地表の画角と Lua 操作を投影・選択に接続する | 地形・背景・恒星・星座・銀河、補間と再指定、45° 復帰 | `local-only` | `partial` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-08d-surface-fov` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
+| 4k | `codex/mitaka-04k-our-galaxy-integrated` | `codex/mitaka-08d-surface-fov` | P1-1: Galaxy picking | 天の川点群の同一レイヤー内で描画順に選択する | preview・complete の描画形状と原順 | `local-only` | `partial` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-04k-our-galaxy-integrated` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |
@@ -245,3 +246,14 @@
 - 負標高の着陸、地形描画・選択と地表星空の整合は P1-3 の独立した残件である。並列実装を優先し、実際の親は 4g とする。
 - 地球と火星の公式別配布データで負標高を検証する。地形待ち・失敗時の基準球内は不透明黒、地形の欠けは透明であり、雲・大気も基準球内では省略する。表示中 LOD との高さ差、手動 GUI と旧 Plus の比較は残件。
 - 飛行中断 smoke では、非同期地形更新と飛行停止を独立に検査できるよう中断検査中のみ地形読み込みを退避し、その前後に実地形の専用 smoke を残す。過去の smoke 失敗の原因はログ不足のため断定しない。
+
+
+### OurGalaxy 同一レイヤーの重なり（独立統合単位）
+
+- 独立作業 branch: `codex/mitaka-04k-our-galaxy-overlap`、作業時の親: `815b362`。統合 branch: `codex/mitaka-04k-our-galaxy-integrated`、親: `a8b4a65`。
+- 単一レビュー理由: **YES**。同一 OurGalaxy レイヤー内で、描画形状が重なる点の選択順を描画順に揃える。
+- named seam: **YES**。`OurGalaxyRenderer` の描画形状・群と原順、および `GalaxyOverlay` の選択候補。
+- 独立検証: **YES**。preview・complete の形状内外、異なる座標、群と原順、透明、非表示と実データを対象試験で確認する。
+- 依存と範囲: **YES**。既存の描画・レイヤー間選択の上に限定し、追加データやライブラリは不要。
+- 作業都合のみの分割ではない: **YES**。同一レイヤー内の判定は他レイヤー間の優先順位と別にレビューできる。
+- 状態: `local-only`、P1-1 全体は `partial`。旧 Plus の優先順位とアンチエイリアス境界は未確認。

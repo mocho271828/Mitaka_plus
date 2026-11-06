@@ -456,6 +456,34 @@ void transparentOurGalaxyIsNotSelectable() {
     waitFor([&] { return *done; }, "transparent point pick did not finish");
     check(!selection->our_galaxy_point, "transparent complete point was picked");
 }
+void ourGalaxyOverlapSelection() {
+    auto model = std::make_shared<OurGalaxyModel>();
+    for (auto& map : model->maps) {
+        map.width = 512; map.height = 512; map.values.assign(512 * 512, 0);
+    }
+    model->groups[0].positions = {{0, 0, 0}, {0, 0, 0}};
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    [overlay setOurGalaxyModel:model];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 2700};
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "overlap test must begin in preview");
+    const auto pickLast = [&] {
+        const auto done = std::make_shared<bool>(false);
+        const auto selected = std::make_shared<GalaxyOverlaySelection>();
+        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+            *selected = result; *done = true;
+        }];
+        waitFor([&] { return *done; }, "overlap pick did not finish");
+        check(selected->our_galaxy_point &&
+              *selected->our_galaxy_point == OurGalaxyPointId{OurGalaxyPointGroup::disk1, 1},
+              "OurGalaxy overlap must select the last painted ordinal");
+    };
+    pickLast();
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "OurGalaxy overlap image did not finish");
+    pickLast();
+}
 void previewOurGalaxyViewportBoundaries() {
     auto model = std::make_shared<OurGalaxyModel>();
     // 最も暗い群と距離フェード閾値直上で、境界の画素が量子化で消えないことも確かめる。
@@ -721,6 +749,7 @@ void tests() {
     radiativeFailureKeepsOtherLayers();
     visibilityControls();
     transparentOurGalaxyIsNotSelectable();
+    ourGalaxyOverlapSelection();
     previewOurGalaxyViewportBoundaries();
     previewOurGalaxyDistanceFade();
     previewOurGalaxyCenterFade();

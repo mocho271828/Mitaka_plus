@@ -362,7 +362,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             if (ourPointsDisplayed && !cancelled()) {
                 const auto pointMode = mode == GalaxyOverlayDisplay::preview
                     ? OurGalaxyPointDisplay::preview : OurGalaxyPointDisplay::complete;
-                ourCandidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, pointMode,
+                ourCandidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, ourSettings.styles, pointMode,
                     request.camera, request.size.width, request.size.height, point.x, point.y, 8, cancelled,
                     pointMode == OurGalaxyPointDisplay::complete ? ourRadiative.get() : nullptr);
                 if (const auto& candidate = ourCandidate) {
