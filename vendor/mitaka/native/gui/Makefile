@@ -179,8 +179,8 @@ test: session-plus-test
 $(BUILD_DIR)/test_calendar_time: tests/test_calendar_time.cpp $(BUILD_DIR)/calendar_time.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(BUILD_DIR)/calendar_time.o "$(CORE_LIBRARY)" $(LDFLAGS) -o "$@"
 
-$(BUILD_DIR)/test_sky_background: tests/test_sky_background.mm $(BUILD_DIR)/sky_background.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/local_image.o $(BUILD_DIR)/sky_model.o core
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/sky_background.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/local_image.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) $(IMAGE_FRAMEWORKS) -o "$@"
+$(BUILD_DIR)/test_sky_background: tests/test_sky_background.mm $(BUILD_DIR)/sky_background.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/local_image.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/sky_background.o $(BUILD_DIR)/grid_geometry.o $(BUILD_DIR)/local_image.o $(BUILD_DIR)/sky_model.o $(BUILD_DIR)/solar_camera.o "$(CORE_LIBRARY)" $(LDFLAGS) $(IMAGE_FRAMEWORKS) -o "$@"
 
 $(BUILD_DIR)/test_catalog_browser_model: tests/test_catalog_browser_model.mm $(BUILD_DIR)/catalog_browser_model.o $(BUILD_DIR)/extended_catalogs.o $(BUILD_DIR)/sky_model.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $< $(BUILD_DIR)/catalog_browser_model.o $(BUILD_DIR)/extended_catalogs.o $(BUILD_DIR)/sky_model.o "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"

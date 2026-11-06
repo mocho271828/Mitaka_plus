@@ -700,7 +700,10 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)rightMouseDown:(NSEvent *)event { [self mouseDown:event]; }
 - (void)rightMouseDragged:(NSEvent *)event { [self mouseDragged:event]; }
-- (void)rightMouseUp:(NSEvent *)event { (void)event; }
+- (void)rightMouseUp:(NSEvent *)event {
+    (void)event;
+    if (_dragged) { _dragged = NO; self.needsDisplay = YES; }
+}
 - (void)scrollWheel:(NSEvent *)event {
     const double scale = event.hasPreciseScrollingDeltas ? 0.012 : 0.1;
     [self zoomBy:event.scrollingDeltaY * scale];
@@ -708,7 +711,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)magnifyWithEvent:(NSEvent *)event { [self zoomBy:-event.magnification]; }
 - (void)rotateWithEvent:(NSEvent *)event { [self rollByDegrees:event.rotation]; }
 - (void)mouseUp:(NSEvent *)event {
-    if (_dragged || !_hasData) return;
+    if (_dragged) { _dragged = NO; self.needsDisplay = YES; return; }
+    if (!_hasData) return;
     [self pickBodyAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
 }
 - (void)pickBodyAtPoint:(NSPoint)click {
@@ -810,6 +814,40 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             }
         }
         const bool sharedStars = earthSite.has_value();
+        // 同じ全天画像を宇宙視点でも使い、銀河の 3D 描画へ徐々に引き継ぐ。
+        if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
+            const double opacity = solar_background_opacity(frame.camera);
+            if (opacity > 0) {
+                const double maximumDimension = (self.flightAnimating || _dragged) ? 512 : 1024;
+                const double scale = std::min(1.0, maximumDimension / std::max(frame.map.size.width, frame.map.size.height));
+                const auto width = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.width * scale), 1.0, maximumDimension));
+                const auto height = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.height * scale), 1.0, maximumDimension));
+                const auto axes = solar_camera_basis(frame.camera);
+                const auto stable = [](double value) { return std::round(value * 1e10) / 1e10; };
+                const std::array<double, 11> key{stable(axes.outward.x), stable(axes.outward.y), stable(axes.outward.z),
+                    stable(axes.right.x), stable(axes.right.y), stable(axes.right.z),
+                    stable(axes.up.x), stable(axes.up.y), stable(axes.up.z),
+                    static_cast<double>(width), static_cast<double>(height)};
+                if (!_surfaceBackgroundKey || *_surfaceBackgroundKey != key) {
+                    const auto pixels = render_solar_background(*texture, frame.camera, width, height);
+                    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
+                        pixelsWide:width pixelsHigh:height bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
+                        isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
+                        bytesPerRow:width * 4 bitsPerPixel:32];
+                    if (bitmap) {
+                        std::memcpy(bitmap.bitmapData, pixels.rgba.data(), pixels.rgba.size());
+                        bitmap = [bitmap bitmapImageRepByRetaggingWithColorSpace:NSColorSpace.sRGBColorSpace];
+                    }
+                    _surfaceBackgroundImage = bitmap ? [[NSImage alloc] initWithSize:frame.map.size] : nil;
+                    if (bitmap) [_surfaceBackgroundImage addRepresentation:bitmap];
+                    _surfaceBackgroundKey = key;
+                }
+                RendererQualityScope clipped(context, frame.renderer_display);
+                CGContextClipToRect(context, frame.map);
+                [_surfaceBackgroundImage drawInRect:frame.map fromRect:NSZeroRect operation:NSCompositingOperationPlusLighter
+                    fraction:opacity respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
+            }
+        }
         {
             try {
                 const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(frame.camera));
@@ -827,35 +865,6 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             const auto& site = *earthSite;
             const ObservationFrame observation({site.latitude_deg, site.longitude_deg}, frame.julian_date);
             const HorizonViewport viewport{site.heading_deg, site.elevation_deg, 180, 1, site.roll_deg};
-            if (const auto* texture = _surfaceBackgrounds ? _surfaceBackgrounds->image(_surfaceMilkyWayMode) : nullptr) {
-                const double maximumDimension = self.flightAnimating ? 512 : 1024;
-                const double scale = std::min(1.0, maximumDimension / std::max(frame.map.size.width, frame.map.size.height));
-                const auto width = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.width * scale), 1.0, maximumDimension));
-                const auto height = static_cast<std::size_t>(std::clamp(std::ceil(frame.map.size.height * scale), 1.0, maximumDimension));
-                // AU 座標からの再計算誤差で、垂直移動中に同じ背景を毎フレーム生成しない。
-                const auto stable = [](double value) { return std::round(value * 1e7) / 1e7; };
-                const std::array<double, 8> key{stable(site.latitude_deg), stable(site.longitude_deg),
-                    stable(site.heading_deg), stable(site.elevation_deg), stable(site.roll_deg), frame.julian_date,
-                    static_cast<double>(width), static_cast<double>(height)};
-                if (!_surfaceBackgroundKey || *_surfaceBackgroundKey != key) {
-                    const auto pixels = render_horizon_background(*texture, viewport, observation, width, height);
-                    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
-                        pixelsWide:width pixelsHigh:height bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
-                        isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
-                        bytesPerRow:width * 4 bitsPerPixel:32];
-                    if (bitmap) {
-                        std::memcpy(bitmap.bitmapData, pixels.rgba.data(), pixels.rgba.size());
-                        bitmap = [bitmap bitmapImageRepByRetaggingWithColorSpace:NSColorSpace.sRGBColorSpace];
-                    }
-                    _surfaceBackgroundImage = bitmap ? [[NSImage alloc] initWithSize:frame.map.size] : nil;
-                    if (bitmap) [_surfaceBackgroundImage addRepresentation:bitmap];
-                    _surfaceBackgroundKey = key;
-                }
-                RendererQualityScope clipped(context, frame.renderer_display);
-                CGContextClipToRect(context, frame.map);
-                [_surfaceBackgroundImage drawInRect:frame.map fromRect:NSZeroRect operation:NSCompositingOperationPlusLighter
-                    fraction:1 respectFlipped:YES hints:@{NSImageHintInterpolation: @(NSImageInterpolationHigh)}];
-            }
             if (_surfaceConstellationArt)
                 draw_horizon_constellation_art(context, *_surfaceConstellationArt, _surfaceConstellationOptions,
                     frame.renderer_display, observation, viewport, frame.map);

@@ -2,6 +2,7 @@
 
 #include "local_image.hpp"
 #include "sky_model.hpp"
+#include "solar_camera.hpp"
 #include "horizon_viewport.hpp"
 #include "mitaka/observation.hpp"
 #include <array>
@@ -39,5 +40,11 @@ TextureImage render_sky_background(const TextureImage& texture, SkyViewport view
 TextureImage render_horizon_background(const TextureImage& texture, HorizonViewport viewport,
                                        const ObservationFrame& frame,
                                        std::size_t width, std::size_t height);
+
+// 太陽系カメラと同じ透視視線を使う。出力は左上原点の RGBA。
+TextureImage render_solar_background(const TextureImage& texture, const SolarCamera& camera,
+                                     std::size_t width, std::size_t height);
+// 太陽近傍の全天画像から 3D 銀河への暫定的な移行係数。
+double solar_background_opacity(const SolarCamera& camera);
 
 } // namespace mitaka::gui

@@ -67,7 +67,7 @@ struct LandingKey {
     std::shared_ptr<const mitaka::gui::SkyBackgrounds> _surfaceBackgrounds;
     mitaka::gui::MilkyWayMode _surfaceMilkyWayMode;
     NSImage *_surfaceBackgroundImage;
-    std::optional<std::array<double, 8>> _surfaceBackgroundKey;
+    std::optional<std::array<double, 11>> _surfaceBackgroundKey;
     mitaka::gui::StarDisplayOptions _surfaceStarOptions;
     double _surfaceMagnitudeLimit;
     BOOL _hipVisible;

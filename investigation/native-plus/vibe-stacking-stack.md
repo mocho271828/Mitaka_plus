@@ -47,7 +47,8 @@
 | 6 | `codex/mitaka-06-terrain-continuity` | `codex/mitaka-05-ground-small-bodies` | P1-3: OBJ-06 | 地球・火星の地形取得と連続操作を安定させる | 同一日時で視点移動、欠落と採用飢餓、実データ、旧画面比較 | `local-only` | `partial` | yes* |
 | 6b | `codex/mitaka-06b-terrain-landing` | `codex/mitaka-06-terrain-continuity` | P1-3: OBJ-06, P1-5: CAM-01 | 地表の着陸点を地形の高さに合わせ、地形変更・失敗時の視点を整合させる | 地球・火星の実データ、倍率、非同期要求の中断・再指定、欠損と不正データ | `local-only` | `partial` | yes* |
 | 7a | `codex/mitaka-07a-packed37-contract` | `codex/mitaka-06b-terrain-landing` | P1-4: OBJ-09, OBJ-10 | 37 byte 原記録の利用契約を隔離し、未確認の位置を表示しない | 不正長、全原行・flag・重複保持、汎用位置評価と軌道の拒否、実データ | `local-only` | `partial` | yes* |
-| 7b | `codex/mitaka-07b-small-body-orbits` | `codex/mitaka-07a-packed37-contract` | P1-4: OBJ-09, OBJ-10 | 根拠のある 36 byte の小惑星・TNO 軌道描画と標本化 | 位置・選択・軌道・標本上限と実データ、旧版標本規則と時系の区別 | `local-only` | `not-started` | yes* |
+| 4g | `codex/mitaka-04g-sky-continuity` | `codex/mitaka-07a-packed37-contract` | P1-1: CAM-03 | 地表から宇宙へ全天背景の投影と距離フェードを接続する | 地平投影との画素比較、距離境界、実画像、操作時の処理時間 | `local-only` | `partial` | yes* |
+| 7b | `codex/mitaka-07b-small-body-orbits` | `codex/mitaka-04g-sky-continuity` | P1-4: OBJ-09, OBJ-10 | 根拠のある 36 byte の小惑星・TNO 軌道描画と標本化 | 位置・選択・軌道・標本上限と実データ、旧版標本規則と時系の区別 | `local-only` | `not-started` | yes* |
 | 8 | `codex/mitaka-08-surface-transition` | `codex/mitaka-07b-small-body-orbits` | P1-5: CAM-01 | 宇宙と地表の移動・モード遷移、および非地球の地平表示を接続する | 同一日時・観測地の往復、中断、投影・風景と Lua、地球・火星・月の地平表示と選択一致 | `local-only` | `not-started` | yes* |
 | 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `not-started` | yes* |
 | 10 | `codex/mitaka-10-ground-direction` | `codex/mitaka-09-camera-orientation` | P1-7: CAM-04 | 地上方位・高度の設定と補間を仕上げる | 極越え、角度境界、再指定、地球・非地球 | `local-only` | `not-started` | yes* |
@@ -225,3 +226,8 @@
 - レビュー理由・named seam: **YES**。7a は旧 Plus での利用が未確認の 37 byte 原記録を保持しつつ汎用位置評価を拒否する。7b は確認済み 36 byte の軌道標本と描画を改善する。
 - 独立検証・依存: **YES**。それぞれ入力長、位置・軌道と実データの試験があり、7a は 6b を、7b は 7a を親とする。7a の一部と別の高優先 P1-3 負標高対応は並行調査中であり、未統合部分を残件とし、完成次第後続で取り込んで影響範囲を再検証する。
 - 分割理由: 形式の契約隔離と別形式の標本化は独立した判断である。旧版利用・物理時系・標本規則を推測で同一視しない。
+
+## 第 4g 単位の branch admission 判定
+
+- 背景投影と操作中の解像度制御は P1-1 の連続性に関わる独立したレビュー単位とする。実装・検証を並列に進めたため、実際の親は着手済みの 7a とする。
+- 近距離では既存地平背景と一致させ、3D 銀河と同じ距離範囲で暫定的にフェードする。旧 Plus の距離曲線、実画面での見え方と停止後の描画収束は未確認。
