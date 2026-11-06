@@ -1,5 +1,13 @@
 # 検証記録
 
+## 2026-11-07: LUA-04 標準 Lua と旧スクリプトの互換監査
+
+`84a6867` を基点とする独立ブランチ `codex/mitaka-lua-compatibility` で、専用 `lua-compatibility-test` と既存 `script-test` が終了 0。標準機能・失敗回復等 168 checks を確認し、同梱 Lua 原本12本は実行せずコンパイルだけを試みた。9本は構文受理、日本語3本は CP932 の `0x5c` による escape 不整合を位置付きで記録した。これは既知の非互換を含む監査試験の成功であり、旧原本の実行互換成功ではない。原本12件の SHA-256 は一致。ランタイム・権限・ホスト実装・データ・方針原本は変更していない。
+
+`make build`・`make test`・`make data-test`・`make reference-test`・`make smoke` は今回の独立 worktree で全て終了 0。全体ログは `/tmp/mitaka-lua04-{build,test,data-test,reference-test,smoke}.log`。[今回の 3 gate](temp_gates/2026-11-07-03-16-44/) は YES。新規依存なし、正確な `/simplifier-lai` は利用不可のため未実行。差分・依存をレビューし、300 行以上の変更として commit する。
+
+範囲、Lua 5.1との差、未対応ホスト API、未実施の旧版実機比較は [監査記録](investigation/native-plus/lua-compatibility-validation.md)、実行結果は [専用ログ](verification/lua04-compatibility.log) を参照。LUA-03の別差分の検証結果は今回の成功に含めない。
+
 ## 2026-11-06: P1-1 遠方追従時のフレーム連続性
 
 実 SDSS データの選択天体を追従し、1,000 AU と 1 pc を両方向にまたぐズームの各操作後に、表示要求のカメラ、選択 ID、追従状態、対象の投影中心を自動確認した。比較には pc 基準点に加え AU 残差、roll、軌道フレームを含め、それぞれ異なる古いフレームを拒否することも検査した。preview は対象を間引く場合があるため、各フレームで対象の画素表示までは検証していない。
