@@ -173,6 +173,47 @@ void previewAndCompleteUseSameSdssColor() {
         checkPick();
     }
 }
+void previewAndCompletePartialOverlapPick() {
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    std::shared_ptr<const GalaxySpatialModel> model;
+    NSPoint click{};
+    for (double ra = -0.5; ra <= 0.5 && !model; ra += 0.05) {
+        for (double dec = -0.5; dec <= 0.5 && !model; dec += 0.05) {
+            auto snapshot = evaluate_sdss_spatial_snapshot(std::make_shared<const SdssSpatialModel>(
+                std::vector<SdssSpatialSource>{{SdssKind::galaxy, "partial", {
+                    {{0, 0}, 1, -0.26f}, {{ra < 0 ? 360 + ra : ra, dec}, 1, 0.42f}}}}));
+            auto candidate = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{GalaxySdssSource{snapshot, 0}});
+            const auto first = position(*candidate, {GalaxySpatialFamily::sdss_galaxy, 0, 0}, camera);
+            const auto second = position(*candidate, {GalaxySpatialFamily::sdss_galaxy, 0, 1}, camera);
+            const NSPoint candidateClick = NSMakePoint(std::max(first.x, second.x) + .01, std::max(first.y, second.y) + .01);
+            const double firstDistance = std::hypot(candidateClick.x - first.x, candidateClick.y - first.y);
+            const double secondDistance = std::hypot(candidateClick.x - second.x, candidateClick.y - second.y);
+            if (secondDistance > firstDistance + .1 && secondDistance < 1.0 &&
+                galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, first.x, first.y, candidateClick.x, candidateClick.y, true) &&
+                galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, second.x, second.y, candidateClick.x, candidateClick.y, true)) {
+                model = candidate; click = candidateClick;
+            }
+        }
+    }
+    check(bool(model), "partial overlap fixture missing");
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    [overlay setModel:model];
+    const auto checkPick = [&] {
+        const auto result = std::make_shared<PickResult>();
+        [overlay pickAtPoint:click camera:camera completion:^(std::optional<GalaxySpatialRecordId> selected) {
+            result->picked = selected; result->called = true;
+        }];
+        waitFor([&] { return result->called; }, "partial overlap pick did not finish");
+        check(result->picked && result->picked->ordinal == 1, "last painted partial overlap row selected");
+    };
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "partial overlap preview missing");
+    checkPick();
+    waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "partial overlap image did not complete");
+    checkPick();
+}
 void previewAndCompleteLayerOrder() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
     GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
@@ -626,7 +667,7 @@ void tests() {
 } // namespace
 int main() {
     @autoreleasepool {
-        try { asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
+        try { asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); previewAndCompletePartialOverlapPick(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
         catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }
 }

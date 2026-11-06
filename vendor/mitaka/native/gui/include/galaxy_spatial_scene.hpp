@@ -58,8 +58,16 @@ struct GalaxySpatialVisibility {
     bool visible(GalaxySpatialFamily family) const;
 };
 
-// 全原行を走査し、画面内かつ radius point 内の最も近い点を選ぶ。
-// 同一画面距離では手前の depth、さらに同値なら原順を優先。密度削減はしない。
+// 完成画像の円とプレビューの矩形の寸法を描画側・選択側で共有する。
+constexpr double galaxy_spatial_point_radius(GalaxySpatialFamily family) noexcept {
+    return family == GalaxySpatialFamily::globular_cluster ? 2.0 : 1.25;
+}
+constexpr double galaxy_spatial_preview_size = 1.5;
+bool galaxy_spatial_point_contains(GalaxySpatialFamily family, double center_x, double center_y,
+                                   double x, double y, bool preview) noexcept;
+
+// 描画図形の内部は最後に描画された点を選び、それ以外は radius 内の最も近い点を選ぶ。
+// 同一画面距離では手前の depth、同じ投影座標では後描きを優先。密度削減はしない。
 // 取消は出典間・256行ごと・終了時に確認し、途中の候補は返さない。
 std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     const GalaxySpatialModel& model, const GalaxyProjector& projector,

@@ -55,7 +55,8 @@
 | 9 | `codex/mitaka-09-camera-orientation` | `codex/mitaka-08-surface-transition` | P1-6: CAM-02、P1-7: CAM-04 | 姿勢とロールの補間を全対象ビューで整合させる | 全視点、ロール、位置保持、途中再指定、銀河の Lua 実操作 | `local-only` | `partial` | yes* |
 | 10 | `codex/mitaka-10-ground-direction` | `codex/mitaka-09-camera-orientation` | P1-7: CAM-04 | 地上方位・高度の設定と補間を仕上げる | 極越え、角度境界、再指定、地球・非地球 | `local-only` | `partial` | yes* |
 | 11 | `codex/mitaka-11-target-navigation` | `codex/mitaka-10-ground-direction` | P1-8: CAM-06 | 全対象種別の名前・ID・観測地接尾辞解決と、注視・移動・追従を統合する | 名前と ID の往復、重複名・複数出典・未評価行・不明値、地上・非地球地表・宇宙での移動と中断、対象追従、Lua | `local-only` | `partial` | yes* |
-| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-11-target-navigation` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
+| 4i | `codex/mitaka-04i-galaxy-overlap` | `codex/mitaka-11-target-navigation` | P1-1: GAL-03 | SDSS/QSO 点の重なりで描画順と選択を揃える | preview・完成画像の異なる投影位置、点内外、取消 | `local-only` | `partial` | yes* |
+| 12 | `codex/mitaka-12-pointer-selection` | `codex/mitaka-04i-galaxy-overlap` | P2: CAM-07 | ポインターによる天体選択と座標 API を整える | 描画位置との一致、境界、選択取消、Lua | `local-only` | `not-started` | yes* |
 | 13 | `codex/mitaka-13-object-menu` | `codex/mitaka-12-pointer-selection` | P2: CAM-08 | 天体の共通階層と右クリック操作を整える | 各天体種別、選択対象と操作先、重複名 | `local-only` | `not-started` | yes* |
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |

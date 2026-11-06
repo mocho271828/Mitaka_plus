@@ -321,6 +321,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 selected.galaxy = pick_galaxy_spatial_row(*model, projector, request.visibility, point.x, point.y, 8, cancelled);
             } else if (model && galaxyDisplayed && projector.contains({point.x, point.y, 0})) {
                 double best = 8, depth = std::numeric_limits<double>::infinity();
+                std::optional<GalaxySpatialRecordId> painted;
                 double bestX = 0, bestY = 0;
                 forPreviewRows(*model, request.visibility, [&](GalaxySpatialRecordId id) {
                     if (cancelled()) return false;
@@ -329,6 +330,8 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     const auto projected = projector.project(*row.position);
                     if (!projected || !projector.contains(*projected)) return true;
                     const double distance = std::hypot(projected->x - point.x, projected->y - point.y);
+                    if (distance <= 8 && galaxy_spatial_point_contains(id.family, projected->x, projected->y, point.x, point.y, true))
+                        painted = id;
                     if (distance <= best && (!selected.galaxy || distance < best || projected->depth_pc < depth ||
                         (projected->x == bestX && projected->y == bestY))) {
                         selected.galaxy = id; best = distance; depth = projected->depth_pc;
@@ -336,6 +339,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     }
                     return true;
                 });
+                if (painted) selected.galaxy = painted;
             }
             if (hipModel && hipDisplayed) {
                 const auto hip = pick_hip_spatial_point(*hipModel, projector, point.x, point.y, 8,
@@ -455,7 +459,8 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
                     : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
                 [nativeColor setFill];
-                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
+                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y,
+                                      galaxy_spatial_preview_size, galaxy_spatial_preview_size));
                 ++_diagnostics.displayed_drawn;
             }
             return true;

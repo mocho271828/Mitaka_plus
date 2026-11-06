@@ -134,6 +134,15 @@ bool GalaxySpatialVisibility::visible(GalaxySpatialFamily family) const {
     throw std::invalid_argument("galaxy scene: unknown display family");
 }
 
+bool galaxy_spatial_point_contains(GalaxySpatialFamily family, double center_x, double center_y,
+                                   double x, double y, bool preview) noexcept {
+    const double dx = x - center_x, dy = y - center_y;
+    if (preview) return dx >= 0 && dx <= galaxy_spatial_preview_size &&
+                        dy >= 0 && dy <= galaxy_spatial_preview_size;
+    const double r = galaxy_spatial_point_radius(family);
+    return dx * dx + dy * dy <= r * r;
+}
+
 std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     const GalaxySpatialModel& model, const GalaxyProjector& projector,
     GalaxySpatialVisibility visibility, double x, double y, double radius,
@@ -141,7 +150,7 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(radius) || radius < 0 || radius > 1e7)
         throw std::invalid_argument("galaxy scene: invalid pick position or radius");
     if (!projector.contains({x, y, 0})) return std::nullopt;
-    std::optional<GalaxySpatialRecordId> nearest;
+    std::optional<GalaxySpatialRecordId> nearest, painted;
     double nearest_distance = radius, nearest_depth = std::numeric_limits<double>::infinity();
     double nearest_x = 0, nearest_y = 0;
     for (std::size_t source = 0; source < model.sources().size(); ++source) {
@@ -157,6 +166,8 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
             const auto point = projector.project(*row.position);
             if (!point || !projector.contains(*point)) continue;
             const double distance = std::hypot(point->x - x, point->y - y);
+            if (distance <= radius && galaxy_spatial_point_contains(family, point->x, point->y, x, y, false))
+                painted = id;
             if (distance > nearest_distance || (nearest && distance == nearest_distance &&
                 point->depth_pc >= nearest_depth &&
                 (point->x != nearest_x || point->y != nearest_y))) continue;
@@ -166,7 +177,7 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
             nearest_x = point->x; nearest_y = point->y;
         }
     }
-    return should_cancel && should_cancel() ? std::nullopt : nearest;
+    return should_cancel && should_cancel() ? std::nullopt : painted ? painted : nearest;
 }
 
 void GalaxySpatialScene::set_model(std::shared_ptr<const GalaxySpatialModel> model) {

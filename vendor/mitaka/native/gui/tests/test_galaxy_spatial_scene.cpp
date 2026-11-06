@@ -191,6 +191,37 @@ void pick_and_selection_tests() {
                   "hidden source cannot replace visible overlapping row");
         }
     }
+    // 異なる投影中心が重なる場合も、表示された後描き点を選ぶ。
+    double overlapping_ra = 0;
+    for (double ra = 0.001; ra < 10; ra += 0.001) {
+        const auto candidate = snapshot({{SdssKind::quasar, "candidate", {sdss(ra)}}});
+        const GalaxySpatialModel single({GalaxySdssSource{candidate, 0}});
+        const auto projected = projector.project(*single.row(single.record_id(0)).position);
+        if (projected && std::hypot(projected->x - 400, projected->y - 300) > 0.25 &&
+            std::hypot(projected->x - 400, projected->y - 300) < 1.0) { overlapping_ra = ra; break; }
+    }
+    check(overlapping_ra != 0, "distinct overlapping projections found");
+    const auto partial_snapshot = snapshot({
+        {SdssKind::galaxy, "first", {sdss()}},
+        {SdssKind::quasar, "second", {sdss(overlapping_ra)}}});
+    const GalaxySpatialModel partial({GalaxySdssSource{partial_snapshot, 0}, GalaxySdssSource{partial_snapshot, 1}});
+    const auto partial_top = pick_galaxy_spatial_row(partial, projector, {}, 400, 300, 8);
+    check(partial_top && partial_top->family == GalaxySpatialFamily::sdss_quasar,
+          "later ellipse wins over nearer center when both cover click");
+    const auto partial_hidden = pick_galaxy_spatial_row(partial, projector, {true, false, true, true}, 400, 300, 8);
+    check(partial_hidden && partial_hidden->family == GalaxySpatialFamily::sdss_galaxy,
+          "hidden ellipse does not win overlap");
+    const auto zero_radius = pick_galaxy_spatial_row(partial, projector, {}, 400, 300, 0);
+    check(zero_radius && zero_radius->family == GalaxySpatialFamily::sdss_galaxy,
+          "center radius constraint applies to painted candidate");
+    check(galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, 10, 10, 11.2, 10, false) &&
+          !galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, 10, 10, 11.3, 10, false) &&
+          galaxy_spatial_point_contains(GalaxySpatialFamily::globular_cluster, 10, 10, 11.9, 10, false),
+          "complete point geometry matches family radius");
+    check(galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, 10, 10, 11.4, 11.4, true) &&
+          !galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, 10, 10, 9.9, 10, true) &&
+          !galaxy_spatial_point_contains(GalaxySpatialFamily::sdss_galaxy, 10, 10, 11.6, 10, true),
+          "preview hit follows offset rectangle");
     check(!pick_galaxy_spatial_row(*model, projector, {}, 500, 300, 1), "outside pick radius");
     std::size_t calls = 0;
     check(!pick_galaxy_spatial_row(*model, projector, {}, 400, 300, 1,

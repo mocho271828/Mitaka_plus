@@ -318,3 +318,9 @@ gate は `temp_gates/` にコピーし、判定条件をチェックして YES �
 GUI で選択された小惑星・TNO・彗星・探査機について、選択時刻に位置を評価でき、一意に解決して元の選択へ戻せる ASCII の名前または番号を Camera.target へ返す。探査機は既存の Name・DisplayName に加え KEY と NAME フィールドも照合する。曖昧な名前、位置を評価できない行、ASCII 表記を取得できない行などは空にし、別の天体に結び付けない。4,095 byte 上限と埋め込み NUL、同梱データ、Lua の往復を隔離環境で検査した。非 ASCII 名のみの自動読み戻しや旧 Plus との比較は未対応・未実施。新規依存・原データ・全体方針の変更はない。
 
 同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -C vendor/mitaka/native/gui script-object-lua-test`、`make smoke` は成功。手動 GUI と旧 Plus 比較は未実施。
+
+## 2026-11-07: P1-1 遠方点群の重なり選択
+
+SDSS/QSO の preview の矩形と完成画像の円の内部では、異なる投影位置でも後から描画された原行を選ぶ。形状外は従来の近傍選択を維持する。モデルの原 ID は変更しない。テストで異なる位置の重なり、矩形・円の内外と既存の選択を確認した。アンチエイリアス境界、HIP・天の川など別レイヤーとの重なり、実画面と旧 Plus 比較は未確認。新規依存・原データ・全体方針の変更はない。
+
+同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make smoke` は成功。

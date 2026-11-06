@@ -122,7 +122,7 @@ std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
             if (!row.position) { ++counts.invalid; continue; }
             const auto projected = projector.project(*row.position);
             if (!projected || !projector.contains(*projected)) { ++counts.outside; continue; }
-            const double radius = family == GalaxySpatialFamily::globular_cluster ? 2.0 : 1.25;
+            const double radius = galaxy_spatial_point_radius(family);
             const auto bucket = family == GalaxySpatialFamily::sdss_galaxy
                 ? sdss_galaxy_color_class(std::get<GalaxySdssSource>(model.sources()[source]).snapshot->model->record(
                     {std::get<GalaxySdssSource>(model.sources()[source]).source_index, ordinal}).classification_value)
