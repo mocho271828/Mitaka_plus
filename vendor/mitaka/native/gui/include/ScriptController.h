@@ -128,6 +128,8 @@ struct ScriptAction {
 - (BOOL)runFile:(NSURL *)file error:(NSError **)error;
 // 明示的に信頼されたローカル HTML 等の UTF-8 ソース。元ファイルへの書込みは行わない。
 - (BOOL)runSource:(NSString *)source error:(NSError **)error;
+// ユーザーがコンソールで明示実行したローカル入力。入力ごとに独立した Lua 環境を使う。
+- (BOOL)runConsoleSource:(NSString *)source error:(NSError **)error;
 // テスト・別配置ビルド向け。通常は init で同一bundleの MitakaScript を使用する。
 - (instancetype)initWithHelperURL:(NSURL *)helperURL;
 - (void)cancel;

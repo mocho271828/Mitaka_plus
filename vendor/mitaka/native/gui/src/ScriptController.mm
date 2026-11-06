@@ -152,7 +152,8 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     BOOL _invalidated;
 }
 - (NSDictionary *)handleMessage:(NSDictionary *)message;
-- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory error:(NSError **)error;
+- (BOOL)runSource:(NSString *)source consoleMode:(BOOL)consoleMode error:(NSError **)error;
+- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory consoleMode:(BOOL)consoleMode error:(NSError **)error;
 @end
 
 @implementation ScriptController
@@ -167,6 +168,12 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
 }
 - (BOOL)running { return _job != nullptr; }
 - (BOOL)runSource:(NSString *)source error:(NSError **)error {
+    return [self runSource:source consoleMode:NO error:error];
+}
+- (BOOL)runConsoleSource:(NSString *)source error:(NSError **)error {
+    return [self runSource:source consoleMode:YES error:error];
+}
+- (BOOL)runSource:(NSString *)source consoleMode:(BOOL)consoleMode error:(NSError **)error {
     NSAssert(NSThread.isMainThread, @"Script UI must run on the main thread");
     NSData *data = [source dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO];
     if (_invalidated || _job || !data || data.length == 0 || data.length > 1024 * 1024) {
@@ -179,10 +186,10 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         return NO;
     }
     NSURL *directory = [NSURL fileURLWithFileSystemRepresentation:path.c_str() isDirectory:YES relativeToURL:nil];
-    NSURL *file = [directory URLByAppendingPathComponent:@"html-link.lua"];
-    // 元 HTML に触れず、所有者だけが読める一時領域から同じ Lua helper を使う。
+    NSURL *file = [directory URLByAppendingPathComponent:consoleMode ? @"console.lua" : @"html-link.lua"];
+    // 原本に触れず、所有者だけが読める一時領域から同じ Lua helper を使う。
     const bool written = [NSFileManager.defaultManager createFileAtPath:file.path contents:data attributes:@{NSFilePosixPermissions:@0600}];
-    if (!written || ![self launchFile:file temporaryDirectory:directory error:error]) {
+    if (!written || ![self launchFile:file temporaryDirectory:directory consoleMode:consoleMode error:error]) {
         if (!written && error) *error = scriptError(@"一時スクリプトを書き込めません。");
         [NSFileManager.defaultManager removeItemAtURL:directory error:nil];
         return NO;
@@ -190,9 +197,9 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     return YES;
 }
 - (BOOL)runFile:(NSURL *)file error:(NSError **)error {
-    return [self launchFile:file temporaryDirectory:nil error:error];
+    return [self launchFile:file temporaryDirectory:nil consoleMode:NO error:error];
 }
-- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory error:(NSError **)error {
+- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory consoleMode:(BOOL)consoleMode error:(NSError **)error {
     NSAssert(NSThread.isMainThread, @"Script UI must run on the main thread");
     NSString *failure = nil;
     NSNumber *regular = nil, *size = nil;
@@ -216,7 +223,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     NSFileHandle *input = [[NSFileHandle alloc] initWithFileDescriptor:sockets[1] closeOnDealloc:NO];
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = _helperURL;
-    task.arguments = @[file.path];
+    task.arguments = consoleMode ? @[file.path, @"--console"] : @[file.path];
     task.currentDirectoryURL = self.workingDirectoryURL ? self.workingDirectoryURL : file.URLByDeletingLastPathComponent;
     task.standardInput = input;
     task.standardOutput = NSFileHandle.fileHandleWithNullDevice;

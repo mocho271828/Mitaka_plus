@@ -371,9 +371,9 @@
     void (^originalCompletion)(BOOL, NSString *) = _scripts.completion;
     void (^originalOutput)(NSString *) = _scripts.output;
     NSURL *originalWorkingDirectory = _scripts.workingDirectoryURL;
-    const BOOL consoleWasVisible = _scriptWindow.visible;
+    const BOOL consoleWasVisible = _scriptConsole.window.visible;
     [self showScriptConsole:nil];
-    _scriptLog.string = @"";
+    [_scriptConsole clearOutput];
     // 元アプリの相対パス契約を、外部データへの読み取りだけで確認する。
     _scripts.workingDirectoryURL = [NSURL fileURLWithPath:_activePath.stringByDeletingLastPathComponent isDirectory:YES];
     __block BOOL finished = NO;
@@ -405,7 +405,7 @@
             failure = [NSString stringWithFormat:@"smoke: script fixture cleanup failed: %@", cleanupError.localizedDescription];
         if (!controller) return;
         if (consoleWasVisible) [controller showScriptConsole:nil];
-        else [controller->_scriptWindow orderOut:nil];
+        else [controller->_scriptConsole.window orderOut:nil];
         if (failure) { [controller showError:failure]; return; }
         if (![controller applySessionState:original]) return;
         std::printf("Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,radius,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=%s\n",
@@ -541,7 +541,7 @@
             [controller->_browser.window performClose:nil];
             [controller->_calendarWindow performClose:nil];
             [controller->_observerWindow performClose:nil];
-            [controller->_scriptWindow performClose:nil];
+            [controller->_scriptConsole.window performClose:nil];
             [controller->_displayOutput closeProjection];
         } else if ([text isEqualToString:@"__smoke_cancel_image"]) {
             NSWindow *sheet = controller->_window.attachedSheet;
@@ -591,7 +591,7 @@
         check(!state.target_browser && !state.time_setting && !state.place_setting && !state.script_output &&
             !state.dual_screen, @"windows");
         check(imagePanelOpened, @"image panel");
-        check([controller->_scriptLog.string isEqualToString:@"native-script-first\nnative-script-second\n\n"], @"script output");
+        check([controller->_scriptConsole.outputText isEqualToString:@"native-script-first\nnative-script-second\n\n"], @"script output");
         if (mismatches.count) {
             finish([@"smoke: script GUI state mismatch: " stringByAppendingString:
                 [mismatches componentsJoinedByString:@", "]]);
@@ -608,8 +608,8 @@
                 current->_scripts.output(failure);
                 if (accepted || current->_scripts.running || ![failure containsString:@"Unsupported"] ||
                     ![failure containsString:@"nativeSmokeUnsupported"] || ![failure containsString:@"unsupported.lua"] ||
-                    !current->_scriptWindow.visible ||
-                    ![current->_scriptLog.string containsString:failure]) {
+                    !current->_scriptConsole.window.visible ||
+                    ![current->_scriptConsole.outputText containsString:failure]) {
                     finish(@"smoke: unsupported script API did not produce a visible error");
                     return;
                 }
