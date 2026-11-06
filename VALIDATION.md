@@ -372,3 +372,11 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 統合後の checkout では `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` が成功。手動 GUI は未実施である。
 
 天の川同一レイヤーの重なり選択についても、地平風景の変更を重ねた統合 checkout で smoke が成功した。先行する統合状態の初回失敗の原因は引き続き未確定である。
+
+## 2026-11-07: P1-3 基準球外縁の描画と選択
+
+地形待ち・欠損時に描画する基準球の選択位置を、不透明判定と同じ描画画素の中心に揃える。外縁では同じ画素内でも解析上の球との交差が反転するが、その場合も表示された画素に基づき選択する。基準球内外の両方向を含む `solar terrain: 76 checks PASS` を確認した。実画面操作と旧 Plus との比較は未実施。新規依存、原データおよび全体方針の変更はない。
+
+隔離 worktree にて `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。地球・火星の LFS 実体は主 worktree の `resources/data` を `DATA_ROOT` に指定して読み取り専用で使用した。`make smoke` も成功。
+
+統合検証: 親 `62bbc36` に P1-3 の `98c4f90` を適用し、FOV 変更を含む統合状態で `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test` が成功。`solar terrain: 91 checks PASS` にて 45°・60°・75°・90° の球外縁で描画と選択の一致を確認。`make smoke` は GUI 枠の順番待ち。上記の 5 種 make は独立 worktree 時の結果である。

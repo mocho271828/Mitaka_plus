@@ -2,6 +2,7 @@
 #import "SolarSceneOwner.h"
 #include "satellite_browser_model.hpp"
 #include "surface_navigation.hpp"
+#include "surface_depth.hpp"
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -164,6 +165,30 @@ void interior_selection() {
     f.scene.planet_display.visible = false;
     check(!solar_scene_opaque_at(f.scene, pixel), "hidden planet hid sky");
 }
+void raster_edge_selection() {
+    Fixture f;
+    const auto center = solar_display_position(f.scene, 3);
+    for (double fov : {45.0, 60.0, 75.0, 90.0}) {
+        f.camera.vertical_fov_deg = fov;
+        bool foundOpaque = false, foundTransparent = false;
+        for (int y = 0; y < 81 && !(foundOpaque && foundTransparent); ++y)
+            for (int x = 0; x < 81 && !(foundOpaque && foundTransparent); ++x) {
+                const bool rendered = bool(surface_sphere_fallback_distance(f.camera, center,
+                    Fixture::radius(), x + 0.5, y + 0.5, 81, 81));
+                for (double ox : {0.01, 0.99}) for (double oy : {0.01, 0.99}) {
+                    const NSPoint click = NSMakePoint(x + ox, y + oy);
+                    const bool analytic = bool(surface_sphere_fallback_distance(f.camera, center,
+                        Fixture::radius(), click.x, click.y, 81, 81));
+                    if (rendered == analytic || (rendered ? foundOpaque : foundTransparent)) continue;
+                    check(solar_scene_opaque_at(f.scene, click) == rendered, "fixture opacity must match raster");
+                    check((pick_solar_body(f.scene, click) == std::optional<std::size_t>(3)) == rendered,
+                        "surface pick must use the rasterized pixel at the limb");
+                    (rendered ? foundOpaque : foundTransparent) = true;
+                }
+            }
+        check(foundOpaque && foundTransparent, "fixture must cross the raster limb in both directions");
+    }
+}
 void owned_scene_lifetime() {
     std::optional<SolarSceneOwner> stored;
     std::weak_ptr<const PlanetTextures> weak_textures;
@@ -230,6 +255,7 @@ int main(int argc, char** argv) {
         try {
             if (argc == 2 && std::string(argv[1]) == "--pick-only") { interior_selection(); return 0; }
             interior_selection();
+            raster_edge_selection();
             requests();
             snapshot_guards();
             owned_scene_lifetime();

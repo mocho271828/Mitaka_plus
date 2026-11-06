@@ -396,16 +396,20 @@ std::vector<VisibleSolarBody> visible_solar_bodies(const SolarScene& scene) {
     std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.point.depth > b.point.depth; });
     return result;
 }
+static NSPoint surfaceSamplePoint(const SolarScene& scene, NSPoint point) {
+    const auto [width, height] = solar_surface_raster_size(scene.map.size);
+    const double x = point.x - scene.map.origin.x, y = point.y - scene.map.origin.y;
+    return NSMakePoint((std::floor(x * width / scene.map.size.width) + 0.5) * scene.map.size.width / width,
+                       (std::floor(y * height / scene.map.size.height) + 0.5) * scene.map.size.height / height);
+}
 bool solar_scene_opaque_at(const SolarScene& scene, NSPoint point) {
     if (!scene.planet_display.visible || !NSPointInRect(point, scene.map)) return false;
     const double x = point.x - scene.map.origin.x, y = point.y - scene.map.origin.y;
-    const auto [width, height] = solar_surface_raster_size(scene.map.size);
-    const double sampleX = (std::floor(x * width / scene.map.size.width) + 0.5) * scene.map.size.width / width;
-    const double sampleY = (std::floor(y * height / scene.map.size.height) + 0.5) * scene.map.size.height / height;
+    const NSPoint sample = surfaceSamplePoint(scene, point);
     if (scene.physical_navigation) {
         for (std::size_t i = 0; i < scene.bodies.size(); ++i)
-            if (visibleSurfaceDistance(scene, i, sampleX, sampleY)) return true;
-    } else if (scene.surface_body && visibleSurfaceDistance(scene, *scene.surface_body, sampleX, sampleY)) return true;
+            if (visibleSurfaceDistance(scene, i, sample.x, sample.y)) return true;
+    } else if (scene.surface_body && visibleSurfaceDistance(scene, *scene.surface_body, sample.x, sample.y)) return true;
     for (const auto& body : visible_solar_bodies(scene)) {
         const double radius = solar_scene_radius(scene, body.index, body.point.depth);
         if (radius <= 1.5 && std::hypot(x - body.point.x, y - body.point.y) <= radius) return true;
@@ -416,11 +420,11 @@ std::optional<std::size_t> pick_solar_body(const SolarScene& scene, NSPoint clic
     if (!scene.planet_display.visible) return std::nullopt;
     std::optional<std::size_t> picked, surface;
     double nearest = 10, depth = std::numeric_limits<double>::infinity(), surfaceDepth = depth;
-    if (scene.earth_moon || scene.physical_navigation) {
+    if ((scene.earth_moon || scene.physical_navigation) && NSPointInRect(click, scene.map)) {
+        const NSPoint sample = surfaceSamplePoint(scene, click);
         for (std::size_t index = 0; index < scene.bodies.size(); ++index) {
             if (!scene.physical_navigation && index != 3 && index != 10) continue;
-            const auto distance = visibleSurfaceDistance(scene, index,
-                click.x-scene.map.origin.x, click.y-scene.map.origin.y);
+            const auto distance = visibleSurfaceDistance(scene, index, sample.x, sample.y);
             if (distance && *distance < surfaceDepth) { surface = index; surfaceDepth = *distance; }
         }
         if (surface) return surface;
