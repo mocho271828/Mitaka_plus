@@ -35,6 +35,7 @@ TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o ter
 OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS) $(BUILD_DIR)/GalaxyOverlay.o $(BUILD_DIR)/OurGalaxyRenderer.o $(BUILD_DIR)/OurGalaxyRadiativeRenderer.o $(BUILD_DIR)/HipSpatialRenderer.o $(BUILD_DIR)/our_galaxy_navigation.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
 OBJECTS += $(BUILD_DIR)/SolarScriptTarget.o $(BUILD_DIR)/SolarScriptOrientation.o
+OBJECTS += $(BUILD_DIR)/RendererOptionsController.o
 
 ifneq ($(ARCH),)
 CXXFLAGS += -arch $(ARCH)
@@ -522,6 +523,14 @@ $(BUILD_DIR)/test_radius_display: tests/test_radius_display.cpp $(BUILD_DIR)/rad
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ $(LDFLAGS) -o "$@"
 $(BUILD_DIR)/test_radius_display_controller: tests/test_radius_display_controller.mm $(addprefix $(BUILD_DIR)/,RadiusDisplayController.o radius_display.o)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
+
+$(BUILD_DIR)/test_renderer_options_controller: tests/test_renderer_options_controller.mm $(BUILD_DIR)/RendererOptionsController.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
+
+.PHONY: renderer-options-test
+renderer-options-test: $(BUILD_DIR)/test_renderer_options_controller
+	"$(BUILD_DIR)/test_renderer_options_controller"
+test: renderer-options-test
 
 .PHONY: unit8-test galaxy-controller-test script-time-test
 unit8-test: $(addprefix $(BUILD_DIR)/,test_galaxy_camera test_shared_camera test_galaxy_spatial_scene test_galaxy_spatial_load test_galaxy_renderer test_galaxy_overlay test_our_galaxy_renderer test_our_galaxy_radiative_renderer test_our_galaxy_navigation test_hip_spatial_renderer test_terrain_surface test_terrain_snapshot test_terrain_surface_controller test_terrain_generation_coordinator test_terrain_compositing test_plus_time_calendar test_plus_time_animation test_time_animation_controller test_radius_display test_radius_display_controller)
