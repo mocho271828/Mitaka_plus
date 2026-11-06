@@ -135,9 +135,9 @@ const CoordinateGrid& GridGeometryCache::grid(GridCoordinateSystem system) const
     return fixed[index];
 }
 
-void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
+static void draw_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     const GridDisplayOptions& options, const GridGeometryCache& cache, bool horizontal_projection,
-                    const RendererDisplayOptions& quality) {
+                    const RendererDisplayOptions& quality, HorizonProjectionViewport horizon) {
     if (map.size.width <= 0 || map.size.height <= 0) return;
     RendererQualityScope lines(context, quality, RendererPrimitive::line);
     CGContextClipToRect(context, map);
@@ -158,7 +158,7 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     end.right_ascension_deg = start.right_ascension_deg;
                 const auto segments = horizontal_projection
                     ? project_equatorial_segment_to_horizon(line[index - 1], line[index], cache.frame(),
-                        {360 - viewport.center_ra_deg, viewport.center_dec_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg},
+                        {360 - horizon.center_ra_deg, horizon.center_dec_deg, horizon.vertical_fov_deg, horizon.perspective_blend, horizon.roll_deg},
                         map.size.width, map.size.height).segments
                     : project_sky_segment(start, end, viewport, map.size.width, map.size.height);
                 for (const auto& segment : segments) {
@@ -175,14 +175,14 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
         for (int latitude = -75; latitude <= 75; latitude += 15) {
             const EquatorialCoordinates coordinate{viewport.center_ra_deg, static_cast<double>(latitude)};
             const auto point = horizontal_projection
-                ? project_horizon(coordinate, viewport, map.size.width, map.size.height)
+                ? project_horizon(coordinate, horizon, map.size.width, map.size.height)
                 : project_sky(coordinate, viewport, map.size.width, map.size.height);
             if (point) text([NSString stringWithFormat:@"%+d°", latitude], NSMakePoint(horizontal_projection ? NSMinX(map) + point->x + 3 : NSMinX(map) + 3, NSMinY(map) + point->y + 1), NSColor.secondaryLabelColor, quality);
         }
         for (int longitude = 0; longitude < 360; longitude += horizontal_projection ? 45 : 30) {
             const EquatorialCoordinates coordinate{static_cast<double>(horizontal_projection ? 360 - longitude : longitude), horizontal_projection ? 0.0 : viewport.center_dec_deg};
             const auto point = horizontal_projection
-                ? project_horizon(coordinate, viewport, map.size.width, map.size.height)
+                ? project_horizon(coordinate, horizon, map.size.width, map.size.height)
                 : project_sky(coordinate, viewport, map.size.width, map.size.height);
             if (!point) continue;
             NSString *label = horizontal_projection ? [NSString stringWithFormat:@"%@ %d°", @[@"北", @"北東", @"東", @"南東", @"南", @"南西", @"西", @"北西"][longitude / 45], longitude]
@@ -191,6 +191,18 @@ void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
         }
     }
     legend(map, options, quality);
+}
+void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
+                    const GridDisplayOptions& options, const GridGeometryCache& cache, bool horizontal_projection,
+                    const RendererDisplayOptions& quality) {
+    draw_grids(context, map, viewport, options, cache, horizontal_projection, quality,
+               {viewport.center_ra_deg, viewport.center_dec_deg, 180 / viewport.zoom,
+                viewport.perspective_blend, viewport.roll_deg});
+}
+void draw_horizon_grids(CGContextRef context, NSRect map, HorizonProjectionViewport viewport,
+                        const GridDisplayOptions& options, const GridGeometryCache& cache,
+                        const RendererDisplayOptions& quality) {
+    draw_grids(context, map, {viewport.center_ra_deg, viewport.center_dec_deg}, options, cache, true, quality, viewport);
 }
 } // namespace mitaka::gui
 

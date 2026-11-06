@@ -25,6 +25,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     for (NSInteger i = 0; i < 3; ++i)
         command(capture, @[@"PNG…", @"JPEG…", @"BMP…"][i], @selector(captureImage:), self).tag = i;
     NSMenu *view = submenu(menu, @"表示");
+    command(view, @"視野角を 45° に戻す", @selector(resetViewAngle:), self);
     command(view, @"天体ブラウザ…", @selector(showBrowser:), self, @"f");
     command(view, @"小惑星・彗星ブラウザ…", @selector(showSmallBodyBrowser:), self);
     command(view, @"衛星ブラウザ…", @selector(showSatelliteBrowser:), self);
@@ -180,6 +181,9 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     [self setMilkyWayMode:static_cast<MilkyWayMode>(sender.tag)];
 }
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(resetViewAngle:))
+        return _model && !_loading && _mode.selectedSegment == 2 && !_horizonProjectionTimer &&
+            [_horizon viewport].perspective_blend == 0;
     if (item.action == @selector(showRadiusDisplay:)) return _model && !_loading;
     if (item.action == @selector(reloadTerrain:)) return _model && !_loading;
     if (item.action == @selector(showOurGalaxyOverview:)) return [_solar ourGalaxyModel] != nullptr;

@@ -107,6 +107,8 @@ struct ScriptLookTarget {
     DisplayOutputController *_displayOutput;
     ScriptController *_scripts;
     NSTimer *_scriptCameraTimer;
+    NSTimer *_scriptFovTimer;
+    std::optional<ScriptCameraAnimation> _scriptFovAnimation;
     NSTimer *_scriptPlaceTimer;
     std::optional<ScriptPlaceTransition> _scriptPlaceTransition;
     std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;
@@ -190,6 +192,8 @@ struct ScriptLookTarget {
 - (void)applyDate:(id)sender;
 - (BOOL)updateDate:(double)jd refreshOrbits:(BOOL)refreshOrbits;
 - (void)showError:(NSString *)message;
+- (void)systemWillSleep:(NSNotification *)notification;
+- (void)systemDidWake:(NSNotification *)notification;
 - (void)changeMode:(id)sender;
 - (void)surfaceNavigationChanged;
 - (void)cancelHorizonProjection;
@@ -377,6 +381,11 @@ struct ScriptLookTarget {
 - (void)cancelScript:(id)sender;
 - (void)configureScripts;
 - (void)stopScriptCameraAnimation;
+- (void)startScriptCameraTimer;
+- (void)updateScriptCameraAnimations;
+- (void)stopScriptFovAnimation;
+- (void)updateScriptFovAnimation;
+- (void)resetViewAngle:(id)sender;
 - (void)stopScriptPlaceTransition;
 - (BOOL)applyScriptAction:(const mitaka::gui::ScriptAction&)action error:(NSString **)error;
 @end

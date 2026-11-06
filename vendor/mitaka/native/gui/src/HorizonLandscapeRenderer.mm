@@ -52,7 +52,7 @@ struct LandscapeKey {
     const auto height = static_cast<std::size_t>(std::clamp(std::ceil(rect.size.height * scale), 1.0, 1024.0));
     const auto selected = _model->selection(_identifier);
     const LandscapeKey key{selected, bool(_showsLandscapeImage),
-        {viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg}, width, height};
+        {viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg}, width, height};
     if (!_image || !_key || !(*_key == key)) {
         const auto* definition = selected ? &_model->definitions().landscapes()[*selected].definition : nullptr;
         const auto* texture = selected && _showsLandscapeImage ? _model->image(*selected) : nullptr;

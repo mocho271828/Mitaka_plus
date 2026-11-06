@@ -53,6 +53,7 @@ struct ScriptSnapshot {
     bool quasars = false;
     double camera_azimuth_deg = 180;
     double camera_altitude_deg = 0;
+    std::optional<double> camera_fov;
     std::optional<double> camera_duration;
     std::optional<int> camera_mode;
     double camera_mode_duration = 7.1;
@@ -96,7 +97,8 @@ enum class ScriptActionKind {
     set_camera_duration, animate_camera_azimuth, animate_camera_altitude,
     set_camera_orientation, set_camera_euler, add_camera_euler,
     animate_camera_orientation, animate_camera_euler, animate_add_camera_euler,
-    set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode, animate_camera_zoom
+    set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode, animate_camera_zoom,
+    set_camera_fov, animate_camera_fov
 };
 struct ScriptAction {
     ScriptActionKind kind;

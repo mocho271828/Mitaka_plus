@@ -71,7 +71,12 @@
             const mitaka::ObservationFrame frame(_horizon.observerSite, _horizon.julianDate);
             const auto point = frame.to_horizontal({record.right_ascension_degrees, record.declination_degrees});
             [self stopScriptCameraAnimation];
-            [_horizon setViewport:{point.azimuth_deg, point.altitude_deg, std::max(3.0, _horizon.viewport.zoom)}];
+            [self stopScriptFovAnimation];
+            auto viewport = _horizon.viewport;
+            viewport.center_azimuth_deg = point.azimuth_deg;
+            viewport.center_altitude_deg = point.altitude_deg;
+            viewport.vertical_fov_deg = std::min(60.0, viewport.vertical_fov_deg);
+            [_horizon setViewport:viewport];
         }
     } else {
         _mode.selectedSegment = 0;

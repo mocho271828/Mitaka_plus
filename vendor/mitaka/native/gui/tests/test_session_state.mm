@@ -65,6 +65,30 @@ void test_roundtrip() {
     check(decode_session_state(json_bytes(old_session)).horizon_viewport.roll_deg == 0,
           "previous v9 horizon did not restore its default roll");
     state.horizon_viewport.roll_deg = 0;
+    for (const double fov : {180.0, 90.0, 45.0, 0.1, std::numeric_limits<double>::min()}) {
+        state.horizon_viewport.vertical_fov_deg = fov;
+        check(decode_session_state(encode_session_state(state)).horizon_viewport.vertical_fov_deg == fov,
+              "horizon FOV did not roundtrip");
+    }
+    for (const double zoom : {1.0, 2.0, 180.0}) {
+        NSMutableDictionary *legacy = session_object();
+        [legacy[@"horizon_viewport"] removeObjectForKey:@"fov_deg"];
+        legacy[@"horizon_viewport"][@"zoom"] = @(zoom);
+        check(decode_session_state(json_bytes(legacy)).horizon_viewport.vertical_fov_deg == 180 / zoom,
+              "legacy horizon zoom was not converted to FOV");
+    }
+    NSMutableDictionary *with_fov = session_object();
+    with_fov[@"horizon_viewport"][@"zoom"] = @2;
+    with_fov[@"horizon_viewport"][@"fov_deg"] = @0.1;
+    check(decode_session_state(json_bytes(with_fov)).horizon_viewport.vertical_fov_deg == 0.1,
+          "explicit horizon FOV did not take precedence over legacy zoom");
+    state.horizon_viewport.vertical_fov_deg = 0.1;
+    const auto precise_json = encode_session_state(state);
+    NSData *precise_data = [NSData dataWithBytes:precise_json.data() length:precise_json.size()];
+    NSDictionary *precise = [NSJSONSerialization JSONObjectWithData:precise_data options:0 error:nil];
+    check([precise[@"horizon_viewport"][@"zoom"] doubleValue] == 180,
+          "legacy zoom did not clamp narrow FOV");
+    state.horizon_viewport.vertical_fov_deg = 180;
     for (int level = 1; level <= 5; ++level) {
         state.terrain_amplification = static_cast<TerrainAmplification>(level);
         check(decode_session_state(encode_session_state(state)).terrain_amplification == state.terrain_amplification,
@@ -87,7 +111,7 @@ void test_roundtrip() {
     state.mode = 2;
     state.magnitude_limit = 12.5;
     state.sky_viewport = {359.5, -45, 4};
-    state.horizon_viewport = {19.25, 20, 3};
+    state.horizon_viewport = {19.25, 20, 60};
     state.solar_camera = {{-5.25, 1e-8, 123.5}, -91.5, 25.25, 1e-10,
                          SolarCameraBasis{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}}};
     state.selected_body = Body::moon;
@@ -134,7 +158,7 @@ void test_roundtrip() {
           restored.solar_camera.distance_au == 1e-10 && restored.sky_viewport.center_ra_deg == 359.5,
           "camera state changed");
     check(restored.horizon_viewport.center_azimuth_deg == 19.25 &&
-          restored.horizon_viewport.center_altitude_deg == 20 && restored.horizon_viewport.zoom == 3 &&
+          restored.horizon_viewport.center_altitude_deg == 20 && restored.horizon_viewport.vertical_fov_deg == 60 &&
           restored.stars.proper_names && restored.stars.marking == StarMarking::exoplanets && restored.show_nebulae &&
           restored.show_galaxies && restored.show_quasars, "horizon or catalog visibility changed");
     check(!restored.planets.visible && !restored.planets.labels && !restored.planets.orbits && restored.planets.axes &&
@@ -202,7 +226,8 @@ void test_missing_null_and_types() {
         for (NSString *key in keys) {
             if ([parent isEqualToString:@"solar_camera"] &&
                 ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"])) continue;
-            if ([parent isEqualToString:@"horizon_viewport"] && [key isEqualToString:@"roll_deg"]) continue;
+            if ([parent isEqualToString:@"horizon_viewport"] &&
+                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"fov_deg"])) continue;
             object = session_object();
             [object[parent] removeObjectForKey:key];
             rejects([&] { decode_session_state(json_bytes(object)); });
@@ -227,7 +252,9 @@ void test_ranges_and_camera() {
     for (NSDictionary *change in @[@{@"zoom": @0}, @{@"zoom": @181}, @{@"zoom": @1.0, @"center_altitude_deg": @(-90.1)},
                                    @{@"center_azimuth_deg": @(-0.1)}, @{@"center_azimuth_deg": @360},
                                    @{@"center_altitude_deg": @90.1}, @{@"center_altitude_deg": @YES},
-                                   @{@"roll_deg": @YES}, @{@"roll_deg": NSNull.null}, @{@"roll_deg": @"1"}]) {
+                                   @{@"roll_deg": @YES}, @{@"roll_deg": NSNull.null}, @{@"roll_deg": @"1"},
+                                   @{@"fov_deg": @YES}, @{@"fov_deg": NSNull.null}, @{@"fov_deg": @"1"},
+                                   @{@"fov_deg": @0}, @{@"fov_deg": @(-1)}, @{@"fov_deg": @180.1}]) {
         NSMutableDictionary *object = session_object();
         [object[@"horizon_viewport"] addEntriesFromDictionary:change];
         rejects([&] { decode_session_state(json_bytes(object)); });
@@ -272,7 +299,7 @@ void test_ranges_and_camera() {
     bad.selected_body = static_cast<Body>(11);
     rejects([&] { encode_session_state(bad); });
     bad = SessionState{};
-    bad.horizon_viewport.zoom = std::numeric_limits<double>::quiet_NaN();
+    bad.horizon_viewport.vertical_fov_deg = std::numeric_limits<double>::quiet_NaN();
     rejects([&] { encode_session_state(bad); });
     bad = SessionState{};
     bad.magnitude_limit = std::numeric_limits<double>::infinity();

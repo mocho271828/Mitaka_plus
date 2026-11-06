@@ -1,12 +1,20 @@
 # 検証記録
 
+## 2026-11-06: P1-1 地球地平図の視野角
+
+地球地平図に `Camera.fov`、`Camera:setFovTo`、45° 復帰操作を追加した。旧資料の画角が縦・横、全角・半角のいずれかは確定できないため、縦方向の全画角と仮定する。設定範囲は有限な 0° 超 90° 以下であり、従来の起動時表示は 180° を返す。補間の時間省略は `Camera.duration` を使い、再指定時は現在値から開始する。地平図以外、投影遷移中の FOV 操作は拒否する。状態保存は小さな画角と従来の v9 倍率の復元に対応する。
+
+投影・逆投影・描画と選択の整合、姿勢補間との同時実行、手動操作と状態復元などによる中断について試験を追加した。最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は全て終了コード 0（主担当報告。ログは `/tmp/mitaka-fov-final4-{build,test,data-test,reference-test,smoke}.log`）。`make test` では地平線分 940,533、背景ビュー 461,593、状態 1,826 checks に成功。実画面では同梱データの HIP 117,956 件、地平図の表示と 45° 復帰を確認した（主担当報告）。
+
+途中の `make test` で音声の準備完了または自動再生の一括判定が失敗したが、音声単体の再実行は 4 回とも成功し、最終全体試験も成功した。失敗原因は未確定。極小画角は描画上の計算下限を使い、混合投影や極付近、有限の評価予算到達時には未解決線分を省略するため、画素誤差と完全な線分表示は保証しない。旧 Plus との比較は未実施。非地球 3D 地表の FOV は未対応であり、P1-1 全体は部分実装のままとする。[設計と制約](investigation/native-plus/fov-projection-design.md)。
+
 ## 2026-11-06: P1-1 カメラ距離の時間補間（検証中）
 
 Lua の `Camera.zoom` と同じ pc 単位で距離の線形 `setZoomTo`・対数 `setZoomLogTo` を追加し、省略時は `Camera.duration` を用いる。旧版の時間曲線は未確認のため、距離または距離の自然対数に対する等速補間を仮定した。無効な値の拒否、再指定と操作の中断、地上・地平図での拒否、既存の天体内部への進入防止を含む。詳細と未対応範囲は[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)を参照する。FOV は別の作業単位であり CAM-03 全体は部分対応のままとする。
 
 別 bundle ID の一時コピーを使う実画面検証では、実データの太陽系 3D を開き、`Camera:setZoomTo(10 * UNIT_AU, 2)` を含む手作成 Lua をメニューから選択して「スクリプトを実行しました」と表示された。操作後の距離・画面の変化は CUA のタイムアウトにより未確認。表面画像は 0/11 の読込警告が出た。旧 Plus との比較は未実施。対象移動中のズーム競合を修正し、関連試験の 79 checks は成功した（主担当報告）。
 
-最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はいずれも終了コード 0（主担当報告）。途中の `make test` は追加テストの宣言エラーで失敗し、その後の試験は修正のため中断された。Git の変更範囲と差分を確認し、commit した。[policy gate 検証コピー](temp_gates/2026-11-06-20-33-32/)では、指定 skill の利用可否と未実施事項の最終報告が未了のため検証 gate を暫定 NO とした。
+最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はいずれも終了コード 0（主担当報告）。途中の `make test` は追加テストの宣言エラーで失敗し、その後の試験は修正のため中断された。Git の変更範囲と差分を確認し、commit した。[policy gate 検証コピー](temp_gates/2026-11-06-20-33-32/)では全 gate を YES と判定した。指定 skill の利用不可と未確認事項は作業経過で報告した。
 
 ## 2026-11-06: 火星地表付近の地形描画
 

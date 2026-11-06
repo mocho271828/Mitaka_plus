@@ -1,8 +1,10 @@
 #include "sky_model.hpp"
+#include "horizon_projection_constants.hpp"
 #include "mitaka/lunar.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -62,6 +64,16 @@ void validate_viewport(const SkyViewport& viewport, double width, double height)
         || viewport.perspective_blend > 1
         || !std::isfinite(width) || width <= 0 || !std::isfinite(height) || height <= 0)
         throw std::invalid_argument("invalid sky viewport or dimensions");
+}
+
+void validate_viewport(const HorizonProjectionViewport& viewport, double width, double height) {
+    if (!std::isfinite(viewport.center_ra_deg) || !valid_declination(viewport.center_dec_deg)
+        || !std::isfinite(viewport.vertical_fov_deg) || viewport.vertical_fov_deg <= 0
+        || viewport.vertical_fov_deg > 180 || !std::isfinite(viewport.roll_deg)
+        || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0
+        || viewport.perspective_blend > 1 || !std::isfinite(width) || width <= 0
+        || !std::isfinite(height) || height <= 0)
+        throw std::invalid_argument("invalid horizon viewport or dimensions");
 }
 
 double normalized_ra(double ra) {
@@ -306,16 +318,18 @@ std::vector<ScreenSegment> project_sky_segment(EquatorialCoordinates start,
 
 namespace {
 constexpr double horizon_radians = 3.14159265358979323846 / 180;
-constexpr double horizon_pi = 3.14159265358979323846;
-constexpr double perspective_scale = 0.4142135623730950488;
+// 方向を絶対角 double で保持するため、これ未満の描画は区別できない。
+// 保存・取得値は変更せず、射影計算の安定化だけに使う。
+constexpr double minimum_render_fov_deg = horizon_minimum_render_fov_deg;
+constexpr double perspective_scale = horizon_perspective_scale;
 
-double horizon_longitude(double u, double zoom, double aspect, double blend) {
-    return (1 - blend) * (-u * horizon_pi / zoom)
+double horizon_longitude(double u, double fov, double aspect, double blend) {
+    return (1 - blend) * (-u * fov * horizon_radians)
         + blend * std::atan2(-u * perspective_scale * aspect, 1.0);
 }
 
-double horizon_latitude(double v, double zoom, double denominator, double blend) {
-    return (1 - blend) * (v * horizon_pi / (2 * zoom))
+double horizon_latitude(double v, double fov, double denominator, double blend) {
+    return (1 - blend) * (v * fov * horizon_radians / 2)
         + blend * std::atan2(v * perspective_scale, denominator);
 }
 
@@ -330,12 +344,40 @@ EquatorialCoordinates inverse_horizon(double center_ra, double cos_tilt, double 
     const double rolled_y = cos_latitude * sin_longitude;
     const double y = rolled_y * cos_roll + sin_latitude * sin_roll;
     const double z = sin_latitude * cos_roll - rolled_y * sin_roll;
-    return {normalized_ra(center_ra + std::atan2(y, x * cos_tilt - z * sin_tilt) / horizon_radians),
-            std::asin(std::clamp(z * cos_tilt + x * sin_tilt, -1.0, 1.0)) / horizon_radians};
+    const double horizontal_x = x * cos_tilt - z * sin_tilt;
+    const double vertical = z * cos_tilt + x * sin_tilt;
+    return {normalized_ra(center_ra + std::atan2(y, horizontal_x) / horizon_radians),
+            std::atan2(vertical, std::hypot(horizontal_x, y)) / horizon_radians};
 }
 }
 
-EquatorialCoordinates rotate_horizon(EquatorialCoordinates point, const SkyViewport& viewport) {
+HorizonProjectionViewport normalize_horizon_viewport(HorizonProjectionViewport viewport) {
+    if (!std::isfinite(viewport.center_ra_deg) || !std::isfinite(viewport.center_dec_deg)
+        || !std::isfinite(viewport.vertical_fov_deg) || viewport.vertical_fov_deg <= 0
+        || viewport.vertical_fov_deg > 180 || !std::isfinite(viewport.roll_deg)
+        || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0
+        || viewport.perspective_blend > 1)
+        throw std::invalid_argument("invalid horizon viewport");
+    viewport.center_ra_deg = normalized_ra(viewport.center_ra_deg);
+    viewport.center_dec_deg = std::clamp(viewport.center_dec_deg, -90.0, 90.0);
+    return viewport;
+}
+
+HorizonProjectionViewport pan_horizon(HorizonProjectionViewport viewport, double delta_x, double delta_y,
+                                      double width, double height) {
+    validate_viewport(viewport, width, height);
+    if (!std::isfinite(delta_x) || !std::isfinite(delta_y))
+        throw std::invalid_argument("invalid horizon pan distance");
+    const double fov = std::max(viewport.vertical_fov_deg, minimum_render_fov_deg);
+    const double horizontal = delta_x / width * (2 * fov);
+    const double vertical = delta_y / height * fov;
+    const double roll = viewport.roll_deg * horizon_radians;
+    viewport.center_ra_deg += horizontal * std::cos(roll) + vertical * std::sin(roll);
+    viewport.center_dec_deg += vertical * std::cos(roll) - horizontal * std::sin(roll);
+    return normalize_horizon_viewport(viewport);
+}
+
+EquatorialCoordinates rotate_horizon(EquatorialCoordinates point, const HorizonProjectionViewport& viewport) {
     if (!std::isfinite(point.right_ascension_deg) || !valid_declination(point.declination_deg))
         throw std::invalid_argument("invalid horizon coordinates");
     const double longitude = (point.right_ascension_deg - viewport.center_ra_deg) * horizon_radians;
@@ -350,47 +392,46 @@ EquatorialCoordinates rotate_horizon(EquatorialCoordinates point, const SkyViewp
     const double right = y * std::cos(roll) - vertical * std::sin(roll);
     const double up = vertical * std::cos(roll) + y * std::sin(roll);
     return {normalized_ra(std::atan2(right, forward) / horizon_radians),
-            std::asin(std::clamp(up, -1.0, 1.0)) / horizon_radians};
+            std::atan2(up, std::hypot(forward, right)) / horizon_radians};
 }
 
 std::optional<ScreenPoint> project_horizon(EquatorialCoordinates coordinates,
-                                         const SkyViewport& viewport,
+                                         const HorizonProjectionViewport& viewport,
                                          double width, double height) {
     validate_viewport(viewport, width, height);
     const auto rotated = rotate_horizon(coordinates, viewport);
-    if (viewport.perspective_blend == 0)
-        return project_validated(rotated, {0, 0, viewport.zoom}, width, height);
     const double blend = viewport.perspective_blend;
+    const double fov = std::max(viewport.vertical_fov_deg, minimum_render_fov_deg);
     const double aspect = width / height;
     const double longitude = std::remainder(rotated.right_ascension_deg, 360.0) * horizon_radians;
     const double latitude = rotated.declination_deg * horizon_radians;
-    if (longitude > horizon_longitude(-1, viewport.zoom, aspect, blend)
-        || longitude < horizon_longitude(1, viewport.zoom, aspect, blend)) return std::nullopt;
+    if (longitude > horizon_longitude(-1, fov, aspect, blend)
+        || longitude < horizon_longitude(1, fov, aspect, blend)) return std::nullopt;
     double left = -1, right = 1;
-    double u = -longitude / horizon_longitude(-1, viewport.zoom, aspect, blend);
+    double u = -longitude / horizon_longitude(-1, fov, aspect, blend);
     for (int iteration = 0; iteration < 32; ++iteration) {
-        const double error = horizon_longitude(u, viewport.zoom, aspect, blend) - longitude;
-        if (std::abs(error) < 1e-14) break;
+        const double error = horizon_longitude(u, fov, aspect, blend) - longitude;
+        if (std::abs(error) <= 1e-12 * std::abs(horizon_longitude(-1, fov, aspect, blend))) break;
         if (error > 0) left = u;
         else right = u;
         const double scale = perspective_scale * aspect;
-        const double slope = -(1 - blend) * horizon_pi / viewport.zoom
+        const double slope = -(1 - blend) * fov * horizon_radians
             - blend * scale / (1 + u * u * scale * scale);
         const double candidate = u - error / slope;
         u = candidate > left && candidate < right ? candidate : (left + right) / 2;
     }
     const double denominator = perspective_denominator(u, aspect);
-    if (latitude < horizon_latitude(-1, viewport.zoom, denominator, blend)
-        || latitude > horizon_latitude(1, viewport.zoom, denominator, blend)) return std::nullopt;
+    if (latitude < horizon_latitude(-1, fov, denominator, blend)
+        || latitude > horizon_latitude(1, fov, denominator, blend)) return std::nullopt;
     double bottom = -1, top = 1;
-    double v = latitude / horizon_latitude(1, viewport.zoom, denominator, blend);
+    double v = latitude / horizon_latitude(1, fov, denominator, blend);
     for (int iteration = 0; iteration < 32; ++iteration) {
-        const double error = horizon_latitude(v, viewport.zoom, denominator, blend) - latitude;
-        if (std::abs(error) < 1e-14) break;
+        const double error = horizon_latitude(v, fov, denominator, blend) - latitude;
+        if (std::abs(error) <= 1e-12 * std::abs(horizon_latitude(1, fov, denominator, blend))) break;
         if (error < 0) bottom = v;
         else top = v;
         const double vertical = v * perspective_scale;
-        const double slope = (1 - blend) * horizon_pi / (2 * viewport.zoom)
+        const double slope = (1 - blend) * fov * horizon_radians / 2
             + blend * perspective_scale * denominator / (denominator * denominator + vertical * vertical);
         const double candidate = v - error / slope;
         v = candidate > bottom && candidate < top ? candidate : (bottom + top) / 2;
@@ -398,7 +439,7 @@ std::optional<ScreenPoint> project_horizon(EquatorialCoordinates coordinates,
     return ScreenPoint{(u + 1) * width / 2, (1 - v) * height / 2};
 }
 
-EquatorialCoordinates unproject_horizon(ScreenPoint point, const SkyViewport& viewport,
+EquatorialCoordinates unproject_horizon(ScreenPoint point, const HorizonProjectionViewport& viewport,
                                         double width, double height) {
     validate_viewport(viewport, width, height);
     if (!std::isfinite(point.x) || !std::isfinite(point.y) || point.x < 0 || point.x > width ||
@@ -406,8 +447,8 @@ EquatorialCoordinates unproject_horizon(ScreenPoint point, const SkyViewport& vi
         throw std::invalid_argument("invalid horizon screen point");
     const double u = 2 * point.x / width - 1;
     const double v = 1 - 2 * point.y / height;
-    const double longitude = horizon_longitude(u, viewport.zoom, width / height, viewport.perspective_blend);
-    const double latitude = horizon_latitude(v, viewport.zoom, perspective_denominator(u, width / height),
+    const double longitude = horizon_longitude(u, std::max(viewport.vertical_fov_deg, minimum_render_fov_deg), width / height, viewport.perspective_blend);
+    const double latitude = horizon_latitude(v, std::max(viewport.vertical_fov_deg, minimum_render_fov_deg), perspective_denominator(u, width / height),
                                              viewport.perspective_blend);
     const double tilt = viewport.center_dec_deg * horizon_radians;
     return inverse_horizon(viewport.center_ra_deg, std::cos(tilt), std::sin(tilt),
@@ -416,14 +457,14 @@ EquatorialCoordinates unproject_horizon(ScreenPoint point, const SkyViewport& vi
                            std::cos(viewport.roll_deg * horizon_radians), std::sin(viewport.roll_deg * horizon_radians));
 }
 
-HorizonRasterProjection::HorizonRasterProjection(const SkyViewport& viewport,
+HorizonRasterProjection::HorizonRasterProjection(const HorizonProjectionViewport& viewport,
                                                  std::size_t width, std::size_t height)
     : center_ra_deg_(viewport.center_ra_deg),
       cos_tilt_(std::cos(viewport.center_dec_deg * horizon_radians)),
       sin_tilt_(std::sin(viewport.center_dec_deg * horizon_radians)),
       cos_roll_(std::cos(viewport.roll_deg * horizon_radians)),
       sin_roll_(std::sin(viewport.roll_deg * horizon_radians)),
-      perspective_blend_(viewport.perspective_blend), zoom_(viewport.zoom) {
+      perspective_blend_(viewport.perspective_blend), vertical_fov_deg_(std::max(viewport.vertical_fov_deg, minimum_render_fov_deg)) {
     validate_viewport(viewport, width, height);
     longitudes_.reserve(width);
     latitudes_.reserve(height);
@@ -432,13 +473,13 @@ HorizonRasterProjection::HorizonRasterProjection(const SkyViewport& viewport,
     for (std::size_t x = 0; x < width; ++x) {
         const double u = 2 * (x + 0.5) / width - 1;
         const double aspect = static_cast<double>(width) / height;
-        const double angle = horizon_longitude(u, viewport.zoom, aspect, perspective_blend_);
+        const double angle = horizon_longitude(u, std::max(viewport.vertical_fov_deg, minimum_render_fov_deg), aspect, perspective_blend_);
         longitudes_.push_back({std::cos(angle), std::sin(angle)});
         perspective_denominators_.push_back(perspective_denominator(u, aspect));
     }
     for (std::size_t y = 0; y < height; ++y) {
         const double v = 1 - 2 * (y + 0.5) / height;
-        const double angle = v * horizon_pi / (2 * viewport.zoom);
+        const double angle = v * std::max(viewport.vertical_fov_deg, minimum_render_fov_deg) * horizon_radians / 2;
         latitudes_.push_back({std::cos(angle), std::sin(angle)});
         vertical_coordinates_.push_back(v);
     }
@@ -447,7 +488,7 @@ HorizonRasterProjection::HorizonRasterProjection(const SkyViewport& viewport,
 EquatorialCoordinates HorizonRasterProjection::direction(std::size_t x, std::size_t y) const {
     const auto& longitude = longitudes_[x];
     if (perspective_blend_ != 0) {
-        const double angle = horizon_latitude(vertical_coordinates_[y], zoom_,
+        const double angle = horizon_latitude(vertical_coordinates_[y], vertical_fov_deg_,
                                               perspective_denominators_[x], perspective_blend_);
         return inverse_horizon(center_ra_deg_, cos_tilt_, sin_tilt_, longitude[0], longitude[1],
                                std::cos(angle), std::sin(angle), cos_roll_, sin_roll_);
@@ -457,21 +498,26 @@ EquatorialCoordinates HorizonRasterProjection::direction(std::size_t x, std::siz
                            longitude[0], longitude[1], latitude[0], latitude[1], cos_roll_, sin_roll_);
 }
 
-SkyViewport zoom_horizon(SkyViewport viewport, double factor, ScreenPoint anchor,
+HorizonProjectionViewport zoom_horizon(HorizonProjectionViewport viewport, double factor, ScreenPoint anchor,
                          double width, double height) {
     validate_viewport(viewport, width, height);
     if (!std::isfinite(factor) || factor <= 0 || !std::isfinite(anchor.x) || !std::isfinite(anchor.y))
         throw std::invalid_argument("invalid horizon zoom parameters");
+    if (factor == 1) return viewport;
     anchor.x = std::clamp(anchor.x, 0.0, width);
     anchor.y = std::clamp(anchor.y, 0.0, height);
     const auto target = unproject_horizon(anchor, viewport, width, height);
-    const double zoom = std::clamp(viewport.zoom * factor, 1.0, 180.0);
-    if (zoom == viewport.zoom) return viewport;
+    // 縮小は描画下限から始め、拡大では保存値を増やさない。
+    const double start_fov = factor < 1 ? std::max(viewport.vertical_fov_deg, minimum_render_fov_deg)
+                                        : viewport.vertical_fov_deg;
+    const double fov = std::clamp(start_fov / factor,
+                                  std::numeric_limits<double>::denorm_min(), 180.0);
+    if (fov == viewport.vertical_fov_deg) return viewport;
     const double latitude = target.declination_deg * horizon_radians;
     const double u = 2 * anchor.x / width - 1;
     const double v = 1 - 2 * anchor.y / height;
-    const double longitude_screen = horizon_longitude(u, zoom, width / height, viewport.perspective_blend);
-    const double latitude_screen = horizon_latitude(v, zoom, perspective_denominator(u, width / height),
+    const double longitude_screen = horizon_longitude(u, std::max(fov, minimum_render_fov_deg), width / height, viewport.perspective_blend);
+    const double latitude_screen = horizon_latitude(v, std::max(fov, minimum_render_fov_deg), perspective_denominator(u, width / height),
                                                      viewport.perspective_blend);
     const double qx = std::cos(latitude_screen) * std::cos(longitude_screen);
     const double rolled_y = std::cos(latitude_screen) * std::sin(longitude_screen);
@@ -480,12 +526,12 @@ SkyViewport zoom_horizon(SkyViewport viewport, double factor, ScreenPoint anchor
     const double qy = rolled_y * std::cos(roll) + rolled_z * std::sin(roll);
     const double qz = rolled_z * std::cos(roll) - rolled_y * std::sin(roll);
     const double cos_latitude = std::cos(latitude);
-    viewport.zoom = zoom;
+    viewport.vertical_fov_deg = fov;
     if (std::abs(cos_latitude) < 1e-12 || std::abs(qy) > cos_latitude + 1e-12)
-        return normalize_sky_viewport(viewport, true);
+        return normalize_horizon_viewport(viewport);
     const double first = std::asin(std::clamp(qy / cos_latitude, -1.0, 1.0));
     double best_distance = std::numeric_limits<double>::infinity();
-    auto result = normalize_sky_viewport(viewport, true);
+    auto result = normalize_horizon_viewport(viewport);
     for (const double delta : {first, 3.14159265358979323846 - first}) {
         const double tilt = std::remainder(std::atan2(std::sin(latitude), cos_latitude * std::cos(delta))
                                            - std::atan2(qz, qx), 2 * 3.14159265358979323846);
@@ -497,7 +543,7 @@ SkyViewport zoom_horizon(SkyViewport viewport, double factor, ScreenPoint anchor
                                            center_dec - viewport.center_dec_deg);
         if (distance < best_distance) {
             best_distance = distance;
-            result = normalize_sky_viewport({center_ra, center_dec, zoom, viewport.perspective_blend, viewport.roll_deg}, true);
+            result = normalize_horizon_viewport({center_ra, center_dec, fov, viewport.perspective_blend, viewport.roll_deg});
         }
     }
     return result;
