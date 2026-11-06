@@ -32,4 +32,4 @@ YES
 
 `make -j4 build`、`make -j6 test`、`make -j6 data-test`、`make -j4 reference-test`、`make smoke` は全て成功。新規依存なし。`/simplifier-lai` は存在せず、利用できない。
 
-統合後の追加検証: build、test、data-test、reference-test は成功。smoke は GUI 実行待ち。上記の smoke 成功は独立 checkout の結果である。
+統合後の追加検証: build、test、data-test、reference-test は成功。smoke も統合後の checkout で成功。

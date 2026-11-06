@@ -369,4 +369,6 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 
 基点 `815b362` の隔離 checkout で `make -j4 build`、`make -j6 test`、`make -j6 data-test`、`make -j4 reference-test`、`make smoke` は成功した。HorizonView は実データで 148 checks、Earth landscape は 2608 checks。隔離 checkout の LFS 実体が未展開のため、同じリポジトリの共有 checkout にある `resources/data` を `DATA_ROOT` に読み取り専用で指定した。
 
-統合後の `62bbc36` 相当では `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test` が成功。統合後の smoke と手動 GUI は未実施である。
+統合後の checkout では `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` が成功。手動 GUI は未実施である。
+
+天の川同一レイヤーの重なり選択についても、地平風景の変更を重ねた統合 checkout で smoke が成功した。先行する統合状態の初回失敗の原因は引き続き未確定である。

@@ -33,3 +33,5 @@ YES
 差分量は 300 行未満だが主担当の指示で commit する。`/simplifier-lai` は利用不可（利用可能な simplify-lai は LobbyAI 専用）。標準 C++ / 既存 Core Graphics のみを利用し、新規依存なし。
 
 統合後の追加検証: build、test、data-test、reference-test は成功。smoke は Lua アニメーション途中値の `host.lua:21` assertion で失敗。原因未確定であり、統合後の smoke は未合格として再検証する。上の成功は隔離環境に限る。
+
+後続の地平風景変更を含む統合 checkout で smoke が成功。初回の assertion failure の原因は未確定。
