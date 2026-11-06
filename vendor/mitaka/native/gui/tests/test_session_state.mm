@@ -487,6 +487,8 @@ void test_plus_time_zone() {
     check(!decode_session_state(default_json).plus_time_zone, "default timezone was inferred");
     check(session_object()[@"plus_time_zone"] == NSNull.null, "absent timezone was not encoded as null");
     SessionState state;
+    // 整数秒が JD の浮動小数点で近似されても保存・復元で値を変えない。
+    state.julian_date = mitaka::julian_date({2000,1,2,3,4,5});
     state.time_settings.utc_offset_minutes = 540;
     check(!decode_session_state(encode_session_state(state)).plus_time_zone,
           "UI offset was copied into an unset Plus timezone");
@@ -495,6 +497,8 @@ void test_plus_time_zone() {
         state.plus_time_zone = PlusTimeZone(seconds);
         const auto json = encode_session_state(state);
         const auto restored = decode_session_state(json);
+        check(restored.julian_date == state.julian_date,
+              "calendar-adjacent Julian date changed during session restore");
         check(restored.plus_time_zone && restored.plus_time_zone->seconds_west_of_utc == seconds,
               "explicit Plus timezone changed or became unset");
         check(restored.time_settings.utc_offset_minutes == 540,

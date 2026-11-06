@@ -56,8 +56,7 @@
                     sameTargetPolicy:action.kind == ScriptActionKind::set_time_animation_jd ?
                         PlusTimeAnimationSameTarget::preserve : PlusTimeAnimationSameTarget::replace error:error];
             case ScriptActionKind::set_rate:
-                [_playback setSimulationRate:action.number];
-                [_playback play];
+                if ([_playback setSimulationRate:action.number]) [_playback play];
                 return YES;
             case ScriptActionKind::stop: [_playback pause]; return YES;
             case ScriptActionKind::set_clock_tracking:

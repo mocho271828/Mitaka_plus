@@ -72,7 +72,9 @@
 | 14 | `codex/mitaka-14-camera-distance-mode` | `codex/mitaka-13-object-menu` | P2: CAM-09 | 移動時の距離自動調整の GUI と Lua を整合させる | 対象変更、半径不明、旧版との距離比較 | `local-only` | `not-started` | yes* |
 | 15 | `codex/mitaka-15-home-navigation` | `codex/mitaka-14-camera-distance-mode` | P2: CAM-10 | 任意対象と保存ホームへの時間指定移動を実現する | 保存復元、時間省略、移動中再指定 | `local-only` | `not-started` | yes* |
 | 16 | `codex/mitaka-16-surface-click` | `codex/mitaka-15-home-navigation` | P2: CAM-12 | 地表ダブルクリックによる地点移動を実現する | 球面端・極、非地球、クリックと移動先の一致 | `local-only` | `not-started` | yes* |
-| 17 | `codex/mitaka-17-time-zones` | `codex/mitaka-16-surface-click` | P2: TIME-03 | 地方時と夏時間・時系の変換契約を統合する | 日付境界、夏時間切替、曖昧時刻、Lua と GUI | `local-only` | `not-started` | yes* |
+| 16b | `codex/mitaka-p2-time-integration` | `eb913ea` | P2: TIME-03, TIME-07 | 整数秒の時刻往復と追従開始の再入を整合させる | 地方時・JD 境界、Lua と状態復元、再入時の再生排他 | `local-only` | `partial` | yes* |
+| 16c | `codex/mitaka-p2-time-reentrancy` | `codex/mitaka-p2-time-integration` | P2: TIME-07 | 設定・速度変更の同期通知で再入した操作と UI を整合させる | 新しい設定・再生・追従・補間、同値速度、停止通知、GUI 合成操作 | `local-only` | `partial` | yes* |
+| 17 | `codex/mitaka-17-time-zones` | `codex/mitaka-p2-time-reentrancy` | P2: TIME-03 | 地方時と夏時間・時系の変換契約を統合する | 日付境界、夏時間切替、曖昧時刻、Lua と GUI | `local-only` | `not-started` | yes* |
 | 18 | `codex/mitaka-18-time-controls` | `codex/mitaka-17-time-zones` | P2: TIME-04, TIME-05, TIME-06 | 順逆行と単位別時刻操作を一貫して評価する | 閏日・月末・年端・速度、全ビュー同一 JD、旧版比較 | `local-only` | `not-started` | yes* |
 | 19 | `codex/mitaka-19-realtime-clock` | `codex/mitaka-18-time-controls` | P2: TIME-07 | 実時間追従と時計変更時の時刻制御を実現する | 時計変更、時系変換、追従開始停止 | `local-only` | `not-started` | yes* |
 | 20 | `codex/mitaka-20-property-animation` | `codex/mitaka-19-realtime-clock` | P2: ANIM-01 | 時間属性の補間と番組の連続再生を実現する | 補間境界、途中中断・再指定、連続再生と時刻整合 | `local-only` | `not-started` | yes* |

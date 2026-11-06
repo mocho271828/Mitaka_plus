@@ -455,3 +455,19 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 基点 `1427dfe` の隔離 worktree で、loader の原文保持と正常・不正値、独立した円軌道の位置と周期を合成データで検証した。`test_small_body_catalog` 436 checks、`test_minor_planet_position` 91,022 checks、`test_minor_planet_orbit_path` 1,641 checks、`make build`、`make reference-test` は成功。Foundation の model 合成回帰は 20,151 と 74 checks、共有 checkout の原データを読み取り専用で指定した model 回帰は 59,036 と 1,145,458 checks ともに成功。model の合成例は手構築 record であり、loader から画面までの通し検証ではない。GUI 実行枠確保後、同じ隔離 worktree で `make -j4 test`、共有 checkout の原データを読み取り専用に指定した `make -j4 data-test`、`make -j4 smoke` がすべて成功。明示 n 専用の手動 GUI 操作は未実施。新規依存・原データの変更はない。小天体の判定条件を `IMPLEMENTATION_POLICY.md` と preservation gate に反映した。`/simplifier-lai` は LobbyAI 専用であり利用不可。[gate 判定](temp_gates/2026-11-07-04-38-49/)を記録。並行作業で追加された Rust 移行の gate は含まず、統合先で再判定する。
 
 共有 checkout の `8f2e3fb` に統合した状態でも `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -j4 smoke` はすべて成功した。[gate 判定](temp_gates/2026-11-07-04-50-00/)を記録した。Rust 移行関連の並行編集は保持し、コミットには小天体方針の変更だけを含める。
+
+## 2026-11-07: P2 時刻の整数秒往復と再入
+
+JD の量子化と地方時オフセットの計算誤差を考慮し、誤差幅内の整数秒について UTC・地方時・文字列表現と各成分 setter の読み戻しを一致させる。誤差幅より外の小数秒は切り捨てる仮定を採り、分・日・年境界、閏日、範囲端および複数の時差を回帰試験で確認した。Lua 成分の読み戻しを同じ setter に渡しても追従が解除されず、JD の保存復元も同値を保持する。停止通知の同期 callback が再生を再開した場合はその再生を維持し、時計追従を再開した場合は二重開始を避ける。旧 Plus の小数秒境界・時計追従再入の挙動、夏時間と UTC/UT1/TT/TDB 変換、手動 GUI は未確認。原データ・依存・全体方針の変更はない。
+
+原コミット `9098140` の基点 `815b362` における検証では、隔離 worktree で `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make smoke` は成功。通常・データ・参照試験は元 checkout の同梱 `DATA_ROOT`、smoke は当該 worktree で Git LFS により復元した同梱データを使用した。時刻暦は 14,443 checks、状態復元は 1,878 checks、PlaybackController は AppKit の再入回帰を含み成功した。
+
+統合基点 `eb913ea` では、停止 callback が時計追従や時刻補間を再開した場合、先行する再生要求で上書きしない回帰を追加した。`make -j2 build`、`make -j2 test`、`make -j2 data-test`、`make -j2 reference-test`、`make -j2 smoke` はすべて成功。時刻暦は 14,443 checks、状態復元は 1,900 checks。独立 checkout の LFS 実体不足のため、共有 checkout の `resources/data` を `DATA_ROOT` に読み取り専用で指定した。`configureWithJulianDate` と `setSimulationRate` における停止通知の再入時の状態整合性は当時未修正で、下記の追加単位で対処した。旧 Plus の比較と時刻専用の実画面手動操作は未実施。依存とリポジトリ全体方針の変更はなく、既存の C++ 標準ライブラリと PlaybackController を使用する。`/simplifier-lai` は利用できず、LobbyAI 専用の `simplify-lai` は本件に適用されない。[gate 判定](temp_gates/2026-11-07-04-35-13/)を記録した。
+
+## 2026-11-07: P2 時刻設定と速度変更の停止通知再入
+
+新しい日時・範囲・有効状態を停止通知より先に設定し、通知内の再設定・追従・再生・補間を古い操作で上書きしない。速度要求は停止状態の通知世代とは別に管理し、同値を含む再指定を優先しつつ `didStop` と速度・方向の選択表示を整合させる。GUI の順方向・逆方向・実時間再生と Lua の速度設定は、速度変更が再入で置換された場合に古い再生要求を続けない。Lua の戻り値は従来どおり維持する。
+
+基点 `966aac1` の隔離 worktree で対象 PlaybackController AppKit 回帰、`make -j2 build`、`make -j2 test`、`make -j2 data-test`、`make -j2 reference-test`、`make -j2 smoke` が成功。実データは共有 checkout の同梱 `DATA_ROOT` を読み取り専用で参照した。回帰は新旧設定の再入、無効設定、再生・追従・補間、速度の同値／異値再指定、適用失敗、実際の速度・方向 UI action と停止通知を対象とする。通常の Lua 時刻操作は smoke で通過したが、Lua 経由で callback が再入する経路は未試験。旧 Plus の再入時仕様との比較と時刻専用の手動 GUI 検証は未実施。依存追加、原データ、リポジトリ全体方針の変更はない。`/simplifier-lai` は利用できず、LobbyAI 専用 `simplify-lai` は本件に適用されない。[gate 判定](temp_gates/2026-11-07-04-40-45/)を記録した。
+
+共有 checkout の `a59e2ad` に時刻関連の両変更を統合した状態でも、`make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -j4 smoke` はすべて成功した。[gate 判定](temp_gates/2026-11-07-04-54-00/)を記録した。旧 Plus 比較、Lua 経由の callback 再入、時刻専用の手動 GUI は未実施。
