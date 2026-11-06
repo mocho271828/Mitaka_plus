@@ -304,7 +304,7 @@ void SurfaceNavigation::look(double dx_points, double dy_points) {
     auto next = site_;
     next.heading_deg = heading(next.heading_deg - std::remainder(dx_points, 360 / 0.35) * 0.35);
     next.elevation_deg = std::clamp(next.elevation_deg + std::clamp(dy_points, -1000.0, 1000.0) * 0.35,
-                                  -89.0, 89.0);
+                                  -90.0, 90.0);
     set_site(next);
 }
 

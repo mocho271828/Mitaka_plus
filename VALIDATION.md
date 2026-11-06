@@ -306,3 +306,9 @@ gate は `temp_gates/` にコピーし、判定条件をチェックして YES �
 有限な quaternion は最大成分で先に縮尺を揃えてから正規化し、最大値および非正規化浮動小数点でも有限な姿勢を得る。ゼロ・無限大・NaN は拒否する。方位・高度の補間または対象追尾中に再指定された場合は、直近の timer tick ではなく現在時刻まで姿勢を更新してから新たな補間を始める。隔離環境の姿勢テスト、Lua script 試験および全体ビルドは成功した。全天図と独立銀河ブラウザの姿勢 API、旧 Plus との比較は未対応・未実施。新規依存・原データ・全体方針の変更はない。
 
 同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -C vendor/mitaka/native/gui plus-camera-orientation-test`、`make smoke` は成功。手動 GUI と旧 Plus 比較は未実施。
+
+## 2026-11-07: P1-7 地表の天頂・天底操作
+
+非地球 3D 地表のドラッグ時の高度制限を ±89° から API と同じ ±90° に変更した。端点で横方向にドラッグしても視点位置と中心方向を保持し、縦操作で再び端点から戻せることをテストする。旧 Plus との比較と実画面操作は未実施。新規依存・原データ・全体方針の変更はない。
+
+同一 checkout の `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make smoke` は成功。

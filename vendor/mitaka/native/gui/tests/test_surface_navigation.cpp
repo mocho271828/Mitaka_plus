@@ -389,10 +389,22 @@ void test_manual_controls() {
     navigation.look(40, 20);
     near(navigation.site().heading_deg, 356); near(navigation.site().elevation_deg, 7);
     navigation.zoom(std::log(2)); near(navigation.site().height_km, 200);
-    navigation.look(1e300, 1e300); near(navigation.site().elevation_deg, 89);
-    navigation.look(-1e300, -1e300); near(navigation.site().elevation_deg, -89);
+    navigation.look(1e300, 1e300); near(navigation.site().elevation_deg, 90);
+    navigation.look(-1e300, -1e300); near(navigation.site().elevation_deg, -90);
     check(navigation.site().heading_deg >= 0 && navigation.site().heading_deg < 360,
           "look must normalize heading");
+    for (double elevation : {-90.0, 90.0}) {
+        navigation.set_site({3, 23, 45, 100, 10, elevation});
+        const auto before = navigation.camera(fixture());
+        navigation.look(10, 0);
+        near(navigation.site().elevation_deg, elevation);
+        const auto after = navigation.camera(fixture());
+        same(eye(before), eye(after));
+        same(solar_camera_ray(before, 320, 240, 640, 480),
+             solar_camera_ray(after, 320, 240, 640, 480));
+        navigation.look(0, elevation > 0 ? -1 : 1);
+        near(navigation.site().elevation_deg, elevation + (elevation > 0 ? -0.35 : 0.35));
+    }
     navigation.zoom(1e300); near(navigation.site().height_km, 1e9, 1e-6);
     navigation.zoom(-1e300); near(navigation.site().height_km, minimum_surface_height_km);
     navigation.begin_ascent(0);
