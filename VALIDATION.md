@@ -447,3 +447,11 @@ AppKit の HorizonView において、小天体・探査機の選択を不透明
 一覧の「位置計算対応」を「位置評価候補（未対応を含む）」に変更し、候補数に未対応形式が含まれることを明示した。明示 n、放物軌道、37 byte の候補が評価対象となっても位置計算済みと誤認されないことをモデルと controller の回帰試験で確認した。共有 checkout で `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test`、`make -j6 smoke` がすべて成功。旧 Plus 比較と専用の手動 GUI 確認は未実施。新規依存、原データ、全体方針の変更はない。[gate 判定](temp_gates/2026-11-07-04-30-00/)を記録した。
 
 共有 checkout の `1427dfe` に CAM-08 のカタログ一覧を統合し、`make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -j4 smoke` がすべて成功した。[gate 判定](temp_gates/2026-11-07-04-39-00/)を記録した。旧 Plus 比較、専用の手動 GUI 確認、他ブラウザと共通階層は未実施または未対応。
+
+## 2026-11-07: P1-4 個別小天体の明示平均運動
+
+個別 Asteroid / TNObject の楕円軌道で、有限の `a > 0` と `n > 0` の両指定を受け付け、明示 `n` を位置と一周期軌道に使用する。`n` がなければ既存どおり `a` から導出する。`n` のみ、非楕円、37 byte は対応しない。不正な `n` は診断し、外部で組み立てたレコードの明示値と軌道値の不一致も拒否する。旧 Plus 実行版との比較、物理的時系、画面・数値の一致は未検証。
+
+基点 `1427dfe` の隔離 worktree で、loader の原文保持と正常・不正値、独立した円軌道の位置と周期を合成データで検証した。`test_small_body_catalog` 436 checks、`test_minor_planet_position` 91,022 checks、`test_minor_planet_orbit_path` 1,641 checks、`make build`、`make reference-test` は成功。Foundation の model 合成回帰は 20,151 と 74 checks、共有 checkout の原データを読み取り専用で指定した model 回帰は 59,036 と 1,145,458 checks ともに成功。model の合成例は手構築 record であり、loader から画面までの通し検証ではない。GUI 実行枠確保後、同じ隔離 worktree で `make -j4 test`、共有 checkout の原データを読み取り専用に指定した `make -j4 data-test`、`make -j4 smoke` がすべて成功。明示 n 専用の手動 GUI 操作は未実施。新規依存・原データの変更はない。小天体の判定条件を `IMPLEMENTATION_POLICY.md` と preservation gate に反映した。`/simplifier-lai` は LobbyAI 専用であり利用不可。[gate 判定](temp_gates/2026-11-07-04-38-49/)を記録。並行作業で追加された Rust 移行の gate は含まず、統合先で再判定する。
+
+共有 checkout の `8f2e3fb` に統合した状態でも `make -j4 build`、`make -j4 test`、`make -j4 data-test`、`make -j4 reference-test`、`make -j4 smoke` はすべて成功した。[gate 判定](temp_gates/2026-11-07-04-50-00/)を記録した。Rust 移行関連の並行編集は保持し、コミットには小天体方針の変更だけを含める。

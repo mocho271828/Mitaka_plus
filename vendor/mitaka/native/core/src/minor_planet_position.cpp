@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <locale>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -73,19 +75,29 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         add(result, Code::invalid_source, "raw_record_bytes", "minor-planet record storage is inconsistent");
         return result;
     }
-    // 現 parser は a から n を導出する。今回の契約外の明示 n を無視して位置を出さない。
-    if (text && std::any_of(record.fields.begin(), record.fields.end(),
-                           [](const auto& field) { return field.key == "n"; })) {
-        add(result, Code::invalid_source, "n",
-            "individual element_text with explicit n is not supported by the a-derived position contract");
-        return result;
-    }
     const auto* orbit = std::get_if<OrbitalElements>(&record.orbit);
     if (!orbit) {
         add(result, Code::invalid_source, "orbit", "minor-planet record has no mean-anomaly orbital elements");
         return result;
     }
     if (!validate_elements(*orbit, result)) return result;
+
+    // 外部で構築された record も受けるため、明示値を無視した軌道を評価しない。
+    bool has_explicit_n = false;
+    for (const auto& field : record.fields) {
+        if (!text || field.key != "n") continue;
+        std::istringstream stream(field.value_bytes);
+        stream.imbue(std::locale::classic());
+        double explicit_n = 0;
+        stream >> explicit_n;
+        const bool valid_number = !stream.fail() && std::isfinite(explicit_n) && explicit_n > 0;
+        if (valid_number) stream >> std::ws;
+        if (has_explicit_n || !valid_number || !stream.eof() || explicit_n != orbit->mean_motion_deg_per_day) {
+            add(result, Code::invalid_source, "n", "explicit n must be finite, positive and match the parsed orbit");
+            return result;
+        }
+        has_explicit_n = true;
+    }
 
     if (record.declared_time_range) {
         const auto range = *record.declared_time_range;

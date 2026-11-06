@@ -134,12 +134,16 @@ void individualTests() {
     text.raw_record_bytes = "original text bytes";
     text.fields = {{"Visible", "0"}, {"Size", "999 999 999"}};
     text.diagnostics.clear();
-    data->records = {packed(0), text, text, text, text, packed(1)};
+    data->records = {packed(0), text, text, text, text, packed(1), text};
     data->records[2].id.source_key = "orbits/asteroids/custom_jp.dat";
     data->records[2].kind = SmallBodyKind::trans_neptunian;
     data->records[2].display_name_bytes = "\x83\x65\x83\x58\x83\x67";
     data->records[3].id.source_key = "orbits/asteroids/explicit-n.dat";
-    data->records[3].fields.push_back({"n", "1"});
+    data->records[3].fields.push_back({"n", "90"});
+    std::get<OrbitalElements>(data->records[3].orbit).semi_major_axis_au = 4;
+    std::get<OrbitalElements>(data->records[3].orbit).mean_motion_deg_per_day = 90;
+    data->records[6].id.source_key = "orbits/asteroids/inconsistent-n.dat";
+    data->records[6].fields.push_back({"n", "1"});
     data->records[4].id.source_key = "orbits/asteroids/non-elliptic.dat";
     std::get<OrbitalElements>(data->records[4].orbit).eccentricity = 1;
     data->records[5].encoding = SmallBodyEncoding::packed_37;
@@ -147,14 +151,16 @@ void individualTests() {
     require(model->evaluation_mode(1) == SmallBodyEvaluationMode::element_text_legacy_jd,
         "individual format has its own numeric JD mode");
     const auto frame = evaluate_small_body_snapshot(model, 90 / 0.985607669);
-    require(frame->positions.size() == 6 && frame->positioned_count == 3,
+    require(frame->positions.size() == 7 && frame->positioned_count == 4,
         "same-number packed and language variants remain independent; unsupported inputs are rejected");
-    require(small_body_summary(*model) == "原本 6 件 · 位置評価候補（未対応を含む） 5 件 · 出典診断 0 件",
+    require(small_body_summary(*model) == "原本 7 件 · 位置評価候補（未対応を含む） 6 件 · 出典診断 0 件",
         "summary calls dispatch candidates candidates and does not count unresolved 37-byte input");
     requirePosition(frame->positions[1], {0, 1, 0}, "individual circle advances without extra units or frame conversion");
     requirePosition(frame->positions[2], {0, 1, 0}, "TNO language variant is independently evaluated");
-    require(!frame->positions[3] && small_body_description(*model, 3, frame.get()).find("explicit n") != std::string::npos,
-        "unsupported explicit n is explained in row detail");
+    const auto explicitFrame = evaluate_small_body_snapshot(model, 1);
+    requirePosition(explicitFrame->positions[3], {0, 4, 0}, "explicit mean motion drives the selected row position");
+    require(!frame->positions[6] && small_body_description(*model, 6, frame.get()).find("explicit n") != std::string::npos,
+        "inconsistent explicit n is explained in row detail");
     require(!frame->positions[4] && !frame->positions[5], "non-elliptic and unresolved 37-byte records do not produce positions");
     const auto detail = small_body_description(*model, 1, frame.get());
     require(detail.find("原版の数値 JD") != std::string::npos && detail.find("個別軌道") != std::string::npos
@@ -166,10 +172,14 @@ void individualTests() {
     const auto selected = evaluate_small_body_snapshot(model, 0, false, 2);
     require(selected->positioned_count == 1 && selected->positions[2] && !selected->positions[1],
         "hidden selection evaluates only the exact source row");
-    const auto selectedUnsupported = evaluate_small_body_snapshot(model, 0, false, 3);
-    require(!selectedUnsupported->positions[3]
-        && small_body_description(*model, 3, selectedUnsupported.get()).find("explicit n") != std::string::npos,
-        "hidden selection retains the unsupported candidate diagnostic");
+    const auto selectedExplicit = evaluate_small_body_snapshot(model, 1, false, 3);
+    require(selectedExplicit->positioned_count == 1 && !selectedExplicit->positions[1],
+        "hidden selection evaluates only the explicit-n source row");
+    requirePosition(selectedExplicit->positions[3], {0, 4, 0}, "hidden explicit-n selection keeps its mean motion");
+    const auto selectedUnsupported = evaluate_small_body_snapshot(model, 0, false, 6);
+    require(!selectedUnsupported->positions[6]
+        && small_body_description(*model, 6, selectedUnsupported.get()).find("explicit n") != std::string::npos,
+        "hidden selection retains the inconsistent-n diagnostic");
     require(data->records[1].raw_record_bytes == text.raw_record_bytes
         && data->records[1].frame == SmallBodyFrame::unresolved
         && data->records[1].time_scale == SmallBodyTimeScale::unresolved,

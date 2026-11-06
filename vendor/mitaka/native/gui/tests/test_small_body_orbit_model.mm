@@ -203,7 +203,7 @@ void minor_planet_requests() {
             "packed36 total budget accepts its exact boundary without truncation");
 }
 void individual_requests() {
-    auto data = orbit_test::dataset(3);
+    auto data = orbit_test::dataset(4);
     data->sources.clear();
     for (std::size_t row = 0; row < data->records.size(); ++row) {
         auto& record = data->records[row];
@@ -217,13 +217,15 @@ void individual_requests() {
         record.fields = {{"Visible", "0"}};
         data->sources.push_back({record.id.source_key, record.id.source_key, record.raw_record_bytes, 1, true});
     }
-    data->records[1].fields.push_back({"n", "1"});
+    data->records[1].fields.push_back({"n", "90"});
+    data->records[1].orbit = OrbitalElements{2451545, 4, 0, 0, 90, 0, 0, 0};
+    data->records[3].fields.push_back({"n", "1"});
     const auto model = std::make_shared<SmallBodyModel>(data);
     const auto display = orbit_test::display(data);
     display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, false});
     display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, false});
     auto frame = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling);
-    require(frame->completed_count == 3 && frame->unresolved_count == 1,
+    require(frame->completed_count == 4 && frame->unresolved_count == 1,
         "individual rows preserve one invalid request without hiding valid sources");
     for (const auto row : {0u, 2u}) {
         require(!frame->paths[row] && frame->minor_planet_paths[row]
@@ -237,19 +239,35 @@ void individual_requests() {
         require(minor_planet_orbit_segments(path).size() == orbit_test::sampling.sample_count - 1,
             "individual successful neighbors form the orbit without extra closure");
     }
-    require(frame->minor_planet_paths[1]->samples.empty() && !frame->minor_planet_paths[1]->diagnostics.empty(),
-        "explicit n keeps a diagnostic instead of an invented orbit");
-    display->set_selected_ids({data->records[2].id});
+    require(frame->minor_planet_paths[1].has_value(), "explicit-n orbit request produces a path");
+    const auto& explicitPath = *frame->minor_planet_paths[1];
+    require(explicitPath.samples.size() == 5 && explicitPath.samples.front().julian_date == 2451545
+        && explicitPath.samples.back().julian_date == 2451549
+        && minor_planet_orbit_segments(explicitPath).size() == 4,
+        "explicit n supplies the full four-day orbit for its source");
+    const double expectedX[] = {4, 0, -4, 0, 4};
+    const double expectedY[] = {0, 4, 0, -4, 0};
+    for (std::size_t i = 0; i < 5; ++i) {
+        const auto& sample = explicitPath.samples[i];
+        require(sample.position && std::abs(sample.position->x - expectedX[i]) < 1e-12
+            && std::abs(sample.position->y - expectedY[i]) < 1e-12
+            && sample.julian_date == 2451545 + i, "explicit-n orbit follows its specified period and AU geometry");
+    }
+    require(frame->minor_planet_paths[3]->samples.empty() && !frame->minor_planet_paths[3]->diagnostics.empty(),
+        "inconsistent explicit n keeps a diagnostic instead of an invented orbit");
+    display->set_selected_ids({data->records[1].id});
     display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, true});
     display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, true});
     frame = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling);
-    require(frame->requested_count == 1 && frame->minor_planet_paths[2] && !frame->minor_planet_paths[0],
+    require(frame->requested_count == 1 && frame->minor_planet_paths[1] && !frame->minor_planet_paths[0]
+        && !frame->minor_planet_paths[1]->samples.empty()
+        && frame->minor_planet_paths[1]->samples.back().julian_date == 2451549,
         "selectedOnly chooses the source ID rather than merging same-number individual files");
     std::size_t calls = 0;
     frame = evaluate_small_body_orbit_snapshot(model, display, orbit_test::sampling, [&] { return ++calls == 3; });
-    require(frame->cancelled && frame->completed_count == 0 && !frame->minor_planet_paths[2],
+    require(frame->cancelled && frame->completed_count == 0 && !frame->minor_planet_paths[1],
         "individual cancellation does not publish a partial row");
-    display->set_kind_options(SmallBodyKind::trans_neptunian, {false, false, true, true});
+    display->set_kind_options(SmallBodyKind::asteroid, {false, false, true, true});
     require(small_body_orbit_requested_rows(*model, *display, orbit_test::sampling).empty(),
         "hidden individual kind suppresses orbit requests");
 }

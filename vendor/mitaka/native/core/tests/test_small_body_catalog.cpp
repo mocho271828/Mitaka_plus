@@ -198,6 +198,52 @@ void malformed_and_limits() {
     expect(source(data,"comets.dat").loaded,"empty source accepted");
 }
 
+void explicit_mean_motion() {
+    using namespace mitaka;
+    Fixture f;
+    const std::string base = "Name: Custom\r\nType: Asteroid\r\nNo: -1\r\nEpoch: 2451545\r\n"
+                             "a: 2\r\ne: 0\r\nw: 0\r\nM0: 0\r\ni: 0\r\nnode: 0\r\n";
+    const std::string explicit_bytes = base + "n: 90\r\n";
+    f.write("orbits/asteroids/good.dat", explicit_bytes);
+    f.write("orbits/asteroids/derived.dat", base);
+    auto data = load_small_body_dataset(f.root);
+    expect(data.records.size() == 2, "explicit and derived motion rows load independently");
+    for (const auto& record : data.records) {
+        const bool explicit_n = record.id.source_key == "orbits/asteroids/good.dat";
+        const auto& bytes = explicit_n ? explicit_bytes : base;
+        expect(record.raw_record_bytes == bytes && source(data, record.id.source_key).bytes == bytes,
+               "source and record bytes preserved");
+        const auto& orbit = std::get<OrbitalElements>(record.orbit);
+        near(orbit.mean_motion_deg_per_day, explicit_n ? 90 : 0.985607669 / 2 / std::sqrt(2),
+             1e-15, "explicit n takes precedence; a alone retains derived motion");
+        if (explicit_n) {
+            expect(std::any_of(record.fields.begin(), record.fields.end(), [](const auto& field) {
+                return field.key == "n" && field.value_bytes == "90";
+            }), "explicit n original field retained");
+            expect(std::none_of(record.diagnostics.begin(), record.diagnostics.end(), [](const auto& d) {
+                return d.code == SmallBodyDiagnosticCode::unknown_field && d.field == "n";
+            }), "supported n is not diagnosed as unknown");
+        }
+    }
+    for (const std::string suffix : {"n: 0\r\n", "n: -1\r\n", "n: nan\r\n", "n: inf\r\n",
+                                     "n: 1e999\r\n", "n: invalid\r\n", "n: 90 trailing\r\n",
+                                     "n: 90\r\nn: 90\r\n"}) {
+        const auto bad = base + suffix;
+        f.write("orbits/asteroids/bad.dat", bad);
+        data = load_small_body_dataset(f.root);
+        const auto& input = source(data, "orbits/asteroids/bad.dat");
+        expect(!input.loaded && input.record_count == 0 && input.bytes == bad,
+               "invalid or duplicate n rejects source and retains bytes");
+        expect(std::none_of(data.records.begin(), data.records.end(), [](const auto& record) {
+            return record.id.source_key == "orbits/asteroids/bad.dat";
+        }), "invalid source produces no record");
+        expect(std::any_of(data.diagnostics.begin(), data.diagnostics.end(), [](const auto& d) {
+            return d.source_key == "orbits/asteroids/bad.dat" && d.code == SmallBodyDiagnosticCode::invalid_source;
+        }), "invalid n identified by source");
+        expect(data.records.size() == 2, "invalid n does not block other sources");
+    }
+}
+
 void derived_mean_motion_limits() {
     using namespace mitaka;
     Fixture f;
@@ -259,7 +305,7 @@ void real_data(const std::filesystem::path& path) {
 } // namespace
 int main(int argc,char** argv) {
     try {
-        preservation(); packed_37_contract(); time_and_evaluation(); malformed_and_limits(); derived_mean_motion_limits();
+        preservation(); packed_37_contract(); time_and_evaluation(); malformed_and_limits(); explicit_mean_motion(); derived_mean_motion_limits();
         if(argc==2) real_data(argv[1]);
         std::cout<<"small-body catalog: "<<checks<<" checks passed\n";
     } catch(const std::exception& error) { std::cerr<<"small-body catalog failure: "<<error.what()<<'\n'; return 1; }

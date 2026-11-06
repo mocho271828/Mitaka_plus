@@ -63,6 +63,37 @@ void full_period(SmallBodyEncoding encoding) {
                "each supported encoding cancels without exposing partial segments");
     }
 }
+void explicit_motion_period() {
+    auto record = asteroid();
+    record.id = {"orbits/asteroids/explicit.dat", 0};
+    record.encoding = SmallBodyEncoding::element_text;
+    record.raw_record_bytes = "a: 2\r\nn: 90\r\n";
+    record.fields = {{"a", "2"}, {"n", "90"}};
+    record.orbit = OrbitalElements{2451545, 2, 0, 0, 90, 0, 0, 0};
+    const auto original = record.raw_record_bytes;
+    const auto path = sample_minor_planet_orbit_path(record, 5);
+    expect(path.samples.size() == 5 && path.failures.empty(), "explicit n orbit sampled");
+    const Vec3 expected[]{{2,0,0},{0,2,0},{-2,0,0},{0,-2,0},{2,0,0}};
+    for (std::size_t i = 0; i < 5; ++i) {
+        expect(path.samples[i].julian_date == 2451545 + i && path.samples[i].position,
+               "explicit n gives four-day period");
+        const auto p = *path.samples[i].position;
+        expect(std::hypot(p.x-expected[i].x, std::hypot(p.y-expected[i].y, p.z)) < 1e-12,
+               "explicit n orbit follows analytic circular positions");
+    }
+    expect(record.raw_record_bytes == original && minor_planet_orbit_segments(path).size() == 4,
+           "explicit n path retains source and has no extra closure");
+    auto invalid = record;
+    invalid.fields[1].value_bytes = "0";
+    const auto invalid_path = sample_minor_planet_orbit_path(invalid, 5);
+    expect(invalid_path.samples.empty() && diagnostic(invalid_path, SmallBodyDiagnosticCode::invalid_source),
+           "retained invalid n cannot yield an orbit path");
+    auto mismatch = record;
+    std::get<OrbitalElements>(mismatch.orbit).mean_motion_deg_per_day = 45;
+    const auto mismatch_path = sample_minor_planet_orbit_path(mismatch, 5);
+    expect(mismatch_path.samples.empty() && diagnostic(mismatch_path, SmallBodyDiagnosticCode::invalid_source),
+           "inconsistent n cannot yield an orbit path");
+}
 void high_eccentricity_sampling(SmallBodyEncoding encoding) {
     auto record = asteroid();
     record.encoding = encoding;
@@ -230,7 +261,7 @@ int main(int argc, char** argv) {
         for (const auto encoding : {SmallBodyEncoding::packed_36, SmallBodyEncoding::element_text}) {
             high_eccentricity_sampling(encoding); large_mean_anomaly_sampling(encoding);
         }
-        failures_and_gaps(); cancellation_and_count();
+        explicit_motion_period(); failures_and_gaps(); cancellation_and_count();
         if (argc == 2) local_data(argv[1]);
         else if (argc != 1) throw std::invalid_argument("usage: test_minor_planet_orbit_path [data_directory]");
         std::cout << "minor_planet_orbit_path: " << checks << " checks passed\n";

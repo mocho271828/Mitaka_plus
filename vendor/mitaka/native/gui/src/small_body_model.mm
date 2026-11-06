@@ -168,7 +168,7 @@ std::string small_body_description(const SmallBodyModel& model, std::size_t inde
         }
     } else output << "\n位置未評価";
     if (packed) output << "\npacked 36 byte の位置契約・物理時系 UTC/TT/TDB は未確定";
-    if (individual) output << "\n個別軌道の a 指定・楕円の位置契約・物理時系 UTC/TT/TDB は未確定";
+    if (individual) output << "\n個別軌道の a 指定・楕円は明示 n または a から算出した平均運動を使用・物理時系 UTC/TT/TDB は未確定";
     append_diagnostics(output, diagnostics);
     if (!record.declared_time_range) output << "\n精度保証期間は不明";
     if (evaluationMode == SmallBodyEvaluationMode::unresolved && record.diagnostics.empty())

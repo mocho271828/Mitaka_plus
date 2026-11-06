@@ -152,4 +152,4 @@ x86_64 向けのコンパイルとリンクも通過したが、この検証で�
 
 ## 2026-11-07 個別形式の追加
 
-別 PC の旧 Plus reader/evaluator 静的解析を根拠に、a 指定の個別 Asteroid/TNObject を専用 legacy numeric JD 契約で評価し、一周期軌道と GUI snapshot へ接続した。旧 float 丸めと番号上書きは再現せず、native double と全出典保持を維持する。明示 n、非楕円、37 byte は評価しない。根拠・原本57本のハッシュ・採用範囲は [監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)、結果は [検証記録](../../../../investigation/native-plus/minor-planet-individual-validation.md) を参照。
+別 PC の旧 Plus reader/evaluator 静的解析を根拠に、a 指定の個別 Asteroid/TNObject を専用 legacy numeric JD 契約で評価し、一周期軌道と GUI snapshot へ接続した。旧 float 丸めと番号上書きは再現せず、native double と全出典保持を維持する。有限の a > 0 と明示 n > 0 の両指定は、明示 n を使って評価する。n のみの指定、非楕円、37 byte は評価しない。追加分の旧 Plus 実行版との比較は未実施。根拠・原本57本のハッシュ・採用範囲は [監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)、結果は [検証記録](../../../../investigation/native-plus/minor-planet-individual-validation.md) を参照。

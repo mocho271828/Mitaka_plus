@@ -235,7 +235,10 @@ void loaded_element_records() {
     fixture.write("orbits/asteroids/a.dat", asteroid);
     fixture.write("orbits/asteroids/a_jp.dat", asteroid + "DisplayName: \x83\x5a\x83\x8c\x83\x58\r\n");
     fixture.write("orbits/asteroids/tno.dat", "Type: TNObject\r\n" + body);
-    fixture.write("orbits/asteroids/explicit-n.dat", asteroid + "n: 90\r\n");
+    auto explicit_n = asteroid;
+    explicit_n.replace(explicit_n.find("a: 4"), 4, "a: 2");
+    explicit_n += "n: 90\r\n";
+    fixture.write("orbits/asteroids/explicit-n.dat", explicit_n);
     const auto data = load_small_body_dataset(fixture.root);
     expect(data.records.size() == 4, "individual and language source rows are never merged by number");
     for (const auto& item : data.records) {
@@ -243,14 +246,29 @@ void loaded_element_records() {
         expect(original == source(data, item.id.source_key).bytes && item.id.record_ordinal == 0
                && item.number == -1, "individual source bytes and identity retained");
         const auto& orbit = std::get<OrbitalElements>(item.orbit);
-        near(orbit.mean_motion_deg_per_day, 0.123200958625, 0);
         expect(orbit.epoch_jd == 2451545.25, "individual Epoch remains numeric JD");
         if (item.id.source_key == "orbits/asteroids/explicit-n.dat") {
-            rejected(evaluate_minor_planet_position(item, orbit.epoch_jd), Code::invalid_source);
-            expect(has(evaluate_minor_planet_position(item, orbit.epoch_jd), Code::unknown_field),
-                   "unresolved explicit motion field remains diagnosed");
+            near(orbit.mean_motion_deg_per_day, 90, 0);
+            const Vec3 expected[]{{2,0,0},{0,2,0},{-2,0,0},{0,-2,0},{2,0,0}};
+            for (int day = 0; day <= 4; ++day)
+                position(evaluate_minor_planet_position(item, orbit.epoch_jd + day), expected[day],
+                         2e-13, minor_planet_element_position_contract);
+            for (const std::string invalid : {"0", "-1", "nan", "inf", "invalid", "90 trailing"}) {
+                auto changed = item;
+                auto field = std::find_if(changed.fields.begin(), changed.fields.end(),
+                                          [](const auto& f) { return f.key == "n"; });
+                expect(field != changed.fields.end(), "explicit n field retained");
+                field->value_bytes = invalid;
+                rejected(evaluate_minor_planet_position(changed, orbit.epoch_jd), Code::invalid_source);
+            }
+            auto mismatch = item;
+            elements(mismatch).mean_motion_deg_per_day = 45;
+            rejected(evaluate_minor_planet_position(mismatch, orbit.epoch_jd), Code::invalid_source);
+            expect(item.raw_record_bytes == explicit_n && source(data, item.id.source_key).bytes == explicit_n,
+                   "explicit n evaluation preserves source bytes");
             continue;
         }
+        near(orbit.mean_motion_deg_per_day, 0.123200958625, 0);
         const double period = 360 / orbit.mean_motion_deg_per_day;
         for (int quarter = -1; quarter <= 4; ++quarter) {
             const Vec3 expected[]{{4,0,0},{0,4,0},{-4,0,0},{0,-4,0}};

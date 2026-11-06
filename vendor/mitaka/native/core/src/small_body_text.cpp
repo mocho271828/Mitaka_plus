@@ -184,14 +184,16 @@ std::vector<SmallBodyRecord> parse_elements(const SmallBodySource& source, Small
         r.number = integer(source, field("No").first, field("No").second);
         const double a = numeric("a"), epoch = numeric("Epoch");
         require_orbit_numbers(source, 0, a, e);
-        const double mean_motion = mean_motion_at_one_au / a / std::sqrt(a);
+        const double mean_motion = values.count("n") ? numeric("n") : mean_motion_at_one_au / a / std::sqrt(a);
         if (!std::isfinite(mean_motion) || mean_motion <= 0)
-            throw CatalogError(source.path, field("a").second, "derived mean motion must be finite and positive");
+            throw CatalogError(source.path, field(values.count("n") ? "n" : "a").second,
+                               values.count("n") ? "explicit mean motion must be finite and positive"
+                                                 : "derived mean motion must be finite and positive");
         r.epoch_value = epoch;
         r.orbit = OrbitalElements{epoch, a, e, numeric("M0"), mean_motion, node, i, w};
     }
     const std::string interpreted = kind == SmallBodyKind::comet ? "|Name|DisplayName|q|e|w|node|i|Tp|" :
-                                   "|Name|DisplayName|Type|No|a|e|w|node|i|Epoch|M0|";
+                                   "|Name|DisplayName|Type|No|a|n|e|w|node|i|Epoch|M0|";
     for (const auto& entry : r.fields) {
         if (interpreted.find("|" + entry.key + "|") == std::string::npos)
             diagnostic(r, SmallBodyDiagnosticCode::unknown_field, entry.key, "field retained without applying unresolved display semantics");
