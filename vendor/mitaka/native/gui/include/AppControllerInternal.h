@@ -82,6 +82,7 @@ struct ScriptLookTarget {
     SolarSystemView *_solar;
     PlaybackController *_playback;
     NSSegmentedControl *_mode;
+    NSUInteger _modeGeneration;
     NSArray<NSButton *> *_cameraButtons, *_travelButtons;
     NSButton *_journeyButton, *_resumeJourneyButton;
     BOOL _pendingEarthDescent;

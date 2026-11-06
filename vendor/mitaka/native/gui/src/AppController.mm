@@ -411,7 +411,8 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         (_constellationArt && !_constellationArt->warnings().empty()) ||
         (_smallBodyModel && !_smallBodyModel->dataset().diagnostics.empty()) ||
         (_observerPlaces && !_observerPlaces->warnings.empty()) ||
-        (_earthLandscapes && !_earthLandscapes->warnings().empty()) || !_model->constellation_warning().empty();
+        (_earthLandscapes && !_earthLandscapes->warnings().empty()) || !_model->constellation_warning().empty() ||
+        (!_galaxyLoading && _galaxyDiagnostics.length > 0 && ![_galaxyDiagnostics isEqualToString:@"データ未読込"]);
     _status.textColor = hasWarnings ? NSColor.systemOrangeColor : NSColor.secondaryLabelColor;
     NSString *display = _mode.selectedSegment == 1 ? @"太陽系 3D · 11 天体 · 距離は太陽中心 AU" :
         [NSString stringWithFormat:@"%@ · 恒星表示 %lu 件", _mode.selectedSegment == 2 ? @"地平図" : @"全天図",
@@ -419,7 +420,21 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _status.stringValue = [NSString stringWithFormat:@"%@ · HIP %zu 件を保持\n有効範囲 JD %.1f–%.1f · 読み取り専用 · 表面画像 %zu/11%@",
         display, _model->stars().size(), range.first, range.second, _textures ? _textures->loaded_count() : 0,
         hasWarnings ? @" · 読込警告あり（詳細はここにカーソルを重ねて確認）" : @""];
+    if (_galaxyLoading) {
+        _status.stringValue = [_status.stringValue stringByAppendingString:@" · 銀河読込中"];
+    } else if (_galaxyUsesPlusCatalogs && _galaxyModel) {
+        std::size_t clusters = 0, nearby = 0;
+        for (std::size_t source = 0; source < _galaxyModel->sources().size(); ++source) {
+            if (_galaxyModel->family(source) == GalaxySpatialFamily::globular_cluster)
+                clusters += _galaxyModel->source_size(source);
+            else if (_galaxyModel->family(source) == GalaxySpatialFamily::nearby_galaxy)
+                nearby += _galaxyModel->source_size(source);
+        }
+        _status.stringValue = [_status.stringValue stringByAppendingFormat:@" · 球状星団 %zu · 近傍銀河 %zu", clusters, nearby];
+    }
     NSMutableString *details = [_status.stringValue mutableCopy];
+    if (!_galaxyLoading && _galaxyDiagnostics.length && ![_galaxyDiagnostics isEqualToString:@"データ未読込"])
+        [details appendFormat:@"\n銀河の読込: %@", _galaxyDiagnostics];
     if (_extendedCatalogs) {
         [details appendFormat:@"\nNGC/IC %zu · SDSS銀河 %zu · QSO %zu · 恒星名 %zu · 系外惑星リスト %zu",
             _extendedCatalogs->ngc.size(), _extendedCatalogs->galaxies.size(), _extendedCatalogs->quasars.size(),
@@ -613,6 +628,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     }
 }
 - (void)changeMode:(id)sender {
+    ++_modeGeneration;
     if (_scriptPlaceTransition && _scriptPlaceTransition->mode != _mode.selectedSegment)
         [self stopScriptPlaceTransition];
     if (sender) [self cancelHorizonProjection];

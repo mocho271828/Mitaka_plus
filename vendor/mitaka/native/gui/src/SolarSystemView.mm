@@ -590,6 +590,12 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 - (void)zoomOut { [self zoomBy:0.25]; }
 - (void)showOurGalaxyOverview {
     if (![_galaxyOverlay ourGalaxyModel] || ![_galaxyOverlay isOurGalaxyVisible]) return;
+    [self showGalaxyOverviewSelectingOurGalaxy:YES];
+}
+- (void)showGalaxyCatalogOverview {
+    [self showGalaxyOverviewSelectingOurGalaxy:NO];
+}
+- (void)showGalaxyOverviewSelectingOurGalaxy:(BOOL)selectOurGalaxy {
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0) return;
     try {
@@ -599,7 +605,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [self leaveNavigation];
         [self clearGalaxySelection];
         _selection.reset(); _smallBodySelection.reset(); _satelliteSelection.reset(); _spacecraftSelection.reset();
-        _ourGalaxySelected = YES; _following = YES;
+        _ourGalaxySelected = selectOurGalaxy; _following = selectOurGalaxy;
         [self notifySelection];
         [self changeCamera:^(SolarCamera& next) { next = solar; }];
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }

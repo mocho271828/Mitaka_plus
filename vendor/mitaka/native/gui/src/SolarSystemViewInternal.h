@@ -154,6 +154,7 @@ struct LandingKey {
 - (BOOL)matchesDisplayedCamera:(const mitaka::gui::SolarCamera&)camera map:(NSRect)map;
 - (void)redrawPublishedScene;
 - (std::vector<std::string>)terrainDiagnostics;
+- (void)showGalaxyCatalogOverview;
 - (NSRect)mapRect;
 - (mitaka::Vec3)displayPosition:(NSUInteger)index;
 - (mitaka::Vec3)scriptSpacePlacePositionForBodies:(const mitaka::gui::SolarBodies&)bodies;
