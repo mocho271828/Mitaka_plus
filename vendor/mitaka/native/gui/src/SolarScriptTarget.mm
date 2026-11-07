@@ -121,13 +121,15 @@ using namespace mitaka::gui;
     _camera.target = {state.initial.x + (target.x - state.initial.x) * weight,
                       state.initial.y + (target.y - state.initial.y) * weight,
                       state.initial.z + (target.z - state.initial.z) * weight};
-    _camera.distance_au = state.initial_distance + (state.target_distance - state.initial_distance) * weight;
+    if (state.updates_distance)
+        _camera.distance_au = state.initial_distance + (state.target_distance - state.initial_distance) * weight;
     if (state.initial_orientation && state.target_orientation) {
         const auto orientation = plus_orientation_interpolate(*state.initial_orientation, *state.target_orientation, weight, false);
         _camera.frame = plus_orientation_basis(orientation);
         _camera.frame_is_orbit = true;
         _camera.roll_deg = 0;
     }
+    [self keepCameraOutsideBodies:_camera];
     if (t >= 1) {
         _following = YES;
         [self stopScriptTargetTransition];
@@ -142,6 +144,7 @@ using namespace mitaka::gui;
     [self animateScriptTargetFrom:initial duration:duration includeOrientation:YES];
 }
 - (void)animateScriptTargetFrom:(const SolarCamera&)initial duration:(double)duration includeOrientation:(BOOL)includeOrientation {
+    [self stopScriptZoomAnimation];
     [self stopScriptTargetTransition];
     if (duration == 0) return;
     const auto destination = _camera;

@@ -92,6 +92,11 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)applyCameraState:(const mitaka::gui::SolarCamera&)camera error:(NSString **)error;
 @end
 
+@interface SolarSystemView (ScriptZoom)
+- (BOOL)animateScriptZoomTo:(double)distance duration:(double)duration logarithmic:(BOOL)logarithmic error:(NSString **)error;
+- (void)stopScriptZoomAnimation;
+@end
+
 @interface SolarSystemView (ScriptTargets)
 - (std::optional<double>)scriptTargetRadiusAU;
 - (void)applyScriptZoomMode:(int)mode previousRadius:(std::optional<double>)previousRadius initialDistance:(double)initialDistance;

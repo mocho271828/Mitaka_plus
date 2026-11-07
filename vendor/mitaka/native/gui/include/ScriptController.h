@@ -96,7 +96,7 @@ enum class ScriptActionKind {
     set_camera_duration, animate_camera_azimuth, animate_camera_altitude,
     set_camera_orientation, set_camera_euler, add_camera_euler,
     animate_camera_orientation, animate_camera_euler, animate_add_camera_euler,
-    set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode
+    set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode, animate_camera_zoom
 };
 struct ScriptAction {
     ScriptActionKind kind;

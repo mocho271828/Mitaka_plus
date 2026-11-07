@@ -668,6 +668,11 @@ static NSString *const scriptCompatibilityNote =
     const bool windowAction = action.kind == ScriptActionKind::set_full_screen ||
         action.kind == ScriptActionKind::toggle_full_screen || action.kind == ScriptActionKind::show_about;
     if (!windowAction && (!_model || _loading)) { if (error) *error = @"天文データが使用できません。"; return NO; }
+    if ((action.kind == ScriptActionKind::set_camera_distance || action.kind == ScriptActionKind::animate_camera_zoom) &&
+        (_mode.selectedSegment != 1 || (_solar.surfaceNavigationActive && !_solar.flightAnimating))) {
+        if (error) *error = @"カメラ距離は宇宙視点でのみ変更できます。";
+        return NO;
+    }
     try {
         switch (action.kind) {
             case ScriptActionKind::set_satellites_visible:
@@ -947,11 +952,10 @@ static NSString *const scriptCompatibilityNote =
                 }
                 break;
             }
-            case ScriptActionKind::set_camera_distance: {
-                auto camera = [_solar cameraState];
-                camera.distance_au = action.number;
-                return [_solar applyCameraState:camera error:error];
-            }
+            case ScriptActionKind::animate_camera_zoom:
+                return [_solar animateScriptZoomTo:action.number duration:action.duration_seconds logarithmic:action.enabled error:error];
+            case ScriptActionKind::set_camera_distance:
+                return [_solar animateScriptZoomTo:action.number duration:0 logarithmic:NO error:error];
             case ScriptActionKind::set_constellation_lines:
             case ScriptActionKind::set_constellation_boundaries:
             case ScriptActionKind::set_constellation_illustrations:

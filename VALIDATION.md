@@ -1,5 +1,13 @@
 # 検証記録
 
+## 2026-11-06: P1-1 カメラ距離の時間補間（検証中）
+
+Lua の `Camera.zoom` と同じ pc 単位で距離の線形 `setZoomTo`・対数 `setZoomLogTo` を追加し、省略時は `Camera.duration` を用いる。旧版の時間曲線は未確認のため、距離または距離の自然対数に対する等速補間を仮定した。無効な値の拒否、再指定と操作の中断、地上・地平図での拒否、既存の天体内部への進入防止を含む。詳細と未対応範囲は[優先順位表](investigation/native-plus/feature-priorities.md)と[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)を参照する。FOV は別の作業単位であり CAM-03 全体は部分対応のままとする。
+
+別 bundle ID の一時コピーを使う実画面検証では、実データの太陽系 3D を開き、`Camera:setZoomTo(10 * UNIT_AU, 2)` を含む手作成 Lua をメニューから選択して「スクリプトを実行しました」と表示された。操作後の距離・画面の変化は CUA のタイムアウトにより未確認。表面画像は 0/11 の読込警告が出た。旧 Plus との比較は未実施。対象移動中のズーム競合を修正し、関連試験の 79 checks は成功した（主担当報告）。
+
+最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はいずれも終了コード 0（主担当報告）。途中の `make test` は追加テストの宣言エラーで失敗し、その後の試験は修正のため中断された。Git の変更範囲と差分を確認し、commit した。[policy gate 検証コピー](temp_gates/2026-11-06-20-33-32/)では、指定 skill の利用可否と未実施事項の最終報告が未了のため検証 gate を暫定 NO とした。
+
 ## 2026-11-06: 火星地表付近の地形描画
 
 火星への降下時に地形が基準球面へ切り替わった原因は、画面外の区画も含む全区画のメッシュを三角形上限に加算していたことだった。同梱火星データで視点を基準半径の 1.01 倍に置く計算例では、約 1,582 万三角形となり描画側の上限 838 万を超える。公式同梱ソースの `vendor/mitaka/sources/official/mitaka_source/common/graphics/topograph.{h,cpp}` と `vendor/mitaka/native/core/TERRAIN_PROVENANCE.md` で形式を確認した。この上限は描画処理の制限であり、地形ファイルの形式上の上限ではない。

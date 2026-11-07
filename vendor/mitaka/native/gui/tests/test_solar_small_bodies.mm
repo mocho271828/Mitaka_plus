@@ -1,4 +1,4 @@
-#import "SolarSystemView.h"
+#import "../src/SolarSystemViewInternal.h"
 #import "SmallBodyRenderer.h"
 #include <cmath>
 #include <iostream>
@@ -6,8 +6,57 @@
 
 using namespace mitaka;
 using namespace mitaka::gui;
-@interface SolarSystemView (SmallBodyPickingTests)
+@interface SolarSystemView (SmallBodyPickingPrivate)
 - (void)pickBodyAtPoint:(NSPoint)point;
+- (void)updateScriptZoomAtTime:(double)now;
+@end
+@interface SolarSystemView (SmallBodyPickingTests)
+- (BOOL)zoomNavigationRegression;
+- (BOOL)zoomCollisionRegression;
+@end
+@implementation SolarSystemView (SmallBodyPickingTests)
+- (BOOL)zoomNavigationRegression {
+    NSString *error = nil;
+    _camera = SolarCamera{};
+    _camera.frame = solar_camera_basis(_camera);
+    _camera.frame_is_orbit = false;
+    _physicalSpaceActive = YES;
+    _camera.distance_au = 1e-8;
+    const BOOL rejectedInitial = ![self animateScriptZoomTo:1 duration:0 logarithmic:NO error:&error]
+        && _physicalSpaceActive && _camera.distance_au == 1e-8 && error.length > 0;
+    _camera.distance_au = 1;
+    error = nil;
+    const BOOL rejectedTarget = ![self animateScriptZoomTo:1e-11 duration:0 logarithmic:NO error:&error]
+        && _physicalSpaceActive && _camera.distance_au == 1 && error.length > 0;
+    const auto before = solar_camera_basis(_camera);
+    const auto target = _camera.target;
+    const BOOL accepted = [self animateScriptZoomTo:2 duration:0 logarithmic:NO error:&error];
+    const auto after = solar_camera_basis(_camera);
+    const BOOL preserved = accepted && !_physicalSpaceActive && _camera.frame_is_orbit && _camera.distance_au == 2
+        && std::hypot(before.outward.x-after.outward.x, before.outward.y-after.outward.y, before.outward.z-after.outward.z) < 1e-12
+        && std::hypot(target.x-_camera.target.x, target.y-_camera.target.y, target.z-_camera.target.z) < 1e-12;
+    _surfaceActive = YES;
+    error = nil;
+    const BOOL rejectedSurface = ![self animateScriptZoomTo:3 duration:0 logarithmic:NO error:&error]
+        && _surfaceActive && _camera.distance_au == 2 && error.length > 0;
+    _surfaceActive = NO;
+    return rejectedInitial && rejectedTarget && preserved && rejectedSurface;
+}
+- (BOOL)zoomCollisionRegression {
+    _earthMoonMode = YES;
+    _camera = SolarCamera{};
+    _camera.target = [self displayPosition:3];
+    _camera.distance_au = 0.001;
+    NSString *error = nil;
+    const BOOL instant = [self animateScriptZoomTo:0.000005 duration:0 logarithmic:NO error:&error]
+        && _camera.distance_au > 0.000005;
+    _camera.distance_au = 0.001;
+    const BOOL started = [self animateScriptZoomTo:0.000005 duration:1 logarithmic:NO error:&error];
+    [self updateScriptZoomAtTime:1e12];
+    const BOOL animated = _camera.distance_au > 0.000005 && !_zoomAnimation;
+    _earthMoonMode = NO;
+    return instant && started && animated;
+}
 @end
 namespace {
 unsigned checks = 0;
@@ -142,6 +191,10 @@ void tests() {
     SolarBodies bodies{};
     for (std::size_t index = 0; index < bodies.size(); ++index) bodies[index].position_au = {20 * double(index), 0, 0};
     [view setBodies:bodies];
+    SolarSystemView *zoomFixture = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [zoomFixture setBodies:bodies];
+    require([zoomFixture zoomNavigationRegression], "zoom validates the post-navigation frame and preserves state on rejection");
+    require([zoomFixture zoomCollisionRegression], "instant and animated zoom stay outside Earth");
     [view setCameraState:camera];
     [view setSmallBodySnapshot:frame];
     [view setSmallBodyDisplayModel:display];
@@ -171,7 +224,81 @@ void tests() {
     require(view.selectedSmallBodyIndex == 0 && view.selectedBodyIndex == NSNotFound, "small-body selection is separate from planet indices");
     [view focusSelection];
     require(same([view cameraState].target, *frame->positions[0]), "focus uses core heliocentric ecliptic position directly");
-    auto later = evaluate_small_body_snapshot(model, 2451555);
+    NSString *zoomError = nil;
+    const auto beforeZoom = [view cameraState];
+    const auto beforeBasis = solar_camera_basis(beforeZoom);
+    require([view animateScriptZoomTo:beforeZoom.distance_au * 2 duration:0 logarithmic:NO error:&zoomError], "instant zoom accepted");
+    const auto afterZoom = [view cameraState];
+    require(afterZoom.distance_au == beforeZoom.distance_au * 2 && same(afterZoom.target, beforeZoom.target)
+        && same(solar_camera_basis(afterZoom).right, beforeBasis.right), "instant zoom keeps target and orientation");
+    auto afterTimeAdvance = evaluate_small_body_snapshot(model, 2451555);
+    [view setSmallBodySnapshot:afterTimeAdvance];
+    require(same([view cameraState].target, *afterTimeAdvance->positions[0]), "zoom preserves selected object tracking as time advances");
+    require([view animateScriptZoomTo:beforeZoom.distance_au duration:10 logarithmic:YES error:&zoomError], "animated zoom accepted");
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:3];
+    while ([view cameraState].distance_au == afterZoom.distance_au && deadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+    const double middle = [view cameraState].distance_au;
+    require(middle < afterZoom.distance_au && middle > beforeZoom.distance_au, "timer advances logarithmic zoom");
+    auto duringZoom = evaluate_small_body_snapshot(model, 2451565);
+    require(!same(*duringZoom->positions[0], *afterTimeAdvance->positions[0]), "test body moves during animated zoom");
+    [view setSmallBodySnapshot:duringZoom];
+    require(same([view cameraState].target, *duringZoom->positions[0]), "animated zoom preserves tracking as time advances");
+    require(![view animateScriptZoomTo:0 duration:0.1 logarithmic:NO error:&zoomError] && zoomError.length, "invalid zoom rejected");
+    require([view animateScriptZoomTo:middle * 2 duration:10 logarithmic:NO error:&zoomError], "zoom can restart");
+    const double restart = [view cameraState].distance_au;
+    require(restart <= middle && restart > beforeZoom.distance_au, "restart samples in-flight zoom");
+    [view zoomOut];
+    const double manual = [view cameraState].distance_au;
+    [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.16]];
+    require([view cameraState].distance_au == manual, "manual zoom cancels animation");
+    auto restored = [view cameraState];
+    require([view animateScriptZoomTo:manual * 2 duration:0.12 logarithmic:NO error:&zoomError], "zoom starts before restore");
+    restored.distance_au = manual * 1.5;
+    require([view applyCameraState:restored error:&zoomError], "camera restore accepted");
+    [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.16]];
+    require([view cameraState].distance_au == restored.distance_au, "restored camera is not overwritten by old timer");
+    auto initialTarget = restored;
+    initialTarget.distance_au *= 0.8;
+    initialTarget.target.x += 1;
+    [view animateScriptTargetFrom:initialTarget duration:0.12];
+    require([view animateScriptZoomTo:manual duration:0 logarithmic:NO error:&zoomError], "instant zoom starts during target transition");
+    NSDate *targetDeadline = [NSDate dateWithTimeIntervalSinceNow:3];
+    while (!same([view cameraState].target, *duringZoom->positions[0]) && targetDeadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+    require([view cameraState].distance_au == manual && same([view cameraState].target, *duringZoom->positions[0]),
+        "target transition completes without overwriting instant zoom");
+    auto afterTarget = evaluate_small_body_snapshot(model, 2451570);
+    [view setSmallBodySnapshot:afterTarget];
+    require(!same(*afterTarget->positions[0], *duringZoom->positions[0]) &&
+        same([view cameraState].target, *afterTarget->positions[0]), "target transition resumes tracking after instant zoom");
+    initialTarget = [view cameraState];
+    initialTarget.target.x += 1;
+    [view animateScriptTargetFrom:initialTarget duration:0.12];
+    const double concurrentDistance = manual * 1.4;
+    require([view animateScriptZoomTo:concurrentDistance duration:0.2 logarithmic:NO error:&zoomError],
+        "animated zoom starts during target transition");
+    NSDate *concurrentDeadline = [NSDate dateWithTimeIntervalSinceNow:3];
+    while ([view cameraState].distance_au != concurrentDistance && concurrentDeadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+    require([view cameraState].distance_au == concurrentDistance && same([view cameraState].target, *afterTarget->positions[0]),
+        "target transition and animated zoom complete independently");
+    require([view animateScriptZoomTo:manual * 2 duration:0.12 logarithmic:NO error:&zoomError], "zoom starts before target transition");
+    auto targetStart = [view cameraState];
+    [view animateScriptTargetFrom:targetStart duration:0.12];
+    [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.16]];
+    require([view cameraState].distance_au == targetStart.distance_au, "target transition cancels old zoom");
+    const double completedZoom = targetStart.distance_au * 1.25;
+    require([view animateScriptZoomTo:completedZoom duration:0.1 logarithmic:NO error:&zoomError], "zoom starts before invalid restore");
+    auto invalidRestore = [view cameraState];
+    invalidRestore.distance_au = 0;
+    require(![view applyCameraState:invalidRestore error:&zoomError], "invalid camera restore rejected");
+    deadline = [NSDate dateWithTimeIntervalSinceNow:3];
+    while ([view cameraState].distance_au != completedZoom && deadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+    require([view cameraState].distance_au == completedZoom, "zoom completes after rejected restore");
+    auto later = evaluate_small_body_snapshot(model, 2451575);
+    require(!same(*later->positions[0], *duringZoom->positions[0]), "test body moves before the follow check");
     [view setSmallBodySnapshot:later];
     require(same([view cameraState].target, *later->positions[0]), "follow selection tracks the new common Julian date");
     const auto validCamera = [view cameraState];

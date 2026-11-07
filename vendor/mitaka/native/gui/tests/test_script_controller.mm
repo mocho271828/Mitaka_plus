@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "ScriptController.h"
 #include "star_brightness.hpp"
+#include "script_zoom_transition.hpp"
 #include <cmath>
 #include <cstdio>
 #include <stdexcept>
@@ -36,6 +37,14 @@ int main(int argc, const char *argv[]) {
     @autoreleasepool {
         try {
             check(argc == 2, "pass MitakaScript helper path");
+            const ScriptZoomTransition linear{2, 10, 10, 4, false};
+            const ScriptZoomTransition logarithmic{1, 100, 10, 4, true};
+            check(linear.value(9) == 2 && linear.value(12) == 6 && linear.value(14) == 10, "linear zoom samples");
+            check(std::abs(logarithmic.value(12)-10) < 1e-12 && logarithmic.value(14) == 100, "logarithmic zoom samples");
+            const ScriptZoomTransition restarted{linear.value(12), 2, 12, 2, false};
+            check(restarted.value(12) == 6 && restarted.value(13) == 4, "restarted zoom starts at current value");
+            const ScriptZoomTransition wide{1e-12, 1e45, 0, 2, true};
+            check(std::isfinite(wide.value(1)) && wide.value(1) > 1e-12 && wide.value(1) < 1e45, "wide logarithmic zoom stays finite");
             NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
             NSURL *directory = [NSURL fileURLWithPath:path isDirectory:YES];
             check([NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES attributes:nil error:nil], "create fixture directory");
@@ -55,6 +64,8 @@ int main(int argc, const char *argv[]) {
             __block bool rejectTerrain = false;
             __block bool rejectRadius = false;
             __block double brightnessTarget = 0, brightnessDuration = 0;
+            __block double zoomTarget = 0, zoomDuration = 0;
+            __block bool zoomLog = false;
             controller.snapshot = ^{ check(NSThread.isMainThread, "snapshot thread"); return state; };
             controller.applyAction = ^BOOL(const ScriptAction& action, NSString **error) {
                 check(NSThread.isMainThread, "apply thread");
@@ -177,6 +188,9 @@ int main(int argc, const char *argv[]) {
                         }
                         state.target = action.text; break;
                     case ScriptActionKind::set_camera_distance: state.camera_distance_au = action.number; break;
+                    case ScriptActionKind::animate_camera_zoom:
+                        zoomTarget = action.number; zoomDuration = action.duration_seconds; zoomLog = action.enabled;
+                        state.camera_distance_au = action.number; break;
                     // この fixture は姿勢・モードを再現しないため、未対応操作を明示的に拒否する。
                     case ScriptActionKind::set_camera_orientation:
                     case ScriptActionKind::set_camera_euler:
@@ -266,6 +280,14 @@ int main(int argc, const char *argv[]) {
                 Camera.azimuth=-90; assert(Camera.azimuth==-90)
                 Camera.altitude=30; assert(Camera.altitude==30)
                 Camera.duration=2; assert(Camera.duration==2)
+                Camera:setZoomTo(5*UNIT_AU); assert(math.abs(Camera.zoom-5*UNIT_AU)<1e-16)
+                Camera:setZoomLogTo(8*UNIT_AU,0); assert(math.abs(Camera.zoom-8*UNIT_AU)<1e-16)
+                assert(not pcall(function() Camera:setZoomTo(0) end))
+                assert(not pcall(function() Camera:setZoomLogTo(-1) end))
+                assert(not pcall(function() Camera:setZoomTo(1,-1) end))
+                assert(not pcall(function() Camera:setZoomTo(math.huge,1) end))
+                assert(not pcall(function() Camera:setZoomTo(0/0,1) end))
+                Camera.zoom=2*UNIT_AU
                 Camera:setAzimuthTo(45); assert(Camera.azimuth==45)
                 Camera:setAltitudeTo(60,1,false); assert(Camera.altitude==60)
                 for _, window in ipairs({'targetBrowser','timeSetting','placeSetting','scriptOutput'}) do
@@ -291,6 +313,9 @@ int main(int argc, const char *argv[]) {
             check([[NSString stringWithContentsOfURL:[directory URLByAppendingPathComponent:@"local-output.txt"] encoding:NSUTF8StringEncoding error:nil] isEqualToString:@"trusted"], "trusted local I/O");
             check([[NSString stringWithContentsOfURL:[directory URLByAppendingPathComponent:@"flushed-output.txt"] encoding:NSUTF8StringEncoding error:nil] isEqualToString:@"flushed"], "Lua close must flush files before completion");
             check(imageDialogs == 1, "image dialog dispatch");
+            check(zoomLog && std::abs(zoomTarget-8) < 1e-12 && zoomDuration == 0, "log zoom action and pc conversion");
+            outcome = run(controller, file, @"Camera:setZoomTo(3*UNIT_AU)");
+            check(outcome.succeeded && !zoomLog && std::abs(zoomTarget-3) < 1e-12 && zoomDuration == 2, "linear zoom uses Camera.duration");
             outcome = run(controller, file, @R"lua(
                 assert(Planets.topoAmplification==1)
                 for n=1,5 do

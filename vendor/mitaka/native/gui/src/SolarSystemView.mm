@@ -11,9 +11,11 @@
 #include "our_galaxy_navigation.hpp"
 #include "mitaka/astronomy.hpp"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <exception>
+#include <stdexcept>
 
 using namespace mitaka;
 using namespace mitaka::gui;
@@ -109,7 +111,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     _julianDate = julianDate;
     self.needsDisplay = YES;
 }
-- (void)dealloc { [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [self cancelTerrain]; }
+- (void)dealloc { [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
 - (BOOL)scriptPlanetariumMode {
     return _surfaceActive && !_navigation.flying()
@@ -435,6 +437,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         [self keepCameraOutsideBodies:next];
         // 公開カメラ値の検証を投影境界に集約し、不正値を表示状態へ反映しない。
         (void)project_solar(next.target, next, 1, 1);
+        [self stopScriptZoomAnimation];
         [self stopScriptOrientation];
         [self stopScriptTargetTransition];
         _camera = next;
@@ -458,12 +461,80 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         if (error) *error = [NSString stringWithUTF8String:failure.what()];
         return NO;
     }
+    [self stopScriptZoomAnimation];
     [self leaveNavigation];
     _scriptOrientation.reset();
     _camera = next;
     _following = NO;
     [self notifyCamera];
     self.needsDisplay = YES;
+    return YES;
+}
+- (void)stopScriptZoomAnimation {
+    [_zoomTimer invalidate];
+    _zoomTimer = nil;
+    _zoomAnimation.reset();
+}
+- (void)updateScriptZoomAtTime:(double)now {
+    if (!_zoomAnimation) return;
+    const auto animation = *_zoomAnimation;
+    auto camera = _camera;
+    camera.distance_au = animation.value(now);
+    try {
+        (void)solar_camera_basis(camera);
+        [self keepCameraOutsideBodies:camera];
+        _camera = camera;
+        [self notifyCamera];
+        self.needsDisplay = YES;
+        if (now - animation.start_time >= animation.duration) [self stopScriptZoomAnimation];
+    } catch (const std::exception& failure) {
+        [self stopScriptZoomAnimation];
+        if (self.cameraChanged) self.cameraChanged([NSString stringWithUTF8String:failure.what()]);
+    }
+}
+- (BOOL)animateScriptZoomTo:(double)distance duration:(double)duration logarithmic:(BOOL)logarithmic error:(NSString **)error {
+    if (_surfaceActive && !_navigation.flying()) {
+        if (error) *error = @"Camera zoom animation is unavailable on the surface";
+        return NO;
+    }
+    const bool leavingNavigation = _journeyActive || _physicalSpaceActive || (_surfaceActive && _navigation.flying());
+    auto initial = _camera;
+    if (leavingNavigation && initial.frame) initial.frame_is_orbit = true;
+    auto candidate = initial;
+    candidate.distance_au = distance;
+    try {
+        if (!std::isfinite(duration) || duration < 0) throw std::invalid_argument("Invalid zoom duration");
+        (void)solar_camera_basis(initial);
+        (void)solar_camera_basis(candidate);
+        [self keepCameraOutsideBodies:candidate];
+    } catch (const std::exception& failure) {
+        if (error) *error = [NSString stringWithUTF8String:failure.what()];
+        return NO;
+    }
+    if (leavingNavigation) {
+        // 航行を中断しても、現在の視点と姿勢を新しい軌道視点の始点として維持する。
+        const auto orientation = _scriptOrientation;
+        [self leaveNavigation];
+        _camera = initial;
+        _scriptOrientation = orientation;
+    }
+    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (_zoomAnimation) [self updateScriptZoomAtTime:now];
+    [self stopScriptZoomAnimation];
+    if (_targetAnimation) _targetAnimation->updates_distance = false;
+    if (duration == 0) {
+        _camera.distance_au = candidate.distance_au;
+        [self notifyCamera];
+        self.needsDisplay = YES;
+        return YES;
+    }
+    _zoomAnimation = ScriptZoomTransition{_camera.distance_au, distance, now, duration, static_cast<bool>(logarithmic)};
+    __weak SolarSystemView *weakSelf = self;
+    _zoomTimer = [NSTimer timerWithTimeInterval:1.0/30 repeats:YES block:^(NSTimer *timer) {
+        (void)timer;
+        [weakSelf updateScriptZoomAtTime:std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()];
+    }];
+    [NSRunLoop.mainRunLoop addTimer:_zoomTimer forMode:NSRunLoopCommonModes];
     return YES;
 }
 - (void)resetCamera {

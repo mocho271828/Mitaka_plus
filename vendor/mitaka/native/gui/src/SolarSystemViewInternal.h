@@ -5,6 +5,7 @@
 #import "TerrainSurfaceController.h"
 #import "TerrainSceneState.h"
 #include "surface_navigation.hpp"
+#include "script_zoom_transition.hpp"
 #include "interplanetary_flight.hpp"
 #import "GalaxyOverlay.h"
 #import "StarRenderer.h"
@@ -29,6 +30,7 @@ struct ScriptTargetAnimation {
     std::optional<mitaka::gui::GalaxySpatialRecordId> galaxy;
     bool our_galaxy;
     std::optional<mitaka::gui::PlusOrientationQuaternion> initial_orientation, target_orientation;
+    bool updates_distance = true;
 };
 
 @interface SolarSystemView () {
@@ -69,6 +71,8 @@ struct ScriptTargetAnimation {
     NSTimer *_flightTimer;
     NSTimer *_orientationTimer;
     std::optional<ScriptOrientationAnimation> _orientationAnimation;
+    NSTimer *_zoomTimer;
+    std::optional<mitaka::gui::ScriptZoomTransition> _zoomAnimation;
     NSTimer *_targetTimer;
     std::optional<ScriptTargetAnimation> _targetAnimation;
     std::optional<mitaka::gui::PlusOrientationQuaternion> _scriptOrientation;
@@ -137,6 +141,7 @@ struct ScriptTargetAnimation {
 - (SolarScene)scene;
 - (CGFloat)radiusForBody:(NSUInteger)index depth:(double)depth;
 - (void)updateTrackedCamera;
+- (void)keepCameraOutsideBodies:(mitaka::gui::SolarCamera&)camera;
 - (void)notifySelection;
 - (void)notifyCamera;
 - (void)changeCamera:(void (^)(mitaka::gui::SolarCamera&))change;
