@@ -16,6 +16,7 @@
 #import "StarBrightnessController.h"
 #import "GalaxyController.h"
 #import "RadiusDisplayController.h"
+#import "RendererOptionsController.h"
 #include "session_state.hpp"
 #include "extended_catalogs.hpp"
 #include "observer_places.hpp"
@@ -136,6 +137,7 @@ struct ScriptLookTarget {
     std::string _scriptOurGalaxyTarget;
     StarBrightnessController *_starBrightness;
     RadiusDisplayController *_radiusDisplayController;
+    RendererOptionsController *_rendererOptionsController;
     RadiusDisplayOptions _radiusDisplayOptions;
     RadiusScaleMode _radiusScaleMode;
     BOOL _terminating;
@@ -321,6 +323,7 @@ struct ScriptLookTarget {
 - (GridDisplayOptions)gridDisplayOptions;
 - (void)setGridDisplayOptions:(const GridDisplayOptions&)options;
 - (RendererDisplayOptions)rendererDisplayOptions;
+- (void)showRendererOptions:(id)sender;
 - (void)setRendererDisplayOptions:(const RendererDisplayOptions&)options;
 - (void)addDisplayMenus:(NSMenu *)menu;
 - (void)togglePlanetDisplay:(NSMenuItem *)sender;
