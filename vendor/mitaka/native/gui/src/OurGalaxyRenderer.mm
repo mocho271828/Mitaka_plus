@@ -91,7 +91,7 @@ bool our_galaxy_point_visible(const mitaka::OurGalaxyModel& model, OurGalaxyPoin
 
 std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
     const mitaka::OurGalaxyModel& model, const OurGalaxyTransform& transform,
-    OurGalaxyPointDisplay display, GalaxyCameraPc camera, double width, double height,
+    const OurGalaxyStyles& styles, OurGalaxyPointDisplay display, GalaxyCameraPc camera, double width, double height,
     double x, double y, double radius, std::function<bool()> should_cancel,
     const mitaka::OurGalaxyRadiativeModel* radiative) {
     if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(radius) || radius < 0 || radius > 1e7)
@@ -100,8 +100,14 @@ std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
         throw std::invalid_argument("our galaxy: invalid display mode");
     const GalaxyProjector projector(camera, width, height);
     if (!projector.contains({x, y, 0}) || (should_cancel && should_cancel())) return std::nullopt;
-    std::vector<OurGalaxyPointPick> candidates;
+    struct Candidate { OurGalaxyPointPick pick; bool painted; };
+    std::vector<Candidate> candidates;
     for (std::size_t group = 0; group < model.groups.size(); ++group) {
+        const auto& style = styles[group];
+        if (!std::isfinite(style.alpha) || style.alpha < 0 || style.alpha > 1 ||
+            !std::isfinite(style.radius_points) || style.radius_points <= 0 || style.radius_points > 100)
+            throw std::invalid_argument("our galaxy: invalid point style");
+        if (style.alpha == 0) continue;
         const auto count = model.groups[group].positions.size();
         const auto step = display == OurGalaxyPointDisplay::preview ? our_galaxy_preview_step(count) : 1;
         std::size_t checked = 0;
@@ -112,8 +118,12 @@ std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
             if (p) {
                 const auto point = projector.project(*p);
                 if (point && projector.contains(*point)) {
-                    const auto distance = std::hypot(point->x - x, point->y - y);
-                    if (distance <= radius) candidates.push_back({id, *p, distance, point->depth_pc});
+                    const auto dx = point->x - x, dy = point->y - y;
+                    const auto distance = std::hypot(dx, dy);
+                    const bool painted = display == OurGalaxyPointDisplay::preview
+                        ? std::abs(dx) <= .75 && std::abs(dy) <= .75
+                        : distance <= style.radius_points;
+                    if (painted || distance <= radius) candidates.push_back({{id, *p, distance, point->depth_pc}, painted});
                 }
             }
             if (step > count - index - 1) break;
@@ -122,13 +132,18 @@ std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
     }
     if ((should_cancel && should_cancel()) || candidates.empty()) return std::nullopt;
     std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
-        if (a.distance_points != b.distance_points) return a.distance_points < b.distance_points;
-        if (a.depth_pc != b.depth_pc) return a.depth_pc < b.depth_pc;
-        if (a.id.group != b.id.group) return a.id.group < b.id.group;
-        return a.id.ordinal < b.id.ordinal;
+        if (a.painted != b.painted) return a.painted;
+        if (a.painted) {
+            if (a.pick.id.group != b.pick.id.group) return a.pick.id.group > b.pick.id.group;
+            return a.pick.id.ordinal > b.pick.id.ordinal;
+        }
+        if (a.pick.distance_points != b.pick.distance_points) return a.pick.distance_points < b.pick.distance_points;
+        if (a.pick.depth_pc != b.pick.depth_pc) return a.pick.depth_pc < b.pick.depth_pc;
+        if (a.pick.id.group != b.pick.id.group) return a.pick.id.group < b.pick.id.group;
+        return a.pick.id.ordinal < b.pick.id.ordinal;
     });
     if (should_cancel && should_cancel()) return std::nullopt;
-    if (display == OurGalaxyPointDisplay::preview) return candidates.front();
+    if (display == OurGalaxyPointDisplay::preview) return candidates.front().pick;
     std::optional<mitaka::OurGalaxyRadiativeModel> owned_radiative;
     if (!radiative) {
         owned_radiative.emplace(model);
@@ -137,8 +152,8 @@ std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
     const auto observer = our_galaxy_camera_origin(camera);
     for (const auto& candidate : candidates) {
         if (should_cancel && should_cancel()) return std::nullopt;
-        if (radiative->point_extinction(observer, our_galaxy_galactic_position(candidate.position)).visible)
-            return should_cancel && should_cancel() ? std::nullopt : std::optional<OurGalaxyPointPick>(candidate);
+        if (radiative->point_extinction(observer, our_galaxy_galactic_position(candidate.pick.position)).visible)
+            return should_cancel && should_cancel() ? std::nullopt : std::optional<OurGalaxyPointPick>(candidate.pick);
     }
     return std::nullopt;
 }

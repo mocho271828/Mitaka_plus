@@ -1,0 +1,11 @@
+run	result	input_height_m	max_monotonic_timer_gap_s	timer_callbacks_observed	navigation_status	jd	latitude_deg	longitude_deg
+candidate-earth	landed	2	0.22588620893657207	35	飛行完了	2451544.625	36.43	136.8
+candidate-mars	landed	2	0.07893741689622402	80	飛行完了	2451545	-4.59	137.44
+candidate-direct-earth	landed	2	0.2818991669919342	38	飛行完了	2451544.754166667	36.43	136.8
+candidate-direct-mars	landed	2	0.12605575006455183	80	飛行完了	2451545.129166667	-4.59	137.44
+candidate-earth-time1	landed	2	0.3211837080307305	40	飛行完了	2451544.625	36.43	136.8
+candidate-mars-time1	landed	2	0.10928070801310241	79	飛行完了	2451545	-4.59	137.44
+candidate-earth-time2	landed	2	0.2095450828783214	36	飛行完了	2451544.625	36.43	136.8
+candidate-mars-time2	landed	2	0.07982062501832843	78	飛行完了	2451545	-4.59	137.44
+candidate-earth-time3	landed	2	0.23741733306087554	33	飛行完了	2451544.625	36.43	136.8
+candidate-mars-time3	landed	2	0.07905295887030661	85	飛行完了	2451545	-4.59	137.44

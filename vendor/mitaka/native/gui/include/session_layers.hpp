@@ -23,7 +23,7 @@ struct SmallBodySessionDisplay {
     std::array<SmallBodyKindDisplayOptions, 3> kinds{};
     std::vector<SmallBodyId> selected_ids;
     std::vector<SessionSourceIdentity> sources;
-    SmallBodyOrbitSampling orbit_sampling{2451362.375, 2451727.625, 129};
+    SmallBodyOrbitSampling orbit_sampling{2451362.375, 2451727.625, default_small_body_orbit_samples};
 };
 
 struct SatelliteSessionDisplay {

@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
         display->set_kind_options(SmallBodyKind::trans_neptunian, {true, false, true, false});
         display->set_kind_options(SmallBodyKind::comet, {false, false, false, false});
         auto frame = evaluate_small_body_snapshot(model, 2451545);
-        auto orbits = evaluate_small_body_orbit_snapshot(model, display, {2451545-182.625, 2451545+182.625, 129});
+        auto orbits = evaluate_small_body_orbit_snapshot(model, display, {2451545-182.625, 2451545+182.625, default_small_body_orbit_samples});
         auto space = CGColorSpaceCreateDeviceRGB();
         auto context = CGBitmapContextCreate(nullptr, 800, 600, 8, 3200, space, kCGImageAlphaPremultipliedLast);
         CGColorSpaceRelease(space);

@@ -7,6 +7,7 @@
 #import "GridRenderer.h"
 #import "SkyView.h"
 #include "horizon_objects.hpp"
+#include "surface_navigation.hpp"
 #include <algorithm>
 #include <limits>
 #include <cmath>
@@ -21,7 +22,7 @@ namespace {
 struct BackgroundKey {
     const SkyBackgrounds* model;
     MilkyWayMode mode;
-    std::array<double, 8> observationViewport;
+    std::array<double, 9> observationViewport;
     std::size_t width, height;
     bool operator==(const BackgroundKey& other) const {
         return model == other.model && mode == other.mode && observationViewport == other.observationViewport
@@ -30,11 +31,11 @@ struct BackgroundKey {
 };
 // 共通の投影座標系では、方位を右向きにするため経度を反転する。
 HorizonProjectionViewport skyViewport(HorizonViewport viewport) {
-    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+    return {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg};
 }
 HorizonViewport horizonViewport(HorizonProjectionViewport viewport) {
     viewport = normalize_horizon_viewport(viewport);
-    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+    return {std::fmod(360 - viewport.center_ra_deg, 360), viewport.center_dec_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg};
 }
 std::optional<ScreenPoint> projectHorizontal(HorizontalCoordinates coordinates,
                                              HorizonViewport viewport, NSSize size) {
@@ -102,8 +103,34 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     BOOL _dragging, _showsTimeInfo;
 }
 
+- (void)setTargetSelectionMode:(NSInteger)mode {
+    if (_targetSelectionMode == mode) return;
+    _targetSelectionMode = mode;
+    [self updateTrackingAreas];
+}
+- (void)updateTrackingAreas {
+    if (_targetSelectionTrackingArea) [self removeTrackingArea:_targetSelectionTrackingArea];
+    _targetSelectionTrackingArea = nil;
+    if (_targetSelectionMode == 1) {
+        _targetSelectionTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+            options:NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect owner:self userInfo:nil];
+        [self addTrackingArea:_targetSelectionTrackingArea];
+        self.window.acceptsMouseMovedEvents = YES;
+    }
+    [super updateTrackingAreas];
+}
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (_targetSelectionMode == 1) self.window.acceptsMouseMovedEvents = YES;
+}
+- (void)mouseMoved:(NSEvent *)event {
+    if (_targetSelectionMode == 1 && !self.hidden)
+        [self pickTargetAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _targetSelectionMode = 2;
         _earthPosition = {};
         _earthJulianDate = std::numeric_limits<double>::quiet_NaN();
         _smallBodiesVisible = _spacecraftVisible = YES;
@@ -121,7 +148,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (BOOL)isFlipped { return YES; }
 - (BOOL)isOpaque { return YES; }
-- (BOOL)acceptsFirstResponder { return YES; }
+- (BOOL)drawsFlightTitle { return self.flightOverlay && _viewport.perspective_blend < 0.5; }
+- (BOOL)acceptsFirstResponder { return !self.flightOverlay; }
+- (NSView *)hitTest:(NSPoint)point {
+    return self.flightOverlay ? nil : [super hitTest:point];
+}
 - (NSRect)mapRect {
     const double blend = _viewport.perspective_blend;
     return NSInsetRect(self.bounds, 42 - 24 * blend, 34 + 6 * blend);
@@ -275,10 +306,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     result.spacecraft = std::move(spacecraft);
     if (_smallBodiesVisible && result.smallBodies && result.smallBodyDisplay && result.smallBodies->model &&
         result.smallBodyDisplay->dataset().get() == &result.smallBodies->model->dataset())
-        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition);
+        result.smallBodyObjects = horizon_small_body_objects(*result.smallBodies, *result.smallBodyDisplay, julianDate, earthPosition, horizon_earth_observer_position(*result.frame, _site.latitude_deg));
     if (_spacecraftVisible && result.spacecraft)
         result.spacecraftObjects = horizon_spacecraft_objects(*result.spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, julianDate, earthPosition, spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, julianDate, earthPosition, horizon_earth_observer_position(*result.frame, _site.latitude_deg), spacecraft_scene_position);
     return result;
 }
 - (void)commitPreparedDate:(HorizonPreparedDate&&)prepared {
@@ -305,13 +336,13 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (void)rebuildMovingObjects {
     _smallBodyObjects.clear();
     _spacecraftObjects.clear();
-    if (_earthJulianDate != _julianDate) return;
+    if (_earthJulianDate != _julianDate || !_frame) return;
     if (_smallBodiesVisible && _smallBodies && _smallBodyDisplay && _smallBodies->model &&
         _smallBodyDisplay->dataset().get() == &_smallBodies->model->dataset())
-        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition);
+        _smallBodyObjects = horizon_small_body_objects(*_smallBodies, *_smallBodyDisplay, _julianDate, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg));
     if (_spacecraftVisible && _spacecraft)
         _spacecraftObjects = horizon_spacecraft_objects(*_spacecraft, _spacecraftDisplayOptions.points,
-            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, spacecraft_scene_position);
+            _spacecraftDisplayOptions.labels, _julianDate, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg), spacecraft_scene_position);
 }
 - (void)movingObjectsChanged {
     [self rebuildMovingObjects];
@@ -366,7 +397,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (double)verticalFovDegrees {
     return (1 - _viewport.perspective_blend) * _viewport.vertical_fov_deg
-        + _viewport.perspective_blend * 45;
+        + _viewport.perspective_blend * _viewport.perspective_fov_deg;
 }
 - (BOOL)setVerticalFovDegrees:(double)degrees {
     if (!std::isfinite(degrees) || degrees <= 0 || degrees > 90 || _viewport.perspective_blend != 0)
@@ -401,7 +432,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto coordinates = _frame->to_horizontal(moving ? moving->coordinates : [self selectionCoordinates]);
     if (self.userViewportChange) self.userViewportChange();
     [self setViewport:{coordinates.azimuth_deg, coordinates.altitude_deg, std::min(45.0, _viewport.vertical_fov_deg),
-                       _viewport.perspective_blend, _viewport.roll_deg}];
+                       _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg}];
 }
 - (BOOL)lookAtBody:(Body)body {
     HorizonViewport target;
@@ -414,7 +445,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto found = std::find_if(_bodies.begin(), _bodies.end(), [body](const auto& candidate) { return candidate.id == body; });
     if (found == _bodies.end()) return NO;
     const auto coordinates = _frame->to_horizontal(found->coordinates);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg};
     return YES;
 }
 - (BOOL)lookAtStarHIP:(int32_t)hip {
@@ -429,15 +460,23 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (!index) return NO;
     const auto& star = _model->stars()[*index];
     const auto coordinates = _frame->to_horizontal({star.right_ascension_degrees, star.declination_degrees});
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg};
     return YES;
 }
 - (BOOL)viewportForHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
     if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
-    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition);
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, {0, 0, 0});
     if (!equatorial) return NO;
     const auto coordinates = _frame->to_horizontal(*equatorial);
-    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg};
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg};
+    return YES;
+}
+- (BOOL)viewportForTopocentricHeliocentricPosition:(Vec3)position julianDate:(double)julianDate result:(HorizonViewport *)result {
+    if (!_model || !_frame || julianDate != _julianDate || _earthJulianDate != _julianDate) return NO;
+    const auto equatorial = horizon_heliocentric_coordinates(position, _earthPosition, horizon_earth_observer_position(*_frame, _site.latitude_deg));
+    if (!equatorial) return NO;
+    const auto coordinates = _frame->to_horizontal(*equatorial);
+    if (result) *result = {coordinates.azimuth_deg, coordinates.altitude_deg, _viewport.vertical_fov_deg, _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg};
     return YES;
 }
 - (void)selectBody:(NSUInteger)index {
@@ -499,8 +538,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         if (!name) name = @"名称不明";
         if (object) {
             const auto horizontal = _frame->to_horizontal(object->coordinates);
-            description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n地心距離 %.6f AU",
-                name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", object->distance_au];
+            NSString *distance = object->distance_au < 0.001
+                ? [NSString stringWithFormat:@"%.6g km", object->distance_au * astronomical_unit_km]
+                : [NSString stringWithFormat:@"%.6f AU", object->distance_au];
+            description = [NSString stringWithFormat:@"%@\n方位 %.3f° / 高度 %+.3f°%@\n観測地点からの距離 %@",
+                name, horizontal.azimuth_deg, horizontal.altitude_deg, horizontal.altitude_deg < 0 ? @"（地平線下）" : @"", distance];
         } else description = [NSString stringWithFormat:@"%@\n現在の時刻または表示設定では位置を表示できません。", name];
         if (object && _spacecraftSelection)
             description = [description stringByAppendingFormat:@"\n%@", spacecraftSampling(*_spacecraft, *_spacecraftSelection)];
@@ -527,18 +569,33 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     _lastDragPoint = point;
 }
 - (void)mouseUp:(NSEvent *)event {
-    if (!_model || _dragging) return;
+    if (!_model || _dragging || _targetSelectionMode != 2) return;
     const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    if (!NSPointInRect(point, [self mapRect])) return;
+    [self pickTargetAtPoint:point];
+    if (event.clickCount == 2) [self focusSelection];
+}
+- (void)pickTargetAtPoint:(NSPoint)point {
+    if (!_model) return;
     const NSRect map = [self mapRect];
     if (map.size.width <= 0 || map.size.height <= 0 || !NSPointInRect(point, map)) return;
-    double nearest = 8 * 8;
     _selection.reset(); _smallBodySelection.reset(); _spacecraftSelection.reset();
+    if ([_landscapeRenderer isOpaqueAtPoint:point inRect:map viewport:_viewport]) {
+        [self notifySelection];
+        self.needsDisplay = YES;
+        return;
+    }
+    double nearest = 8 * 8;
+    const auto unobscured = [&](const auto& projected) {
+        return ![_landscapeRenderer isOpaqueAtPoint:NSMakePoint(map.origin.x + projected.x, map.origin.y + projected.y)
+                                             inRect:map viewport:_viewport];
+    };
     const auto consider = [&](EquatorialCoordinates coordinates, Selection selection) {
         const auto projected = projectHorizontal(_frame->to_horizontal(coordinates), _viewport, map.size);
         if (!projected) return;
         const double dx = map.origin.x + projected->x - point.x, dy = map.origin.y + projected->y - point.y;
         const double distance = dx * dx + dy * dy;
-        if (distance <= nearest) { nearest = distance; _selection = selection; }
+        if (distance <= nearest && unobscured(*projected)) { nearest = distance; _selection = selection; }
     };
     for (std::size_t index = 0; _starDisplayOptions.visible && index < _model->stars().size(); ++index) {
         const auto& star = _model->stars()[index];
@@ -553,7 +610,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         if (!projected) return;
         const double dx = map.origin.x + projected->x - point.x, dy = map.origin.y + projected->y - point.y;
         const double distance = dx * dx + dy * dy;
-        if (distance <= nearest) {
+        if (distance <= nearest && unobscured(*projected)) {
             nearest = distance; _selection.reset();
             if (smallBody) { _smallBodySelection = object.index; _spacecraftSelection.reset(); }
             else { _spacecraftSelection = object.index; _smallBodySelection.reset(); }
@@ -569,14 +626,13 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         const double distance = std::hypot(point.x - map.origin.x - projected->x, point.y - map.origin.y - projected->y);
         const double radius = std::clamp(4 * body_marker_display_factor(_radiusDisplayOptions,
             RadiusDisplayContext::planetarium, _bodies[index].id), 1.0, 120.0);
-        if (distance <= radius && distance < nearestBody) {
+        if (distance <= radius && distance < nearestBody && unobscured(*projected)) {
             nearestBody = distance;
             _selection = Selection{ObjectKind::body, index};
         }
     }
     [self notifySelection];
     self.needsDisplay = YES;
-    if (event.clickCount == 2) [self focusSelection];
 }
 - (void)scrollWheel:(NSEvent *)event {
     const NSRect map = [self mapRect];
@@ -610,7 +666,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const BackgroundKey key{_backgrounds.get(), _milkyWayMode,
         {_site.latitude_deg, _site.longitude_deg, _julianDate,
          _viewport.center_azimuth_deg, _viewport.center_altitude_deg, _viewport.vertical_fov_deg,
-         _viewport.perspective_blend, _viewport.roll_deg}, width, height};
+         _viewport.perspective_blend, _viewport.roll_deg, _viewport.perspective_fov_deg}, width, height};
     // 非表示中の日時更新は描画まで評価しない。同一 JD の天体更新も画像を再生成しない。
     if (!_backgroundImage || !_backgroundKey || !(*_backgroundKey == key)) {
         const auto pixels = render_horizon_background(*texture, _viewport, *_frame, width, height);
@@ -699,8 +755,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [self drawSkyBackgroundInRect:map];
     [self drawGrid:context inRect:map];
     NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · JD %.5f", _julianDate] : @"";
-    drawText([NSString stringWithFormat:@"地平座標（大気差・視差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
-        _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
+    if (!self.flightOverlay || self.drawsFlightTitle) {
+        drawText([NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
+            _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
+    }
     if (!_model) {
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);
         return;

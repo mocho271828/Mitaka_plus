@@ -167,6 +167,13 @@ void test_replaced_datum_interior() {
     check(!empty(render_surface_scene({body},view,1,1)),"terrain inside datum is not rejected as a sphere");
     terrain.mode=TerrainSurfaceMode::none;terrain.samples.clear();
     check(empty(render_surface_scene({body},view,1,1)),"none frame inside datum has no opaque surface");
+    body.terrain=nullptr;
+    SurfaceDepthFrame fallback_depth;
+    const auto fallback=render_surface_scene({body},view,1,1,nullptr,&fallback_depth);
+    check(!empty(fallback),"missing terrain inside datum must hide remote objects");
+    const auto picked=surface_opaque_distance(body,view,0,0,1,1);
+    check(picked && *picked==fallback_depth.distances_au[0],"inside datum fallback depth and selection disagree");
+    body.terrain=&terrain;
 
     const auto params=earth_atmosphere_parameters();
     constexpr double radius=4e-5;

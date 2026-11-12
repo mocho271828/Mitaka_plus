@@ -29,8 +29,9 @@ struct MinorPlanetOrbitPath {
     bool cancelled = false;
 };
 
-// packed_36 小惑星・TNO のみ。元期から 360/n 日を等時間に標本化する。
-// この期間は native の表示方針であり、原版の標本則や科学的精度の保証ではない。
+// packed_36 と a または n 指定の個別小惑星・TNO。元期直前（または同時）の近日点から 360/n 日を離心近点角の等間隔で標本化する。
+// 時刻を区別できない場合は等時間に戻す。
+// 近日点始点・200区間は旧Plusの既定。代表JDの選択はnativeの約束で、精度保証期間を表さない。
 // 個々の位置は evaluate_minor_planet_position の検証と診断に従う。
 // 標本数の不正は invalid_argument。行の不正や表現できない周期は診断を返す。
 // 途中取消の部分結果は cancelled=true とし、完成結果として公開してはいけない。

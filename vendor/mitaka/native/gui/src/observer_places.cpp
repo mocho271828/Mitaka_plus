@@ -12,16 +12,20 @@
 namespace mitaka::gui {
 namespace {
 
+bool has_place_prefix(const std::string& target, const std::string& prefix) {
+    return target.compare(0, prefix.size(), prefix) == 0 && target.size() > prefix.size() &&
+           target.find('.', prefix.size()) == std::string::npos;
+}
+
 // 原版の全別名解決は未確定なので、既知の正規名と単一地点suffixだけを更新対象にする。
 bool has_canonical_place_id(const std::string& target) {
     constexpr std::array<const char*, 9> bodies = {
         "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"};
     for (const auto* body : bodies) {
         const std::string prefix = std::string("Planet.") + body + ".";
-        if (target.compare(0, prefix.size(), prefix) == 0 && target.size() > prefix.size() &&
-            target.find('.', prefix.size()) == std::string::npos) return true;
+        if (has_place_prefix(target, prefix)) return true;
     }
-    return false;
+    return has_place_prefix(target, "Satellite.Moon.");
 }
 
 } // namespace
@@ -84,6 +88,13 @@ ObserverPlaces load_observer_places(const std::filesystem::path& data_directory,
         }
     }
     return result;
+}
+
+std::optional<std::size_t> observer_place_body_index(const PlaceRecord& place) {
+    if (has_place_prefix(place.target_name, "Planet.Earth.")) return 3;
+    if (has_place_prefix(place.target_name, "Planet.Mars.")) return 4;
+    if (has_place_prefix(place.target_name, "Satellite.Moon.")) return 10;
+    return std::nullopt;
 }
 
 bool observer_place_is_earth(const PlaceRecord& place) {

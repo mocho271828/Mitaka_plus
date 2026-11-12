@@ -5,6 +5,8 @@
 #include "surface_navigation.hpp"
 #include "satellite_scene.hpp"
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -284,6 +286,15 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
         ![_solar runSurfaceNavigationSmokeTest]) {
         [self showError:@"smoke: Moon animation or surface navigation failed"]; return;
     }
+    [_solar runTerrainLandingSmokeTestWithCompletion:^(BOOL passed) {
+        if (!passed) { [self showError:@"smoke: terrain landing failed"]; return; }
+        [self runTravelSmokeTestAfterTerrain];
+    }];
+}
+
+- (void)runTravelSmokeTestAfterTerrain {
+    // 非同期標高反映は停止後もカメラを動かせるため、中断試験中は保留する。
+    NSString *savedTerrainDirectory = [_solar suspendTerrainForFlightSmoke];
     [_solar takeOffFromEarthAtLatitude:35.68 longitude:139.76];
     const double startDistance = [_solar cameraState].distance_au;
     if (!_solar.surfaceNavigationActive || !_solar.flightAnimating) {
@@ -321,18 +332,35 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
             if (self->_solar.flightAnimating || current.distance_au != paused.distance_au ||
                 current.target.x != paused.target.x || current.target.y != paused.target.y ||
                 current.target.z != paused.target.z) {
-                [self showError:@"smoke: interrupted flight changed the camera"]; return;
+                [self showError:[NSString stringWithFormat:
+                    @"smoke: interrupted flight changed the camera (flying=%d, distance %.17g -> %.17g, target (%.17g, %.17g, %.17g) -> (%.17g, %.17g, %.17g))",
+                    self->_solar.flightAnimating, paused.distance_au, current.distance_au,
+                    paused.target.x, paused.target.y, paused.target.z, current.target.x, current.target.y, current.target.z]]; return;
             }
             [self->_solar takeOff];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3400 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-                const double expectedDistance = 9 * surface_body_info(3).radius_km / astronomical_unit_km;
-                if (self->_solar.flightAnimating || !self->_solar.surfaceNavigationActive ||
-                    std::abs([self->_solar cameraState].distance_au - expectedDistance) > 1e-12) {
-                    [self showError:@"smoke: flight did not complete"]; return;
+            const auto started = std::chrono::steady_clock::now();
+            const double expectedDistance = 9 * surface_body_info(3).radius_km / astronomical_unit_km;
+            // 完了と同じ run loop のタイマーを待ち、期限や中断を成功扱いしない。
+            NSTimer *completion = [NSTimer timerWithTimeInterval:0.05 repeats:YES block:^(NSTimer *timer) {
+                const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+                const BOOL flying = self->_solar.flightAnimating;
+                const BOOL surface = self->_solar.surfaceNavigationActive;
+                const double distance = [self->_solar cameraState].distance_au;
+                NSString *notice = [self->_solar flightNoticeForSmokeTest];
+                if (surface && flying && elapsed < 8) return;
+                [timer invalidate];
+                if (elapsed >= 8 || flying || !surface || ![notice isEqualToString:@"飛行完了"] ||
+                    !std::isfinite(distance) || std::abs(distance - expectedDistance) > 1e-12) {
+                    [self showError:[NSString stringWithFormat:
+                        @"smoke: flight did not complete (elapsed=%.3fs, surface=%d, flying=%d, notice=%@, distance=%.17g, expected=%.17g)",
+                        elapsed, surface, flying, notice ? notice : @"(none)", distance, expectedDistance]];
+                    return;
                 }
                 std::printf("Moon/travel AppKit smoke passed: Moon orbit/spin, landing targets, real flight timer, interruption, completion\n");
+                [self->_solar setTerrainDataDirectory:savedTerrainDirectory];
                 [self runContinuousFlightSmokeTest];
-            });
+            }];
+            [NSRunLoop.mainRunLoop addTimer:completion forMode:NSRunLoopCommonModes];
         });
     }];
     [NSRunLoop.mainRunLoop addTimer:progress forMode:NSRunLoopCommonModes];

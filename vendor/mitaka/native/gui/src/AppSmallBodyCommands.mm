@@ -33,7 +33,7 @@ using namespace mitaka;
                                  : std::make_shared<SmallBodyDisplayModel>(data);
     const auto rebound = next->rebind(data);
     _smallBodyDisplay = std::move(next);
-    if (_smallBodyOrbitSampling.sample_count == 0) _smallBodyOrbitSampling = {_jd-182.625, _jd+182.625, 129};
+    if (_smallBodyOrbitSampling.sample_count == 0) _smallBodyOrbitSampling = {_jd-182.625, _jd+182.625, default_small_body_orbit_samples};
     if (!rebound.removed_ids.empty()) [self showError:[NSString stringWithFormat:
         @"小天体の表示集合から %lu 行を解除しました。元の出典 bytes・種別・原行 ID が一致しないためです。", rebound.removed_ids.size()]];
 }
