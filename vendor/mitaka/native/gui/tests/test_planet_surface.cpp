@@ -255,7 +255,7 @@ void test_invalid_surface_view() {
     SolarCamera camera{body, 0, 0, 1};
     const double nan = std::numeric_limits<double>::quiet_NaN();
     const double infinity = std::numeric_limits<double>::infinity();
-    for (const auto radius : {0.0, -1.0, nan, infinity, 1.0, 2.0})
+    for (const auto radius : {0.0, -1.0, nan, infinity})
         rejects([&] { render_surface_view(map, camera, body, {}, radius, 10, 10); });
     for (const auto size : {0u, 1025u}) {
         rejects([&] { render_surface_view(map, camera, body, {}, 0.1, size, 10); });
@@ -316,8 +316,8 @@ void test_sphere_picking() {
           "rounded negative discriminant must preserve an ideal tangent");
     const double nan = std::numeric_limits<double>::quiet_NaN();
     rejects([&] { sphere_hit_distance(camera, {-10, 0, 0}, 0, 0, 0, 101, 101); });
-    rejects([&] { sphere_hit_distance(camera, {0, 0, 0}, 1, 0, 0, 101, 101); });
-    rejects([&] { sphere_hit_distance(camera, {-1, 0, 0}, 1, 0, 0, 101, 101); });
+    check(!sphere_hit_distance(camera, {0, 0, 0}, 1, 0, 0, 101, 101), "inside datum has no fallback sphere hit");
+    check(!sphere_hit_distance(camera, {-1, 0, 0}, 1, 0, 0, 101, 101), "on datum has no fallback sphere hit");
     rejects([&] { sphere_hit_distance(camera, {nan, 0, 0}, 1, 0, 0, 101, 101); });
     rejects([&] { sphere_hit_distance(camera, {-10, 0, 0}, 1, nan, 0, 101, 101); });
     rejects([&] { sphere_hit_distance(camera, {-10, 0, 0}, 1, 0, 0, 0, 101); });
@@ -349,7 +349,7 @@ void test_scene_depth_and_emission() {
     check(render_surface_scene({}, camera, 2, 2).rgba == std::vector<std::uint8_t>(16),
           "empty physical scene must remain transparent");
     rejects([&] { render_surface_scene({{red, {}, {}, 1, false}}, sun_camera, 1, 1); });
-    rejects([&] { render_surface_scene({{red, {}, {}, 11, true}}, sun_camera, 1, 1); });
+    check(render_surface_scene({{red, {}, {}, 11, true}}, sun_camera, 1, 1).rgba == std::vector<std::uint8_t>({0, 0, 0, 255}), "inside datum fallback must be opaque");
 }
 
 void test_scene_projection_bounds() {

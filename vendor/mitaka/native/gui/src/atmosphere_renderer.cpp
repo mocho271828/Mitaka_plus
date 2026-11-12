@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <dispatch/dispatch.h>
+#include <exception>
 #include <limits>
 #include <stdexcept>
 
@@ -34,6 +36,27 @@ bool reaches_shell(const PreparedLayer& layer, Vec3 ray) {
     const Vec3 perpendicular{eye.y*ray.z-eye.z*ray.y,eye.z*ray.x-eye.x*ray.z,
                              eye.x*ray.y-eye.y*ray.x};
     return dot(perpendicular,perpendicular)<=1+8*std::numeric_limits<double>::epsilon();
+}
+template<class Render>
+void render_atmosphere_rows(std::size_t width, std::size_t height, const Render& render) {
+    if (width*height < 32768 || height < 16) {
+        render(0,height);
+        return;
+    }
+    // 各帯は同じ入力を読み、独立した画素だけを書く。例外はGCDを越えず元の行順で返す。
+    constexpr std::size_t bands=16;
+    struct Work {
+        const Render& render;
+        std::size_t height;
+        std::array<std::exception_ptr,bands> errors{};
+    } work{render,height};
+    dispatch_apply_f(bands,dispatch_get_global_queue(QOS_CLASS_USER_INITIATED,0),&work,
+        [](void* context,std::size_t i) {
+            auto& w=*static_cast<Work*>(context);
+            try { w.render(i*w.height/bands,(i+1)*w.height/bands); }
+            catch (...) { w.errors[i]=std::current_exception(); }
+        });
+    for (const auto& error:work.errors) if (error) std::rethrow_exception(error);
 }
 std::uint8_t display_byte(double value) {
     return static_cast<std::uint8_t>(std::lround(std::clamp(value,0.0,1.0)*255));
@@ -102,34 +125,36 @@ TextureImage render_atmosphere_scene(const std::vector<SurfaceSphere>& spheres,
     }
     TextureImage image{width,height,std::vector<std::uint8_t>(width*height*4,0)};
     if (inside_opaque || options.mode==AtmosphereMode::none || options.intensity==0 || prepared.empty()) return image;
-    for (std::size_t y=0;y<height;++y) for (std::size_t x=0;x<width;++x) {
-        const auto direction=solar_camera_ray(camera,x+.5,y+.5,width,height);
-        if (std::none_of(prepared.begin(),prepared.end(),[&](const auto& layer){return reaches_shell(layer,direction);})) continue;
-        std::optional<double> opaque_distance;
-        if (opaque_depth) {
-            const double value=opaque_depth->distances_au[y*width+x];
-            if (std::isfinite(value)) opaque_distance=value;
-        } else for (const auto& sphere:spheres) {
-            const auto hit=surface_opaque_distance(sphere,camera,x,y,width,height);
-            if (hit && (!opaque_distance || *hit<*opaque_distance)) opaque_distance=hit;
+    render_atmosphere_rows(width,height,[&](std::size_t begin,std::size_t end) {
+        for (std::size_t y=begin;y<end;++y) for (std::size_t x=0;x<width;++x) {
+            const auto direction=solar_camera_ray(camera,x+.5,y+.5,width,height);
+            if (std::none_of(prepared.begin(),prepared.end(),[&](const auto& layer){return reaches_shell(layer,direction);})) continue;
+            std::optional<double> opaque_distance;
+            if (opaque_depth) {
+                const double value=opaque_depth->distances_au[y*width+x];
+                if (std::isfinite(value)) opaque_distance=value;
+            } else for (const auto& sphere:spheres) {
+                const auto hit=surface_opaque_distance(sphere,camera,x,y,width,height);
+                if (hit && (!opaque_distance || *hit<*opaque_distance)) opaque_distance=hit;
+            }
+            std::array<double,3> rgb{};
+            for (const auto& layer:prepared) {
+                if (!reaches_shell(layer,direction)) continue;
+                AtmosphereRay ray{layer.eye_m,direction,layer.sun};
+                if (opaque_distance) ray.maximum_distance_m=*opaque_distance*layer.metres_per_au;
+                const auto single=atmosphere_single_scattering(layer.parameters,ray);
+                AtmosphereRgb multiple;
+                if (layer.multiple && std::hypot(ray.observer_position_m.x,ray.observer_position_m.y,
+                    ray.observer_position_m.z)>=layer.multiple->grid().ground_radius_m)
+                    multiple=atmosphere_multiple_scattering(*layer.multiple,ray);
+                const auto color=compose_atmosphere_display(single,multiple,options.intensity).rgb;
+                rgb[0]+=color.r; rgb[1]+=color.g; rgb[2]+=color.b;
+            }
+            const auto offset=(y*width+x)*4;
+            for (std::size_t channel=0;channel<3;++channel) image.rgba[offset+channel]=display_byte(rgb[channel]);
+            if (image.rgba[offset] || image.rgba[offset+1] || image.rgba[offset+2]) image.rgba[offset+3]=255;
         }
-        std::array<double,3> rgb{};
-        for (const auto& layer:prepared) {
-            if (!reaches_shell(layer,direction)) continue;
-            AtmosphereRay ray{layer.eye_m,direction,layer.sun};
-            if (opaque_distance) ray.maximum_distance_m=*opaque_distance*layer.metres_per_au;
-            const auto single=atmosphere_single_scattering(layer.parameters,ray);
-            AtmosphereRgb multiple;
-            if (layer.multiple && std::hypot(ray.observer_position_m.x,ray.observer_position_m.y,
-                ray.observer_position_m.z)>=layer.multiple->grid().ground_radius_m)
-                multiple=atmosphere_multiple_scattering(*layer.multiple,ray);
-            const auto color=compose_atmosphere_display(single,multiple,options.intensity).rgb;
-            rgb[0]+=color.r; rgb[1]+=color.g; rgb[2]+=color.b;
-        }
-        const auto offset=(y*width+x)*4;
-        for (std::size_t channel=0;channel<3;++channel) image.rgba[offset+channel]=display_byte(rgb[channel]);
-        if (image.rgba[offset] || image.rgba[offset+1] || image.rgba[offset+2]) image.rgba[offset+3]=255;
-    }
+    });
     return image;
 }
 } // namespace mitaka::gui

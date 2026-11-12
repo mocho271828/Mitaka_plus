@@ -61,7 +61,9 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         !std::isfinite(state.camera_altitude_deg) ||
         !std::isfinite(state.camera_mode_duration) || state.camera_mode_duration < 0 ||
         state.camera_zoom_mode < 0 || state.camera_zoom_mode > 2 ||
+        state.target_selection_mode < 0 || state.target_selection_mode > 2 ||
         (state.camera_mode && *state.camera_mode != 0 && *state.camera_mode != 1) ||
+        (state.camera_fov && (!std::isfinite(*state.camera_fov) || *state.camera_fov <= 0 || *state.camera_fov > 180)) ||
         (state.camera_duration && (!std::isfinite(*state.camera_duration) || *state.camera_duration < 0)) ||
         state.atmosphere_mode < 0 || state.atmosphere_mode > 2)
         throw std::runtime_error("Invalid host snapshot");
@@ -134,8 +136,10 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         @"fullScreen":@(state.full_screen), @"nebulae":@(state.nebulae), @"galaxies":@(state.distant_galaxies), @"quasars":@(state.quasars),
         @"azimuth":@(state.camera_azimuth_deg), @"altitude":@(state.camera_altitude_deg),
         @"cameraDuration":state.camera_duration ? (id)@(*state.camera_duration) : (id)NSNull.null,
+        @"cameraFov":state.camera_fov ? (id)@(*state.camera_fov) : (id)NSNull.null,
         @"cameraMode":state.camera_mode ? (id)@(*state.camera_mode) : (id)NSNull.null,
         @"cameraModeDuration":@(state.camera_mode_duration), @"cameraZoomMode":@(state.camera_zoom_mode),
+        @"targetSelectionMode":@(state.target_selection_mode),
         @"targetBrowser":@(state.target_browser),
         @"cameraOrientation":orientation, @"cameraEuler":euler,
         @"timeSetting":@(state.time_setting), @"placeSetting":@(state.place_setting),
@@ -150,7 +154,8 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     BOOL _invalidated;
 }
 - (NSDictionary *)handleMessage:(NSDictionary *)message;
-- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory error:(NSError **)error;
+- (BOOL)runSource:(NSString *)source consoleMode:(BOOL)consoleMode error:(NSError **)error;
+- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory consoleMode:(BOOL)consoleMode error:(NSError **)error;
 @end
 
 @implementation ScriptController
@@ -165,6 +170,12 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
 }
 - (BOOL)running { return _job != nullptr; }
 - (BOOL)runSource:(NSString *)source error:(NSError **)error {
+    return [self runSource:source consoleMode:NO error:error];
+}
+- (BOOL)runConsoleSource:(NSString *)source error:(NSError **)error {
+    return [self runSource:source consoleMode:YES error:error];
+}
+- (BOOL)runSource:(NSString *)source consoleMode:(BOOL)consoleMode error:(NSError **)error {
     NSAssert(NSThread.isMainThread, @"Script UI must run on the main thread");
     NSData *data = [source dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO];
     if (_invalidated || _job || !data || data.length == 0 || data.length > 1024 * 1024) {
@@ -177,10 +188,10 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
         return NO;
     }
     NSURL *directory = [NSURL fileURLWithFileSystemRepresentation:path.c_str() isDirectory:YES relativeToURL:nil];
-    NSURL *file = [directory URLByAppendingPathComponent:@"html-link.lua"];
-    // 元 HTML に触れず、所有者だけが読める一時領域から同じ Lua helper を使う。
+    NSURL *file = [directory URLByAppendingPathComponent:consoleMode ? @"console.lua" : @"html-link.lua"];
+    // 原本に触れず、所有者だけが読める一時領域から同じ Lua helper を使う。
     const bool written = [NSFileManager.defaultManager createFileAtPath:file.path contents:data attributes:@{NSFilePosixPermissions:@0600}];
-    if (!written || ![self launchFile:file temporaryDirectory:directory error:error]) {
+    if (!written || ![self launchFile:file temporaryDirectory:directory consoleMode:consoleMode error:error]) {
         if (!written && error) *error = scriptError(@"一時スクリプトを書き込めません。");
         [NSFileManager.defaultManager removeItemAtURL:directory error:nil];
         return NO;
@@ -188,9 +199,9 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     return YES;
 }
 - (BOOL)runFile:(NSURL *)file error:(NSError **)error {
-    return [self launchFile:file temporaryDirectory:nil error:error];
+    return [self launchFile:file temporaryDirectory:nil consoleMode:NO error:error];
 }
-- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory error:(NSError **)error {
+- (BOOL)launchFile:(NSURL *)file temporaryDirectory:(NSURL *)directory consoleMode:(BOOL)consoleMode error:(NSError **)error {
     NSAssert(NSThread.isMainThread, @"Script UI must run on the main thread");
     NSString *failure = nil;
     NSNumber *regular = nil, *size = nil;
@@ -214,7 +225,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
     NSFileHandle *input = [[NSFileHandle alloc] initWithFileDescriptor:sockets[1] closeOnDealloc:NO];
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = _helperURL;
-    task.arguments = @[file.path];
+    task.arguments = consoleMode ? @[file.path, @"--console"] : @[file.path];
     task.currentDirectoryURL = self.workingDirectoryURL ? self.workingDirectoryURL : file.URLByDeletingLastPathComponent;
     task.standardInput = input;
     task.standardOutput = NSFileHandle.fileHandleWithNullDevice;
@@ -295,7 +306,7 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             ![message[@"enabled"] isKindOfClass:NSNumber.class] || ![message[@"text"] isKindOfClass:NSString.class])
             throw std::runtime_error("Invalid script action");
         const double kind = [message[@"kind"] doubleValue];
-        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::animate_camera_zoom))
+        if (kind != std::floor(kind) || kind < 0 || kind > static_cast<int>(ScriptActionKind::set_target_selection_mode))
             throw std::runtime_error("Unknown script action");
         if (![message[@"hips"] isKindOfClass:NSArray.class] || [message[@"hips"] count] > 2048)
             throw std::runtime_error("Invalid star identifier list");
@@ -314,9 +325,15 @@ NSDictionary *snapshotMessage(const ScriptSnapshot& state) {
             [message[@"number"] doubleValue], static_cast<bool>([message[@"enabled"] boolValue]),
             std::string([message[@"text"] UTF8String]), [message[@"duration"] doubleValue], std::move(hips),
             TerrainAmplification::x1, {}, RadiusScaleMode::keep_orbit};
-        if (action.kind == ScriptActionKind::set_camera_zoom_mode &&
+        if (action.kind == ScriptActionKind::set_target_selection_mode &&
+            CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID())
+            throw std::runtime_error("Invalid Targets.selectMode");
+        if ((action.kind == ScriptActionKind::set_camera_zoom_mode || action.kind == ScriptActionKind::set_target_selection_mode) &&
             (action.number != std::floor(action.number) || action.number < 0 || action.number > 2))
-            throw std::runtime_error("Invalid Camera.zoomMode");
+            throw std::runtime_error(action.kind == ScriptActionKind::set_camera_zoom_mode ? "Invalid Camera.zoomMode" : "Invalid Targets.selectMode");
+        if ((action.kind == ScriptActionKind::set_camera_fov || action.kind == ScriptActionKind::animate_camera_fov) &&
+            (CFGetTypeID((__bridge CFTypeRef)message[@"number"]) == CFBooleanGetTypeID() || action.number <= 0 || action.number > 90))
+            throw std::runtime_error("Invalid Camera.fov");
         NSArray *orientation = message[@"orientation"];
         const bool quaternion = action.kind == ScriptActionKind::set_camera_orientation || action.kind == ScriptActionKind::animate_camera_orientation;
         const bool euler = action.kind == ScriptActionKind::set_camera_euler || action.kind == ScriptActionKind::add_camera_euler ||

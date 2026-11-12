@@ -128,8 +128,37 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
                    @selector(changeStarBrightness:), self);
     displaySubmenu(menu, @"座標線・距離目盛", @[@"赤道座標", @"黄道", @"銀河座標", @"地平座標", @"円形の距離目盛", @"方眼の距離目盛"],
                    @selector(toggleGridDisplay:), self);
-    displaySubmenu(menu, @"描画品質", @[@"アンチエイリアス", @"点を滑らかに描画", @"線を滑らかに描画", @"文字を滑らかに描画"],
+    NSMenu *renderer = displaySubmenu(menu, @"描画品質", @[@"アンチエイリアス", @"点を滑らかに描画", @"線を滑らかに描画", @"文字を滑らかに描画"],
                    @selector(toggleRendererDisplay:), self);
+    [renderer addItem:NSMenuItem.separatorItem];
+    NSMenuItem *settings = [renderer addItemWithTitle:@"描画品質の設定…" action:@selector(showRendererOptions:) keyEquivalent:@""];
+    settings.target = self;
+}
+- (void)showRendererOptions:(id)sender {
+    (void)sender;
+    if (!_rendererOptionsController) {
+        _rendererOptionsController = [RendererOptionsController new];
+        __weak AppController *weakSelf = self;
+        _rendererOptionsController.readSettings = ^BOOL(RendererDisplayOptions *options, NSString **error) {
+            AppController *controller = weakSelf;
+            if (!controller || !controller->_model || controller->_loading) {
+                if (error) *error = @"天文データを読み込んでから描画品質を変更してください。";
+                return NO;
+            }
+            *options = [controller rendererDisplayOptions];
+            return YES;
+        };
+        _rendererOptionsController.applySettings = ^BOOL(RendererDisplayOptions options, NSString **error) {
+            AppController *controller = weakSelf;
+            if (!controller || !controller->_model || controller->_loading) {
+                if (error) *error = @"天文データを読み込んでから描画品質を変更してください。";
+                return NO;
+            }
+            [controller setRendererDisplayOptions:options];
+            return YES;
+        };
+    }
+    [_rendererOptionsController showWindow:nil];
 }
 - (RendererDisplayOptions)rendererDisplayOptions { return _sky.rendererDisplayOptions; }
 - (void)setRendererDisplayOptions:(const RendererDisplayOptions&)options {
@@ -137,6 +166,7 @@ bool checkOption(NSMenuItem *item, const Options& options, const std::array<bool
     _horizon.rendererDisplayOptions = options;
     _solar.rendererDisplayOptions = options;
     [_galaxyBrowser setRendererDisplayOptions:options];
+    [_rendererOptionsController synchronizeOptions:options];
     [NSApp.mainMenu update];
 }
 - (void)toggleRendererDisplay:(NSMenuItem *)sender {

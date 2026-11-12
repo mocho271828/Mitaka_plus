@@ -1,0 +1,5 @@
+source	record_bytes	file_bytes	records	offset4_value_counts_37	raw36_matches_after_removing_offset4_if_37	unmatched	sha256	ordinary_1.2.0_zip	plus_1.5.4_update_zip
+mp.dat	36	263412	7317		7317	0	892dc28ad165126dfed1c94bd3934870986da5eda7f3b155d33ac67e43dd940c	identical	absent
+mp2.dat	37	270729	7317	0=7316,1=1	7317	0	988377799653ad09a0d6030a248b88e8a4ddd25276ea2065bb2f25bb8ed684c6	absent	absent
+TNO.dat	36	40824	1134		1134	0	2bff049a0ad05ffd6c3fa2888cc4f3619cdba81a6e6d67c8f3b48b5185a1df20	identical	absent
+TNO2.dat	37	44141	1193	0=1190,2=3	1134	59	85c05722ec0a907f07226a3611dae8dc9ceefafc41eb3b3b982f32393694ed35	absent	absent

@@ -33,11 +33,38 @@ Vec3 transform(Vec3 value, const BodyOrientation& orientation) {
 }
 } // namespace
 
-ObservationFrame::ObservationFrame(ObserverSite site, double julian_date) {
+namespace {
+void validate_site(ObserverSite site) {
     validate_longitude(site.longitude_deg);
     if (!std::isfinite(site.latitude_deg) || std::abs(site.latitude_deg) > 90)
         throw std::invalid_argument("observation: latitude must be in [-90,90] degrees");
-    const auto orientation = planet_orientation(Planet::earth, julian_date);
+}
+
+void validate_orientation(const BodyOrientation& orientation) {
+    const auto x = orientation.x_axis, y = orientation.y_axis, z = orientation.north_axis;
+    const Vec3 cross{x.y*y.z - x.z*y.y, x.z*y.x - x.x*y.z, x.x*y.y - x.y*y.x};
+    const auto close = [](double value, double expected) {
+        return std::isfinite(value) && std::abs(value - expected) <= 1e-10;
+    };
+    if (!close(dot(x, x), 1) || !close(dot(y, y), 1) || !close(dot(z, z), 1)
+        || !close(dot(x, y), 0) || !close(dot(y, z), 0) || !close(dot(z, x), 0)
+        || !close(dot(cross, z), 1))
+        throw std::invalid_argument("observation: orientation must be a right-handed orthonormal basis");
+}
+} // namespace
+
+ObservationFrame::ObservationFrame(ObserverSite site, double julian_date) {
+    validate_site(site);
+    initialize(site, planet_orientation(Planet::earth, julian_date));
+}
+
+ObservationFrame::ObservationFrame(ObserverSite site, const BodyOrientation& orientation) {
+    validate_site(site);
+    validate_orientation(orientation);
+    initialize(site, orientation);
+}
+
+void ObservationFrame::initialize(ObserverSite site, const BodyOrientation& orientation) {
     const double latitude = site.latitude_deg * radians_per_degree;
     const double longitude = site.longitude_deg * radians_per_degree;
     const double sin_lat = std::sin(latitude), cos_lat = std::cos(latitude);

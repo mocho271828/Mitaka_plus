@@ -2,6 +2,7 @@
 
 #include "sky_model.hpp"
 #include "solar_camera.hpp"
+#include "surface_navigation.hpp"
 #include "horizon_viewport.hpp"
 #include "calendar_time.hpp"
 #include "sky_background.hpp"
@@ -37,6 +38,10 @@ struct SessionState {
     SkyViewport sky_viewport;
     HorizonViewport horizon_viewport;
     SolarCamera solar_camera;
+    // 上空の視点を停止して戻す際にも、天体の物理半径で描画する。
+    bool physical_space = false;
+    // 着地地点、または physical_space の地球上空で停止した視点の地表固定座標。
+    std::optional<SurfaceSite> surface_site;
     Body selected_body = Body::sun;
     std::optional<Body> sky_selected_body;
     std::optional<Body> horizon_selected_body;

@@ -49,6 +49,7 @@ double monotonicSeconds() {
     BOOL _clockTracking, _sleeping, _hidden;
     double (^_unixTimeProvider)(void);
     NSUInteger _stateRevision;
+    NSUInteger _rateRequestRevision;
     NSString *_pendingStopMessage;
 }
 
@@ -299,23 +300,29 @@ double monotonicSeconds() {
 
 - (void)configureWithJulianDate:(double)jd range:(std::pair<double, double>)range enabled:(BOOL)enabled {
     if (_sampling || _invalidated) return;
-    if (_playing || _clockTracking || _timeAnimation.active()) [self interruptWithMessage:@"一時停止"];
+    const BOOL wasActive = _playing || _clockTracking || _timeAnimation.active();
     _jd = jd;
     _range = range;
     _enabled = enabled;
     ++_stateRevision;
     const BOOL valid = std::isfinite(jd) && std::isfinite(range.first) && std::isfinite(range.second)
         && range.first < range.second && jd >= range.first && jd <= range.second;
-    _stateLabel.stringValue = !enabled ? @"再生できるデータを選択してください"
+    const double rate = wasActive ? _nativeRate : _clock.rate();
+    NSString *message = !enabled ? @"再生できるデータを選択してください"
         : !valid ? @"再生可能な日時の範囲外です"
-        : jd == range.second && _clock.rate() > 0 ? @"暦表の終端に到達しています"
-        : jd == range.first && _clock.rate() < 0 ? @"暦表の先頭に到達しています" : @"一時停止";
+        : jd == range.second && rate > 0 ? @"暦表の終端に到達しています"
+        : jd == range.first && rate < 0 ? @"暦表の先頭に到達しています" : @"一時停止";
+    // 通知内の操作が新しい範囲・日時・有効状態を参照するよう先に設定する。
+    if (wasActive) { [self finishWithMessage:message]; return; }
+    _stateLabel.stringValue = message;
     [self updateControls];
 }
 
 - (void)play {
     if ((_clockTracking || _timeAnimation.active()) && !_sampling) [self finishWithMessage:@"再生へ切り替え"];
-    if (_playing || _sampling || !_enabled || _invalidated || _sleeping || _hidden) return;
+    // 停止通知で別の時刻モードが再開された場合は、その選択を保持する。
+    if (_playing || _clockTracking || _timeAnimation.active() || _sampling || !_enabled ||
+        _invalidated || _sleeping || _hidden) return;
     if (std::isfinite(_jd) && ((_clock.rate() > 0 && _jd == _range.second) ||
                               (_clock.rate() < 0 && _jd == _range.first))) {
         _stateLabel.stringValue = _clock.rate() > 0 ? @"暦表の終端に到達しています" : @"暦表の先頭に到達しています";
@@ -355,18 +362,15 @@ double monotonicSeconds() {
 }
 
 - (void)playForward {
-    [self setSimulationRate:std::abs(_nativeRate)];
-    [self play];
+    if ([self setSimulationRate:std::abs(_nativeRate)]) [self play];
 }
 
 - (void)playBackward {
-    [self setSimulationRate:-std::abs(_nativeRate)];
-    [self play];
+    if ([self setSimulationRate:-std::abs(_nativeRate)]) [self play];
 }
 
 - (void)playRealtime {
-    [self setSimulationRate:1];
-    [self play];
+    if ([self setSimulationRate:1]) [self play];
 }
 
 - (void)finishWithMessage:(NSString *)message {
@@ -425,6 +429,9 @@ double monotonicSeconds() {
         _range.first >= _range.second) return NO;
     if (_playing || _timeAnimation.active()) [self finishWithMessage:@"時計追従へ切り替え"];
     if (_invalidated || !_enabled) return NO;
+    // 停止通知の同期 callback が別の時刻モードを開始した場合、その選択を保持する。
+    if (_playing || _timeAnimation.active()) return NO;
+    if (_clockTracking) return YES;
     _clockTracking = YES;
     ++_stateRevision;
     if (![self sampleSystemClock]) return NO;
@@ -509,16 +516,29 @@ double monotonicSeconds() {
     [self finishWithMessage:reason];
 }
 
-- (void)setSimulationRate:(double)rate {
-    if (_invalidated || _sampling) return;
+- (BOOL)setSimulationRate:(double)rate {
+    if (_invalidated || _sampling) return NO;
     try {
         PlaybackClock validation;
         validation.set_rate(rate);
-        if (_clockTracking || _timeAnimation.active()) [self finishWithMessage:@"速度設定へ切り替え"];
-        if (!_plusPlayback && _nativeRate == rate) return;
+        const NSUInteger requestRevision = ++_rateRequestRevision;
+        if (_clockTracking || _timeAnimation.active()) {
+            const NSUInteger revision = _stateRevision;
+            [self finishWithMessage:@"速度設定へ切り替え"];
+            // 同期通知で新しい操作があれば、古い要求を再適用しない。
+            if (_stateRevision != revision + 1 || _rateRequestRevision != requestRevision || _invalidated) {
+                [self updateRateSelection];
+                return NO;
+            }
+        }
+        if (!_plusPlayback && _nativeRate == rate) { [self updateRateSelection]; return YES; }
         const double now = [self monotonicTime];
+        const NSUInteger revision = _stateRevision;
         const BOOL resume = _playing && [self sampleAtTime:now];
-        if (_playing && !resume) return;
+        if (_stateRevision != revision || _rateRequestRevision != requestRevision || _invalidated || (_playing && !resume)) {
+            [self updateRateSelection];
+            return NO;
+        }
         _clock.stop();
         _clock.set_rate(rate);
         _nativeRate = rate;
@@ -530,10 +550,12 @@ double monotonicSeconds() {
             : _jd == _range.second && _clock.rate() > 0 ? @"暦表の終端に到達しています"
             : _jd == _range.first && _clock.rate() < 0 ? @"暦表の先頭に到達しています" : @"一時停止";
         [self updateControls];
+        return YES;
     } catch (const std::exception& error) {
         NSLog(@"再生速度を変更できません: %s", error.what());
         if (_playing && !_clock.is_playing()) [self finishWithMessage:@"再生速度を変更できず停止"];
         [self updateRateSelection];
+        return NO;
     }
 }
 

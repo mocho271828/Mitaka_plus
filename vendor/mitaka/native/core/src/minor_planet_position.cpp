@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <locale>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -25,23 +27,28 @@ void add(MinorPlanetPositionEvaluation& result, Code code, std::string field,
                                       std::move(field), std::move(message)});
 }
 
-bool validate_elements(const OrbitalElements& orbit, MinorPlanetPositionEvaluation& result) {
+bool validate_elements(const OrbitalElements& orbit, bool individual, MinorPlanetPositionEvaluation& result) {
     for (double value : {orbit.epoch_jd, orbit.semi_major_axis_au, orbit.eccentricity,
                         orbit.mean_anomaly_deg, orbit.mean_motion_deg_per_day,
                         orbit.ascending_node_deg, orbit.inclination_deg,
                         orbit.argument_of_periapsis_deg}) {
         if (!std::isfinite(value)) {
-            add(result, Code::invalid_source, "orbit", "packed orbital elements must all be finite");
+            add(result, Code::invalid_source, "orbit", "minor-planet orbital elements must all be finite");
             return false;
         }
     }
     if (orbit.semi_major_axis_au <= 0 || orbit.mean_motion_deg_per_day <= 0 || orbit.eccentricity < 0) {
-        add(result, Code::invalid_source, "orbit", "packed orbit requires a > 0, n > 0 and e >= 0");
+        add(result, Code::invalid_source, "orbit", "minor-planet orbit requires a > 0, n > 0 and e >= 0");
         return false;
     }
-    if (orbit.eccentricity >= 1) {
+    if (orbit.eccentricity == 1) {
         add(result, Code::calculation_failed, "eccentricity",
-            "packed non-elliptic position contract is not verified; require e < 1");
+            "parabolic minor-planet positions are not supported");
+        return false;
+    }
+    if (orbit.eccentricity > 1 && !individual) {
+        add(result, Code::calculation_failed, "eccentricity",
+            "hyperbolic positions are not verified for packed minor-planet records");
         return false;
     }
     return true;
@@ -57,25 +64,45 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         add(result, Code::invalid_time, "legacy_julian_date", "requested legacy numeric JD must be finite");
         return result;
     }
-    if (record.encoding != SmallBodyEncoding::packed_36) {
+    const bool packed = record.encoding == SmallBodyEncoding::packed_36;
+    const bool text = record.encoding == SmallBodyEncoding::element_text;
+    if (!packed && !text) {
         add(result, Code::invalid_source, "encoding",
-            "position contract is verified only for packed_36; packed_37 and text records remain unresolved");
+            "position contract is verified only for packed_36 and individual element_text; packed_37 remains unresolved");
         return result;
     }
     if (record.kind != SmallBodyKind::asteroid && record.kind != SmallBodyKind::trans_neptunian) {
-        add(result, Code::invalid_source, "kind", "packed position contract applies only to asteroids and TNOs");
+        add(result, Code::invalid_source, "kind", "minor-planet position contract applies only to asteroids and TNOs");
         return result;
     }
-    if (record.raw_record_bytes.size() != 36 || record.raw_flag) {
-        add(result, Code::invalid_source, "raw_record_bytes", "packed_36 record storage is inconsistent");
+    if ((packed && record.raw_record_bytes.size() != 36)
+        || (text && record.raw_record_bytes.empty()) || record.raw_flag) {
+        add(result, Code::invalid_source, "raw_record_bytes", "minor-planet record storage is inconsistent");
         return result;
     }
     const auto* orbit = std::get_if<OrbitalElements>(&record.orbit);
     if (!orbit) {
-        add(result, Code::invalid_source, "orbit", "packed record has no mean-anomaly orbital elements");
+        add(result, Code::invalid_source, "orbit", "minor-planet record has no mean-anomaly orbital elements");
         return result;
     }
-    if (!validate_elements(*orbit, result)) return result;
+    if (!validate_elements(*orbit, text, result)) return result;
+
+    // 外部で構築された record も受けるため、明示値を無視した軌道を評価しない。
+    bool has_explicit_n = false;
+    for (const auto& field : record.fields) {
+        if (!text || field.key != "n") continue;
+        std::istringstream stream(field.value_bytes);
+        stream.imbue(std::locale::classic());
+        double explicit_n = 0;
+        stream >> explicit_n;
+        const bool valid_number = !stream.fail() && std::isfinite(explicit_n) && explicit_n > 0;
+        if (valid_number) stream >> std::ws;
+        if (has_explicit_n || !valid_number || !stream.eof() || explicit_n != orbit->mean_motion_deg_per_day) {
+            add(result, Code::invalid_source, "n", "explicit n must be finite, positive and match the parsed orbit");
+            return result;
+        }
+        has_explicit_n = true;
+    }
 
     if (record.declared_time_range) {
         const auto range = *record.declared_time_range;
@@ -100,8 +127,13 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         "requested legacy numeric JD is used unchanged; physical UTC/TT/TDB is not verified");
     result.status = MinorPlanetPositionStatus::unavailable_at_time;
     try {
-        result.heliocentric_j2000_ecliptic_au = orbital_state(*orbit, time).position_au;
-        result.contract = minor_planet_packed_position_contract;
+        auto elements = *orbit;
+        // 楕円の巨大なM0へ微小な日時差を加えると位相が丸め落ちる。周回分を先に除く。
+        if (elements.eccentricity < 1 && std::abs(elements.mean_anomaly_deg) >= 360.0)
+            elements.mean_anomaly_deg = std::remainder(elements.mean_anomaly_deg, 360.0);
+        result.heliocentric_j2000_ecliptic_au = orbital_state(elements, time).position_au;
+        result.contract = packed ? minor_planet_packed_position_contract
+                                 : minor_planet_element_position_contract;
         result.status = MinorPlanetPositionStatus::success;
     } catch (const std::invalid_argument& error) {
         add(result, Code::calculation_failed, "orbit", error.what());

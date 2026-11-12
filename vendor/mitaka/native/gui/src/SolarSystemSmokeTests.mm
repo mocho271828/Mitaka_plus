@@ -8,6 +8,11 @@
 using namespace mitaka;
 using namespace mitaka::gui;
 
+@interface SolarSystemView (PrecisionSmokeInternal)
+- (void)advanceScriptTargetTransition;
+- (void)advanceScriptOrientation;
+@end
+
 static bool sameFlightCamera(const SolarCamera& a, const SolarCamera& b) {
     const auto first = solar_camera_basis(a), second = solar_camera_basis(b);
     const auto near = [](Vec3 x, Vec3 y) { return std::hypot(x.x-y.x, x.y-y.y, x.z-y.z) < 1e-11; };
@@ -44,6 +49,8 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
 }
 
 @implementation SolarSystemView (SmokeTests)
+
+- (NSString *)flightNoticeForSmokeTest { return _flightNotice; }
 
 - (BOOL)rejectsInvalidCameraStatesWithoutChanges {
     const auto camera = _camera;
@@ -145,14 +152,25 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         moon.set_site(moonSite);
         const BOOL completed = !self.journeyActive && !self.flightAnimating && self.surfaceNavigationActive
             && [self scene].physical_navigation && sameFlightCamera(landed, moon.camera(_bodies));
-        // 現在の月面から次の惑星へ進む場合も、開始フレームを飛ばさない。
+        // 地表で設定した射影は、出発・中断・再開・着陸を通して維持する。
+        const BOOL fovSet = [self setScriptSurfaceFov:30];
         [self selectBody:4];
         [self startJourneyAtLatitude:-15 longitude:70];
         const BOOL chained = self.journeyActive && self.flightAnimating && sameFlightCamera(landed, _camera)
-            && _journey.destination().body_index == 4;
+            && _journey.destination().body_index == 4 && _camera.vertical_fov_deg == 30;
+        [self advanceFlightAtTime:_lastFlightTime+0.5];
+        BOOL journeyFov = _camera.vertical_fov_deg == 30;
         [self interruptFlight];
+        [self resumeJourney];
+        journeyFov = journeyFov && _camera.vertical_fov_deg == 30;
+        const double chainedStartTime = _lastFlightTime;
+        for (int step = 1; step <= 96; ++step) {
+            [self advanceFlightAtTime:chainedStartTime + step*0.25];
+            journeyFov = journeyFov && _camera.vertical_fov_deg == 30;
+        }
+        journeyFov = journeyFov && !self.journeyActive && self.surfaceNavigationActive;
         [self resetCamera];
-        passed = started && invalidCameraRejected && locked && tracked && frozen && resumed && gapStopped && invalidStopped && completed && chained;
+        passed = started && invalidCameraRejected && locked && tracked && frozen && resumed && gapStopped && invalidStopped && completed && fovSet && chained && journeyFov;
         if (!passed) NSLog(@"CONTINUOUS_VIEW failed start=%d camera=%d lock=%d track=%d freeze=%d resume=%d gap=%d invalid=%d complete=%d chain=%d",
             started, invalidCameraRejected, locked, tracked, frozen, resumed, gapStopped, invalidStopped, completed, chained);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
@@ -174,6 +192,13 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     const auto bodies = _bodies;
     const auto navigation = _navigation;
     const auto selection = _selection;
+    const auto galaxySelection = _galaxySelection;
+    const auto hipSelection = _hipSelection;
+    const auto pointSelection = _ourGalaxyPointSelection;
+    const BOOL ourGalaxySelected = _ourGalaxySelected;
+    const auto scriptOverviewTarget = _scriptOverviewTarget;
+    const auto scriptEarthPlaceTarget = _scriptEarthPlaceTarget;
+    const auto scriptSpacePlace = _scriptSpacePlace;
     const auto smallSelection = _smallBodySelection;
     const BOOL smallVisible = _smallBodiesVisible;
     _smallBodySelection.reset(); _smallBodiesVisible = NO;
@@ -226,11 +251,40 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         for (int step = 1; step <= 6; ++step) [self advanceFlightAtTime:landingStart + step*0.5];
         const BOOL landed = _surfaceActive && !self.flightAnimating && _camera.frame
             && _navigation.site().body_index == 10 && _navigation.site().height_km == minimum_surface_height_km;
+        const BOOL fovSet = [self setScriptSurfaceFov:30] && _camera.vertical_fov_deg == 30;
+        const BOOL fovInvalid = ![self setScriptSurfaceFov:0] && _camera.vertical_fov_deg == 30;
+        [self scriptSetSurfaceAzimuth:30 altitude:15];
+        const BOOL fovLook = _camera.vertical_fov_deg == 30;
+        NSString *fovError = nil;
+        const BOOL orientationStarted = [self scriptSetCameraEuler:{15, 20, 5} relative:NO duration:10 smooth:NO error:&fovError];
+        if (_orientationAnimation) _orientationAnimation->start_time -= 5;
+        [self advanceScriptOrientation];
+        const BOOL orientationInterpolated = orientationStarted && _camera.vertical_fov_deg == 30;
+        const BOOL orientationRetargeted = [self scriptSetCameraEuler:{-20, 10, 0} relative:YES duration:0 smooth:NO error:&fovError]
+            && !_orientationAnimation && _camera.vertical_fov_deg == 30;
+        // タイマー通知が遅れても、有効な再指定は現在時刻の姿勢から始まる。
+        BOOL retargetAtCurrentTime = [self scriptSetCameraEuler:{0, 0, 0} relative:NO duration:0 smooth:NO error:&fovError]
+            && [self scriptSetCameraEuler:{90, 0, 0} relative:NO duration:10 smooth:NO error:&fovError];
+        if (_orientationAnimation) _orientationAnimation->start_time -= 5;
+        const auto beforeInvalid = [self scriptCameraOrientation];
+        NSString *invalidOrientation = nil;
+        retargetAtCurrentTime = ![self scriptSetCameraOrientation:{0, 0, 0, 0} duration:0 smooth:NO error:&invalidOrientation]
+            && invalidOrientation.length && _orientationAnimation.has_value()
+            && [self scriptCameraOrientation].x == beforeInvalid.x
+            && [self scriptCameraOrientation].y == beforeInvalid.y
+            && [self scriptCameraOrientation].z == beforeInvalid.z
+            && [self scriptCameraOrientation].w == beforeInvalid.w && retargetAtCurrentTime;
+        retargetAtCurrentTime = [self scriptSetCameraEuler:{0, 0, 0} relative:YES duration:0 smooth:NO error:&fovError]
+            && std::abs(plus_orientation_to_euler([self scriptCameraOrientation]).heading - 45) < 0.1
+            && retargetAtCurrentTime;
+        const BOOL surfaceMoved = [self moveScriptSurfaceBody:10 latitude:25 longitude:-40] && _camera.vertical_fov_deg == 30;
+        const BOOL surfacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:YES error:&fovError]
+            && _camera.vertical_fov_deg == 30;
         const auto beforeTracking = _camera;
         auto moved = _bodies;
         moved[10].position_au.x += 0.01;
         [self setBodies:moved];
-        const BOOL tracked = std::abs(_camera.target.x-beforeTracking.target.x-0.01) < 1e-10;
+        const BOOL tracked = std::abs(_camera.target.x-beforeTracking.target.x-0.01) < 1e-10 && _camera.vertical_fov_deg == 30;
         [self setBodies:bodies];
         const auto beforeLook = _navigation.site();
         [self orbitByX:20 y:10];
@@ -238,11 +292,35 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         const BOOL movedSurface = _navigation.site().heading_deg != beforeLook.heading_deg
             && _navigation.site().elevation_deg != beforeLook.elevation_deg
             && _navigation.site().height_km > minimum_surface_height_km;
+        // 無効な地表地点は選択を保ち、離陸が成功したときだけ地球へ切り替える。
+        const OurGalaxyPointId point{OurGalaxyPointGroup::disk1, 0};
+        _selection.reset(); _ourGalaxyPointSelection = point;
+        SurfaceSite invalidSite;
+        invalidSite.latitude_deg = std::numeric_limits<double>::quiet_NaN();
+        NSString *invalidError = nil;
+        const auto beforeInvalidFlight = _camera;
+        const BOOL failedPreservesPoint = ![self beginFlightAtSite:invalidSite motion:SurfaceFlightMotion::ascent duration:3 error:&invalidError]
+            && invalidError.length && !_selection && _ourGalaxyPointSelection && *_ourGalaxyPointSelection == point
+            && sameFlightCamera(beforeInvalidFlight, _camera);
         [self takeOffFromEarthAtLatitude:35 longitude:135];
+        const BOOL selectedEarth = _selection && *_selection == 3 && !_ourGalaxyPointSelection;
         const double ascentStart = _lastFlightTime;
         for (int step = 1; step <= 6; ++step) [self advanceFlightAtTime:ascentStart + step*0.5];
         const BOOL ascended = !self.flightAnimating && _navigation.site().body_index == 3
             && std::abs(_navigation.site().height_km - 8*surface_body_info(3).radius_km) < 1e-6;
+        // 同じ地球でも、太陽系の地表からのモード切替は通常の上昇経路。
+        SurfaceSite comparisonSite{3, 35, 135, minimum_surface_height_km, 20, 22.5};
+        const BOOL generalModeAscent = [self forceSurfaceMode:YES bodyIndex:nullptr error:&fovError]
+            && [self selectScriptPlaceBody:3 latitude:35 longitude:135 surface:YES error:&fovError]
+            && [self ascendFromSurfaceWithDuration:0 error:&fovError]
+            && std::abs(_navigation.site().height_km + _navigation.site().terrain_offset_km - 8 * surface_body_info(3).radius_km) < 1e-6
+            && _navigation.site().elevation_deg == -80;
+        const BOOL horizonModeAscent = [self takeOffFromHorizon:comparisonSite duration:0 error:&fovError]
+            && std::abs(_navigation.site().height_km - 14764.59) < .01 && _navigation.site().elevation_deg == -90;
+        [self focusSelection];
+        const auto earthPosition = [self displayPosition:3];
+        const BOOL focusedEarth = std::hypot(_camera.target.x-earthPosition.x, _camera.target.y-earthPosition.y,
+                                             _camera.target.z-earthPosition.z) < 1e-10;
         [self landAtLatitude:35 longitude:135];
         [self advanceFlightAtTime:_lastFlightTime + 0.5];
         const auto beforeInterrupt = _camera;
@@ -250,12 +328,21 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         [self advanceFlightAtTime:_lastFlightTime + 0.5];
         const BOOL interrupted = !self.flightAnimating && _camera.distance_au == beforeInterrupt.distance_au
             && _camera.target.x == beforeInterrupt.target.x;
-        passed = pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface && ascended && interrupted;
-        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d ascended=%d interrupted=%d",
-            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, ascended, interrupted);
+        _camera.vertical_fov_deg = 30;
+        const BOOL spacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:NO error:&fovError]
+            && _camera.vertical_fov_deg == 30;
+        passed = fovSet && fovInvalid && fovLook && orientationInterpolated && orientationRetargeted && retargetAtCurrentTime && surfaceMoved && spacePlace && surfacePlace && pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
+            failedPreservesPoint && generalModeAscent && horizonModeAscent && selectedEarth && ascended && focusedEarth && interrupted;
+        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d generalModeAscent=%d horizonModeAscent=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
+            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint, generalModeAscent, horizonModeAscent,
+            selectedEarth, ascended, focusedEarth, interrupted);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
     [self invalidateFlightTimer];
     _camera = camera; _bodies = bodies; _navigation = navigation; _selection = selection;
+    _galaxySelection = galaxySelection; _hipSelection = hipSelection;
+    _ourGalaxyPointSelection = pointSelection; _ourGalaxySelected = ourGalaxySelected;
+    _scriptOverviewTarget = scriptOverviewTarget; _scriptEarthPlaceTarget = scriptEarthPlaceTarget;
+    _scriptSpacePlace = scriptSpacePlace;
     _flightNotice = notice; _surfaceActive = surface; _earthMoonMode = earthMoon; _surfacePreview = preview;
     _earthMoonFollowing = earthMoonFollowing; _following = following;
     _smallBodySelection = smallSelection; _smallBodiesVisible = smallVisible;
@@ -304,6 +391,35 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self focusSelection];
     const Vec3 earth = [self displayPosition:3];
     const BOOL focused = _following && _camera.target.x == earth.x && _camera.target.y == earth.y && _camera.target.z == earth.z;
+    _camera.set_target_pc({-1003390485.606666, 0, 0});
+    _camera.distance_au = 1;
+    [self panByX:1 y:0];
+    [self selectBody:3];
+    [self focusSelection];
+    const BOOL farToTracking = !_camera.precise_target && _following &&
+        _camera.target.x == earth.x && _camera.target.y == earth.y && _camera.target.z == earth.z;
+
+    _selection.reset(); _following = NO;
+    SolarCamera initial;
+    initial.set_target_pc({-1003390485.606666, 0, 0});
+    initial.distance_au = 1;
+    _camera = initial;
+    _camera.translate_target_au({0, 0.01, 0});
+    [self animateScriptTargetFrom:initial duration:100];
+    _targetAnimation->start_time -= 50;
+    [self advanceScriptTargetTransition];
+    const auto midway = _camera;
+    const BOOL halfway = midway.precise_target &&
+        std::abs(midway.precise_target->offset_au.y - 0.005) < 0.001;
+    _camera = midway;
+    _camera.translate_target_au({0, 0.02, 0});
+    [self animateScriptTargetFrom:midway duration:100];
+    const BOOL restarted = _camera.precise_target && midway.precise_target &&
+        _camera.precise_target->offset_au.y == midway.precise_target->offset_au.y;
+    _targetAnimation->start_time -= 101;
+    [self advanceScriptTargetTransition];
+    const BOOL finished = !_targetAnimation && _camera.precise_target && midway.precise_target &&
+        std::abs(_camera.precise_target->offset_au.y - (midway.precise_target->offset_au.y + 0.02)) < 1e-12;
     const BOOL invalidCameraRejected = [self rejectsInvalidCameraStatesWithoutChanges];
     [self resetCamera];
     [self refreshTerrain];
@@ -388,7 +504,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self notifySelection];
     [self notifyCamera];
     self.needsDisplay = YES;
-    return rotated && panned && zoomedIn && zoomedOut && inner && focused && invalidCameraRejected && visible
+    return rotated && panned && zoomedIn && zoomedOut && inner && focused && farToTracking && halfway && restarted && finished && invalidCameraRejected && visible
         && pickedFront && clippedNear && partialVisible && partialPicked && clippedViewport && cleared;
 }
 - (NSBitmapImageRep *)renderedBitmap {
@@ -444,6 +560,97 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
     [self notifyCamera];
     self.needsDisplay = YES;
     return passed;
+}
+- (NSString *)suspendTerrainForFlightSmoke {
+    NSString *savedDirectory = [_terrainDataDirectory copy];
+    [self setTerrainDataDirectory:nil];
+    return savedDirectory;
+}
+- (void)runTerrainLandingSmokeTestWithCompletion:(void (^)(BOOL))completion {
+    if (!_hasData || !_terrainDataDirectory) { completion(NO); return; }
+    [self leaveNavigation];
+    [self selectBody:3];
+    SurfaceSite site{3, 82.2, -84.7, minimum_surface_height_km, 0, 0};
+    _navigation.set_site(site); _surfaceActive = YES; _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = 30;
+    [self refreshTerrain];
+    __block BOOL passed = _landingSuppressedBody == 3;
+    __block int phase = 0;
+    __block double firstOffset = 0;
+    __block NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:15];
+    NSTimer *timer = [NSTimer timerWithTimeInterval:0.02 repeats:YES block:^(NSTimer *timer) {
+        if (deadline.timeIntervalSinceNow <= 0) {
+            std::fprintf(stderr, "Terrain landing smoke timed out in phase %d\n", phase);
+            [timer invalidate]; [self leaveNavigation]; [self resetLanding]; [self cancelTerrain]; completion(NO); return;
+        }
+        if (!self->_landingResult) return;
+        if (self->_landingResult->status != TerrainSnapshotStatus::ready) {
+            std::fprintf(stderr, "Terrain landing smoke failed in phase %d: %s\n", phase, self->_landingResult->diagnostic.c_str());
+            [timer invalidate]; [self leaveNavigation]; [self resetLanding]; [self cancelTerrain]; completion(NO); return;
+        }
+        if (phase == 0) {
+            firstOffset = self->_navigation.site().terrain_offset_km;
+            passed = passed && !self->_landingSuppressedBody && firstOffset > 1 && self->_camera.vertical_fov_deg == 30;
+            self.terrainAmplification = TerrainAmplification::x20;
+            [self refreshTerrain];
+            passed = passed && self->_landingSuppressedBody == 3 &&
+                self->_navigation.site().terrain_offset_km == 0 &&
+                self->_navigation.site().height_km == minimum_surface_height_km && self->_camera.vertical_fov_deg == 30;
+            NSString *error = nil;
+            const BOOL selected = [self selectScriptEarthPlaceLatitude:82.2 longitude:-84.7 surface:YES error:&error];
+            passed = passed && selected;
+            self.terrainAmplification = TerrainAmplification::x2;
+            [self refreshTerrain];
+            phase = 1; deadline = [NSDate dateWithTimeIntervalSinceNow:15]; return;
+        }
+        if (phase == 1) {
+            passed = passed && !self->_landingSuppressedBody && self->_landingKey &&
+                self->_landingKey->factor == 2 && self->_navigation.site().terrain_offset_km > firstOffset &&
+                self->_camera.vertical_fov_deg == 30;
+            self.terrainAmplification = TerrainAmplification::x1;
+            [self selectBody:4];
+            [self startJourneyAtLatitude:49.625 longitude:-81.6875];
+            [self refreshTerrain];
+            passed = passed && self->_journeyActive && self->_landingSuppressedBody == 4;
+            phase = 2; deadline = [NSDate dateWithTimeIntervalSinceNow:15]; return;
+        }
+        passed = passed && self->_journeyActive && self->_landingSuppressedBody == 4;
+        [self interruptFlight];
+        passed = passed && self->_journeyActive && !self.flightAnimating;
+        [self resumeJourney];
+        const double start = self->_lastFlightTime;
+        for (int step = 1; step <= 96; ++step) [self advanceFlightAtTime:start + step*0.25];
+        [self refreshTerrain];
+        passed = passed && !self->_journeyActive && self->_surfaceActive && !self->_landingSuppressedBody &&
+            self->_navigation.site().body_index == 4 && self->_navigation.site().terrain_offset_km > 1;
+        [self leaveNavigation]; [self refreshTerrain];
+        passed = passed && !self->_landingKey && !self->_landingSuppressedBody;
+        // 相対データルートでも例外を画面外へ漏らさず、基準球に戻す。
+        NSString *savedDirectory = [self->_terrainDataDirectory copy];
+        [self setTerrainDataDirectory:@"relative-data-root"];
+        SurfaceSite failedSite{3, 0, 0, minimum_surface_height_km, 0, 0};
+        failedSite.terrain_offset_km = 3;
+        self->_navigation.set_site(failedSite);
+        self->_surfaceActive = YES;
+        [self refreshTerrain];
+        const auto diagnostics = [self terrainDiagnostics];
+        passed = passed && self->_landingSuppressedBody == 3 && self->_landingResult &&
+            self->_landingResult->status == TerrainSnapshotStatus::failed && !diagnostics.empty() &&
+            self->_navigation.site().terrain_offset_km == 0 &&
+            self->_navigation.site().height_km == minimum_surface_height_km;
+        // 異常に大きいが有限の地形半径もメインキューから例外を漏らさない。
+        self->_landingResult->status = TerrainSnapshotStatus::ready;
+        self->_landingResult->radius_km = 1e12;
+        [self refreshLanding];
+        passed = passed && self->_landingResult->status == TerrainSnapshotStatus::failed &&
+            !self->_landingResult->diagnostic.empty() && self->_navigation.site().terrain_offset_km == 0;
+        [self leaveNavigation];
+        [self setTerrainDataDirectory:savedDirectory];
+        [self cancelTerrain]; self.needsDisplay = YES; [timer invalidate];
+        if (passed) std::printf("Terrain landing AppKit smoke passed: real Earth/Mars, Lua, supersession, amplification, interrupted journey, mode exit\n");
+        completion(passed);
+    }];
+    [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
 }
 - (BOOL)runRotationSmokeTest:(const mitaka::BodyOrientation&)laterEarthOrientation {
     if (!_hasData || _surfaceActive || _journeyActive || !_textures || !_textures->images[3]) return NO;

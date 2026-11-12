@@ -10,6 +10,7 @@ bool sameVector(mitaka::Vec3 a, mitaka::Vec3 b) {
 }
 bool sameCamera(const GalaxyCameraPc& a, const GalaxyCameraPc& b) {
     return a.target.x_pc == b.target.x_pc && a.target.y_pc == b.target.y_pc && a.target.z_pc == b.target.z_pc &&
+        sameVector(a.target_offset_au, b.target_offset_au) &&
         a.yaw_deg == b.yaw_deg && a.pitch_deg == b.pitch_deg && a.distance_pc == b.distance_pc && a.roll_deg == b.roll_deg && a.frame_is_orbit == b.frame_is_orbit &&
         a.frame.has_value() == b.frame.has_value() &&
         (!a.frame || (sameVector(a.frame->outward, b.frame->outward) &&

@@ -11,6 +11,7 @@
 - (void)setModel:(std::shared_ptr<const mitaka::gui::EarthLandscapes>)model;
 - (void)setObserverPlaceIdentifier:(const std::string&)identifier;
 - (const std::string&)observerPlaceIdentifier;
+- (BOOL)isOpaqueAtPoint:(NSPoint)point inRect:(NSRect)rect viewport:(mitaka::gui::HorizonViewport)viewport;
 - (void)drawInRect:(NSRect)rect viewport:(mitaka::gui::HorizonViewport)viewport
            quality:(mitaka::gui::RendererDisplayOptions)quality;
 @end

@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "ScriptController.h"
 #include "script_transport.hpp"
+#include "lua_console.hpp"
 #include "star_brightness.hpp"
 #include "mitaka/astronomy.hpp"
 #include <lua.hpp>
@@ -42,7 +43,7 @@ struct Reply {
     char string[4096]{};
 };
 enum Object { timeObject = 1, cameraObject, constellationObject, starsObject, galaxiesObject, guiObject,
-              milkyWayObject, planetsObject, gridsObject, rendererObject, asteroidsObject, tnobjectsObject, cometsObject, satellitesObject, placesObject };
+              milkyWayObject, planetsObject, gridsObject, rendererObject, asteroidsObject, tnobjectsObject, cometsObject, satellitesObject, placesObject, targetsObject };
 enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTime,
               previousStep, nextStep, printText, waitSeconds, saveImageDialog, toggleFullScreen, aboutDialog,
               brightenStars, darkenStars, defaultStarBrightness, animateStarBrightness,
@@ -51,7 +52,7 @@ enum Method { setTime = 1, getTime, stopTime, stepForward, stepRewind, currentTi
               getLocalComponentBase = 40, setLocalComponentBase = 50,
               setRadiusScale = 60, getRadiusScale, setRadiusScaleMode, getRadiusScaleMode, lookTarget, animateAzimuth, animateAltitude,
               setModeTo, toggleMode, toggleModeTo, forceMode, getOrient, getEuler, setOrient, setEuler, addEuler,
-              setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, animateZoom, animateZoomLog, toggleFlagBase = 100 };
+              setOrientTo, setEulerTo, addEulerTo, animateLookTarget, animateTarget, animateZoom, animateZoomLog, animateFov, toggleFlagBase = 100 };
 struct LocalTimeBinding {
     const char *property;
     const char *getter;
@@ -283,6 +284,7 @@ int objectAt(lua_State *state) {
 }
 
 Reply readProperty(int object, const std::string& key) {
+    if (object == targetsObject && key == "selectMode") return numeric([snapshot()[@"targetSelectionMode"] intValue]);
     if (object == milkyWayObject && key == "type") return textReply(snapshot()[@"milkyWay"]);
     if (object == starsObject && key == "markingType") return textReply(snapshot()[@"starMarking"]);
     if (object == planetsObject && key == "atmosphere") return numeric([snapshot()[@"atmosphereMode"] intValue]);
@@ -349,6 +351,7 @@ Reply readProperty(int object, const std::string& key) {
         if (key == "setTargetTo") return method(animateTarget);
         if (key == "setZoomTo") return method(animateZoom);
         if (key == "setZoomLogTo") return method(animateZoomLog);
+        if (key == "setFovTo") return method(animateFov);
         if (key == "setAzimuthTo") return method(animateAzimuth);
         if (key == "setAltitudeTo") return method(animateAltitude);
         if (key == "setModeTo") return method(setModeTo);
@@ -375,6 +378,10 @@ Reply readProperty(int object, const std::string& key) {
             return numeric([current[@"cameraDuration"] doubleValue]);
         }
         if (key == "zoom") return numeric([current[@"distance"] doubleValue] / auPerParsec);
+        if (key == "fov") {
+            if (current[@"cameraFov"] == NSNull.null) throw std::runtime_error("Camera.fov is unavailable in this view");
+            return numeric([current[@"cameraFov"] doubleValue]);
+        }
         if (key == "azimuth") return numeric([current[@"azimuth"] doubleValue]);
         if (key == "altitude") return numeric([current[@"altitude"] doubleValue]);
         if (key == "target") return textReply(current[@"target"]);
@@ -452,6 +459,11 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         else throw std::invalid_argument("Unsupported Time property: " + key);
         apply(ScriptActionKind::set_date, plus_julian_date(date)); return;
     }
+    if (object == targetsObject && key == "selectMode") {
+        const double mode = numberAt(state, 3);
+        if (mode != 0 && mode != 1 && mode != 2) throw std::invalid_argument("Invalid Targets.selectMode");
+        apply(ScriptActionKind::set_target_selection_mode, mode); return;
+    }
     if (object == cameraObject && key == "duration") {
         const double duration = numberAt(state, 3);
         if (duration < 0) throw std::invalid_argument("Camera.duration must be nonnegative");
@@ -476,6 +488,11 @@ void writeProperty(lua_State *state, int object, const std::string& key) {
         const double distance = numberAt(state, 3) * auPerParsec;
         if (!std::isfinite(distance) || distance <= 0) throw std::invalid_argument("Camera.zoom must be positive");
         apply(ScriptActionKind::set_camera_distance, distance); return;
+    }
+    if (object == cameraObject && key == "fov") {
+        const double fov = numberAt(state, 3);
+        if (fov <= 0 || fov > 90) throw std::invalid_argument("Camera.fov must be greater than 0 and at most 90 degrees");
+        apply(ScriptActionKind::set_camera_fov, fov); return;
     }
     if (object == cameraObject && key == "target") { apply(ScriptActionKind::select_target, 0, false, textAt(state, 3)); return; }
     if (object == cameraObject && key == "azimuth") {
@@ -602,6 +619,21 @@ Reply invoke(lua_State *state, int operation) {
         const double duration = operation == toggleMode || operation == forceMode ? 0 : (count >= (toggle ? 1 : 2) ? numberAt(state, durationIndex) : [current[@"cameraModeDuration"] doubleValue]);
         if (duration < 0) throw std::invalid_argument("Camera mode duration must be nonnegative");
         apply(ScriptActionKind::set_camera_mode, mode, operation == forceMode, "", duration);
+    } else if (operation == animateFov) {
+        if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
+        const int count = lua_gettop(state) - offset;
+        if (count < 1 || count > 2) throw std::invalid_argument("Camera:setFovTo requires a target and optional duration");
+        const double fov = numberAt(state, offset + 1);
+        if (fov <= 0 || fov > 90) throw std::invalid_argument("Camera.fov must be greater than 0 and at most 90 degrees");
+        double duration;
+        if (count == 2) duration = numberAt(state, offset + 2);
+        else {
+            id value = snapshot()[@"cameraDuration"];
+            if (value == NSNull.null) throw std::invalid_argument("Camera.duration must be set when duration is omitted");
+            duration = [value doubleValue];
+        }
+        if (duration < 0) throw std::invalid_argument("Camera animation duration must be nonnegative");
+        apply(ScriptActionKind::animate_camera_fov, fov, false, "", duration);
     } else if (operation == animateZoom || operation == animateZoomLog) {
         if (offset && objectAt(state) != cameraObject) throw std::invalid_argument("Expected Camera receiver");
         const int count = lua_gettop(state) - offset;
@@ -838,6 +870,7 @@ void install(lua_State *state) {
     installObject(state, "Asteroids", asteroidsObject); installObject(state, "TNObjects", tnobjectsObject);
     installObject(state, "Comets", cometsObject); installObject(state, "Satellites", satellitesObject);
     installObject(state, "Places", placesObject);
+    installObject(state, "Targets", targetsObject);
     lua_pushinteger(state, printText); lua_pushcclosure(state, callMethod, 1); lua_setglobal(state, "print");
     lua_pushinteger(state, waitSeconds); lua_pushcclosure(state, callMethod, 1); lua_setglobal(state, "waitTime");
     lua_newtable(state);
@@ -861,6 +894,10 @@ void install(lua_State *state) {
     lua_pushinteger(state, 0); lua_setfield(state, -2, "ZOOM_NONE");
     lua_pushinteger(state, 1); lua_setfield(state, -2, "ZOOM_AUTO");
     lua_pushinteger(state, 2); lua_setfield(state, -2, "ZOOM_ALWAYS");
+    // 旧定数の数値は未確認。モードの意味を維持する連番を用いる。
+    lua_pushinteger(state, 0); lua_setfield(state, -2, "SELECT_NONE");
+    lua_pushinteger(state, 1); lua_setfield(state, -2, "SELECT_MOUSEOVER");
+    lua_pushinteger(state, 2); lua_setfield(state, -2, "SELECT_MOUSECLICK");
     lua_setglobal(state, "mtk");
     lua_sethook(state, instructionHook, LUA_MASKCOUNT, 1000);
 }
@@ -876,7 +913,8 @@ int traceback(lua_State *state) {
 }
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
-        if (argc != 2 || ::setpgid(0, 0) != 0) return 2;
+        const bool consoleMode = argc == 3 && std::strcmp(argv[2], "--console") == 0;
+        if ((argc != 2 && !consoleMode) || ::setpgid(0, 0) != 0) return 2;
         try {
             std::ifstream input(argv[1], std::ios::binary);
             if (!input) throw std::runtime_error("Cannot open script file");
@@ -891,8 +929,16 @@ int main(int argc, const char *argv[]) {
             *static_cast<Context **>(lua_getextraspace(state.get())) = &runtime;
             install(state.get());
             const std::string name = std::string("@") + argv[1];
-            int status = luaL_loadbufferx(state.get(), source.data(), source.size(), name.c_str(), "t");
-            if (status == LUA_OK) {
+            int status = consoleMode ? execute_console_source(state.get(), source, traceback) :
+                luaL_loadbufferx(state.get(), source.data(), source.size(), name.c_str(), "t");
+            if (consoleMode && status == LUA_OK) {
+                std::size_t length = 0;
+                const char *result = lua_tolstring(state.get(), -1, &length);
+                if (length) {
+                    NSString *text = [[NSString alloc] initWithBytes:result length:length encoding:NSUTF8StringEncoding];
+                    request(@{@"op":@"log", @"text":text ? text : @"[non-UTF-8 output]"});
+                }
+            } else if (status == LUA_OK) {
                 lua_pushcfunction(state.get(), traceback);
                 lua_insert(state.get(), 1);
                 status = lua_pcall(state.get(), 0, 0, 1);

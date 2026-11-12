@@ -8,6 +8,10 @@
 #include <string>
 
 using namespace mitaka::gui;
+
+@interface ScriptController (TestMessages)
+- (NSDictionary *)handleMessage:(NSDictionary *)message;
+@end
 namespace {
 void check(bool condition, const char *message) { if (!condition) throw std::runtime_error(message); }
 struct Outcome { bool succeeded; std::string message; };
@@ -65,6 +69,7 @@ int main(int argc, const char *argv[]) {
             __block bool rejectRadius = false;
             __block double brightnessTarget = 0, brightnessDuration = 0;
             __block double zoomTarget = 0, zoomDuration = 0;
+            __block double fovTarget = 0, fovDuration = 0;
             __block bool zoomLog = false;
             controller.snapshot = ^{ check(NSThread.isMainThread, "snapshot thread"); return state; };
             controller.applyAction = ^BOOL(const ScriptAction& action, NSString **error) {
@@ -95,6 +100,7 @@ int main(int argc, const char *argv[]) {
                     *error = @"Time update unavailable"; return NO;
                 }
                 switch (action.kind) {
+                    case ScriptActionKind::set_target_selection_mode: state.target_selection_mode = static_cast<int>(action.number); break;
                     case ScriptActionKind::set_radius_scale:
                         if (rejectRadius) { *error = @"Radius unavailable"; return NO; }
                         state.radius_display = action.radius_display; break;
@@ -191,6 +197,11 @@ int main(int argc, const char *argv[]) {
                     case ScriptActionKind::animate_camera_zoom:
                         zoomTarget = action.number; zoomDuration = action.duration_seconds; zoomLog = action.enabled;
                         state.camera_distance_au = action.number; break;
+                    case ScriptActionKind::set_camera_fov:
+                    case ScriptActionKind::animate_camera_fov:
+                        if (!state.camera_fov) { *error = @"Camera.fov is unavailable in this view"; return NO; }
+                        fovTarget = action.number; fovDuration = action.duration_seconds;
+                        state.camera_fov = action.number; break;
                     // この fixture は姿勢・モードを再現しないため、未対応操作を明示的に拒否する。
                     case ScriptActionKind::set_camera_orientation:
                     case ScriptActionKind::set_camera_euler:
@@ -250,6 +261,22 @@ int main(int argc, const char *argv[]) {
                 return YES;
             };
             controller.output = ^(NSString *text) { check(NSThread.isMainThread, "output thread"); [logs addObject:text]; };
+            NSDictionary *badSelectionMode = @{@"op":@"apply", @"kind":@(static_cast<int>(ScriptActionKind::set_target_selection_mode)),
+                @"number":@YES, @"duration":@0, @"enabled":@NO, @"text":@"", @"hips":@[]};
+            const int beforeBadMode = applied;
+            check(![[controller handleMessage:badSelectionMode][@"ok"] boolValue] && applied == beforeBadMode,
+                  "IPC rejects boolean selection mode without applying it");
+            auto selectionOutcome = run(controller, file, @R"lua(
+                assert(Targets.selectMode==mtk.SELECT_MOUSECLICK)
+                Targets.selectMode=mtk.SELECT_NONE; assert(Targets.selectMode==mtk.SELECT_NONE)
+                Targets.selectMode=mtk.SELECT_MOUSEOVER; assert(Targets.selectMode==mtk.SELECT_MOUSEOVER)
+                for _,x in ipairs({-1,3,0.5,math.huge,'1',true}) do
+                    assert(not pcall(function() Targets.selectMode=x end))
+                    assert(Targets.selectMode==mtk.SELECT_MOUSEOVER)
+                end
+                Targets.selectMode=mtk.SELECT_MOUSECLICK; assert(Targets.selectMode==mtk.SELECT_MOUSECLICK)
+            )lua");
+            check(selectionOutcome.succeeded, selectionOutcome.message.c_str());
             auto outcome = run(controller, file, @R"lua(
                 Time:setTime(2009,7,22,0,30,0)
                 local y,m,d,h,n,s=Time:getTime()
@@ -316,6 +343,44 @@ int main(int argc, const char *argv[]) {
             check(zoomLog && std::abs(zoomTarget-8) < 1e-12 && zoomDuration == 0, "log zoom action and pc conversion");
             outcome = run(controller, file, @"Camera:setZoomTo(3*UNIT_AU)");
             check(outcome.succeeded && !zoomLog && std::abs(zoomTarget-3) < 1e-12 && zoomDuration == 2, "linear zoom uses Camera.duration");
+            state.camera_fov = 180;
+            outcome = run(controller, file, @R"lua(
+                assert(Camera.fov==180)
+                Camera.fov=90; assert(Camera.fov==90)
+                Camera.fov=0.001; assert(Camera.fov==0.001)
+                Camera:setFovTo(45); assert(Camera.fov==45)
+            )lua");
+            check(outcome.succeeded && fovTarget == 45 && fovDuration == 2,
+                "FOV getter, boundaries, and Camera.duration");
+            outcome = run(controller, file, @"Camera:setFovTo(90,0); assert(Camera.fov==90)");
+            check(outcome.succeeded && fovTarget == 90 && fovDuration == 0, "FOV zero-duration action");
+            const int beforeInvalidFov = applied;
+            outcome = run(controller, file, @R"lua(
+                for _, v in ipairs({0,-1,91,math.huge,-math.huge,0/0,'45',true}) do
+                    assert(not pcall(function() Camera.fov=v end))
+                    assert(not pcall(function() Camera:setFovTo(v,1) end))
+                end
+                for _, d in ipairs({-1,math.huge,0/0,'1',true}) do
+                    assert(not pcall(function() Camera:setFovTo(45,d) end))
+                end
+                assert(not pcall(function() Camera:setFovTo() end))
+                assert(not pcall(function() Camera:setFovTo(45,1,2) end))
+                assert(Camera.fov==90)
+            )lua");
+            check(outcome.succeeded && applied == beforeInvalidFov && *state.camera_fov == 90,
+                "invalid FOV and duration do not dispatch");
+            state.camera_duration.reset();
+            outcome = run(controller, file, @"assert(not pcall(function() Camera:setFovTo(45) end))");
+            check(outcome.succeeded && applied == beforeInvalidFov && *state.camera_fov == 90,
+                "FOV omitted duration requires Camera.duration");
+            state.camera_duration = 2;
+            state.camera_fov.reset();
+            outcome = run(controller, file, @R"lua(
+                assert(not pcall(function() return Camera.fov end))
+                assert(not pcall(function() Camera.fov=45 end))
+                assert(not pcall(function() Camera:setFovTo(45,1) end))
+            )lua");
+            check(outcome.succeeded && !state.camera_fov, "FOV is unavailable in unsupported modes");
             outcome = run(controller, file, @R"lua(
                 assert(Planets.topoAmplification==1)
                 for n=1,5 do

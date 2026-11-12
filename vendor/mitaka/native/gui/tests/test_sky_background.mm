@@ -76,6 +76,41 @@ std::vector<char> read_bytes(const fs::path& path) {
     return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
 }
 
+void solar_mapping_tests() {
+    const auto texture = gradient();
+    SolarCamera camera;
+    for (int mode = 0; mode < 3; ++mode) {
+        camera.vertical_fov_deg = mode == 0 ? 10 : (mode == 1 ? 45 : 90);
+        if (mode == 1) { camera.orbit(83, -39); camera.roll(32); }
+        if (mode == 2) { camera.frame = solar_camera_basis(camera); camera.frame_is_orbit = true; }
+        const auto image = render_solar_background(texture, camera, 13, 9);
+        for (std::size_t y = 0; y < 9; ++y) for (std::size_t x = 0; x < 13; ++x) {
+            const auto ray = solar_camera_ray(camera, x + .5, y + .5, 13, 9);
+            const auto coords = equatorial_coordinates(j2000_ecliptic_to_equatorial(ray));
+            const auto reference = render_sky_background(texture,
+                {coords.right_ascension_deg, coords.declination_deg, 10}, 1, 1);
+            const auto offset = (y * 13 + x) * 4;
+            for (std::size_t c = 0; c < 4; ++c)
+                expect(std::abs(int(image.rgba[offset + c]) - int(reference.rgba[c])) <= 1,
+                       "solar background must match each camera ray");
+        }
+    }
+    rejects([&] { render_solar_background(texture, camera, 0, 1); });
+    rejects([&] { render_solar_background({}, camera, 1, 1); });
+    camera = SolarCamera{};
+    camera.frame = SolarCameraBasis{{1,0,0}, {0,1,0}, {0,0,1}};
+    camera.frame_is_orbit = true;
+    camera.distance_au = astronomical_units_per_parsec;
+    for (double distance_pc : {0., 1000., 1850., 2700., 1e6, 1e40}) {
+        camera.set_target_pc({distance_pc - 1,0,0});
+        const double expected = std::clamp((2700. - distance_pc) / 1700., 0., 1.);
+        near(solar_background_opacity(camera), expected, 1e-12, "incorrect solar-distance fade");
+    }
+    camera.set_target_pc({1849,0,0});
+    camera.translate_target_au({astronomical_units_per_parsec, 0, 0});
+    near(solar_background_opacity(camera), 849. / 1700., 1e-12, "fade must include precise camera offset");
+}
+
 void mapping_tests() {
     const EquatorialCoordinates center{266.41682625, -29.007796944444443};
     const EquatorialCoordinates north{192.85, 27.133333333333333};
@@ -196,26 +231,26 @@ void horizon_mapping_tests() {
                 const auto horizontal = frame.to_horizontal(axes[index]);
                 expect(std::abs(horizontal.altitude_deg) < 89.5, "axis fixture must fit at native maximum zoom");
                 const auto point = render_horizon_background(texture,
-                    {horizontal.azimuth_deg, horizontal.altitude_deg, 180}, frame, 1, 1);
+                    {horizontal.azimuth_deg, horizontal.altitude_deg, 1}, frame, 1, 1);
                 const std::array<int, 4> expected_green{{124, 124, 0, 248}};
                 near(point.rgba[1], expected_green[index], 1, "horizon Galactic axis latitude is inverted or shifted");
                 if (index < 2) near(point.rgba[0], index == 0 ? 126 : 62, 1, "horizon Galactic axis handedness mismatch");
             }
-            const auto first = render_horizon_background(texture, {0, 0, 1}, frame, 31, 17);
-            const auto wrapped = render_horizon_background(texture, {720, 0, 1}, frame, 31, 17);
+            const auto first = render_horizon_background(texture, {0, 0, 180}, frame, 31, 17);
+            const auto wrapped = render_horizon_background(texture, {720, 0, 180}, frame, 31, 17);
             expect(first.rgba == wrapped.rgba, "azimuth 0/360 seam must be periodic at both observer poles");
             for (double altitude : {-90.0, 90.0}) {
-                const auto vertical = render_horizon_background(texture, {0, altitude, 180}, frame, 9, 9);
+                const auto vertical = render_horizon_background(texture, {0, altitude, 1}, frame, 9, 9);
                 expect(vertical.rgba.size() == 9 * 9 * 4, "zenith/nadir edge viewport must remain finite");
             }
         }
     }
     const ObservationFrame frame({35.68, 139.76}, 2451545);
-    const HorizonViewport viewport{2, 20, 4};
+    const HorizonViewport viewport{2, 20, 45};
     const auto rendered = render_horizon_background(texture, viewport, frame, 17, 13);
     for (std::size_t y = 0; y < rendered.height; ++y) {
         for (std::size_t x = 0; x < rendered.width; ++x) {
-            const SkyViewport projection{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom};
+            const HorizonProjectionViewport projection{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg};
             const auto direction = unproject_horizon({x + 0.5, y + 0.5}, projection, 17, 13);
             const HorizontalCoordinates horizontal{360 - direction.right_ascension_deg, direction.declination_deg};
             const auto projected = project_horizon(direction, projection, 17, 13);
@@ -230,13 +265,13 @@ void horizon_mapping_tests() {
         }
     }
     const auto at_center = frame.to_horizontal(center);
-    const HorizonViewport centered{at_center.azimuth_deg, at_center.altitude_deg, 180};
+    const HorizonViewport centered{at_center.azimuth_deg, at_center.altitude_deg, 1};
     const auto alpha = render_horizon_background({2, 1, {80, 120, 160, 255, 255, 0, 0, 0}}, centered, frame, 1, 1);
     expect(alpha.rgba[0] == 80 && alpha.rgba[1] == 120 && alpha.rgba[2] == 160,
         "transparent texture colors must not contaminate horizon interpolation");
     near(alpha.rgba[3], 128, 1, "horizon interpolation must retain weighted alpha");
     const auto opposite = frame.to_horizontal({86.41682625, 29.007796944444443});
-    const auto seam = render_horizon_background(texture, {opposite.azimuth_deg, opposite.altitude_deg, 180}, frame, 1, 1);
+    const auto seam = render_horizon_background(texture, {opposite.azimuth_deg, opposite.altitude_deg, 1}, frame, 1, 1);
     near(seam.rgba[0], 126, 1, "Galactic seam must blend the last and first texture columns");
     const auto max_size = render_horizon_background({1, 1, {1, 2, 3, 255}}, {}, frame, 1024, 1024);
     expect(max_size.rgba.size() == 1024 * 1024 * 4 && max_size.rgba.back() == 255,
@@ -244,12 +279,12 @@ void horizon_mapping_tests() {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     for (auto dimensions : {std::pair<std::size_t, std::size_t>{0, 1}, {1, 0}, {1025, 1}, {1, 1025}})
         rejects([&] { render_horizon_background(texture, {}, frame, dimensions.first, dimensions.second); });
-    for (auto invalid : {HorizonViewport{nan, 0, 1}, {0, nan, 1}, {0, 0, nan}, {0, 0, 0}, {0, 0, -1}})
+    for (auto invalid : {HorizonViewport{nan, 0, 1}, {0, nan, 1}, {0, 0, nan}, {0, 0, 0}, {0, 0, -1}, {0, 0, 181}})
         rejects([&] { render_horizon_background(texture, invalid, frame, 1, 1); });
     for (auto invalid : {TextureImage{}, TextureImage{1, 1, {1, 2, 3}}, TextureImage{1025, 1, {}}})
         rejects([&] { render_horizon_background(invalid, {}, frame, 1, 1); });
-    expect(render_horizon_background(texture, {725, 90, 0.5}, frame, 11, 7).rgba
-        == render_horizon_background(texture, {5, 90, 1}, frame, 11, 7).rgba,
+    expect(render_horizon_background(texture, {725, 90, 180}, frame, 11, 7).rgba
+        == render_horizon_background(texture, {5, 90, 180}, frame, 11, 7).rgba,
         "horizon viewport normalization must match the view's native bounds");
 }
 
@@ -263,6 +298,15 @@ void local_tests(const fs::path& data) {
         expect(image->width == 1024 && image->height == 512, "verified local images must preserve their known dimensions");
         const auto rendered = render_sky_background(*image, {}, 1024, 512);
         expect(rendered.rgba.size() == 1024 * 512 * 4, "local background output size mismatch");
+        SolarCamera camera;
+        const auto solar = render_solar_background(*image, camera, 128, 64);
+        expect(solar.rgba.size() == 128 * 64 * 4, "local solar background output size mismatch");
+        const auto center = solar_camera_ray(camera, 64.5, 32.5, 128, 64);
+        const auto coords = equatorial_coordinates(j2000_ecliptic_to_equatorial(center));
+        const auto reference = render_sky_background(*image, {coords.right_ascension_deg, coords.declination_deg, 10}, 1, 1);
+        for (std::size_t c = 0; c < 4; ++c)
+            expect(std::abs(int(solar.rgba[(32 * 128 + 64) * 4 + c]) - int(reference.rgba[c])) <= 1,
+                   "local solar background must follow the camera");
         const auto horizon = render_horizon_background(*image, {}, ObservationFrame({35.68, 139.76}, 2451545), 1024, 512);
         expect(horizon.rgba.size() == rendered.rgba.size() && horizon.rgba != rendered.rgba,
             "local horizon background must use the observer frame");
@@ -275,6 +319,7 @@ void local_tests(const fs::path& data) {
 int main(int argc, char** argv) {
     try {
         mapping_tests();
+        solar_mapping_tests();
         loader_tests();
         horizon_mapping_tests();
         if (argc == 2) local_tests(argv[1]);

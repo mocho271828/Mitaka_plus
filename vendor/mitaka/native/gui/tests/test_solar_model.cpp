@@ -162,6 +162,57 @@ void test_camera() {
     rejects<std::invalid_argument>([&] { project_solar({}, camera, 800, 600); });
 }
 
+void test_precise_camera_target() {
+    constexpr double source_pc = -1003390485.606666;
+    SolarCamera camera{{0, 0, 0}, 0, 0, 1};
+    camera.set_target_pc({source_pc, source_pc, 0});
+    const auto approximate = camera.target;
+    camera.pan(1, 0, 800, 600);
+    check(camera.precise_target.has_value(), "pc target must preserve its anchor");
+    check(camera.precise_target->anchor_pc.x == source_pc && camera.precise_target->anchor_pc.y == source_pc,
+          "pan must not round the pc anchor through AU");
+    near(camera.precise_target->offset_au.y, -2 * solar_camera_tangent_half_fov / 600, 1e-15);
+    check(camera.target.y == approximate.y, "fixture should exercise a sub-ULP pan");
+    camera.pan(-1, 0, 800, 600);
+    near(camera.precise_target->offset_au.y, 0, 1e-15);
+
+    // 旧 v9 の AU 位置からも、初回の移動時に失われた差分を記録する。
+    camera.set_target_au(approximate);
+    const auto before = project_solar(approximate, camera, 800, 600);
+    check(before.has_value(), "legacy target must be visible");
+    camera.pan(1, 0, 800, 600);
+    const auto after = project_solar(approximate, camera, 800, 600);
+    check(after.has_value(), "legacy target must remain visible after pan");
+    near(after->x - before->x, 1, 1e-8);
+    camera.pan(-1, 0, 800, 600);
+    near(project_solar(approximate, camera, 800, 600)->x, before->x, 1e-8);
+
+    // 大きな平行移動後にズームした場合も、1 pixel の移動を維持する。
+    SolarCamera distant{{0, 0, 0}, 0, 0, 1};
+    distant.set_target_pc({0, 0, 0});
+    distant.translate_target_au({0, -1e15, 0});
+    const Vec3 distant_object{0, -1e15, 0};
+    const auto distant_before = project_solar(distant_object, distant, 800, 600);
+    check(distant_before.has_value(), "large residual target must remain visible");
+    distant.pan(1, 0, 800, 600);
+    const auto distant_after = project_solar(distant_object, distant, 800, 600);
+    check(distant_after.has_value(), "rebased target must remain visible after pan");
+    near(distant_after->x - distant_before->x, 1, 1e-8);
+    distant.pan(-1, 0, 800, 600);
+    near(project_solar(distant_object, distant, 800, 600)->x, distant_before->x, 1e-8);
+    check(distant.precise_target->anchor_pc.y != 0, "large residual must be rebased");
+
+    camera.set_target_au({1, 2, 3});
+    check(!camera.precise_target, "AU replacement must clear the prior anchor");
+
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    rejects<std::invalid_argument>([&] { camera.set_target_pc({nan, 0, 0}); });
+    rejects<std::invalid_argument>([&] { camera.translate_target_au({nan, 0, 0}); });
+    camera.set_target_pc({source_pc, 0, 0});
+    camera.target.x += 1;
+    rejects<std::invalid_argument>([&] { (void)solar_camera_basis(camera); });
+}
+
 void test_fixture(const std::filesystem::path& directory) {
     fixture(directory);
     const auto model = SkyModel::load(directory);
@@ -254,7 +305,7 @@ int main(int argc, char** argv) {
     if (!mkdtemp(pattern.data())) { std::cerr << "cannot create test directory\n"; return 1; }
     const std::filesystem::path directory(pattern);
     try {
-        test_camera(); test_fixture(directory);
+        test_camera(); test_precise_camera_target(); test_fixture(directory);
         for (int i = 1; i < argc; ++i) test_real_data(argv[i]);
         std::filesystem::remove_all(directory);
         std::cout << "solar model tests passed\n";
