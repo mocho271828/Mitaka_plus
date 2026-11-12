@@ -60,5 +60,5 @@ struct GalaxyOverlaySelection {
 - (void)setModel:(std::shared_ptr<const mitaka::gui::GalaxySpatialModel>)model;
 - (void)drawInRect:(NSRect)rect camera:(const mitaka::gui::GalaxyCameraPc&)camera
              quality:(mitaka::gui::RendererDisplayOptions)quality scale:(double)scale
-      selectedRecord:(std::optional<mitaka::gui::GalaxySpatialRecordId>)selected;
+      selectedRecord:(std::optional<mitaka::gui::GalaxySpatialRecordId>)selected surfaceView:(BOOL)surfaceView;
 @end

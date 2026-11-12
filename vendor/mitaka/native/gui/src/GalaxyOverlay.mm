@@ -466,8 +466,11 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
 }
 - (void)drawInRect:(NSRect)rect camera:(const GalaxyCameraPc&)camera
              quality:(RendererDisplayOptions)quality scale:(double)scale
-      selectedRecord:(std::optional<GalaxySpatialRecordId>)selected {
-    const GalaxyOverlayRequest next{camera, quality, rect.size, scale, _visibility, static_cast<bool>(_hipVisible), static_cast<bool>(_ourGalaxyVisible)};
+      selectedRecord:(std::optional<GalaxySpatialRecordId>)selected surfaceView:(BOOL)surfaceView {
+    auto visibility = _visibility;
+    // 地表から見た空を SDSS の観測範囲で覆わない。離陸後の表示設定は保持する。
+    if (surfaceView) visibility.sdss_galaxies = visibility.sdss_quasars = false;
+    const GalaxyOverlayRequest next{camera, quality, rect.size, scale, visibility, static_cast<bool>(_hipVisible), static_cast<bool>(_ourGalaxyVisible)};
     if (!_requested || !sameRequest(*_requested, next)) {
         [self invalidatePendingPicks];
         if (_requested) {
@@ -503,12 +506,12 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         std::size_t cachedColorCount = 0;
         _displayedPreviewSelection.reset();
         if (_model && selected && selected->source_index < _model->sources().size() &&
-            _model->family(selected->source_index) == selected->family && _visibility.visible(selected->family) &&
+            _model->family(selected->source_index) == selected->family && visibility.visible(selected->family) &&
             selected->ordinal < _model->source_size(selected->source_index)) {
             const auto shape = galaxy_spatial_shape(*_model, *selected, projector, true);
             if (shape && shape->intersects_viewport(projector)) _displayedPreviewSelection = selected;
         }
-        if (_model) forPreviewRows(*_model, _visibility, _displayedPreviewSelection, [&](GalaxySpatialRecordId id) {
+        if (_model) forPreviewRows(*_model, visibility, _displayedPreviewSelection, [&](GalaxySpatialRecordId id) {
             ++_diagnostics.preview_rows;
             const auto shape = galaxy_spatial_shape(*_model, id, projector, true);
             if (shape && shape->intersects_viewport(projector)) {

@@ -1,0 +1,7 @@
+order	atmosphere	outcome	height_m	max_callback_gap_s	observed_callbacks	elapsed_s	controlled_cpu_load_sum_at_start_pct	controlled_cpu_load_sum_at_end_pct
+1	serial	landed	2	0.66084	21	3.327	0.0	186.3
+2	parallel	landed	2	0.253176	36	3.07	186.3	123.7
+3	parallel	landed	2	0.263223	33	3.224	123.7	127.30000000000001
+4	serial	interrupted	87.54415229003067	1.052965	17	3.505	127.30000000000001	198.7
+5	serial	landed	2	0.661894	17	3.852	190.6	197.9
+6	parallel	landed	2	0.239777	39	3.155	197.9	150.5

@@ -22,6 +22,7 @@ THE SOFTWARE.
 
 #include "terrain_mesh.hpp"
 #include "terrain_surface.hpp"
+#include "surface_navigation.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -167,6 +168,24 @@ std::optional<double> radial_intersection(Vec3 direction, Vec3 a, Vec3 b, Vec3 c
     return radius;
 }
 }
+Vec3 terrain_detail_eye(Vec3 eye, const TerrainHeader& header, double factor, double display_radius_km) {
+    validate_eye(eye);
+    if (!std::isfinite(factor) || factor<0 || !std::isfinite(display_radius_km) || display_radius_km<=0 ||
+        !std::isfinite(header.elevation_unit_m) || header.elevation_unit_m<=0 ||
+        !std::isfinite(header.radius_m) || header.radius_m<=0)
+        throw std::invalid_argument("invalid terrain detail geometry");
+    const double radius=std::hypot(eye.x,eye.y,eye.z);
+    if (radius==0) return eye;
+    // 全int16標高の上限と着地の眼高を含む。地表/宇宙で同じ眼なら必ず同じLODとし、
+    // 地上では起伏の高さによって足元のLOD自体が切り替わる循環を避ける。
+    const double relief=std::numeric_limits<std::int16_t>::max()*
+        (double(header.elevation_unit_m)/header.radius_m)*factor+minimum_surface_height_km/display_radius_km;
+    const double altitude=radius-1;
+    if (altitude>=2*relief) return eye;
+    // 地形の外では元の距離規則へ連続的に戻し、遠方のLODを変えない。
+    const double detail_radius=altitude<=relief ? 1 : 1+altitude*((altitude-relief)/relief);
+    return {detail_radius*(eye.x/radius),detail_radius*(eye.y/radius),detail_radius*(eye.z/radius)};
+}
 std::optional<double> terrain_landing_radius_km(TerrainFile& source,
     double latitude, double longitude, double display_radius, double factor,
     const std::function<bool()>& cancelled) {
@@ -186,18 +205,14 @@ std::optional<double> terrain_landing_radius_km(TerrainFile& source,
                 (patch.latitude_begin_deg+patch.latitude_end_deg)*.5);
             if (landing_dot(middle,ray) < std::cos(extent)-1e-12) continue;
         }
-        // LOD切替の直前・直後のどちらでも地形の内側に入らないよう全levelを調べる。
-        for (int level=0; level<=patch.maximum_level_index; ++level) {
-            if (cancelled && cancelled()) throw TerrainSurfaceCancelled();
-            const auto mesh=make_terrain_patch_mesh(source,i,static_cast<std::size_t>(level),factor,
-                8 * 1024 * 1024,cancelled);
-            for (std::size_t triangle=0;triangle<mesh.triangle_count();++triangle) {
-                if (triangle%256==0 && cancelled && cancelled()) throw TerrainSurfaceCancelled();
-                const auto indices=mesh.triangle(triangle);
-                auto hit=radial_intersection(ray,mesh.vertices()[indices[0]].position,
-                    mesh.vertices()[indices[1]].position,mesh.vertices()[indices[2]].position);
-                if (hit && (!radius || *hit>*radius)) radius=*hit;
-            }
+        const auto level=terrain_level_index(patch,ray);
+        const auto mesh=make_terrain_patch_mesh(source,i,level,factor,8 * 1024 * 1024,cancelled);
+        for (std::size_t triangle=0;triangle<mesh.triangle_count();++triangle) {
+            if (triangle%256==0 && cancelled && cancelled()) throw TerrainSurfaceCancelled();
+            const auto indices=mesh.triangle(triangle);
+            const auto hit=radial_intersection(ray,mesh.vertices()[indices[0]].position,
+                mesh.vertices()[indices[1]].position,mesh.vertices()[indices[2]].position);
+            if (hit && (!radius || *hit>*radius)) radius=*hit;
         }
     }
     source.verify_source_unchanged();

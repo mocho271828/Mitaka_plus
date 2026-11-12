@@ -51,6 +51,18 @@ void test_rendering() {
     const AtmosphereDisplayOptions single{AtmosphereMode::single,1};
     const AtmosphereDisplayOptions multiple{AtmosphereMode::multiple,1};
     const auto image=render_atmosphere_scene(spheres,layers,camera,65,65,single);
+    // 奇数の3倍解像度では各3×3区画の中央が同じ視線。全行を照合して帯の境界も検証する。
+    const auto full=render_atmosphere_scene(spheres,layers,camera,195,195,single);
+    for (std::size_t y=0;y<65;++y) for (std::size_t x=0;x<65;++x) {
+        const auto first=image.rgba.begin()+4*(y*65+x);
+        expect(std::equal(first,first+4,full.rgba.begin()+4*((3*y+1)*195+3*x+1)),
+            "parallel atmosphere bands match serial rays");
+    }
+    // 全体の深度検査を通る有限距離でも、画素内のメートル換算で桁あふれし得る。
+    auto hugeDepth=make_surface_depth_frame(spheres,camera,195,195,
+        std::vector<double>(195*195,std::numeric_limits<double>::max()));
+    rejects([&]{render_atmosphere_scene(spheres,layers,camera,195,195,single,&hugeDepth);},
+        "parallel worker reports invalid ray distance to caller");
     expect(image.width==65 && image.height==65 && image.rgba.size()==65*65*4,"viewport shape");
     expect(!black(image),"physical daylight atmosphere emits");
     expect(image.rgba[0]==0 && image.rgba[3]==0,"off-sphere empty corner");

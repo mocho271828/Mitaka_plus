@@ -57,7 +57,7 @@ std::shared_ptr<const GalaxySpatialModel> fixture() {
 }
 NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera, bool opaqueBackground = false,
                           int scale = 1, RendererDisplayOptions quality = {}, bool flipped = false,
-                          std::optional<GalaxySpatialRecordId> selected = std::nullopt) {
+                          std::optional<GalaxySpatialRecordId> selected = std::nullopt, bool surfaceView = false) {
     NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
         pixelsWide:512 * scale pixelsHigh:512 * scale bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
         isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
@@ -75,7 +75,8 @@ NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera
         [[NSColor colorWithSRGBRed:.1 green:.2 blue:.3 alpha:1] setFill];
         NSRectFill(NSMakeRect(0, 0, 512, 512));
     }
-    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:quality scale:scale selectedRecord:selected];
+    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:quality scale:scale
+         selectedRecord:selected surfaceView:surfaceView];
     [NSGraphicsContext restoreGraphicsState];
     return image;
 }
@@ -258,6 +259,44 @@ NSPoint position(const GalaxySpatialModel& model, GalaxySpatialRecordId id, cons
     const auto point = GalaxyProjector(camera, 512, 512).project(*row.position);
     check(point.has_value(), "fixture projection missing");
     return NSMakePoint(point->x, point->y);
+}
+void surfaceSuppressesSurveyFootprint() {
+    const auto model = fixture();
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    [overlay setModel:model];
+    const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+    const GalaxySpatialRecordId galaxy{GalaxySpatialFamily::sdss_galaxy, 0, 11997};
+    const GalaxySpatialRecordId quasar{GalaxySpatialFamily::sdss_quasar, 1, 0};
+    const GalaxySpatialRecordId cluster{GalaxySpatialFamily::globular_cluster, 2, 0};
+    const GalaxySpatialRecordId nearby{GalaxySpatialFamily::nearby_galaxy, 3, 0};
+    const auto drawSurface = [&] { drawImage(overlay, camera, false, 1, {}, true, galaxy, true); };
+    draw(overlay, camera);
+    check([overlay isRecordDisplayed:galaxy] && [overlay isRecordDisplayed:quasar], "space survey fixture not visible");
+    drawSurface();
+    for (auto phase : {GalaxyOverlayDisplay::preview, GalaxyOverlayDisplay::complete}) {
+        if (phase == GalaxyOverlayDisplay::complete)
+            waitFor([&] { drawSurface(); return [overlay diagnostics].display == phase; }, "surface image did not converge");
+        check([overlay diagnostics].display == phase && [overlay diagnostics].displayed_drawn == 2 &&
+              [overlay isRecordDisplayed:cluster] && [overlay isRecordDisplayed:nearby],
+              "surface must retain only the local families in this scene");
+        for (auto hidden : {galaxy, quasar}) {
+            check(![overlay isRecordDisplayed:hidden], "surface displayed a survey marker");
+            const auto result = std::make_shared<PickResult>();
+            [overlay pickAtPoint:position(*model, hidden, camera) camera:camera completion:^(std::optional<GalaxySpatialRecordId> selection) {
+                result->picked = selection; result->called = true;
+            }];
+            waitFor([&] { return result->called; }, "surface pick did not finish");
+            check(!result->picked, "surface picked a hidden survey marker");
+        }
+    }
+    GalaxySpatialVisibility user;
+    user.sdss_quasars = false;
+    [overlay setVisibility:user];
+    drawSurface();
+    draw(overlay, camera);
+    check([overlay isRecordDisplayed:galaxy] && ![overlay isRecordDisplayed:quasar],
+          "leaving the surface must restore the current user choices");
 }
 void selectedCatalogRowRemainsInPreview() {
     PlusNearbyGalaxyCatalog catalog{{"nbg", {}}, {}};
@@ -966,6 +1005,7 @@ void tests() {
     check([overlay diagnostics].display == GalaxyOverlayDisplay::preview, "new model must not reuse old image");
     waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
             "replacement model did not converge");
+    surfaceSuppressesSurveyFootprint();
     previewAndCompleteLayerOrder();
     additivePreviewWinsOverPaintedGalaxy();
     radiativeFailureKeepsOtherLayers();

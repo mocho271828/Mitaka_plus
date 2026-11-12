@@ -301,6 +301,46 @@ static void marsDescent(const SolarBodies &bodies, const char *root) {
               << "; matching landed frame (2 m above real terrain)" << std::endl;
 }
 
+// 奇数寸法の天底中央1画素で、表示に使った三角形までの実距離を調べる。
+static void requireNadirDepth(SolarSystemView* view,std::size_t body,double jd) {
+    NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:30];
+    while (deadline.timeIntervalSinceNow>0) {
+        [view refreshTerrain];
+        const auto scene=[view displayedScene];
+        const auto* frame=solar_terrain_frame(scene,body);
+        if (frame && frame->mode==TerrainSurfaceMode::terrain && scene.julian_date==jd &&
+            [view matchesDisplayedCamera:[view cameraState] map:[view mapRect]]) {
+            require(frame->width%2 && frame->height%2,"expected centered nadir pixel");
+            const auto depth=frame->samples.at((frame->height/2)*frame->width+frame->width/2).distance_au;
+            require(std::abs(depth*astronomical_unit_km*1000-2)<.01,"camera floats above displayed ground");
+            return;
+        }
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
+    }
+    throw std::runtime_error("landed terrain did not converge");
+}
+static void checkLandedDepth(const SurfaceSite& site,TerrainAmplification factor,const SolarBodies& bodies,const char* root) {
+    SolarSystemView *view=[[SolarSystemView alloc] initWithFrame:NSMakeRect(0,0,197,181)];
+    [view setBodies:bodies];
+    view.terrainAmplification=factor;
+    [view setTerrainDataDirectory:[NSString stringWithUTF8String:root]];
+    [view configureSurface:site];
+    for (const double jd:{2451545.0,2451545.125}) {
+        SolarDateInput input{jd,{35,139},bodies,false,{},{},nullptr,nullptr,prepare_satellite_scene(nullptr,nullptr),nullptr};
+        [view commitDateUpdate:[view prepareDateUpdate:input]];
+        [view finishDateUpdate];
+        const auto initial=[view displayedScene];
+        require(initial.julian_date==jd && !solar_terrain_frame(initial,site.body_index),"expected fresh datum after date change");
+        requireNadirDepth(view,site.body_index,jd);
+    }
+    // ×20の高地は実際の視点と基準球上の足元でLODが異なる。モードだけ変えても地面を動かさない。
+    require([view forceSurfaceMode:NO bodyIndex:nullptr error:nullptr],"failed to leave surface");
+    requireNadirDepth(view,site.body_index,2451545.125);
+    [view cancelTerrain];
+    std::cout << (site.body_index==3 ? "Earth" : "Mars") << ": 2 m nadir depth across date and mode changes, factor "
+              << terrain_amplification_factor(factor) << std::endl;
+}
+
 static void run(std::size_t index, const char *root) {
     RealTerrainView *view=[[RealTerrainView alloc] initWithFrame:NSMakeRect(0,0,196,180)];
     SolarBodies bodies{}; const std::array<Body,11> ids{Body::sun,Body::mercury,Body::venus,Body::earth,Body::mars,Body::jupiter,Body::saturn,Body::uranus,Body::neptune,Body::pluto,Body::moon};
@@ -351,6 +391,11 @@ static void run(std::size_t index, const char *root) {
     require(found,"missing terrain diagnostic absent");
     std::cout << (index==3 ? "Real Earth" : "Real Mars") << " resize: 180x120 matching frame; missing root: datum sphere and explicit source diagnostic" << std::endl;
     [view cancelTerrain];
+    checkLandedDepth({index,index==3?36.43:-4.59,index==3?136.8:137.44,minimum_surface_height_km,45,-90},
+                     TerrainAmplification::x1,bodies,root);
+    if (index==4)
+        checkLandedDepth({index,17.325390625,-133.091015625,minimum_surface_height_km,45,-90},
+                         TerrainAmplification::x20,bodies,root);
     if (index == 4) marsDescent(bodies, root);
 }
 int main(int argc,char **argv) { @autoreleasepool { [NSApplication sharedApplication]; try {
