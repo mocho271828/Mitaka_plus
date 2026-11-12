@@ -136,8 +136,11 @@ static SurfaceSite surfaceSiteWithOrientation(const SurfaceNavigation& navigatio
 }
 - (BOOL)scriptSetCameraOrientation:(PlusOrientationQuaternion)orientation duration:(double)duration smooth:(BOOL)smooth error:(NSString **)error {
     try {
-        const auto initial = [self scriptCameraOrientation];
         const auto target = plus_orientation_normalized(orientation);
+        if (!std::isfinite(duration) || duration < 0)
+            throw std::invalid_argument("camera orientation duration must be nonnegative and finite");
+        if (_orientationAnimation) [self advanceScriptOrientation];
+        const auto initial = [self scriptCameraOrientation];
         return [self beginScriptOrientation:{initial, target, {}, {}, 0, duration, bool(smooth),
                                              ScriptOrientationInterpolation::quaternion} error:error];
     } catch (const std::exception& failure) {
@@ -147,8 +150,11 @@ static SurfaceSite surfaceSiteWithOrientation(const SurfaceNavigation& navigatio
 }
 - (BOOL)scriptSetCameraEuler:(PlusOrientationEuler)euler relative:(BOOL)relative duration:(double)duration smooth:(BOOL)smooth error:(NSString **)error {
     try {
-        const auto initial = [self scriptCameraOrientation];
         auto target = plus_orientation_from_euler(euler.heading, euler.pitch, euler.roll);
+        if (!std::isfinite(duration) || duration < 0)
+            throw std::invalid_argument("camera orientation duration must be nonnegative and finite");
+        if (_orientationAnimation) [self advanceScriptOrientation];
+        const auto initial = [self scriptCameraOrientation];
         if (relative) target = plus_orientation_normalized(plus_orientation_multiply(initial, target));
         const auto initialEuler = relative ? PlusOrientationEuler{} : plus_orientation_to_euler(initial);
         const auto interpolation = relative ? ScriptOrientationInterpolation::relative_euler

@@ -262,6 +262,21 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         const BOOL orientationInterpolated = orientationStarted && _camera.vertical_fov_deg == 30;
         const BOOL orientationRetargeted = [self scriptSetCameraEuler:{-20, 10, 0} relative:YES duration:0 smooth:NO error:&fovError]
             && !_orientationAnimation && _camera.vertical_fov_deg == 30;
+        // タイマー通知が遅れても、有効な再指定は現在時刻の姿勢から始まる。
+        BOOL retargetAtCurrentTime = [self scriptSetCameraEuler:{0, 0, 0} relative:NO duration:0 smooth:NO error:&fovError]
+            && [self scriptSetCameraEuler:{90, 0, 0} relative:NO duration:10 smooth:NO error:&fovError];
+        if (_orientationAnimation) _orientationAnimation->start_time -= 5;
+        const auto beforeInvalid = [self scriptCameraOrientation];
+        NSString *invalidOrientation = nil;
+        retargetAtCurrentTime = ![self scriptSetCameraOrientation:{0, 0, 0, 0} duration:0 smooth:NO error:&invalidOrientation]
+            && invalidOrientation.length && _orientationAnimation.has_value()
+            && [self scriptCameraOrientation].x == beforeInvalid.x
+            && [self scriptCameraOrientation].y == beforeInvalid.y
+            && [self scriptCameraOrientation].z == beforeInvalid.z
+            && [self scriptCameraOrientation].w == beforeInvalid.w && retargetAtCurrentTime;
+        retargetAtCurrentTime = [self scriptSetCameraEuler:{0, 0, 0} relative:YES duration:0 smooth:NO error:&fovError]
+            && std::abs(plus_orientation_to_euler([self scriptCameraOrientation]).heading - 45) < 0.1
+            && retargetAtCurrentTime;
         const BOOL surfaceMoved = [self moveScriptSurfaceBody:10 latitude:25 longitude:-40] && _camera.vertical_fov_deg == 30;
         const BOOL surfacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:YES error:&fovError]
             && _camera.vertical_fov_deg == 30;
@@ -316,7 +331,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         _camera.vertical_fov_deg = 30;
         const BOOL spacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:NO error:&fovError]
             && _camera.vertical_fov_deg == 30;
-        passed = fovSet && fovInvalid && fovLook && orientationInterpolated && orientationRetargeted && surfaceMoved && spacePlace && surfacePlace && pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
+        passed = fovSet && fovInvalid && fovLook && orientationInterpolated && orientationRetargeted && retargetAtCurrentTime && surfaceMoved && spacePlace && surfacePlace && pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
             failedPreservesPoint && generalModeAscent && horizonModeAscent && selectedEarth && ascended && focusedEarth && interrupted;
         if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d generalModeAscent=%d horizonModeAscent=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
             pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint, generalModeAscent, horizonModeAscent,

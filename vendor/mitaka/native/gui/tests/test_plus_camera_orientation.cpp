@@ -44,10 +44,30 @@ void interpolation_extremes() {
         close(std::abs(q.w), .5, "equivalent-sign interpolation changed the orientation");
     }
 }
+void legacy_euler_orientation() {
+    // Windows Plus 1.5.4 の setEuler(30,20,35) 後に保存された quaternion。
+    const auto q = plus_orientation_from_euler(30, 20, 35);
+    check(std::abs(q.x - 0.0833221) < 5e-7 && std::abs(q.y - 0.293528) < 5e-7
+        && std::abs(q.z + 0.328910) < 5e-7 && std::abs(q.w - 0.893710) < 5e-7,
+        "Euler orientation differs from legacy Plus");
+    const auto view = plus_orientation_basis(q);
+    constexpr double radians = 3.14159265358979323846 / 180;
+    close(view.outward.x, std::cos(20 * radians) * std::sin(30 * radians),
+          "legacy heading must move the camera toward positive X");
+    for (const PlusOrientationEuler angle : {
+        PlusOrientationEuler{30,20,35}, {90,0,0}, {0,0,90}, {-85,-30,65}, {10,90,20}, {-40,-90,80}}) {
+        const auto actual = plus_orientation_from_euler(angle.heading, angle.pitch, angle.roll);
+        const auto recovered = plus_orientation_to_euler(actual);
+        const auto roundtrip = plus_orientation_from_euler(recovered.heading, recovered.pitch, recovered.roll);
+        const double dot = actual.x*roundtrip.x + actual.y*roundtrip.y
+            + actual.z*roundtrip.z + actual.w*roundtrip.w;
+        close(std::abs(dot), 1, "Euler reconstruction changed camera orientation");
+    }
+}
 }
 int main() {
     try {
-        normalization_extremes(); interpolation_extremes();
+        normalization_extremes(); interpolation_extremes(); legacy_euler_orientation();
         std::cout << "Plus camera orientation: PASS\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
