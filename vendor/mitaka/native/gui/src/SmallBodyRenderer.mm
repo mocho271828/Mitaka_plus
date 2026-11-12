@@ -18,6 +18,43 @@ std::array<CGFloat, 3> color(SmallBodyKind kind) {
     if (kind == SmallBodyKind::trans_neptunian) return {0.60, 0.65, 1};
     return {0.82, 0.69, 0.48};
 }
+// 画面の実位置を、一周期分の原標本と同じ位相の日時に対応付ける。
+std::optional<double> orbit_sample_date(const SmallBodyRecord& record,const MinorPlanetOrbitPath& path,double jd) {
+    const auto* elements=std::get_if<OrbitalElements>(&record.orbit);
+    if (!elements || path.samples.size()<3) return std::nullopt;
+    const double first=path.samples.front().julian_date,last=path.samples.back().julian_date;
+    if (jd>=first && jd<=last) return jd;
+    const double period=360.0/elements->mean_motion_deg_per_day;
+    double delta=std::fmod(jd-first,period);
+    if (delta<0) delta+=period;
+    return first+delta;
+}
+bool near_chord(const SolarProjection& point,Vec3 a,Vec3 b,const SolarCamera& camera,NSSize size) {
+    const auto line=project_solar_segment(a,b,camera,size.width,size.height);
+    if (!line) return false;
+    const auto& p=(*line)[0]; const auto& q=(*line)[1];
+    const double dx=q.x-p.x,dy=q.y-p.y,length=std::hypot(dx,dy);
+    if (length==0) return std::hypot(point.x-p.x,point.y-p.y)<=0.25;
+    const double along=std::clamp((point.x-p.x)*(dx/length)+(point.y-p.y)*(dy/length),0.0,length);
+    return std::hypot(point.x-p.x-along*(dx/length),point.y-p.y-along*(dy/length))<=0.25;
+}
+template<class Emit> void draw_local_arc(const SmallBodyRecord& record,const MinorPlanetOrbitSample& a,
+    const MinorPlanetOrbitSample& b,const SolarCamera& camera,NSSize size,unsigned depth,const Emit& emit) {
+    const double middle=a.julian_date+(b.julian_date-a.julian_date)*0.5;
+    // 近クリップ面や極端な拡大でも一弦当たりの描画量を制限する。
+    if (depth>=6 || !(a.julian_date<middle && middle<b.julian_date)) {
+        emit(*a.position,*b.position); return;
+    }
+    const auto position=evaluate_minor_planet_position(record,middle).heliocentric_j2000_ecliptic_au;
+    if (!position) return; // 評価不能な区間を結ばない。
+    const auto screen=project_solar(*position,camera,size.width,size.height);
+    if (screen && near_chord(*screen,*a.position,*b.position,camera,size)) {
+        emit(*a.position,*b.position); return;
+    }
+    const MinorPlanetOrbitSample mid{middle,position};
+    draw_local_arc(record,a,mid,camera,size,depth+1,emit);
+    draw_local_arc(record,mid,b,camera,size,depth+1,emit);
+}
 }
 std::vector<VisibleSmallBody> visible_small_bodies(const SmallBodySnapshot& snapshot,
     const SmallBodyDisplayModel& display, const SolarCamera& camera, NSRect map) {
@@ -56,31 +93,50 @@ void visit_small_body_orbit_segments(const SmallBodySnapshot& snapshot,
     for (std::size_t row = 0; row < orbits->paths.size(); ++row) {
         if (!display.visibility(row).orbit) continue;
         const auto& id = snapshot.model->dataset().records[row].id;
-        const auto visit_path = [&](const auto& path, auto position) {
-            if (path.id.source_key != id.source_key || path.id.record_ordinal != id.record_ordinal) return;
-            std::optional<Vec3> previous;
-            for (const auto& sample : path.samples) {
-                const auto current = position(sample);
-                if (previous && current) {
-                    const auto line = project_solar_segment(*previous, *current, camera, map.size.width, map.size.height);
-                    if (line) {
-                        auto first = (*line)[0], second = (*line)[1];
-                        first.x += map.origin.x; first.y += map.origin.y;
-                        second.x += map.origin.x; second.y += map.origin.y;
-                        visitor({row, first, second});
-                    }
-                }
-                // 欠損点は軌道の切れ目として保持し、前後を直結しない。
-                previous = current;
-            }
+        const auto emit = [&](Vec3 a, Vec3 b) {
+            auto line=project_solar_segment(a,b,camera,map.size.width,map.size.height);
+            if (!line) return;
+            for (auto& p:*line) { p.x+=map.origin.x; p.y+=map.origin.y; }
+            visitor({row,(*line)[0],(*line)[1]});
         };
-        if (orbits->paths[row])
-            visit_path(*orbits->paths[row], [](const auto& sample) -> std::optional<Vec3> {
-                if (!sample.evaluation.state) return std::nullopt;
-                return sample.evaluation.state->position_au;
-            });
-        if (orbits->minor_planet_paths[row] && !orbits->minor_planet_paths[row]->cancelled)
-            visit_path(*orbits->minor_planet_paths[row], [](const auto& sample) { return sample.position; });
+        if (const auto& path=orbits->paths[row]; path && path->id.source_key==id.source_key &&
+            path->id.record_ordinal==id.record_ordinal) {
+            for (std::size_t i=1;i<path->samples.size();++i) {
+                const auto& a=path->samples[i-1].evaluation.state;
+                const auto& b=path->samples[i].evaluation.state;
+                if (a && b) emit(a->position_au,b->position_au);
+            }
+        }
+        const auto& path=orbits->minor_planet_paths[row];
+        if (!path || path->cancelled || path->id.source_key!=id.source_key ||
+            path->id.record_ordinal!=id.record_ordinal) continue;
+        const auto& record=snapshot.model->dataset().records[row];
+        const auto marker=snapshot.positions[row];
+        const auto screen=marker ? project_solar(*marker,camera,map.size.width,map.size.height) : std::nullopt;
+        const auto phase=screen && screen->x>=0 && screen->x<map.size.width && screen->y>=0 && screen->y<map.size.height
+            ? orbit_sample_date(record,*path,snapshot.julian_date) : std::nullopt;
+        const auto edges=path->samples.size() ? path->samples.size()-1 : 0;
+        std::size_t edge=0;
+        if (phase && edges) {
+            const auto next=std::upper_bound(path->samples.begin(),path->samples.end(),*phase,
+                [](double jd,const auto& sample){return jd<sample.julian_date;});
+            edge=next==path->samples.end() || next==path->samples.begin() ? 0 :
+                static_cast<std::size_t>(next-path->samples.begin()-1);
+        }
+        for (std::size_t i=0;i<edges;++i) {
+            const auto& a=path->samples[i]; const auto& b=path->samples[i+1];
+            if (!a.position || !b.position) continue;
+            // 標本時刻ちょうどでも弦の内側は曲がる。一周期の境界をまたぐ両隣も同じ条件で確認する。
+            if (!phase || (i!=edge && i!=(edge+edges-1)%edges && i!=(edge+1)%edges)) {
+                emit(*a.position,*b.position); continue;
+            }
+            if (i==edge && a.julian_date<*phase && *phase<b.julian_date &&
+                !near_chord(*screen,*a.position,*b.position,camera,map.size)) {
+                const MinorPlanetOrbitSample live{*phase,marker};
+                draw_local_arc(record,a,live,camera,map.size,0,emit);
+                draw_local_arc(record,live,b,camera,map.size,0,emit);
+            } else draw_local_arc(record,a,b,camera,map.size,0,emit);
+        }
     }
 }
 void draw_small_bodies(CGContextRef context, const SmallBodySnapshot& snapshot,

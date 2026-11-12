@@ -27,7 +27,7 @@ void add(MinorPlanetPositionEvaluation& result, Code code, std::string field,
                                       std::move(field), std::move(message)});
 }
 
-bool validate_elements(const OrbitalElements& orbit, MinorPlanetPositionEvaluation& result) {
+bool validate_elements(const OrbitalElements& orbit, bool individual, MinorPlanetPositionEvaluation& result) {
     for (double value : {orbit.epoch_jd, orbit.semi_major_axis_au, orbit.eccentricity,
                         orbit.mean_anomaly_deg, orbit.mean_motion_deg_per_day,
                         orbit.ascending_node_deg, orbit.inclination_deg,
@@ -41,9 +41,14 @@ bool validate_elements(const OrbitalElements& orbit, MinorPlanetPositionEvaluati
         add(result, Code::invalid_source, "orbit", "minor-planet orbit requires a > 0, n > 0 and e >= 0");
         return false;
     }
-    if (orbit.eccentricity >= 1) {
+    if (orbit.eccentricity == 1) {
         add(result, Code::calculation_failed, "eccentricity",
-            "minor-planet non-elliptic position contract is not verified; require e < 1");
+            "parabolic minor-planet positions are not supported");
+        return false;
+    }
+    if (orbit.eccentricity > 1 && !individual) {
+        add(result, Code::calculation_failed, "eccentricity",
+            "hyperbolic positions are not verified for packed minor-planet records");
         return false;
     }
     return true;
@@ -80,7 +85,7 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         add(result, Code::invalid_source, "orbit", "minor-planet record has no mean-anomaly orbital elements");
         return result;
     }
-    if (!validate_elements(*orbit, result)) return result;
+    if (!validate_elements(*orbit, text, result)) return result;
 
     // 外部で構築された record も受けるため、明示値を無視した軌道を評価しない。
     bool has_explicit_n = false;
@@ -122,7 +127,11 @@ MinorPlanetPositionEvaluation evaluate_minor_planet_position(const SmallBodyReco
         "requested legacy numeric JD is used unchanged; physical UTC/TT/TDB is not verified");
     result.status = MinorPlanetPositionStatus::unavailable_at_time;
     try {
-        result.heliocentric_j2000_ecliptic_au = orbital_state(*orbit, time).position_au;
+        auto elements = *orbit;
+        // 楕円の巨大なM0へ微小な日時差を加えると位相が丸め落ちる。周回分を先に除く。
+        if (elements.eccentricity < 1 && std::abs(elements.mean_anomaly_deg) >= 360.0)
+            elements.mean_anomaly_deg = std::remainder(elements.mean_anomaly_deg, 360.0);
+        result.heliocentric_j2000_ecliptic_au = orbital_state(elements, time).position_au;
         result.contract = packed ? minor_planet_packed_position_contract
                                  : minor_planet_element_position_contract;
         result.status = MinorPlanetPositionStatus::success;

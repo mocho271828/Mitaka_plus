@@ -89,6 +89,14 @@ double eccentric_anomaly(double eccentricity, double mean_anomaly) {
     const double m = elliptic ? std::remainder(mean_anomaly, 2.0 * pi) : mean_anomaly;
     if (m == 0.0) return 0.0;
     const double target = std::abs(m);
+    if (!elliptic) {
+        // M=(e−1)H+e(H³/6+…)。非線形項が丸め精度未満なら、微小なHを
+        // 通常の二分法の絶対停止幅に丸めず、線形項から直接求められる。
+        const double linear = target / (eccentricity - 1);
+        if (linear == 0) throw std::out_of_range("astronomy: hyperbolic anomaly underflow");
+        if (linear <= std::sqrt(std::numeric_limits<double>::epsilon() * ((eccentricity - 1) / eccentricity)))
+            return std::copysign(linear, m);
+    }
     double lower = 0.0;
     double upper = elliptic ? pi : std::asinh(target / eccentricity) + 1.0;
     double x = (lower + upper) / 2.0;

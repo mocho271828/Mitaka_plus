@@ -347,6 +347,66 @@ void real_packed_orbit_rendering_tests(const char* directory) {
     }
 }
 
+void magnified_orbit_tests(const char* directory) {
+    auto data=std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
+    auto model=std::make_shared<SmallBodyModel>(data);
+    auto display=std::make_shared<SmallBodyDisplayModel>(data);
+    const NSRect map=NSMakeRect(0,0,964,529);
+    for (const auto& source:{"mp.dat","orbits/asteroids/sedna.dat"}) {
+        const auto it=std::find_if(data->records.begin(),data->records.end(),[&](const auto& r){
+            return r.id.source_key==source && (r.encoding!=SmallBodyEncoding::packed_36 || r.number==1); });
+        check(it!=data->records.end(),"real zoom regression source missing");
+        const auto row=static_cast<std::size_t>(it-data->records.begin());
+        display->set_selected_ids({it->id});
+        display->set_kind_options(it->kind,{true,false,true,true});
+        auto orbits=evaluate_small_body_orbit_snapshot(model,display,{2451362,2451728,129});
+        const auto& el=std::get<OrbitalElements>(it->orbit);
+        const double first=orbits->minor_planet_paths[row]->samples.front().julian_date;
+        for (double jd:{2451545.,el.epoch_jd,first}) {
+            auto frame=evaluate_small_body_snapshot(model,jd,false,row);
+            const double distance=it->kind==SmallBodyKind::asteroid ? 0.01 : 0.05;
+            SolarCamera c; c.set_target_au(frame->positions.at(row).value()); c.pitch_deg=85; c.yaw_deg=30; c.distance_au=distance;
+            auto check_curve=[&](const SmallBodyOrbitSnapshot& paths,bool should_match) {
+                std::vector<SmallBodyProjectedOrbitSegment> lines;
+                visit_small_body_orbit_segments(*frame,*display,&paths,c,map,[&](const auto& line){lines.push_back(line);});
+                // 実際の楕円を別の日時で細かく評価し、拡大した画面内で軌道の接続と曲がりを照合する。
+                int visible=0;
+                const auto near=evaluate_minor_planet_position(*it,jd+0.01).heliocentric_j2000_ecliptic_au.value();
+                const auto body=*frame->positions[row];
+                const double days=distance*0.01/std::hypot(near.x-body.x,near.y-body.y,near.z-body.z);
+                for (int j=-16;j<=16;++j) {
+                    const auto pos=evaluate_minor_planet_position(*it,jd+days*j/16).heliocentric_j2000_ecliptic_au;
+                    const auto point=project_solar(pos.value(),c,map.size.width,map.size.height);
+                    if (!point || !NSPointInRect(NSMakePoint(point->x,point->y),map)) continue;
+                    ++visible;
+                    double nearest=std::numeric_limits<double>::infinity();
+                    for (const auto& line:lines) {
+                        const double dx=line.second.x-line.first.x,dy=line.second.y-line.first.y;
+                        const double q=dx*dx+dy*dy;
+                        const double t=q ? std::clamp(((point->x-line.first.x)*dx+(point->y-line.first.y)*dy)/q,0.,1.) : 0;
+                        nearest=std::min(nearest,std::hypot(point->x-line.first.x-t*dx,point->y-line.first.y-t*dy));
+                    }
+                    check(should_match ? nearest<0.6 : nearest>3,"zoomed orbit must follow real body only between valid source samples");
+                }
+                check(visible>=3,"zoom regression must cover multiple visible trajectory positions");
+            };
+            check_curve(*orbits,true);
+            if (jd!=2451545.) continue;
+            auto broken=*orbits;
+            auto& samples=broken.minor_planet_paths[row]->samples;
+            const double period=360.0/el.mean_motion_deg_per_day;
+            double delta=std::fmod(frame->julian_date-first,period);
+            if (delta<0) delta+=period;
+            auto gap=std::upper_bound(samples.begin(),samples.end(),first+delta,
+                [](double jd,const auto& sample){return jd<sample.julian_date;});
+            check(gap!=samples.end(),"expected a sample past the current marker");
+            gap->position.reset();
+            check_curve(broken,false);
+        }
+        check(orbits->minor_planet_paths[row]->samples.size()==129,"view refinement must keep the stored sample budget");
+    }
+}
+
 void high_eccentricity_probe(const char* directory) {
     auto dataset = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
     auto model = std::make_shared<SmallBodyModel>(dataset);
@@ -547,7 +607,7 @@ int main(int argc, char** argv) {
             solar_tests();
             small_body_quality_tests();
             small_body_orbit_rendering_tests();
-            if (argc == 2) { real_packed_orbit_rendering_tests(argv[1]); high_eccentricity_probe(argv[1]); star_tests(argv[1]); }
+            if (argc == 2) { real_packed_orbit_rendering_tests(argv[1]); high_eccentricity_probe(argv[1]); magnified_orbit_tests(argv[1]); star_tests(argv[1]); }
             std::cout << "display rendering tests passed (" << checks << " checks)\n";
         } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }

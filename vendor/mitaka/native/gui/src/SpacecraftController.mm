@@ -239,11 +239,8 @@ NSString *string(const std::string& text) {
 - (void)updateDetails {
     const auto index = [self selectedIndex];
     if (_model && index) _details.string = string(spacecraft_description(*_model, *index, _snapshot.get()));
-    else if (_model) {
-        std::string text = "同名の探査機と未解決の定義もすべて保持します。PTH は旧版の数値 JD で評価し、PPI の座標は推定しません。行を選ぶと原定義・位置・診断を表示します。";
-        for (const auto& diagnostic : _model->model().dataset().diagnostics) text += "\n" + diagnostic.source_key + ": " + diagnostic.message;
-        _details.string = string(text);
-    } else _details.string = @"";
+    else if (_model) _details.string = string(spacecraft_catalog_description(*_model));
+    else _details.string = @"";
 }
 - (void)tableViewSelectionDidChange:(NSNotification *)notification {
     (void)notification;

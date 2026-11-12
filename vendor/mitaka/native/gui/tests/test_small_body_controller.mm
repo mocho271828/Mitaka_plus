@@ -142,7 +142,7 @@ void tests() {
     NSTextField *orbitExplanation = (NSTextField *)findView(root, ^bool(NSView *view) {
         return [view.accessibilityIdentifier isEqualToString:@"small-body-orbit-explanation"];
     });
-    require([orbitExplanation.stringValue containsString:@"元期から一周期"]
+    require([orbitExplanation.stringValue containsString:@"近日点から一周期"]
         && [orbitExplanation.stringValue containsString:@"物理時系は未確定"],
         "orbit controls explain packed36 sampling and unresolved physical time scale");
     NSTextField *orbitStatus = (NSTextField *)findView(root, ^bool(NSView *view) {

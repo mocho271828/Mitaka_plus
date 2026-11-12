@@ -94,6 +94,9 @@ void packedTests() {
     require(minorDetail.find("(TDB 入力") == std::string::npos && minorDetail.find("raw frame unresolved") == std::string::npos,
         "resolved packed frame is not contradicted or mislabeled as TDB");
     require(minorDetail.find("raw physical time unresolved") != std::string::npos, "physical time diagnostic is preserved");
+    require(small_body_description(*model, 3, frame.get()).find("packed 37 byte · 原フラグ 0（意味未確定）")
+        != std::string::npos && minorDetail.find("原フラグ") == std::string::npos,
+        "show a zero raw flag on the 37-byte row, never on its 36-byte counterpart");
     require(small_body_description(*model, 0, frame.get()).find("(TDB 入力") != std::string::npos, "comet detail retains TDB label");
     require(small_body_description(*model, 4, frame.get()).find("requires a > 0") != std::string::npos, "invalid packed input retains evaluator diagnostic");
     require(records[1].frame == SmallBodyFrame::unresolved && records[1].time_scale == SmallBodyTimeScale::unresolved

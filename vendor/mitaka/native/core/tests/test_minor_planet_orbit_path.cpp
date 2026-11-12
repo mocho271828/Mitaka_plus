@@ -41,9 +41,9 @@ void full_period(SmallBodyEncoding encoding) {
         const auto path = sample_minor_planet_orbit_path(record, 129);
         expect(path.id.source_key == record.id.source_key && path.id.record_ordinal == record.id.record_ordinal, "identity");
         expect(path.samples.size() == 129 && path.failures.empty() && !path.cancelled, "whole period");
-        expect(path.samples.front().julian_date == orbit.epoch_jd
-               && path.samples.back().julian_date == orbit.epoch_jd + 360 / orbit.mean_motion_deg_per_day,
-               "full period endpoints");
+        expect(path.samples.front().julian_date == orbit.epoch_jd - 30.0 / orbit.mean_motion_deg_per_day
+               && path.samples.back().julian_date == orbit.epoch_jd + 330.0 / orbit.mean_motion_deg_per_day,
+               "period starts and ends at perihelion and includes the element epoch");
         expect(diagnostic(path, SmallBodyDiagnosticCode::unknown_accuracy_range), "accuracy unknown");
         expect(diagnostic(path, SmallBodyDiagnosticCode::unresolved_time_scale), "time scale unresolved");
         for (const auto& sample : path.samples) {
@@ -123,23 +123,27 @@ void large_mean_anomaly_sampling(SmallBodyEncoding encoding) {
     if (encoding == SmallBodyEncoding::element_text) record.raw_record_bytes = "a: 1\n";
     auto& orbit = std::get<OrbitalElements>(record.orbit);
     orbit.eccentricity = 0.99;
-    orbit.mean_anomaly_deg = 1e18;
     orbit.ascending_node_deg = orbit.inclination_deg = orbit.argument_of_periapsis_deg = 0;
-    const auto path = sample_minor_planet_orbit_path(record, 5);
-    expect(path.samples.size() == 5 && path.samples.front().position, "large mean anomaly is evaluable");
-    const auto position = *path.samples.front().position;
-    const double phase = std::atan2(position.y / std::sqrt((1-orbit.eccentricity)*(1+orbit.eccentricity)),
-                                    position.x + orbit.eccentricity);
-    constexpr double tau = 6.283185307179586476925286766559;
-    const double delta = tau / 4;
-    const double expected = orbit.epoch_jd + 360.0 / orbit.mean_motion_deg_per_day *
-        (delta - orbit.eccentricity * (std::sin(phase + delta) - std::sin(phase))) / tau;
-    expect(std::abs(path.samples[1].julian_date - expected) < 1e-8,
-           "large mean anomaly orbit sampling agrees with epoch position");
+    for (double mean : {1e18, -30.0, 330.0, 720.0}) {
+        orbit.mean_anomaly_deg = mean;
+        const auto path = sample_minor_planet_orbit_path(record, default_small_body_orbit_samples);
+        expect(path.samples.size() == 201 && path.failures.empty(), "200 intervals and closing vertex");
+        expect(path.samples.front().julian_date <= orbit.epoch_jd && orbit.epoch_jd < path.samples.back().julian_date,
+               "the two perihelion passages bracket the epoch");
+        const double minor = std::sqrt(1 - orbit.eccentricity * orbit.eccentricity);
+        for (std::size_t i = 0; i < path.samples.size(); ++i) {
+            const double anomaly = 2 * 3.14159265358979323846 * i / 200;
+            const auto p = path.samples[i].position.value();
+            expect(std::hypot(p.x - (std::cos(anomaly) - orbit.eccentricity),
+                              p.y - minor * std::sin(anomaly)) < 2e-9,
+                   "projected orbit obeys equal eccentric anomaly steps measured from perihelion");
+        }
+    }
 }
 void failures_and_gaps() {
     auto record = asteroid();
     std::get<OrbitalElements>(record.orbit).eccentricity = 0;
+    std::get<OrbitalElements>(record.orbit).mean_anomaly_deg = 0;
     record.declared_time_range = SmallBodyTimeRange{2451635, 2451815};
     auto path = sample_minor_planet_orbit_path(record, 5);
     expect(path.samples.size() == 5 && path.failures.size() == 2, "range failures retained");
@@ -227,17 +231,22 @@ void local_data(const std::filesystem::path& root) {
         const bool text = record.encoding == SmallBodyEncoding::element_text
             && record.kind != SmallBodyKind::comet;
         if (record.encoding != SmallBodyEncoding::packed_36 && !text) continue;
-        const auto path = sample_minor_planet_orbit_path(record, 129);
-        expect(path.samples.size() == 129 && path.failures.empty() && !path.cancelled,
+        const auto path = sample_minor_planet_orbit_path(record, default_small_body_orbit_samples);
+        expect(path.samples.size() == default_small_body_orbit_samples && path.failures.empty() && !path.cancelled,
                "real supported row fully sampled");
         if (text) ++individual;
         rows++; points += path.samples.size();
         const auto& orbit = std::get<OrbitalElements>(record.orbit);
         expect(path.id.source_key == record.id.source_key && path.id.record_ordinal == record.id.record_ordinal,
                "real orbit retains independent source identity");
-        expect(path.samples.front().julian_date == orbit.epoch_jd
-               && path.samples.back().julian_date == orbit.epoch_jd + 360 / orbit.mean_motion_deg_per_day,
-               "real orbit covers exactly its own numeric-JD period");
+        const double start = path.samples.front().julian_date, end = path.samples.back().julian_date;
+        const double period = 360 / orbit.mean_motion_deg_per_day;
+        expect(start <= orbit.epoch_jd && orbit.epoch_jd <= end &&
+               std::abs(end - start - period) <= std::max(1e-9, 2e-15 * period),
+               "real orbit covers a period bracketing the element epoch");
+        const auto peri = path.samples.front().position.value();
+        expect(std::abs(std::hypot(peri.x, peri.y, peri.z) - orbit.semi_major_axis_au * (1 - orbit.eccentricity))
+               < 2e-12 * orbit.semi_major_axis_au, "real first vertex lies at perihelion");
         for (const auto& sample : path.samples) {
             expect(sample.position && std::isfinite(sample.position->x) && std::isfinite(sample.position->y)
                    && std::isfinite(sample.position->z), "real point finite");
@@ -248,7 +257,7 @@ void local_data(const std::filesystem::path& root) {
                    && radius <= orbit.semi_major_axis_au * (1+orbit.eccentricity)+tolerance,
                    "real orbit stays between perihelion and aphelion");
         }
-        expect(minor_planet_orbit_segments(path).size() == 128, "real orbit does not add a duplicate closing segment");
+        expect(minor_planet_orbit_segments(path).size() == default_small_body_orbit_samples - 1, "real orbit does not add a duplicate closing segment");
     }
     expect(rows > 0, "real catalog has packed rows");
     std::cout << "real packed rows=" << rows-individual << " individual rows=" << individual

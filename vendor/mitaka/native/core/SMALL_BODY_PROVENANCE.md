@@ -12,9 +12,9 @@
 
 | 入力 | 保持する内容 | 位置計算 |
 | --- | --- | --- |
-| `mp.dat`, `TNO.dat` | 36 バイトの全記録、番号、元期、軌道要素 | 原版の数値 JD による日心 J2000 黄道 AU 位置。物理時系は未確定 |
-| `mp2.dat`, `TNO2.dat` | 37 バイトの全記録と意味未確定の生フラグ | 旧 Plus での利用・評価契約が未確定のため保留 |
-| `orbits/asteroids/*.dat` | 全キー、CP932 名称、元番号、言語別定義、軌道要素候補 | a 指定の楕円を数値 JD・日心 J2000 黄道 AU で評価。物理時系は未認定 |
+| `mp.dat`, `TNO.dat` | 36 バイトの全記録、番号、元期、軌道要素 | 0 ≤ e < 1 の楕円を原版の数値 JD で評価。日心 J2000 黄道 AU。物理時系は未確定 |
+| `mp2.dat`, `TNO2.dat` | 37 バイトの全記録と意味未確定の生フラグ | 旧 Plus 1.5.4 の検証経路では開かれず、生フラグを表示し、位置を推定しない |
+| `orbits/asteroids/*.dat` | 全キー、CP932 名称、元番号、言語別定義、軌道要素候補 | a または n による楕円・双曲線の瞬時位置を数値 JD・日心 J2000 黄道 AU で評価。e=1 と物理時系は未認定 |
 | `orbits/comets/*.dat` | 全キーと混在する `Tp` の原値 | `Tp` の形式・参照面・時系が未確定のため保留 |
 | `comets.dat` | 固定幅の全行と元フィールド | 確認できた近代の暦日について楕円・放物線・双曲線を評価 |
 | `small_objects_name.dat` | 原出典全体、番号以降の文字列と繰り返し行 | 検索用の関連名として付加。既存記録を統合しない |
@@ -152,4 +152,6 @@ x86_64 向けのコンパイルとリンクも通過したが、この検証で�
 
 ## 2026-11-07 個別形式の追加
 
-別 PC の旧 Plus reader/evaluator 静的解析を根拠に、a 指定の個別 Asteroid/TNObject を専用 legacy numeric JD 契約で評価し、一周期軌道と GUI snapshot へ接続した。旧 float 丸めと番号上書きは再現せず、native double と全出典保持を維持する。有限の a > 0 と明示 n > 0 の両指定は、明示 n を使って評価する。n のみの指定、非楕円、37 byte は評価しない。追加分の旧 Plus 実行版との比較は未実施。根拠・原本57本のハッシュ・採用範囲は [監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)、結果は [検証記録](../../../../investigation/native-plus/minor-planet-individual-validation.md) を参照。
+個別 Asteroid/TNObject は原文・言語・原番号ごとに保持する。2026-11-07 に a 指定の楕円を専用の数値 JD 契約へ加えた。同梱57定義はすべて a を持つ。[当初の実装と実データの監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)
+
+2026-11-12 の旧 Plus 1.5.4 の実行比較では、セレスのコピーで a だけを与えた場合と、等価な n だけを与えた場合が2日時で同じ方向を向いた。個別形式は正の有限な a と n の片方を省略するともう片方から導出し、両指定では指定値を採用する。e>1 は非周期の瞬時位置を評価する。個別 e=1 は原要素と診断を保持する。旧 reader の binary32 丸めと番号上書きは native の入力に適用しない。[a 省略の再現](../../../../verification/p4/individual-n-loader.tsv)・[非楕円の旧版注視・統合版実画面](../../../../verification/p4/individual-conic-look.md)

@@ -10,7 +10,7 @@ namespace mitaka::gui {
 // 原本の件数制限ではなく、一度の軌跡計算に対する作業量の上限。
 inline constexpr std::size_t maximum_small_body_orbit_total_samples = 524288;
 // packed36・個別小天体は位置のみの軽量標本で保持するため、彗星とは別に制限する。
-inline constexpr std::size_t maximum_minor_planet_orbit_total_samples = 1572864;
+inline constexpr std::size_t maximum_minor_planet_orbit_total_samples = 2097152;
 
 struct SmallBodyOrbitSnapshot {
     std::shared_ptr<const SmallBodyModel> model;

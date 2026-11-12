@@ -144,6 +144,8 @@ std::string small_body_description(const SmallBodyModel& model, std::size_t inde
     std::ostringstream output;
     output << model.title(index) << "\n" << model.provenance(index);
     if (record.number) output << "\n原番号 " << *record.number;
+    if (record.encoding == SmallBodyEncoding::packed_37 && record.raw_flag)
+        output << "\npacked 37 byte · 原フラグ " << static_cast<unsigned>(*record.raw_flag) << "（意味未確定）";
     if (frame && frame->model.get() == &model && index < frame->positions.size()) {
         output << "\nJD " << std::fixed << std::setprecision(5) << frame->julian_date;
         if (evaluationMode == SmallBodyEvaluationMode::comet_tdb) output << " (TDB 入力・時系変換なし)";
@@ -152,6 +154,9 @@ std::string small_body_description(const SmallBodyModel& model, std::size_t inde
         if (frame->positions[index]) {
             const auto p = *frame->positions[index];
             output << "\n日心 J2000 黄道 AU · 二体近似\nX " << p.x << " / Y " << p.y << " / Z " << p.z;
+            const auto* orbit = std::get_if<OrbitalElements>(&record.orbit);
+            if (individual && orbit && orbit->eccentricity > 1)
+                output << "\n双曲線の時刻位置です。軌道周期はありません。";
             if (packed || individual) diagnostics.erase(std::remove_if(diagnostics.begin(), diagnostics.end(),
                 [](const auto& diagnostic) { return diagnostic.code == SmallBodyDiagnosticCode::unresolved_frame; }),
                 diagnostics.end());
@@ -168,7 +173,7 @@ std::string small_body_description(const SmallBodyModel& model, std::size_t inde
         }
     } else output << "\n位置未評価";
     if (packed) output << "\npacked 36 byte の位置契約・物理時系 UTC/TT/TDB は未確定";
-    if (individual) output << "\n個別軌道の a 指定・楕円は明示 n または a から算出した平均運動を使用・物理時系 UTC/TT/TDB は未確定";
+    if (individual) output << "\n個別軌道は長半径 a と平均運動 n の指定値を使い、省略された側を導出・物理時系 UTC/TT/TDB は未確定";
     append_diagnostics(output, diagnostics);
     if (!record.declared_time_range) output << "\n精度保証期間は不明";
     if (evaluationMode == SmallBodyEvaluationMode::unresolved && record.diagnostics.empty())

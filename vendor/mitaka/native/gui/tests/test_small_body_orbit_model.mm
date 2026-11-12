@@ -184,7 +184,8 @@ void minor_planet_requests() {
     require(frame->cancelled && frame->completed_count == 0 && !frame->minor_planet_paths[0],
             "cancellation during packed36 sampling never publishes a partial row");
 
-    auto many_data = orbit_test::dataset(385);
+    const auto full_rows = maximum_minor_planet_orbit_total_samples / maximum_small_body_orbit_samples;
+    auto many_data = orbit_test::dataset(full_rows + 1);
     for (auto& record : many_data->records) {
         record.kind = SmallBodyKind::asteroid;
         record.encoding = SmallBodyEncoding::packed_36;
@@ -196,10 +197,10 @@ void minor_planet_requests() {
     rejects<std::length_error>([&] { small_body_orbit_requested_rows(*many_model, *many_display, maximum); },
                                "packed36 total budget rejects an oversized request");
     std::vector<SmallBodyId> ids;
-    for (std::size_t index = 0; index < 384; ++index) ids.push_back(many_data->records[index].id);
+    for (std::size_t index = 0; index < full_rows; ++index) ids.push_back(many_data->records[index].id);
     many_display->set_selected_ids(ids);
     many_display->set_kind_options(SmallBodyKind::asteroid, {true, false, true, true});
-    require(small_body_orbit_requested_rows(*many_model, *many_display, maximum).size() == 384,
+    require(small_body_orbit_requested_rows(*many_model, *many_display, maximum).size() == full_rows,
             "packed36 total budget accepts its exact boundary without truncation");
 }
 void individual_requests() {
@@ -275,7 +276,7 @@ void local_data(const char* directory) {
     const auto data = std::make_shared<const SmallBodyDataset>(load_small_body_dataset(directory));
     const auto model = std::make_shared<SmallBodyModel>(data);
     const auto display = orbit_test::display(data);
-    const SmallBodyOrbitSampling sampling{2451545 - 182.625, 2451545 + 182.625, 129};
+    const SmallBodyOrbitSampling sampling{2451545 - 182.625, 2451545 + 182.625, default_small_body_orbit_samples};
     auto frame = evaluate_small_body_orbit_snapshot(model, display, sampling);
     require(frame->paths.size() == data->records.size(), "all local original rows remain addressable");
     std::size_t requested = 0, unresolved = 0;
@@ -286,7 +287,7 @@ void local_data(const char* directory) {
         ++requested;
         const auto& path = *frame->paths[row];
         require(path.id.source_key == data->records[row].id.source_key
-            && path.id.record_ordinal == data->records[row].id.record_ordinal && path.samples.size() == 129,
+            && path.id.record_ordinal == data->records[row].id.record_ordinal && path.samples.size() == default_small_body_orbit_samples,
             "local source identity and full requested sample count are retained");
         bool missing = false;
         for (const auto& sample : path.samples) {

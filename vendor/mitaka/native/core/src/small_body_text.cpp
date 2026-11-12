@@ -11,6 +11,12 @@
 namespace mitaka::small_body_detail {
 namespace {
 constexpr double mean_motion_at_one_au = 0.985607669;
+double axis_from_mean_motion(double motion) {
+    const double ratio = mean_motion_at_one_au / motion;
+    if (std::isfinite(ratio)) return std::pow(ratio, 2.0 / 3.0);
+    // 極小の n でも長半径自体は有限。中間の比だけがあふれる場合は先に累乗する。
+    return std::pow(mean_motion_at_one_au, 2.0 / 3.0) / std::pow(motion, 2.0 / 3.0);
+}
 
 bool comment_or_empty(const std::string& text) {
     return text.empty() || text.front() == '#' || text.front() == '%';
@@ -136,7 +142,7 @@ std::vector<SmallBodyRecord> parse_packed(const SmallBodySource& source, SmallBo
             if (!std::isfinite(values[field])) throw CatalogError(source.path, r.source_offset + base + 8 + 4*field, "non-finite packed orbit field");
         }
         if (!std::isfinite(epoch) || values[5] <= 0) throw CatalogError(source.path, r.source_offset, "invalid epoch or mean motion");
-        const double a = std::pow(mean_motion_at_one_au / values[5], 2.0/3.0);
+        const double a = axis_from_mean_motion(values[5]);
         require_orbit_numbers(source, r.source_offset, a, values[4]);
         r.epoch_value = epoch;
         r.orbit = OrbitalElements{epoch, a, values[4], values[0], values[5], values[2], values[3], values[1]};
@@ -172,6 +178,7 @@ std::vector<SmallBodyRecord> parse_elements(const SmallBodySource& source, Small
     r.name_bytes = field("Name").first;
     if (values.count("DisplayName")) r.display_name_bytes = field("DisplayName").first;
     const double e = numeric("e"), w = numeric("w"), node = numeric("node"), i = numeric("i");
+    if (e < 0) throw CatalogError(source.path, field("e").second, "eccentricity must be nonnegative");
     if (kind == SmallBodyKind::comet) {
         require_orbit_numbers(source, 0, numeric("q"), e);
         r.perihelion_time_value = numeric("Tp");
@@ -182,13 +189,17 @@ std::vector<SmallBodyRecord> parse_elements(const SmallBodySource& source, Small
         if (type != "Asteroid" && type != "TNObject") throw CatalogError(source.path, field("Type").second, "unknown small-body Type");
         r.kind = type == "TNObject" ? SmallBodyKind::trans_neptunian : SmallBodyKind::asteroid;
         r.number = integer(source, field("No").first, field("No").second);
-        const double a = numeric("a"), epoch = numeric("Epoch");
-        require_orbit_numbers(source, 0, a, e);
-        const double mean_motion = values.count("n") ? numeric("n") : mean_motion_at_one_au / a / std::sqrt(a);
+        const double epoch = numeric("Epoch");
+        const bool has_a = values.count("a") != 0, has_n = values.count("n") != 0;
+        if (!has_a && !has_n) throw CatalogError(source.path, 0, "missing element field: a or n");
+        const double supplied_n = has_n ? numeric("n") : 0;
+        if (has_n && supplied_n <= 0)
+            throw CatalogError(source.path, field("n").second, "explicit mean motion must be finite and positive");
+        const double a = has_a ? numeric("a") : axis_from_mean_motion(supplied_n);
+        require_orbit_numbers(source, field(has_a ? "a" : "n").second, a, e);
+        const double mean_motion = has_n ? supplied_n : mean_motion_at_one_au / a / std::sqrt(a);
         if (!std::isfinite(mean_motion) || mean_motion <= 0)
-            throw CatalogError(source.path, field(values.count("n") ? "n" : "a").second,
-                               values.count("n") ? "explicit mean motion must be finite and positive"
-                                                 : "derived mean motion must be finite and positive");
+            throw CatalogError(source.path, field("a").second, "derived mean motion must be finite and positive");
         r.epoch_value = epoch;
         r.orbit = OrbitalElements{epoch, a, e, numeric("M0"), mean_motion, node, i, w};
     }

@@ -551,6 +551,10 @@ void test_json_limits() {
 
 void test_layer_roundtrip_and_boundaries() {
     SessionState state;
+    check(state.small_bodies.orbit_sampling.sample_count == 201, "new sessions start with 200 orbit intervals");
+    state.small_bodies.orbit_sampling.sample_count = 129;
+    check(decode_session_state(encode_session_state(state)).small_bodies.orbit_sampling.sample_count == 129,
+          "explicitly saved 129-point sampling survives a v9 roundtrip");
     const std::string raw_key("\x82\xa0.dat");
     state.small_bodies.visible = true;
     state.small_bodies.kinds = {{{false,true,false,true}, {true,false,true,false}, {true,true,true,true}}};

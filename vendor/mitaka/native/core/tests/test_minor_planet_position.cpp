@@ -1,4 +1,5 @@
 #include "mitaka/minor_planet_position.hpp"
+#include "mitaka/minor_planet_orbit_path.hpp"
 
 #include <algorithm>
 #include <array>
@@ -285,10 +286,23 @@ void loaded_element_records() {
             position(evaluate_minor_planet_position(changed, orbit.epoch_jd), {4*(1-eccentricity),0,0},
                      2e-13, minor_planet_element_position_contract);
         }
-        for (double eccentricity : {1., std::nextafter(1., 2.)}) {
-            auto changed = item; elements(changed).eccentricity = eccentricity;
-            rejected(evaluate_minor_planet_position(changed, orbit.epoch_jd), Code::calculation_failed);
+        auto conic = item;
+        auto& nonelliptic = elements(conic);
+        nonelliptic.eccentricity = 1;
+        rejected(evaluate_minor_planet_position(conic, orbit.epoch_jd), Code::calculation_failed);
+        nonelliptic.eccentricity = std::nextafter(1., 2.);
+        position(evaluate_minor_planet_position(conic, orbit.epoch_jd), {4*(nonelliptic.eccentricity-1),0,0},
+                 2e-13, minor_planet_element_position_contract);
+        nonelliptic.eccentricity = 1.25;
+        for (double H : {-1.5, 3.0}) {
+            nonelliptic.mean_anomaly_deg = (1.25*std::sinh(H)-H)*180/std::acos(-1.);
+            position(evaluate_minor_planet_position(conic, orbit.epoch_jd),
+                     {4*(1.25-std::cosh(H)), 3*std::sinh(H), 0}, 2e-12, minor_planet_element_position_contract);
         }
+        const auto open = sample_minor_planet_orbit_path(conic, 129);
+        expect(open.samples.empty() && std::any_of(open.diagnostics.begin(), open.diagnostics.end(),
+               [](const auto& d) { return d.field == "orbit_period" && d.message.find("no period") != std::string::npos; }),
+               "a valid hyperbolic point does not produce a closed orbit");
         for (int invalid = 0; invalid < 3; ++invalid) {
             auto changed = item;
             if (invalid == 0) changed.raw_record_bytes.clear();
@@ -301,6 +315,46 @@ void loaded_element_records() {
                "successful individual evaluation never rewrites unresolved source metadata");
         expect(has(evaluate_minor_planet_position(item, orbit.epoch_jd), Code::unknown_field),
                "unknown display fields do not prevent position or acquire inferred semantics");
+    }
+}
+
+void motion_only_elements() {
+    Fixture fixture;
+    const std::string key = "orbits/asteroids/motion.dat";
+    const std::string common = "Type: TNObject\nName: Motion\nNo: 7\nEpoch: 2451545\nM0: 0\nw: 0\ni: 0\nnode: 0\n";
+    const auto bytes = common + "e: 0\nn: 0.123200958625\n"; // 円の長半径4 AUに対応する度/日
+    fixture.write(key, bytes);
+    const auto data = load_small_body_dataset(fixture.root);
+    expect(data.records.size() == 1 && data.records[0].raw_record_bytes == bytes, "n-only source accepted without rewriting it");
+    const auto& record = data.records[0];
+    const auto& orbit = std::get<OrbitalElements>(record.orbit);
+    near(orbit.semi_major_axis_au, 4.0);
+    expect(std::none_of(record.fields.begin(), record.fields.end(), [](const auto& f) { return f.key == "a"; }),
+           "derived axis is not an original field");
+    position(evaluate_minor_planet_position(record, orbit.epoch_jd), {4, 0, 0}, 2e-13, minor_planet_element_position_contract);
+    const auto path = sample_minor_planet_orbit_path(record, 5);
+    expect(path.samples.size() == 5 && path.failures.empty(), "n-only orbit sampled");
+    near(path.samples.back().julian_date-path.samples.front().julian_date, 360/orbit.mean_motion_deg_per_day, 1e-9);
+    for (const std::string invalid : {"e: 0\n", "e: 0\nn: 0\n", "e: 0\nn: -1\n", "e: 0\nn: nan\n",
+                                      "e: 0\na: 0\nn: 1\n", "e: 0\na: -1\nn: 1\n"}) {
+        fixture.write(key, common+invalid);
+        const auto bad = load_small_body_dataset(fixture.root);
+        expect(bad.records.empty() && source(bad, key).bytes == common+invalid, "invalid source isolated with original bytes");
+    }
+    fixture.write(key, common + "e: -0.1\nn: 1\n");
+    const auto negative = load_small_body_dataset(fixture.root);
+    const auto location = "byte " + std::to_string(common.size()) + ":";
+    expect(negative.records.empty() && std::any_of(negative.diagnostics.begin(), negative.diagnostics.end(),
+        [&](const auto& diagnostic) { return diagnostic.source_key == key && diagnostic.message.find(location) != std::string::npos; }),
+        "negative eccentricity diagnostic points to the e field in an n-only source");
+    for (const std::string eccentricity : {"1", "1.5"}) {
+        fixture.write(key, common+"e: "+eccentricity+"\nn: 1\n");
+        const auto nonelliptic = load_small_body_dataset(fixture.root);
+        expect(nonelliptic.records.size() == 1, "non-elliptic original record retained");
+        const auto evaluated = evaluate_minor_planet_position(nonelliptic.records[0], 2451545);
+        if (eccentricity == "1") rejected(evaluated, Code::calculation_failed);
+        else position(evaluated, {0.5*std::pow(0.985607669,2./3.),0,0}, 2e-13, minor_planet_element_position_contract);
+        expect(sample_minor_planet_orbit_path(nonelliptic.records[0], 5).samples.empty(), "non-elliptic n-only orbit has no closed path");
     }
 }
 
@@ -354,6 +408,7 @@ void real_data(const std::filesystem::path& directory) {
 int main(int argc, char** argv) {
     try {
         analytic_geometry(); invalid_and_unverified(); periods_and_preservation(); loaded_custom_records(); loaded_element_records();
+        motion_only_elements();
         for (int i = 1; i < argc; ++i) real_data(argv[i]);
         std::cout << "minor-planet position: " << checks << " checks passed\n";
     } catch (const std::exception& error) {
