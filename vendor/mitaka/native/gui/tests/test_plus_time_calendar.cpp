@@ -78,6 +78,38 @@ void test_strings() {
     check(plus_time_string(julian_date({-4712,1,1,0,0,0})) == "-4712,1,1,0,0,0", "minimum year string failed");
 }
 
+void test_integer_seconds_roundtrip() {
+    for (const auto& start : std::array<GregorianDateTime, 4>{{
+             {2000,1,1,0,0,0}, {2024,2,29,23,59,0},
+             {-1,12,31,23,59,0}, {9999,12,31,23,58,0}}}) {
+        for (int second = 0; second < 60; ++second) {
+            auto expected = start;
+            expected.second = second;
+            const double jd = plus_julian_date(expected);
+            date_is(plus_local_time(jd, PlusTimeZone{0}), expected);
+            same_jd(plus_julian_date_from_string(plus_time_string(jd)), jd);
+            for (int offset : {-32400, 19800}) {
+                if (start.year == 9999 && offset > 0) continue;
+                const PlusTimeZone zone{offset};
+                const auto local_jd = plus_local_julian_date(expected, zone);
+                date_is(plus_local_time(local_jd, zone), expected);
+            }
+        }
+    }
+    check(plus_time_string(julian_date({2024,1,1,0,0,1.75})) == "2024,1,1,0,0,1",
+          "fractional seconds must be truncated");
+    check(plus_time_string(julian_date({2024,1,1,0,0,1.25})) == "2024,1,1,0,0,1",
+          "fractional seconds must be truncated");
+    check(plus_time_string(julian_date({2024,1,1,0,0,1.999})) == "2024,1,1,0,0,1",
+          "fractional seconds outside the JD error bound must be truncated");
+    date_is(plus_local_time(plus_local_julian_date({-4712,1,1,0,59,0}, PlusTimeZone{2147483647}),
+                            PlusTimeZone{2147483647}), {-4712,1,1,0,59,0});
+    date_is(plus_local_time(plus_local_julian_date({9999,12,31,23,59,59}, PlusTimeZone{-32400}),
+                            PlusTimeZone{-32400}), {9999,12,31,23,59,59});
+    check(plus_time_string(std::nextafter(5373484.5, 0.0)) == "9999,12,31,23,59,59",
+          "last representable JD must remain in range");
+}
+
 void test_string_rejections() {
     const std::array<const char*, 27> invalid{{
         "", " ", "2000", "2000,1,1,0,0", "2000,1,1,0,0,", "2000,1,1,0,0,+",
@@ -147,6 +179,24 @@ void test_jd_boundaries() {
 }
 
 void test_local_components() {
+    for (const GregorianDateTime& input : std::array<GregorianDateTime, 6>{{
+            {2000,1,2,3,4,0}, {2024,2,29,23,59,0}, {1,1,1,0,0,0},
+            {-1,12,31,23,59,0}, {9999,12,30,23,59,0}, {-4712,1,2,0,0,0}}}) {
+        for (std::int32_t offset : {0, -32400, 28800, -19800, 1, -1}) {
+            const PlusTimeZone zone{offset};
+            for (int second = 0; second < 60; ++second) {
+                auto local = input; local.second = second;
+                const auto instant = plus_local_julian_date(local, zone);
+                const auto shown = plus_local_time(instant, zone);
+                const std::array<std::int32_t, 6> values{{shown.year, shown.month, shown.day,
+                    shown.hour, shown.minute, static_cast<std::int32_t>(shown.second)}};
+                for (std::size_t i = 0; i < values.size(); ++i)
+                    check(!plus_local_component_julian_date(instant, zone,
+                        static_cast<PlusTimeComponent>(i), values[i]),
+                        "getter/setter roundtrip interrupted playback or interpolation");
+            }
+        }
+    }
     const PlusTimeZone japan{-32400};
     const double utc = julian_date({2024,1,31,3,4,5.75});
     struct Example { PlusTimeComponent component; std::int32_t value; GregorianDateTime local; };
@@ -200,6 +250,7 @@ void test_local_components() {
 int main() {
     try {
         test_strings();
+        test_integer_seconds_roundtrip();
         test_string_rejections();
         test_explicit_local_time();
         test_jd_boundaries();

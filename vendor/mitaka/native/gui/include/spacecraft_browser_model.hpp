@@ -44,6 +44,7 @@ struct SpacecraftSnapshot {
 
 std::shared_ptr<const SpacecraftSnapshot> evaluate_spacecraft_snapshot(
     std::shared_ptr<const SpacecraftBrowserModel> model, double legacy_julian_date);
+std::string spacecraft_catalog_description(const SpacecraftBrowserModel& model);
 std::string spacecraft_description(const SpacecraftBrowserModel& model, std::size_t index,
                                    const SpacecraftSnapshot* snapshot = nullptr);
 

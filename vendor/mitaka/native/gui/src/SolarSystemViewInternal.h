@@ -3,6 +3,7 @@
 #import "SolarSceneRenderer.h"
 #import "GridRenderer.h"
 #import "TerrainSurfaceController.h"
+#import "TerrainLandingController.h"
 #import "TerrainSceneState.h"
 #include "surface_navigation.hpp"
 #include "script_zoom_transition.hpp"
@@ -10,6 +11,8 @@
 #import "GalaxyOverlay.h"
 #import "StarRenderer.h"
 @class GalaxyOverlay;
+
+enum class SurfaceFlightMotion { ascent, earth_horizon_ascent, descent, descent_preserving_look };
 
 enum class ScriptOrientationInterpolation { quaternion, euler, relative_euler };
 
@@ -31,6 +34,16 @@ struct ScriptTargetAnimation {
     bool our_galaxy;
     std::optional<mitaka::gui::PlusOrientationQuaternion> initial_orientation, target_orientation;
     bool updates_distance = true;
+};
+
+struct LandingKey {
+    std::filesystem::path root;
+    std::size_t body;
+    double latitude, longitude, factor;
+    bool operator==(const LandingKey& other) const {
+        return root == other.root && body == other.body && latitude == other.latitude &&
+            longitude == other.longitude && factor == other.factor;
+    }
 };
 
 @interface SolarSystemView () {
@@ -56,9 +69,16 @@ struct ScriptTargetAnimation {
     std::shared_ptr<const mitaka::gui::SkyBackgrounds> _surfaceBackgrounds;
     mitaka::gui::MilkyWayMode _surfaceMilkyWayMode;
     NSImage *_surfaceBackgroundImage;
-    std::optional<std::array<double, 8>> _surfaceBackgroundKey;
+    std::optional<std::array<double, 12>> _surfaceBackgroundKey;
     mitaka::gui::StarDisplayOptions _surfaceStarOptions;
     double _surfaceMagnitudeLimit;
+    std::shared_ptr<SolarSceneOwner> _surfaceSkyPickScene;
+    std::shared_ptr<const mitaka::gui::SkyModel> _surfaceSkyPickModel;
+    mitaka::gui::StarDisplayOptions _surfaceSkyPickOptions;
+    mitaka::gui::ConstellationDisplayOptions _surfaceSkyPickConstellations;
+    std::optional<std::size_t> _surfaceConstellationSelection;
+    double _surfaceSkyPickMagnitudeLimit;
+    std::optional<std::size_t> _surfaceStarSelection;
     BOOL _hipVisible;
     std::optional<mitaka::gui::GalaxySpatialRecordId> _galaxySelection;
     std::optional<std::size_t> _hipSelection;
@@ -116,6 +136,11 @@ struct ScriptTargetAnimation {
     NSRect _terrainViewport;
     double _terrainBackingScale;
     BOOL _hasTerrainViewport;
+    TerrainLandingController *_landingController;
+    std::optional<LandingKey> _landingKey;
+    std::optional<mitaka::gui::TerrainLandingResult> _landingResult;
+    std::optional<std::size_t> _landingSuppressedBody;
+    BOOL _landingParked;
     NSString *_terrainDataDirectory;
     NSArray<TerrainSurfaceController *> *_terrainControllers;
     std::array<std::optional<mitaka::gui::TerrainSurfaceRequest>, 11> _terrainRequests;
@@ -129,13 +154,17 @@ struct ScriptTargetAnimation {
 @end
 
 @interface SolarSystemView (Internal)
+- (NSString *)suspendTerrainForFlightSmoke;
 - (void)refreshTerrain;
+- (void)refreshLanding;
+- (void)resetLanding;
 - (NSArray<TerrainSurfaceController *> *)makeTerrainControllers;
 - (void)applyTerrainTransition:(TerrainSceneCoordinator::Transition)transition;
 - (SolarScene)displayedScene;
 - (BOOL)matchesDisplayedCamera:(const mitaka::gui::SolarCamera&)camera map:(NSRect)map;
 - (void)redrawPublishedScene;
 - (std::vector<std::string>)terrainDiagnostics;
+- (void)showGalaxyCatalogOverview;
 - (NSRect)mapRect;
 - (mitaka::Vec3)displayPosition:(NSUInteger)index;
 - (mitaka::Vec3)scriptSpacePlacePositionForBodies:(const mitaka::gui::SolarBodies&)bodies;
@@ -163,7 +192,7 @@ struct ScriptTargetAnimation {
 - (void)updateJourneyAtTime:(double)time;
 - (void)restoreFlightOrientation;
 - (void)startFlightTimer;
-- (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site ascending:(BOOL)ascending preserveLook:(BOOL)preserveLook duration:(double)duration error:(NSString **)error;
+- (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site motion:(SurfaceFlightMotion)motion duration:(double)duration error:(NSString **)error;
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom;
 - (BOOL)smallBodiesSceneVisible;
 - (void)focusSmallBodySelection;

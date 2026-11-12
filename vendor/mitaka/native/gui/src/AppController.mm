@@ -33,6 +33,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         _timeInfoVisible = YES;
         _scriptCameraDuration = 9.0;
         _scriptCameraZoomMode = 2;
+        _scriptTargetSelectionMode = 2;
         _radiusScaleMode = RadiusScaleMode::keep_orbit;
         _observerLatitude = 35.68;
         _observerLongitude = 139.76;
@@ -63,7 +64,6 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 - (void)dealloc {
     [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
     [self stopScriptFovAnimation];
-    [_horizonProjectionTimer invalidate];
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
     [_solar cancelTerrain];
@@ -184,8 +184,8 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _travelButtons[1].enabled = enabled && _mode.selectedSegment == 1 && canLand && !_solar.journeyActive;
     _travelButtons[2].enabled = enabled && _mode.selectedSegment == 1 && _solar.surfaceNavigationActive && !_solar.journeyActive;
     _travelButtons[3].enabled = enabled && _mode.selectedSegment == 1 && !_solar.journeyActive;
-    _travelButtons[4].enabled = enabled && (_solar.flightAnimating || _horizonProjectionTimer != nil);
-    _travelButtons[5].enabled = enabled && _mode.selectedSegment == 2 && !_solar.journeyActive && !_horizonProjectionTimer;
+    _travelButtons[4].enabled = enabled && (_solar.flightAnimating || _horizonFlightView.has_value());
+    _travelButtons[5].enabled = enabled && _mode.selectedSegment == 2 && !_solar.journeyActive && !_horizonFlightView;
     _travelButtons[6].enabled = enabled && _mode.selectedSegment == 1 && !_solar.journeyActive && !_solar.flightAnimating;
     _journeyButton.enabled = enabled && _mode.selectedSegment == 1 && canLand && !_solar.journeyActive && !_solar.flightAnimating;
     _resumeJourneyButton.enabled = enabled && _mode.selectedSegment == 1 && _solar.journeyActive && !_solar.flightAnimating;
@@ -411,7 +411,8 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         (_constellationArt && !_constellationArt->warnings().empty()) ||
         (_smallBodyModel && !_smallBodyModel->dataset().diagnostics.empty()) ||
         (_observerPlaces && !_observerPlaces->warnings.empty()) ||
-        (_earthLandscapes && !_earthLandscapes->warnings().empty()) || !_model->constellation_warning().empty();
+        (_earthLandscapes && !_earthLandscapes->warnings().empty()) || !_model->constellation_warning().empty() ||
+        (!_galaxyLoading && _galaxyDiagnostics.length > 0 && ![_galaxyDiagnostics isEqualToString:@"データ未読込"]);
     _status.textColor = hasWarnings ? NSColor.systemOrangeColor : NSColor.secondaryLabelColor;
     NSString *display = _mode.selectedSegment == 1 ? @"太陽系 3D · 11 天体 · 距離は太陽中心 AU" :
         [NSString stringWithFormat:@"%@ · 恒星表示 %lu 件", _mode.selectedSegment == 2 ? @"地平図" : @"全天図",
@@ -419,7 +420,21 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _status.stringValue = [NSString stringWithFormat:@"%@ · HIP %zu 件を保持\n有効範囲 JD %.1f–%.1f · 読み取り専用 · 表面画像 %zu/11%@",
         display, _model->stars().size(), range.first, range.second, _textures ? _textures->loaded_count() : 0,
         hasWarnings ? @" · 読込警告あり（詳細はここにカーソルを重ねて確認）" : @""];
+    if (_galaxyLoading) {
+        _status.stringValue = [_status.stringValue stringByAppendingString:@" · 銀河読込中"];
+    } else if (_galaxyUsesPlusCatalogs && _galaxyModel) {
+        std::size_t clusters = 0, nearby = 0;
+        for (std::size_t source = 0; source < _galaxyModel->sources().size(); ++source) {
+            if (_galaxyModel->family(source) == GalaxySpatialFamily::globular_cluster)
+                clusters += _galaxyModel->source_size(source);
+            else if (_galaxyModel->family(source) == GalaxySpatialFamily::nearby_galaxy)
+                nearby += _galaxyModel->source_size(source);
+        }
+        _status.stringValue = [_status.stringValue stringByAppendingFormat:@" · 球状星団 %zu · 近傍銀河 %zu", clusters, nearby];
+    }
     NSMutableString *details = [_status.stringValue mutableCopy];
+    if (!_galaxyLoading && _galaxyDiagnostics.length && ![_galaxyDiagnostics isEqualToString:@"データ未読込"])
+        [details appendFormat:@"\n銀河の読込: %@", _galaxyDiagnostics];
     if (_extendedCatalogs) {
         [details appendFormat:@"\nNGC/IC %zu · SDSS銀河 %zu · QSO %zu · 恒星名 %zu · 系外惑星リスト %zu",
             _extendedCatalogs->ngc.size(), _extendedCatalogs->galaxies.size(), _extendedCatalogs->quasars.size(),
@@ -613,11 +628,13 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     }
 }
 - (void)changeMode:(id)sender {
+    ++_modeGeneration;
     if (_scriptPlaceTransition && _scriptPlaceTransition->mode != _mode.selectedSegment)
         [self stopScriptPlaceTransition];
     if (sender) [self cancelHorizonProjection];
     const BOOL solar = _mode.selectedSegment == 1;
-    if (_mode.selectedSegment != 2) { [self stopScriptCameraAnimation]; [self stopScriptFovAnimation]; }
+    if (_mode.selectedSegment != 2) [self stopScriptCameraAnimation];
+    if (_scriptFovAnimation && _scriptFovMode != _mode.selectedSegment) [self stopScriptFovAnimation];
     if (!solar) { [_solar invalidatePendingGalaxyPicks]; [_solar stopScriptZoomAnimation]; [_solar stopScriptTargetTransition]; [_solar stopScriptOrientation]; [_solar interruptFlight]; }
     _sky.hidden = _mode.selectedSegment != 0;
     _horizon.hidden = _mode.selectedSegment != 2;
@@ -627,7 +644,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
     _magnitudeLabel.textColor = solar ? NSColor.disabledControlTextColor : NSColor.labelColor;
     _note.stringValue = solar ? @"太陽中心 / J2000 黄道\n再生中は飛行先も公転・自転\n\n天体と着陸地点を選び「選択天体へ飛行」。地表・上空の現在地から連続移動します。\n「着陸」は上空への即時移動と降下です。\n地表ではドラッグで見回し、スクロールで高度変更。\nガス惑星は基準面。地形・大気・重力航法は未対応。" :
         @"地球中心からの概略位置\nJ2000 赤道座標 / 距離 AU\n\n固有運動・光行差・光行時間・歳差章動の補正は含みません。円の大きさは模式表示です。";
-    if (_mode.selectedSegment == 2) _note.stringValue = @"観測地点から見た方位・高度\n北0° / 東90°、地平線は高度0°\n\n地球の姿勢と指定した緯度・東経から計算します。大気差・日周視差は補正していません。\nドラッグで見回し、スクロールで拡大します。";
+    if (_mode.selectedSegment == 2) _note.stringValue = @"観測地点から見た方位・高度\n北0° / 東90°、地平線は高度0°\n\n地球の姿勢と指定した緯度・東経から計算します。小天体・PTH 探査機は日周視差を補正します。他の天体の視差と大気差は未補正です。\nドラッグで見回し、スクロールで拡大します。";
     NSString *description = solar ? _solarSelection : _mode.selectedSegment == 0 ? _skySelection : _horizonSelection;
     _selectionLabel.stringValue = description ? description : @"天体をクリックして選択できます。";
     _cameraLabel.stringValue = [_solar cameraStateDescription];
@@ -701,64 +718,63 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         [_solar takeOffFromEarthAtLatitude:latitude longitude:longitude];
 }
 - (void)cancelHorizonProjection {
-    [_horizonProjectionTimer invalidate];
-    _horizonProjectionTimer = nil;
-    if (_horizon) {
-        auto viewport = [_horizon viewport];
-        if (viewport.perspective_blend != 0) {
-            viewport.perspective_blend = 0;
-            [_horizon setViewport:viewport];
-        }
-    }
+    if (!_horizonFlightView) return;
+    const auto groundView = *_horizonFlightView;
+    _horizonFlightView.reset();
+    _horizon.flightOverlay = NO;
+    _solar.horizonTitleVisible = NO;
+    _horizon.alphaValue = 1;
+    _horizon.hidden = _mode.selectedSegment != 2;
+    [_horizon setViewport:groundView];
+    _displayOutput.sourceView = [self activeView];
     [self updateEnabled];
 }
-- (void)advanceHorizonProjection {
-    const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    const double progress = _horizonProjectionDuration <= 0 ? 1
-        : std::clamp((now - _horizonProjectionStartTime) / _horizonProjectionDuration, 0.0, 1.0);
-    const double smooth = progress * progress * (3 - 2 * progress);
-    auto viewport = [_horizon viewport];
-    viewport.perspective_blend = _horizonProjectionStart + (_horizonProjectionTarget - _horizonProjectionStart) * smooth;
-    [_horizon setViewport:viewport];
-    if (progress < 1) return;
-    [_horizonProjectionTimer invalidate];
-    _horizonProjectionTimer = nil;
-    if (_horizonProjectionTarget == 1) {
-        SurfaceSite site;
-        site.latitude_deg = _observerLatitude;
-        site.longitude_deg = _observerLongitude;
-        site.heading_deg = viewport.center_azimuth_deg;
-        site.elevation_deg = viewport.center_altitude_deg;
-        site.roll_deg = viewport.roll_deg;
-        NSString *error = nil;
-        if (![_solar takeOffFromHorizon:site duration:_horizonAscentDuration error:&error]) {
-            [self cancelHorizonProjection];
-            [self showError:error ? error : @"地平図から離陸できません。"]; return;
-        }
-        _mode.selectedSegment = 1;
-        [self changeMode:nil];
-    }
-    [self updateEnabled];
-}
-- (void)startHorizonProjectionTo:(double)target duration:(double)duration {
-    [self stopScriptFovAnimation];
-    [_horizonProjectionTimer invalidate];
-    _horizonProjectionTimer = nil;
-    _horizonProjectionStart = [_horizon viewport].perspective_blend;
-    _horizonProjectionTarget = target;
-    _horizonProjectionDuration = duration;
-    _horizonProjectionStartTime = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    if (duration <= 0 || _horizonProjectionStart == target) {
-        [self advanceHorizonProjection];
+- (void)updateHorizonFlightProjection {
+    if (!_horizonFlightView || _mode.selectedSegment != 1) return;
+    SurfaceSite site;
+    if (![_solar earthSurfaceSite:&site]) return;
+    // 地上のパノラマは近景なので、地球半径の1%の高度までに透視地形へ渡す。
+    const double progress = std::clamp((site.height_km - minimum_surface_height_km) /
+        (0.01 * earth_reference_radius_km), 0.0, 1.0);
+    _horizon.hidden = progress >= 1;
+    if (_horizon.hidden) {
+        _solar.horizonTitleVisible = NO;
         return;
     }
-    __weak AppController *weakSelf = self;
-    _horizonProjectionTimer = [NSTimer timerWithTimeInterval:1.0 / 30 repeats:YES block:^(NSTimer *timer) {
-        (void)timer;
-        [weakSelf advanceHorizonProjection];
-    }];
-    [[NSRunLoop mainRunLoop] addTimer:_horizonProjectionTimer forMode:NSRunLoopCommonModes];
-    [self updateEnabled];
+    const double blend = progress * progress * (3 - 2 * progress);
+    auto viewport = *_horizonFlightView;
+    viewport.center_azimuth_deg = site.heading_deg;
+    viewport.center_altitude_deg = site.elevation_deg;
+    viewport.roll_deg = site.roll_deg;
+    viewport.perspective_fov_deg = [_solar cameraState].vertical_fov_deg;
+    viewport.perspective_blend = blend;
+    [_horizon setViewport:viewport];
+    _horizon.alphaValue = 1 - blend;
+    _solar.horizonTitleVisible = _horizon.drawsFlightTitle;
+}
+- (std::optional<int>)plusCameraMode {
+    // 旧Plusは離陸開始時に宇宙へ切り替え、帰還の最終フレームで地上へ戻る。
+    if (_mode.selectedSegment == 2) return 0;
+    if (_mode.selectedSegment == 1) return _solar.scriptPlanetariumMode ? 0 : 1;
+    return std::nullopt;
+}
+- (BOOL)returnToEarthHorizonWithDuration:(double)duration error:(NSString **)error {
+    const auto viewport = _horizonFlightView.value_or([_horizon viewport]);
+    const SurfaceSite ground{3, _observerLatitude, _observerLongitude, minimum_surface_height_km,
+        viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.roll_deg};
+    if (![_solar descendToHorizonWithDuration:duration groundView:&ground error:error]) return NO;
+    SurfaceSite arrival;
+    if (_solar.flightAnimating && [_solar earthSurfaceSite:&arrival]
+        && arrival.latitude_deg == ground.latitude_deg && arrival.longitude_deg == ground.longitude_deg) {
+        // 別地点の降下に出発地点の風景を重ねない。
+        _horizonFlightView = viewport;
+        _horizon.flightOverlay = YES;
+        _displayOutput.sourceView = [self activeView];
+        [self updateHorizonFlightProjection];
+    }
+    _pendingEarthDescent = YES;
+    [self surfaceNavigationChanged];
+    return YES;
 }
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error {
     return [self setEarthSurfaceMode:surface duration:duration force:NO selectedSurface:NO error:error];
@@ -771,6 +787,11 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         if (error) *error = @"移動時間は 0 以上の有限数で指定してください。";
         return NO;
     }
+    const bool inTransit = _horizonFlightView || (_mode.selectedSegment == 1
+        && _solar.surfaceNavigationActive && _solar.flightAnimating && !_solar.journeyActive);
+    if (inTransit && (!force || [self plusCameraMode] == (surface ? 0 : 1))) return YES;
+    if (force && surface && _horizonFlightView && _solar.selectedBodyIndex == 3)
+        return [self returnToEarthHorizonWithDuration:0 error:error];
     if (force && _mode.selectedSegment == 1) {
         NSUInteger body = NSNotFound;
         const BOOL pending = _pendingEarthDescent;
@@ -781,17 +802,14 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         }
         _pendingEarthDescent = surface && body == 3;
         if (_pendingEarthDescent) {
-            _earthDescentProjectionDuration = 0;
+            [self cancelHorizonProjection];
             [self surfaceNavigationChanged];
         }
         return YES;
     }
     if (surface) {
         if (_mode.selectedSegment == 1 && _solar.scriptPlanetariumMode) return YES;
-        if (_mode.selectedSegment == 2) {
-            if (_horizonProjectionTimer) [self startHorizonProjectionTo:0 duration:duration];
-            return YES;
-        }
+        if (_mode.selectedSegment == 2) return YES;
         if (_mode.selectedSegment != 1) {
             if (error) *error = @"地球付近の太陽系表示が必要です。";
             return NO;
@@ -803,20 +821,10 @@ static bool finishDatePresentation(const char *name, Action&& action) {
             [self surfaceNavigationChanged];
             return YES;
         }
-        _earthDescentProjectionDuration = duration * 0.4;
-        if (![_solar descendToHorizonWithDuration:duration * 0.6 error:error]) return NO;
-        _pendingEarthDescent = YES;
-        [self surfaceNavigationChanged];
-        return YES;
+        return [self returnToEarthHorizonWithDuration:duration error:error];
     }
     if (_mode.selectedSegment == 1) {
-        if (!_pendingEarthDescent) {
-            if (_solar.scriptPlanetariumMode)
-                return [_solar ascendFromSurfaceWithDuration:duration error:error];
-            return YES;
-        }
-        if (![_solar ascendFromEarthWithDuration:duration error:error]) return NO;
-        _pendingEarthDescent = NO;
+        if (_solar.scriptPlanetariumMode) return [_solar ascendFromSurfaceWithDuration:duration error:error];
         return YES;
     }
     if (_mode.selectedSegment != 2) {
@@ -827,41 +835,50 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         if (error) *error = @"地平図から離陸できません。";
         return NO;
     }
-    if (duration == 0) {
-        const auto viewport = [_horizon viewport];
-        SurfaceSite site;
-        site.latitude_deg = _observerLatitude;
-        site.longitude_deg = _observerLongitude;
-        site.heading_deg = viewport.center_azimuth_deg;
-        site.elevation_deg = viewport.center_altitude_deg;
-        site.roll_deg = viewport.roll_deg;
-        if (force) {
-            if (![_solar forceSpaceFromHorizon:site error:error]) return NO;
-        } else if (![_solar takeOffFromHorizon:site duration:0 error:error]) return NO;
-        [self cancelHorizonProjection];
-        _mode.selectedSegment = 1;
-        [self changeMode:nil];
-        return YES;
+    const auto viewport = [_horizon viewport];
+    const SurfaceSite site{3, _observerLatitude, _observerLongitude, minimum_surface_height_km,
+        viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.roll_deg};
+    if (force) {
+        if (![_solar forceSpaceFromHorizon:site error:error]) return NO;
+    } else if (![_solar takeOffFromHorizon:site duration:duration error:error]) return NO;
+    if (_solar.flightAnimating) {
+        _horizonFlightView = viewport;
+        _horizon.flightOverlay = YES;
     }
-    _horizonAscentDuration = duration * 0.6;
-    [self startHorizonProjectionTo:1 duration:duration * 0.4];
+    _mode.selectedSegment = 1;
+    [self changeMode:nil];
+    [self updateHorizonFlightProjection];
     return YES;
+}
+- (double)cameraModeDuration {
+    return _scriptCameraModeDuration.value_or(7.1);
+}
+- (BOOL)canToggleFlightMode {
+    return _model && !_loading && (_mode.selectedSegment == 1 || _mode.selectedSegment == 2) &&
+        !_horizonFlightView && !_solar.flightAnimating && !_solar.journeyActive;
+}
+- (void)requestSurfaceMode:(BOOL)surface selectedSurface:(BOOL)selectedSurface {
+    NSString *error = nil;
+    if (![self setEarthSurfaceMode:surface duration:[self cameraModeDuration] force:NO
+        selectedSurface:selectedSurface error:&error])
+        [self showError:error ? error : (surface ? @"地表へ降下できません。" : @"地表から離陸できません。")];
+}
+- (void)toggleFlightMode:(id)sender {
+    (void)sender;
+    if (![self canToggleFlightMode]) return;
+    const auto mode = [self plusCameraMode];
+    if (mode) [self requestSurfaceMode:*mode == 1 selectedSurface:YES];
 }
 - (void)takeOffFromHorizon:(id)sender {
     (void)sender;
-    NSString *error = nil;
-    if (![self setEarthSurfaceMode:NO duration:3 error:&error]) {
-        [self showError:error ? error : @"地平図から離陸できません。"]; return;
-    }
+    [self requestSurfaceMode:NO selectedSurface:NO];
 }
 - (void)descendToHorizon:(id)sender {
     (void)sender;
-    NSString *error = nil;
-    if (![self setEarthSurfaceMode:YES duration:3 error:&error]) {
-        [self showError:error ? error : @"地平図へ降下できません。"]; return;
-    }
+    [self requestSurfaceMode:YES selectedSurface:NO];
 }
 - (void)surfaceNavigationChanged {
+    if (!_solar.flightAnimating) [self cancelHorizonProjection];
     if (_pendingEarthDescent && !_solar.flightAnimating) {
         _pendingEarthDescent = NO;
         SurfaceSite site;
@@ -876,10 +893,10 @@ static bool finishDatePresentation(const char *name, Action&& action) {
             if (!samePlace) [_horizon setObserverPlaceIdentifier:std::string{}];
             [_sky setObservationSite:{site.latitude_deg, site.longitude_deg} julianDate:_jd];
             [self stopScriptCameraAnimation];
-            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].vertical_fov_deg, 1, site.roll_deg}];
+            [_horizon setViewport:{site.heading_deg, site.elevation_deg, [_horizon viewport].vertical_fov_deg,
+                0, site.roll_deg, [_solar cameraState].vertical_fov_deg}];
             _mode.selectedSegment = 2;
             [self changeMode:nil];
-            [self startHorizonProjectionTo:0 duration:_earthDescentProjectionDuration];
         }
     }
     [self updateEnabled];

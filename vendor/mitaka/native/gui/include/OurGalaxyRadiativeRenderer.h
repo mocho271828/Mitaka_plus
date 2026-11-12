@@ -13,6 +13,7 @@ namespace mitaka::gui {
 OurGalaxyGalacticVector our_galaxy_galactic_position(NativeEclipticPositionPc position);
 OurGalaxyGalacticVector our_galaxy_camera_origin(GalaxyCameraPc camera);
 // 公式 camera_base は現行ビューに存在せず、GC 距離は eye で代用する。
+// 放射モデルの座標範囲を超える視点は透明とし、不正なカメラは拒否する。
 float our_galaxy_alpha(GalaxyCameraPc camera);
 
 class OurGalaxyRadiativeImages {

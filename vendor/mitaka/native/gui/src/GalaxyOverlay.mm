@@ -27,6 +27,7 @@ bool sameRequest(const GalaxyOverlayRequest& a, const GalaxyOverlayRequest& b) {
         a.camera.target_offset_au.y == b.camera.target_offset_au.y &&
         a.camera.target_offset_au.z == b.camera.target_offset_au.z && a.camera.distance_pc == b.camera.distance_pc &&
         a.camera.yaw_deg == b.camera.yaw_deg && a.camera.pitch_deg == b.camera.pitch_deg && a.camera.roll_deg == b.camera.roll_deg &&
+        a.camera.vertical_fov_deg == b.camera.vertical_fov_deg && a.camera.frame_is_orbit == b.camera.frame_is_orbit &&
         sameFrame(a.camera.frame, b.camera.frame) && NSEqualSizes(a.size, b.size) && a.scale == b.scale &&
         a.quality.antialias == b.quality.antialias && a.quality.point_smoothing == b.quality.point_smoothing &&
         a.quality.line_smoothing == b.quality.line_smoothing && a.quality.text_smoothing == b.quality.text_smoothing &&
@@ -40,17 +41,41 @@ const OurGalaxyRenderSettings ourSettings{
     {{{.99973613,.99461782,.99999994,.4,.75},{.860875785,.993465781,.99999994,.4,.75},
       {.99999994,.98355633,.898172021,.3,.75},{.99999994,.928406835,.559402168,.3,.75}}},
     "公式 1.3.1 の太陽中心黄道座標を暫定採用、旧 Plus 未検証", "公式 1.3.1 の群色を元にした近似"};
-template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpatialVisibility visibility, F visit) {
+struct PreviewSample {
+    std::size_t step;
+    std::optional<std::size_t> selected;
+
+    // 各区間の代表を原行順で一度だけ描く。選択中の区間も同じ予算を使う。
+    std::size_t representative(std::size_t ordinal) const {
+        const auto first = ordinal - ordinal % step;
+        if (selected && *selected >= first && *selected - first < step) return *selected;
+        return first;
+    }
+};
+std::optional<PreviewSample> previewSample(const GalaxySpatialModel& model, std::size_t source,
+                                           std::optional<GalaxySpatialRecordId> selected) {
+    constexpr std::size_t budget = 6000;
     const auto sources = model.sources().size();
-    if (!sources) return;
-    for (std::size_t source = 0; source < sources; ++source) {
-        if (!visibility.visible(model.family(source))) continue;
-        const auto quota = 6000 / sources + (source < 6000 % sources ? 1 : 0);
-        if (!quota) continue;
+    const bool selectedSource = selected && selected->source_index == source;
+    // 出典数が予算を超え、選択出典に通常の枠がない場合だけ1枠を予約する。
+    const bool reserve = selected && selected->source_index >= budget;
+    const auto shared = budget - reserve;
+    const auto quota = shared / sources + (source < shared % sources) + (reserve && selectedSource);
+    if (!quota) return std::nullopt;
+    const auto count = model.source_size(source);
+    const auto step = std::max<std::size_t>(1, count / quota + (count % quota != 0));
+    return PreviewSample{step, selectedSource ? std::optional{selected->ordinal} : std::nullopt};
+}
+template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpatialVisibility visibility,
+                                      std::optional<GalaxySpatialRecordId> selected, F visit) {
+    for (std::size_t source = 0; source < model.sources().size(); ++source) {
+        const auto family = model.family(source);
+        if (!visibility.visible(family)) continue;
+        const auto sample = previewSample(model, source, selected);
+        if (!sample) continue;
         const auto count = model.source_size(source);
-        const auto step = std::max<std::size_t>(1, count / quota + (count % quota != 0));
-        for (std::size_t ordinal = 0; ordinal < count; ordinal += step)
-            if (!visit(GalaxySpatialRecordId{model.family(source), source, ordinal})) return;
+        for (std::size_t ordinal = 0; ordinal < count; ordinal += sample->step)
+            if (!visit(GalaxySpatialRecordId{family, source, sample->representative(ordinal)})) return;
     }
 }
 }
@@ -66,6 +91,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     dispatch_queue_t _queue;
     std::optional<GalaxyOverlayRequest> _requested, _rendered;
     GalaxyOverlayDiagnostics _diagnostics;
+    std::optional<GalaxySpatialRecordId> _displayedPreviewSelection;
     BOOL _running;
     NSImage *_image;
     NSImage *_ourGalaxyImage;
@@ -75,7 +101,8 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     std::size_t _renderedHipDrawn;
     std::size_t _renderedOurGalaxyDrawn;
     std::size_t _renderedDrawn;
-    NSString *_status;
+    NSString *_renderFailure;
+    NSString *_selectionFailure;
     GalaxySpatialVisibility _visibility;
     BOOL _hipVisible;
     BOOL _ourGalaxyVisible;
@@ -100,7 +127,10 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     else
         view.needsDisplay = YES;
 }
-- (void)invalidatePendingPicks { _pickGeneration->fetch_add(1, std::memory_order_relaxed); }
+- (void)invalidatePendingPicks {
+    _pickGeneration->fetch_add(1, std::memory_order_relaxed);
+    _selectionFailure = nil;
+}
 - (std::shared_ptr<const GalaxySpatialModel>)model { return _model; }
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)ourGalaxyModel { return _ourGalaxyModel; }
 - (std::shared_ptr<const HipSpatialModel>)hipModel { return _hipModel; }
@@ -110,7 +140,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
     _hipModel = std::move(model); _requested.reset(); _rendered.reset();
-    _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {}; _view.needsDisplay = YES;
 }
 - (void)setOurGalaxyModel:(std::shared_ptr<const mitaka::OurGalaxyModel>)model {
@@ -118,7 +148,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
     _ourGalaxyModel = std::move(model); _renderedOurGalaxyRadiative.reset(); _requested.reset(); _rendered.reset();
-    _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {}; _view.needsDisplay = YES;
 }
 - (void)setVisibility:(GalaxySpatialVisibility)visibility {
@@ -127,7 +157,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     _visibility = visibility;
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
-    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {};
     _view.needsDisplay = YES;
 }
@@ -136,7 +166,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     _hipVisible = visible;
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
-    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {}; _view.needsDisplay = YES;
 }
 - (void)setOurGalaxyVisible:(BOOL)visible {
@@ -144,14 +174,14 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     _ourGalaxyVisible = visible;
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
-    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {}; _view.needsDisplay = YES;
 }
 - (void)setModel:(std::shared_ptr<const GalaxySpatialModel>)model {
     if (_model == model) return;
     _generation->fetch_add(1, std::memory_order_relaxed);
     [self invalidatePendingPicks];
-    _model = std::move(model); _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _status = nil; _running = NO;
+    _model = std::move(model); _requested.reset(); _rendered.reset(); _image = nil; _ourGalaxyImage = nil; _ourGalaxyMultiplier = nil; _ourGalaxyEmission = nil; _hipImage = nil; _renderFailure = nil; _running = NO;
     _diagnostics = {};
     _view.needsDisplay = YES;
 }
@@ -175,11 +205,13 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         try {
             if (ourModel && request.our_galaxy_visible) {
                 radiative = cachedRadiative ? cachedRadiative : std::make_shared<const mitaka::OurGalaxyRadiativeModel>(*ourModel);
-                radiativeImages = render_our_galaxy_radiative(*radiative, request.camera,
-                    request.size.width, request.size.height, cancelled);
-                if (radiativeImages && !cancelled() && radiativeImages->alpha() > 0)
-                    ourBitmap = render_our_galaxy_points(*ourModel, ourSettings, request.camera, request.quality,
-                        request.size.width, request.size.height, request.scale, cancelled, radiative.get(), radiativeImages->alpha());
+                if (our_galaxy_alpha(request.camera) > 0) {
+                    radiativeImages = render_our_galaxy_radiative(*radiative, request.camera,
+                        request.size.width, request.size.height, cancelled);
+                    if (radiativeImages && !cancelled())
+                        ourBitmap = render_our_galaxy_points(*ourModel, ourSettings, request.camera, request.quality,
+                            request.size.width, request.size.height, request.scale, cancelled, radiative.get(), radiativeImages->alpha());
+                }
             }
         } catch (const std::exception& error) {
             [failures addObject:[NSString stringWithFormat:@"天の川: %s", error.what()]];
@@ -212,13 +244,18 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             overlay->_renderedHipDrawn = hipBitmap ? hipBitmap->counts().drawn : 0;
             overlay->_renderedDrawn = bitmap ? bitmap->counts().drawn : 0;
             overlay->_renderedOurGalaxyDrawn = ourBitmap ? ourBitmap->counts().drawn : 0;
-            overlay->_status = failure ? [@"銀河を描画できません: " stringByAppendingString:failure] : nil;
+            overlay->_selectionFailure = nil;
+            overlay->_renderFailure = failure ? [@"銀河を描画できません: " stringByAppendingString:failure] : nil;
             [overlay redrawPublishedScene];
             [overlay startLatest];
         });
     });
 }
-- (NSString *)status { return _status; }
+- (NSString *)status {
+    if (_selectionFailure) return _selectionFailure;
+    if (_diagnostics.display == GalaxyOverlayDisplay::preview) return @"銀河: 移動中の間引き表示（全件を描画中）";
+    return _diagnostics.display == GalaxyOverlayDisplay::complete ? _renderFailure : nil;
+}
 - (GalaxyOverlayDiagnostics)diagnostics { return _diagnostics; }
 - (BOOL)isRecordDisplayed:(GalaxySpatialRecordId)record {
     if (!_model || (_diagnostics.display == GalaxyOverlayDisplay::complete && !_image) || !_diagnostics.displayed || _diagnostics.display == GalaxyOverlayDisplay::none ||
@@ -227,19 +264,14 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         record.ordinal >= _model->source_size(record.source_index) ||
         !_diagnostics.displayed->visibility.visible(record.family)) return NO;
     if (_diagnostics.display == GalaxyOverlayDisplay::preview) {
-        const auto sources = _model->sources().size();
-        const auto quota = 6000 / sources + (record.source_index < 6000 % sources ? 1 : 0);
-        if (!quota) return NO;
-        const auto count = _model->source_size(record.source_index);
-        const auto step = std::max<std::size_t>(1, count / quota + (count % quota != 0));
-        if (record.ordinal % step) return NO;
+        const auto sample = previewSample(*_model, record.source_index, _displayedPreviewSelection);
+        if (!sample || sample->representative(record.ordinal) != record.ordinal) return NO;
     }
-    const auto row = _model->row(record);
-    if (!row.position) return NO;
     const auto& request = *_diagnostics.displayed;
     const GalaxyProjector projector(request.camera, request.size.width, request.size.height);
-    const auto point = projector.project(*row.position);
-    return point && projector.contains(*point);
+    const auto shape = galaxy_spatial_shape(*_model, record, projector,
+        _diagnostics.display == GalaxyOverlayDisplay::preview);
+    return shape && shape->intersects_viewport(projector);
 }
 - (void)pickAtPoint:(NSPoint)point camera:(const GalaxyCameraPc&)camera
          completion:(void (^)(std::optional<GalaxySpatialRecordId>))completion {
@@ -275,6 +307,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     const auto position = our_galaxy_point_position(*_ourGalaxyModel, point, mode, ourSettings.transform);
     if (!position) return std::nullopt;
     const auto& request = *_diagnostics.displayed;
+    if (mode == OurGalaxyPointDisplay::preview && our_galaxy_alpha(request.camera) <= 0) return std::nullopt;
     if (!our_galaxy_point_visible(*_ourGalaxyModel, point, ourSettings.transform, mode, request.camera,
                                   request.size.width, request.size.height, _renderedOurGalaxyRadiative.get())) return std::nullopt;
     return position;
@@ -288,14 +321,19 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     request.camera = camera;
     if (!sameRequest(request, *_diagnostics.displayed)) return;
     const auto mode = _diagnostics.display;
+    const auto previewSelection = _displayedPreviewSelection;
     const auto model = _model;
     const auto hipModel = _hipModel;
     const auto ourModel = _ourGalaxyModel;
     const auto ourRadiative = _renderedOurGalaxyRadiative;
     const bool galaxyDisplayed = mode == GalaxyOverlayDisplay::preview || _image != nil;
     const bool hipDisplayed = request.hip_visible && (mode == GalaxyOverlayDisplay::preview || _hipImage != nil);
-    const bool ourDisplayed = request.our_galaxy_visible && ourModel && (mode == GalaxyOverlayDisplay::preview || _ourGalaxyMultiplier != nil);
-    const bool ourPointsDisplayed = request.our_galaxy_visible && ourModel && (mode == GalaxyOverlayDisplay::preview || _ourGalaxyImage != nil);
+    const bool previewOurVisible = mode == GalaxyOverlayDisplay::preview && ourModel &&
+        our_galaxy_alpha(request.camera) > 0;
+    const bool ourDisplayed = request.our_galaxy_visible && ourModel &&
+        (mode == GalaxyOverlayDisplay::preview ? previewOurVisible : _ourGalaxyMultiplier != nil);
+    const bool ourPointsDisplayed = request.our_galaxy_visible && ourModel &&
+        (mode == GalaxyOverlayDisplay::preview ? previewOurVisible : _ourGalaxyImage != nil);
     const auto picks = _pickGeneration;
     const auto expected = picks->load(std::memory_order_relaxed);
     const auto generation = _generation;
@@ -311,21 +349,31 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 selected.galaxy = pick_galaxy_spatial_row(*model, projector, request.visibility, point.x, point.y, 8, cancelled);
             } else if (model && galaxyDisplayed && projector.contains({point.x, point.y, 0})) {
                 double best = 8, depth = std::numeric_limits<double>::infinity();
-                forPreviewRows(*model, request.visibility, [&](GalaxySpatialRecordId id) {
+                std::optional<GalaxySpatialRecordId> painted;
+                double bestX = 0, bestY = 0;
+                forPreviewRows(*model, request.visibility, previewSelection, [&](GalaxySpatialRecordId id) {
                     if (cancelled()) return false;
-                    const auto row = model->row(id);
-                    if (!row.position) return true;
-                    const auto projected = projector.project(*row.position);
-                    if (!projected || !projector.contains(*projected)) return true;
-                    const double distance = std::hypot(projected->x - point.x, projected->y - point.y);
-                    if (distance <= best && (!selected.galaxy || distance < best || projected->depth_pc < depth)) {
-                        selected.galaxy = id; best = distance; depth = projected->depth_pc;
+                    const auto shape = galaxy_spatial_shape(*model, id, projector, true, cancelled);
+                    if (shape && shape->clipping && shape->clipping->cancelled) return false;
+                    if (!shape || !shape->intersects_viewport(projector)) return true;
+                    const auto& projected = shape->center;
+                    const double distance = std::hypot(projected.x - point.x, projected.y - point.y);
+                    if (shape->contains(point.x, point.y))
+                        painted = id;
+                    if (distance <= best && (!selected.galaxy || distance < best || projected.depth_pc < depth ||
+                        (projected.x == bestX && projected.y == bestY))) {
+                        selected.galaxy = id; best = distance; depth = projected.depth_pc;
+                        bestX = projected.x; bestY = projected.y;
                     }
                     return true;
                 });
+                if (painted) selected.galaxy = painted;
             }
+            const auto galaxyCandidate = selected.galaxy;
+            std::optional<HipSpatialPick> hip;
+            std::optional<OurGalaxyPointPick> ourCandidate;
             if (hipModel && hipDisplayed) {
-                const auto hip = pick_hip_spatial_point(*hipModel, projector, point.x, point.y, 8,
+                hip = pick_hip_spatial_point(*hipModel, projector, point.x, point.y, 8,
                     mode == GalaxyOverlayDisplay::preview, cancelled);
                 if (hip) {
                     bool choose = !selected.galaxy;
@@ -341,10 +389,10 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
             if (ourPointsDisplayed && !cancelled()) {
                 const auto pointMode = mode == GalaxyOverlayDisplay::preview
                     ? OurGalaxyPointDisplay::preview : OurGalaxyPointDisplay::complete;
-                const auto candidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, pointMode,
+                ourCandidate = pick_our_galaxy_point(*ourModel, ourSettings.transform, ourSettings.styles, pointMode,
                     request.camera, request.size.width, request.size.height, point.x, point.y, 8, cancelled,
                     pointMode == OurGalaxyPointDisplay::complete ? ourRadiative.get() : nullptr);
-                if (candidate) {
+                if (const auto& candidate = ourCandidate) {
                     std::optional<GalaxyProjectionPc> existing;
                     if (selected.galaxy) existing = projector.project(*model->row(*selected.galaxy).position);
                     else if (selected.hip) existing = projector.project(hipModel->points[*selected.hip].position);
@@ -354,6 +402,34 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                         (candidate->distance_points == distance && candidate->depth_pc < existing->depth_pc)) {
                         selected.galaxy.reset(); selected.hip.reset(); selected.our_galaxy_point = candidate->id;
                     }
+                }
+            }
+            // 点が重なる場合は描画された図形を近傍ヒットより優先する。
+            // OurGalaxy は加算合成なので、両方が見える場合は後描き群を仮に選ぶ。
+            if (galaxyCandidate) {
+                const auto shape = galaxy_spatial_shape(*model, *galaxyCandidate, projector,
+                                                        mode == GalaxyOverlayDisplay::preview, cancelled);
+                if (shape && shape->contains(point.x, point.y)) {
+                    selected.hip.reset(); selected.our_galaxy_point.reset(); selected.galaxy = galaxyCandidate;
+                }
+            }
+            if (ourCandidate) {
+                const auto projected = projector.project(ourCandidate->position);
+                const double radius = ourSettings.styles[static_cast<std::size_t>(ourCandidate->id.group)].radius_points;
+                const double dx = projected ? point.x - projected->x : 0;
+                const double dy = projected ? point.y - projected->y : 0;
+                const bool painted = projected && (mode == GalaxyOverlayDisplay::preview
+                    ? std::abs(dx) <= .75 && std::abs(dy) <= .75 : dx * dx + dy * dy <= radius * radius);
+                if (painted) {
+                    selected.galaxy.reset(); selected.hip.reset(); selected.our_galaxy_point = ourCandidate->id;
+                }
+            }
+            // HIP は最後に SourceOver で描画する。
+            if (hip) {
+                const auto projected = projector.project(hipModel->points[hip->index].position);
+                if (projected && hip_spatial_point_contains(projected->x, projected->y, point.x, point.y,
+                                                            mode == GalaxyOverlayDisplay::preview)) {
+                    selected.galaxy.reset(); selected.our_galaxy_point.reset(); selected.hip = hip->index;
                 }
             }
             if (!selected.galaxy && !selected.hip && !selected.our_galaxy_point && ourDisplayed)
@@ -369,7 +445,7 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                     overlay->_model != model || overlay->_hipModel != hipModel || overlay->_ourGalaxyModel != ourModel ||
                     (mode == GalaxyOverlayDisplay::complete && (overlay->_image != galaxyImage || overlay->_hipImage != hipImage || overlay->_ourGalaxyImage != ourImage)) ||
                     !sameRequest(*overlay->_diagnostics.displayed, request)) return;
-                overlay->_status = [@"銀河の選択に失敗: " stringByAppendingString:(failure ? failure : @"不明なエラー")];
+                overlay->_selectionFailure = [@"銀河の選択に失敗: " stringByAppendingString:(failure ? failure : @"不明なエラー")];
                 [overlay redrawPublishedScene];
                 completion({});
             });
@@ -389,8 +465,12 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
     });
 }
 - (void)drawInRect:(NSRect)rect camera:(const GalaxyCameraPc&)camera
-             quality:(RendererDisplayOptions)quality scale:(double)scale {
-    const GalaxyOverlayRequest next{camera, quality, rect.size, scale, _visibility, static_cast<bool>(_hipVisible), static_cast<bool>(_ourGalaxyVisible)};
+             quality:(RendererDisplayOptions)quality scale:(double)scale
+      selectedRecord:(std::optional<GalaxySpatialRecordId>)selected surfaceView:(BOOL)surfaceView {
+    auto visibility = _visibility;
+    // 地表から見た空を SDSS の観測範囲で覆わない。離陸後の表示設定は保持する。
+    if (surfaceView) visibility.sdss_galaxies = visibility.sdss_quasars = false;
+    const GalaxyOverlayRequest next{camera, quality, rect.size, scale, visibility, static_cast<bool>(_hipVisible), static_cast<bool>(_ourGalaxyVisible)};
     if (!_requested || !sameRequest(*_requested, next)) {
         [self invalidatePendingPicks];
         if (_requested) {
@@ -421,47 +501,20 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
         // 完成画像が古い視点を指す間は、現在のカメラで間引いた位置を即時投影する。
         // 完成画像をそのまま残すと移動中の天体位置が実際の視点と一致しない。
         const GalaxyProjector projector(camera, rect.size.width, rect.size.height);
-        if (_ourGalaxyModel && _ourGalaxyVisible) {
-            for (std::size_t group = 0; group < _ourGalaxyModel->groups.size(); ++group) {
-                const auto& positions = _ourGalaxyModel->groups[group].positions;
-                const auto& style = ourSettings.styles[group];
-                [[NSColor colorWithSRGBRed:style.red green:style.green blue:style.blue alpha:style.alpha] setFill];
-                const auto step = our_galaxy_preview_step(positions.size());
-                for (std::size_t index = 0; index < positions.size(); index += step) {
-                    const auto& raw = positions[index];
-                    const auto valid = [](double value) {
-                        return std::isfinite(value) && std::abs(value) <= maximum_galaxy_coordinate_pc;
-                    };
-                    if (!valid(raw.x_pc) || !valid(raw.y_pc) || !valid(raw.z_pc)) continue;
-                    const auto point = projector.project({raw.x_pc, raw.y_pc, raw.z_pc});
-                    if (point && projector.contains(*point)) {
-                        NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
-                        ++_diagnostics.our_galaxy_drawn;
-                    }
-                }
-            }
-        }
-        if (_hipModel && _hipVisible) {
-            [[NSColor colorWithSRGBRed:1 green:1 blue:1 alpha:.8] setFill];
-            const auto& points = _hipModel->points;
-            const auto step = hip_spatial_preview_step(points.size());
-            for (std::size_t index = 0; index < points.size(); index += step) {
-                const auto point = projector.project(points[index].position);
-                if (point && projector.contains(*point)) {
-                    NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
-                    ++_diagnostics.hip_drawn;
-                }
-            }
-        }
         std::array<GalaxyPointColor, 8> cachedPointColors{};
         __strong NSColor *cachedNativeColors[8] = {};
         std::size_t cachedColorCount = 0;
-        if (_model) forPreviewRows(*_model, _visibility, [&](GalaxySpatialRecordId id) {
+        _displayedPreviewSelection.reset();
+        if (_model && selected && selected->source_index < _model->sources().size() &&
+            _model->family(selected->source_index) == selected->family && visibility.visible(selected->family) &&
+            selected->ordinal < _model->source_size(selected->source_index)) {
+            const auto shape = galaxy_spatial_shape(*_model, *selected, projector, true);
+            if (shape && shape->intersects_viewport(projector)) _displayedPreviewSelection = selected;
+        }
+        if (_model) forPreviewRows(*_model, visibility, _displayedPreviewSelection, [&](GalaxySpatialRecordId id) {
             ++_diagnostics.preview_rows;
-            const auto row = _model->row(id);
-            if (!row.position) return true;
-            const auto point = projector.project(*row.position);
-            if (point && projector.contains(*point)) {
+            const auto shape = galaxy_spatial_shape(*_model, id, projector, true);
+            if (shape && shape->intersects_viewport(projector)) {
                 const auto color = galaxy_point_color(*_model, id);
                 std::size_t index = 0;
                 while (index < cachedColorCount && (cachedPointColors[index].red != color.red ||
@@ -474,12 +527,67 @@ template<class F> void forPreviewRows(const GalaxySpatialModel& model, GalaxySpa
                 NSColor *nativeColor = index < cachedColorCount ? cachedNativeColors[index]
                     : [NSColor colorWithDeviceRed:color.red green:color.green blue:color.blue alpha:1];
                 [nativeColor setFill];
-                NSRectFill(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y, 1.5, 1.5));
+                if (shape->preview_rectangle) {
+                    NSRectFill(NSMakeRect(rect.origin.x + shape->center.x, rect.origin.y + shape->center.y,
+                                          galaxy_spatial_preview_size, galaxy_spatial_preview_size));
+                } else {
+                    const double radius = shape->radius;
+                    if (shape->clipping) {
+                        NSBezierPath *path = [NSBezierPath bezierPath];
+                        for (const auto& part : shape->clipping->rectangles)
+                            [path appendBezierPathWithRect:NSMakeRect(rect.origin.x + part.x,
+                                rect.origin.y + part.y, part.width, part.height)];
+                        [path fill];
+                    } else {
+                        [[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(
+                            rect.origin.x + shape->center.x - radius, rect.origin.y + shape->center.y - radius,
+                            2 * radius, 2 * radius)] fill];
+                    }
+                }
                 ++_diagnostics.displayed_drawn;
             }
             return true;
         });
-        if (!_status) _status = @"銀河: 移動中の間引き表示（全件を描画中）";
+        const float previewOurAlpha = _ourGalaxyModel && _ourGalaxyVisible ? our_galaxy_alpha(camera) : 0;
+        if (previewOurAlpha > 0) {
+            [NSGraphicsContext saveGraphicsState];
+            // フェード直後の暗い点が画面端で量子化により消えないよう、プレビューだけ平滑化しない。
+            [[NSGraphicsContext currentContext] setShouldAntialias:NO];
+            for (std::size_t group = 0; group < _ourGalaxyModel->groups.size(); ++group) {
+                const auto& positions = _ourGalaxyModel->groups[group].positions;
+                const auto& style = ourSettings.styles[group];
+                [[NSColor colorWithSRGBRed:style.red green:style.green blue:style.blue alpha:style.alpha * previewOurAlpha] setFill];
+                const auto step = our_galaxy_preview_step(positions.size());
+                for (std::size_t index = 0; index < positions.size(); index += step) {
+                    const auto& raw = positions[index];
+                    const auto valid = [](double value) {
+                        return std::isfinite(value) && std::abs(value) <= maximum_galaxy_coordinate_pc;
+                    };
+                    if (!valid(raw.x_pc) || !valid(raw.y_pc) || !valid(raw.z_pc)) continue;
+                    const auto point = projector.project({raw.x_pc, raw.y_pc, raw.z_pc});
+                    if (point && projector.contains(*point)) {
+                        NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x - .75, rect.origin.y + point->y - .75, 1.5, 1.5),
+                                                 NSCompositingOperationPlusLighter);
+                        ++_diagnostics.our_galaxy_drawn;
+                    }
+                }
+            }
+            [NSGraphicsContext restoreGraphicsState];
+        }
+        if (_hipModel && _hipVisible) {
+            [[NSColor colorWithSRGBRed:1 green:1 blue:1 alpha:.8] setFill];
+            const auto& points = _hipModel->points;
+            const auto step = hip_spatial_preview_step(points.size());
+            for (std::size_t index = 0; index < points.size(); index += step) {
+                const auto point = projector.project(points[index].position);
+                if (point && projector.contains(*point)) {
+                    NSRectFillUsingOperation(NSMakeRect(rect.origin.x + point->x, rect.origin.y + point->y,
+                                                               hip_spatial_preview_size, hip_spatial_preview_size),
+                                             NSCompositingOperationSourceOver);
+                    ++_diagnostics.hip_drawn;
+                }
+            }
+        }
         _diagnostics.displayed = *_requested;
         _diagnostics.display = GalaxyOverlayDisplay::preview;
     }

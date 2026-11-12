@@ -13,6 +13,8 @@ struct SmallBodyOrbitSampling {
     std::size_t sample_count;
 };
 
+// 旧Plus 1.5.4 の小惑星楕円は200区間と重複する終点を描く。GUIは彗星と同じ標本数欄を使う。
+inline constexpr std::size_t default_small_body_orbit_samples = 201;
 inline constexpr std::size_t maximum_small_body_orbit_samples = 4096;
 
 struct SmallBodyOrbitSample {

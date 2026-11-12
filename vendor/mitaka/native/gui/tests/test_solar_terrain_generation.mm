@@ -119,6 +119,20 @@ struct Observed {
 }
 @end
 
+@interface CountingGalaxyOverlay : GalaxyOverlay
+@property(nonatomic) unsigned invalidations;
+@end
+@implementation CountingGalaxyOverlay
+- (void)invalidatePendingPicks { ++_invalidations; [super invalidatePendingPicks]; }
+@end
+
+@interface SolarSystemView (OverlayFixture)
+- (void)replaceOverlay:(GalaxyOverlay *)overlay;
+@end
+@implementation SolarSystemView (OverlayFixture)
+- (void)replaceOverlay:(GalaxyOverlay *)overlay { _galaxyOverlay = overlay; }
+@end
+
 @interface PickSceneView : SolarSystemView
 @property(nonatomic) unsigned publications;
 @end
@@ -136,6 +150,24 @@ void drawView(SolarSystemView *view) {
     [NSGraphicsContext setCurrentContext:context];
     [view drawRect:view.bounds];
     [NSGraphicsContext restoreGraphicsState];
+}
+void hoverInvalidatesPendingGalaxyPick() {
+    PickSceneView *view = [[PickSceneView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    CountingGalaxyOverlay *overlay = [[CountingGalaxyOverlay alloc] initWithView:view];
+    [view replaceOverlay:overlay];
+    [view setBodies:SolarBodies{}];
+    view.targetSelectionMode = 1;
+    unsigned previous = overlay.invalidations;
+    [view pickBodyAtPoint:NSMakePoint(-1, -1)];
+    require(overlay.invalidations > previous, "outside map must invalidate a pending galaxy pick");
+    previous = overlay.invalidations;
+    NSEvent *exit = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:NSZeroPoint
+        modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:0 pressure:0];
+    [view mouseExited:exit];
+    require(overlay.invalidations > previous, "leaving view must invalidate a pending hover pick");
+    previous = overlay.invalidations;
+    view.targetSelectionMode = 0;
+    require(overlay.invalidations > previous, "mode change must invalidate a pending hover pick");
 }
 void clearSelectionWithoutGalaxyModel() {
     PickSceneView *view = [[PickSceneView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -212,6 +244,34 @@ void advance(GenerationSolarView *view, double date) {
     [view orbitByX:15 y:0];
     [view endSceneUpdate];
     [view refreshTerrain];
+}
+void physicalSpaceDatePublication() {
+    SolarBodies bodies{};
+    const std::array<Body, 11> ids{Body::sun, Body::mercury, Body::venus, Body::earth, Body::mars,
+        Body::jupiter, Body::saturn, Body::uranus, Body::neptune, Body::pluto, Body::moon};
+    for (std::size_t i = 0; i < bodies.size(); ++i) {
+        bodies[i].id = ids[i];
+        bodies[i].position_au = {1, double(i), 0};
+    }
+    for (std::size_t body : {std::size_t{3}, std::size_t{4}}) {
+        SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 320, 240)];
+        [view setBodies:bodies];
+        view.planetDisplayOptions = {true, false, false, false};
+        SurfaceSite site;
+        site.body_index = body;
+        NSString *error = nil;
+        require([view forceSpaceFromHorizon:site error:&error], "enter physical space");
+        require([view scene].physical_navigation, "live scene must use physical navigation");
+        SolarDateInput input{2451546, {35, 139}, bodies, false, {}, {}, nullptr, nullptr,
+            prepare_satellite_scene(nullptr, nullptr), nullptr};
+        auto candidate = [view prepareDateUpdate:input];
+        [view commitDateUpdate:std::move(candidate)];
+        const auto published = [view displayedScene];
+        require(published.julian_date == input.julian_date, "date candidate published");
+        require(published.physical_navigation, "physical-space date publication must retain physical navigation");
+        require(solar_terrain_request(published, body, "/tmp").has_value(),
+                "physical-space date publication must retain terrain eligibility");
+    }
 }
 void tests() {
     const auto probe = std::make_shared<Probe>();
@@ -329,7 +389,9 @@ int main() {
     @autoreleasepool {
         [NSApplication sharedApplication];
         try {
+            physicalSpaceDatePublication();
             tests();
+            hoverInvalidatesPendingGalaxyPick();
             clearSelectionWithoutGalaxyModel();
             spatialPickAcrossScenePublication(true);
             spatialPickAcrossScenePublication(false);

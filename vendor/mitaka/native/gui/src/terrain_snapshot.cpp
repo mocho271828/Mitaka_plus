@@ -16,7 +16,7 @@ bool equal(const BodyOrientation& a,const BodyOrientation& b) {
 bool equal(const SolarCamera& a,const SolarCamera& b) {
     if (!equal(a.target,b.target)||a.yaw_deg!=b.yaw_deg||a.pitch_deg!=b.pitch_deg||
         a.roll_deg!=b.roll_deg||a.frame_is_orbit!=b.frame_is_orbit||
-        a.distance_au!=b.distance_au||bool(a.frame)!=bool(b.frame)||
+        a.distance_au!=b.distance_au||a.vertical_fov_deg!=b.vertical_fov_deg||bool(a.frame)!=bool(b.frame)||
         bool(a.precise_target)!=bool(b.precise_target)) return false;
     if (a.precise_target && (!equal(a.precise_target->anchor_pc,b.precise_target->anchor_pc)||
         !equal(a.precise_target->offset_au,b.precise_target->offset_au))) return false;

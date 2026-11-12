@@ -6,7 +6,6 @@
 
 namespace mitaka::gui {
 namespace {
-constexpr double tangent_half_fov = 0.41421356237309504880;
 
 PreciseCameraTarget precise_from_au(Vec3 target) {
     const double scale = astronomical_units_per_parsec;
@@ -30,6 +29,7 @@ SolarCamera direction_camera(const SharedCamera& camera) {
     direction.frame = camera.frame;
     direction.roll_deg = camera.roll_deg;
     direction.frame_is_orbit = camera.frame_is_orbit;
+    direction.vertical_fov_deg = camera.vertical_fov_deg;
     return direction;
 }
 
@@ -68,7 +68,7 @@ void SharedCamera::pan(double dx_points, double dy_points, double width, double 
         width <= 0 || !std::isfinite(height) || height <= 0)
         throw std::invalid_argument("invalid shared camera pan or viewport");
     const auto axes = solar_camera_basis(direction_camera(*this));
-    const double scale = 2 * distance_au * tangent_half_fov / height;
+    const double scale = 2 * distance_au * solar_camera_tangent(direction_camera(*this)) / height;
     const double horizontal = dx_points * scale, vertical = dy_points * scale;
     const Vec3 delta{-axes.right.x * horizontal + axes.up.x * vertical,
                      -axes.right.y * horizontal + axes.up.y * vertical,
@@ -109,7 +109,7 @@ void SharedCamera::zoom(double logarithmic_delta) {
 
 SharedCamera shared_camera_from_solar(const SolarCamera& camera) {
     (void)solar_camera_basis(camera);
-    SharedCamera result{camera.target, camera.yaw_deg, camera.pitch_deg, camera.distance_au, camera.frame, camera.roll_deg, camera.frame_is_orbit, camera.precise_target};
+    SharedCamera result{camera.target, camera.yaw_deg, camera.pitch_deg, camera.distance_au, camera.frame, camera.roll_deg, camera.frame_is_orbit, camera.precise_target, camera.vertical_fov_deg};
     validate(result);
     return result;
 }
@@ -119,7 +119,7 @@ SharedCamera shared_camera_from_galaxy(const GalaxyCameraPc& camera) {
     const PreciseCameraTarget target{{camera.target.x_pc, camera.target.y_pc, camera.target.z_pc}, camera.target_offset_au};
     return {approximate_au(target), camera.yaw_deg, camera.pitch_deg,
             camera.distance_pc * astronomical_units_per_parsec,
-            camera.frame, camera.roll_deg, camera.frame_is_orbit, target};
+            camera.frame, camera.roll_deg, camera.frame_is_orbit, target, camera.vertical_fov_deg};
 }
 
 SolarCamera solar_camera_from_shared(const SharedCamera& camera) {
@@ -127,6 +127,7 @@ SolarCamera solar_camera_from_shared(const SharedCamera& camera) {
     SolarCamera result{camera.target_au, camera.yaw_deg, camera.pitch_deg,
                        camera.distance_au, camera.frame, camera.roll_deg, camera.frame_is_orbit};
     result.precise_target = camera.precise_target;
+    result.vertical_fov_deg = camera.vertical_fov_deg;
     (void)solar_camera_basis(result);
     return result;
 }
@@ -137,7 +138,7 @@ GalaxyCameraPc galaxy_camera_from_shared(const SharedCamera& camera) {
     const auto target = camera.precise_target.value_or(precise_from_au(camera.target_au));
     return checked_galaxy_camera({{target.anchor_pc.x, target.anchor_pc.y, target.anchor_pc.z},
                                   camera.yaw_deg, camera.pitch_deg, camera.distance_au / scale,
-                                  camera.frame, camera.roll_deg, camera.frame_is_orbit, target.offset_au});
+                                  camera.frame, camera.roll_deg, camera.frame_is_orbit, target.offset_au, camera.vertical_fov_deg});
 }
 
 } // namespace mitaka::gui

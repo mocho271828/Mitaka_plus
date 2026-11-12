@@ -36,6 +36,10 @@ std::string definition_title(const SpacecraftDefinition& definition) {
     if ((!name || name->value_bytes.empty()) && modern) name = unique_spacecraft_field(definition, "KEY");
     return name && !name->value_bytes.empty() ? decode(name->value_bytes, modern) : "名称未解決";
 }
+// バイナリ読込単独の制約は元データに残す。ブラウザでは位置評価器が返す現在の契約を使う。
+bool show_loader_diagnostic(const SpacecraftDiagnostic& diagnostic) {
+    return diagnostic.code != SpacecraftDiagnosticCode::unresolved_pth_contract;
+}
 const char* sampling_title(SpacecraftSamplingKind kind) {
     switch (kind) {
         case SpacecraftSamplingKind::exact_record: return "原記録に一致";
@@ -113,6 +117,14 @@ std::shared_ptr<const SpacecraftSnapshot> evaluate_spacecraft_snapshot(
     return snapshot;
 }
 
+std::string spacecraft_catalog_description(const SpacecraftBrowserModel& model) {
+    std::ostringstream output;
+    output << "同名の探査機と未解決の定義もすべて保持します。PTH は旧版の数値 JD で評価し、PPI の座標は推定しません。行を選ぶと原定義・位置・診断を表示します。";
+    for (const auto& diagnostic : model.model().dataset().diagnostics)
+        if (show_loader_diagnostic(diagnostic)) output << "\n" << diagnostic.source_key << ": " << diagnostic.message;
+    return output.str();
+}
+
 std::string spacecraft_description(const SpacecraftBrowserModel& model, std::size_t index,
                                    const SpacecraftSnapshot* snapshot) {
     const auto& dataset = model.model().dataset();
@@ -158,8 +170,8 @@ std::string spacecraft_description(const SpacecraftBrowserModel& model, std::siz
         output << field.key << " = " << decode(field.value_bytes, modern);
     }
     for (const auto& diagnostic : dataset.diagnostics)
-        if (diagnostic.source_key == model.source(index)
-            || (trajectory_source && diagnostic.source_key == *trajectory_source))
+        if (show_loader_diagnostic(diagnostic) && (diagnostic.source_key == model.source(index)
+            || (trajectory_source && diagnostic.source_key == *trajectory_source)))
             output << "\n読込時の診断: " << diagnostic.message;
     output << "\n物理時系・精度保証期間は不明";
     return output.str();

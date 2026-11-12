@@ -11,6 +11,33 @@ NSString *string(const std::string& value) {
 }
 }
 
+@interface CatalogBrowserContextSelection : NSObject
+@property(nonatomic) BrowserObjectKind kind;
+@property(nonatomic) std::size_t index;
+@property(nonatomic) std::uint64_t generation;
+@end
+
+@implementation CatalogBrowserContextSelection
+@end
+
+@interface CatalogBrowserController ()
+- (NSMenu *)contextMenuForRow:(NSInteger)row;
+@end
+
+@interface CatalogBrowserTableView : NSTableView
+@property(nonatomic, weak) CatalogBrowserController *contextController;
+@end
+
+@implementation CatalogBrowserTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    const NSInteger row = [self rowAtPoint:point];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return [self.contextController contextMenuForRow:row];
+}
+@end
+
 @implementation CatalogBrowserEntry
 @end
 
@@ -52,7 +79,9 @@ NSString *string(const std::string& value) {
         _kind.action = @selector(filter:);
         NSStackView *filters = [NSStackView stackViewWithViews:@[_search, _kind]];
         filters.spacing = 10;
-        _table = [[NSTableView alloc] init];
+        CatalogBrowserTableView *table = [[CatalogBrowserTableView alloc] init];
+        table.contextController = self;
+        _table = table;
         for (NSString *identifier in @[@"title", @"details"]) {
             NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:identifier];
             column.title = [identifier isEqualToString:@"title"] ? @"天体" : @"座標・分類";
@@ -286,10 +315,35 @@ NSString *string(const std::string& value) {
     (void)notification;
     _select.enabled = _center.enabled = _table.selectedRow >= 0;
 }
-- (void)choose:(BOOL)center {
+- (NSMenu *)contextMenuForRow:(NSInteger)row {
+    if (!_model || row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return nil;
+    const auto reference = _page.rows[static_cast<std::size_t>(row)];
+    CatalogBrowserContextSelection *selection = [[CatalogBrowserContextSelection alloc] init];
+    selection.kind = reference.kind;
+    selection.index = reference.index;
+    selection.generation = _generation->load(std::memory_order_relaxed);
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"天体"];
+    NSMenuItem *selectItem = [menu addItemWithTitle:@"選択" action:@selector(select:) keyEquivalent:@""];
+    NSMenuItem *centerItem = [menu addItemWithTitle:@"選択して中央に表示" action:@selector(center:) keyEquivalent:@""];
+    selectItem.target = centerItem.target = self;
+    selectItem.representedObject = centerItem.representedObject = selection;
+    return menu;
+}
+- (void)choose:(BOOL)center sender:(id)sender {
+    if ([sender isKindOfClass:NSMenuItem.class]) {
+        id context = ((NSMenuItem *)sender).representedObject;
+        if (![context isKindOfClass:CatalogBrowserContextSelection.class]) return;
+        CatalogBrowserContextSelection *selection = context;
+        const NSInteger row = _table.selectedRow;
+        if (selection.generation != _generation->load(std::memory_order_relaxed) ||
+            row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return;
+        const auto reference = _page.rows[static_cast<std::size_t>(row)];
+        // 同じ行番号でも検索結果や種類が変われば、古いメニューの対象ではない。
+        if (reference.kind != selection.kind || reference.index != selection.index) return;
+    }
     CatalogBrowserEntry *entry = [self entryAtRow:_table.selectedRow];
     if (entry && self.chooseObject) self.chooseObject(entry, center);
 }
-- (void)select:(id)sender { (void)sender; [self choose:NO]; }
-- (void)center:(id)sender { (void)sender; [self choose:YES]; }
+- (void)select:(id)sender { [self choose:NO sender:sender]; }
+- (void)center:(id)sender { [self choose:YES sender:sender]; }
 @end

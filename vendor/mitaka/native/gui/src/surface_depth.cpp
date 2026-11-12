@@ -102,6 +102,6 @@ std::optional<double> surface_opaque_distance(const SurfaceSphere& sphere,const 
             return empty_distance(value)?std::nullopt:std::optional<double>(value);
         }
     }
-    return sphere_hit_distance(camera,sphere.center,sphere.radius_au,x+.5,y+.5,width,height);
+    return surface_sphere_fallback_distance(camera,sphere.center,sphere.radius_au,x+.5,y+.5,width,height);
 }
 } // namespace mitaka::gui

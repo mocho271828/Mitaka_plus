@@ -4,22 +4,51 @@
 #include "our_galaxy_navigation.hpp"
 #include "mitaka/our_galaxy_model.hpp"
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 #include <stdexcept>
 
 namespace {
-enum class GalaxySmokePhase { cancel, data_generation, failure, partial_failure, invalidate, success, corrupt, no_browser };
+enum class GalaxySmokePhase { cancel, data_generation, failure, partial_failure, invalidate, success, corrupt, no_browser, main_action_success, main_action_horizon, main_action_changed_mode, main_action };
 struct GalaxySmokeState {
     unsigned checks = 0;
     std::shared_ptr<const GalaxySpatialModel> original =
         std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{});
     std::shared_ptr<const mitaka::OurGalaxyModel> originalOur = std::make_shared<const mitaka::OurGalaxyModel>();
     NSString *corruptDirectory = nil;
+    NSString *plusDirectory = nil;
     void require(bool condition, const char *message) {
         ++checks;
         if (!condition) throw std::runtime_error(message);
     }
 };
+
+void append32(std::vector<std::uint8_t>& bytes, std::uint32_t value) {
+    for (unsigned i = 0; i < 4; ++i) bytes.push_back(static_cast<std::uint8_t>(value >> (8 * i)));
+}
+void appendFloat(std::vector<std::uint8_t>& bytes, float value) {
+    std::uint32_t bits;
+    std::memcpy(&bits, &value, sizeof(bits));
+    append32(bytes, bits);
+}
+void writeFixture(NSString *directory, NSString *name, const std::vector<std::uint8_t>& bytes) {
+    NSData *data = [NSData dataWithBytes:bytes.data() length:bytes.size()];
+    if (![data writeToFile:[directory stringByAppendingPathComponent:name] atomically:YES])
+        throw std::runtime_error("could not write Plus fixture");
+}
+void writePlusFixture(NSString *directory) {
+    std::vector<std::uint8_t> clusters{'G', 0, 'C', 0, 255, 0, 0, 0, 0, 0, 0, 0};
+    for (float value : {15.f, -20.f, 1.f, 2.f, 3.f, 0.5f, 0.25f}) appendFloat(clusters, value);
+    writeFixture(directory, @"globular_cluster.dat", clusters);
+    std::vector<std::uint8_t> nearby;
+    for (float value : {30.f, 20.f, 12.f, 1.f, 1.f}) appendFloat(nearby, value);
+    for (auto value : {255, 254, 253, 42, 0, 0, 0}) nearby.push_back(static_cast<std::uint8_t>(value));
+    writeFixture(directory, @"NBG.dat", nearby);
+    std::vector<std::uint8_t> galaxy;
+    for (int i = 0; i < 2; ++i) { append32(galaxy, 1); append32(galaxy, 1); appendFloat(galaxy, 0); }
+    for (int i = 0; i < 4; ++i) append32(galaxy, 0);
+    writeFixture(directory, @"ourgalaxy_model.dat", galaxy);
+}
 [[noreturn]] void failGalaxySmoke(const char *message) {
     std::fprintf(stderr, "Galaxy host smoke failed: %s\n", message);
     std::exit(EXIT_FAILURE);
@@ -43,6 +72,7 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
 @interface GalaxyModelProbeView : SolarSystemView
 - (std::shared_ptr<const GalaxySpatialModel>)receivedGalaxyModel;
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)receivedOurGalaxyModel;
+@property(nonatomic) NSUInteger catalogOverviewCount;
 @end
 
 @implementation GalaxyModelProbeView {
@@ -53,6 +83,7 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
 - (std::shared_ptr<const GalaxySpatialModel>)receivedGalaxyModel { return _receivedGalaxyModel; }
 - (void)setOurGalaxyModel:(std::shared_ptr<const mitaka::OurGalaxyModel>)model { _receivedOurGalaxyModel = std::move(model); }
 - (std::shared_ptr<const mitaka::OurGalaxyModel>)receivedOurGalaxyModel { return _receivedOurGalaxyModel; }
+- (void)showGalaxyCatalogOverview { ++_catalogOverviewCount; }
 @end
 
 @interface GalaxyModeProbeView : SolarSystemView
@@ -110,9 +141,19 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
             withIntermediateDirectories:NO attributes:nil error:&fixtureError], "could not create corrupt fixture");
         state->require([@"invalid" writeToFile:[state->corruptDirectory stringByAppendingPathComponent:@"ourgalaxy_model.dat"]
             atomically:YES encoding:NSUTF8StringEncoding error:&fixtureError], "could not write corrupt fixture");
+        state->plusDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
+        state->require([[NSFileManager defaultManager] createDirectoryAtPath:state->plusDirectory
+            withIntermediateDirectories:NO attributes:nil error:&fixtureError], "could not create Plus fixture");
+        writePlusFixture(state->plusDirectory);
         // 実際のホストと controller を使うが、利用者の状態や原本は試験へ渡さない。
         // Plus 読込を無効にした空 SDSS はファイル I/O を行わない。
-        AppController *probe = [[AppController alloc] initWithDataRoot:nil smokeTest:YES];
+        AppController *probe = [[GalaxyModeProbeController alloc] initWithDataRoot:nil smokeTest:YES];
+        probe->_model = _model;
+        probe->_jd = _jd;
+        probe->_mode = [[NSSegmentedControl alloc] init];
+        probe->_mode.segmentCount = 3;
+        probe->_mode.selectedSegment = 1;
+        probe->_status = [[NSTextField alloc] init];
         probe->_solar = [[GalaxyModelProbeView alloc] initWithFrame:NSZeroRect];
         probe->_extendedCatalogs = std::make_shared<const ExtendedCatalogs>();
         probe->_galaxyBrowser = [[GalaxyController alloc] init];
@@ -152,16 +193,29 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
         if (phase == GalaxySmokePhase::no_browser) _galaxyBrowser = nil;
         if (phase == GalaxySmokePhase::success) [_solar setOurGalaxyModel:state->originalOur];
         const auto previousModel = _galaxyModel;
+        const NSUInteger previousOverviewCount = [(GalaxyModelProbeView *)_solar catalogOverviewCount];
+        if (phase == GalaxySmokePhase::main_action_success || phase == GalaxySmokePhase::main_action_changed_mode ||
+            phase == GalaxySmokePhase::main_action) { _mode.selectedSegment = 0; [self changeMode:nil]; }
+        if (phase == GalaxySmokePhase::main_action_horizon) { _mode.selectedSegment = 2; [self changeMode:nil]; }
         _activePath = phase == GalaxySmokePhase::failure ? @"" :
             phase == GalaxySmokePhase::partial_failure ? @"/dev/null" :
-            phase == GalaxySmokePhase::corrupt ? state->corruptDirectory : @"/mitaka-galaxy-smoke-memory-only";
+            phase == GalaxySmokePhase::corrupt ? state->corruptDirectory :
+            (phase == GalaxySmokePhase::main_action_success || phase == GalaxySmokePhase::main_action_horizon ||
+             phase == GalaxySmokePhase::main_action_changed_mode) ? state->plusDirectory : @"/mitaka-galaxy-smoke-memory-only";
         const NSUInteger previousGalaxyGeneration = _galaxyGeneration;
         const NSUInteger previousDataGeneration = _loadGeneration;
-        [self loadGalaxyIncludingPlus:phase == GalaxySmokePhase::partial_failure];
+        if (phase >= GalaxySmokePhase::main_action_success) [self loadPlusGalaxyCatalogs:nil];
+        else [self loadGalaxyIncludingPlus:phase == GalaxySmokePhase::partial_failure];
         state->require(_galaxyLoading && _galaxyCancellation && !_galaxyCancellation->load(),
             "host did not start a cancellable galaxy job");
         state->require(_galaxyGeneration > previousGalaxyGeneration && _loadGeneration == previousDataGeneration,
             "galaxy load changed the wrong generation");
+        if (phase >= GalaxySmokePhase::main_action_success)
+            state->require([_status.stringValue containsString:@"銀河読込中"], "main status did not show loading");
+        if (phase == GalaxySmokePhase::main_action_changed_mode) {
+            _mode.selectedSegment = 2; [self changeMode:nil];
+            _mode.selectedSegment = 0; [self changeMode:nil];
+        }
         const auto token = _galaxyCancellation;
         const std::weak_ptr<std::atomic_bool> lifetime = token;
         switch (phase) {
@@ -194,6 +248,10 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
             case GalaxySmokePhase::success:
             case GalaxySmokePhase::corrupt:
             case GalaxySmokePhase::no_browser:
+            case GalaxySmokePhase::main_action_success:
+            case GalaxySmokePhase::main_action_horizon:
+            case GalaxySmokePhase::main_action_changed_mode:
+            case GalaxySmokePhase::main_action:
                 break;
         }
         afterGalaxyJob(lifetime, ^{
@@ -258,11 +316,44 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
                         state->require(!_galaxyBrowser && _galaxyModel && _galaxyModel != previousModel &&
                             [(GalaxyModelProbeView *)_solar receivedGalaxyModel] == _galaxyModel,
                             "successful load without a browser did not publish to the solar view");
+                        break;
+                    case GalaxySmokePhase::main_action_success:
+                    case GalaxySmokePhase::main_action_horizon:
+                    case GalaxySmokePhase::main_action_changed_mode:
+                        state->require(!_galaxyBrowser && _galaxyModel && _galaxyModel != previousModel &&
+                            _galaxyUsesPlusCatalogs && _galaxyModel->sources().size() == 4 &&
+                            [(GalaxyModelProbeView *)_solar receivedGalaxyModel] == _galaxyModel &&
+                            [_galaxyDiagnostics isEqualToString:@""] &&
+                            [_status.stringValue containsString:@"球状星団 1 · 近傍銀河 1"] &&
+                            ![_status.stringValue containsString:@"銀河読込中"],
+                            "main-view Plus success did not publish both sources and update status");
+                        if (phase == GalaxySmokePhase::main_action_changed_mode)
+                            state->require(_mode.selectedSegment == 0 && [(GalaxyModelProbeView *)_solar catalogOverviewCount] == previousOverviewCount,
+                                "late result overrode a mode change");
+                        else
+                            state->require(_mode.selectedSegment == 1 && !_solar.hidden && [(GalaxyModelProbeView *)_solar catalogOverviewCount] == previousOverviewCount + 1,
+                                "ground view did not switch to the galaxy catalog overview");
+                        break;
+                    case GalaxySmokePhase::main_action:
+                        state->require(!_galaxyBrowser && _galaxyModel == previousModel &&
+                            [(GalaxyModelProbeView *)_solar receivedGalaxyModel] == _galaxyModel &&
+                            [_galaxyDiagnostics containsString:@"globular_cluster.dat"] &&
+                            [_galaxyDiagnostics containsString:@"NBG.dat"] &&
+                            [_status.stringValue containsString:@"球状星団 1 · 近傍銀河 1"] &&
+                            ![_status.stringValue containsString:@"銀河読込中"] &&
+                            [_status.textColor isEqual:NSColor.systemOrangeColor] &&
+                            [_status.toolTip containsString:@"globular_cluster.dat"] &&
+                            [_status.toolTip containsString:@"NBG.dat"],
+                            "main-view action opened a browser or failed to retain model and report missing Plus sources");
+                        state->require(_mode.selectedSegment == 0 && [(GalaxyModelProbeView *)_solar catalogOverviewCount] == previousOverviewCount,
+                            "failed load changed the ground view");
                         [self invalidateGalaxy];
                         NSError *cleanupError = nil;
                         state->require([[NSFileManager defaultManager] removeItemAtPath:state->corruptDirectory error:&cleanupError],
                             "could not remove corrupt fixture");
-                        std::printf("Galaxy host smoke passed: %u checks; cancel/data-generation/failure/partial-failure/invalidate/success/no-browser\n",
+                        state->require([[NSFileManager defaultManager] removeItemAtPath:state->plusDirectory error:&cleanupError],
+                            "could not remove Plus fixture");
+                        std::printf("Galaxy host smoke passed: %u checks; cancel/data-generation/failure/partial-failure/invalidate/success/no-browser/main-action-sky/horizon/mode-change/failure\n",
                             state->checks);
                         completion();
                         return;
@@ -283,6 +374,7 @@ void afterGalaxyJob(std::weak_ptr<std::atomic_bool> lifetime, void (^completion)
 namespace {
 struct SolarGalaxySmokeState {
     int phase = 0;
+    bool groundTransitionChecked = false;
     GalaxySpatialRecordId expected{};
     NativeEclipticPositionPc position{};
     SolarCamera latest{};
@@ -344,6 +436,19 @@ void requireCurrentTrackingFrame(SolarSystemView *view, const SolarGalaxySmokeSt
                     completion();
                     return;
                 }
+                if (!state->groundTransitionChecked) {
+                    state->groundTransitionChecked = true;
+                    NSString *clusterPath = [self->_activePath stringByAppendingPathComponent:@"globular_cluster.dat"];
+                    NSString *nearbyPath = [self->_activePath stringByAppendingPathComponent:@"NBG.dat"];
+                    if ([[NSFileManager defaultManager] fileExistsAtPath:clusterPath] &&
+                        [[NSFileManager defaultManager] fileExistsAtPath:nearbyPath]) {
+                        [self setMilkyWayMode:MilkyWayMode::normal];
+                        self->_mode.selectedSegment = 0; [self changeMode:nil];
+                        [self loadPlusGalaxyCatalogs:nil];
+                        state->phase = 20; return;
+                    }
+                    std::printf("Ground/galaxy transition smoke skipped: Plus catalog files unavailable\n");
+                }
                 state->model = self->_galaxyModel;
                 bool found = false;
                 for (std::size_t i = 0; i < state->model->size(); ++i) {
@@ -375,6 +480,31 @@ void requireCurrentTrackingFrame(SolarSystemView *view, const SolarGalaxySmokeSt
                 }
                 std::printf("Solar/galaxy AppKit smoke: OurGalaxy data unavailable, draw check skipped\n");
                 state->phase = 10;
+            }
+            if (state->phase == 20 || state->phase == 21) {
+                if (self->_galaxyLoading) return;
+                if (self->_mode.selectedSegment != 1 || self->_solar.hidden || !self->_galaxyUsesPlusCatalogs)
+                    failGalaxySmoke("ground mode did not switch to the galaxy catalog overview");
+                [self->_window.contentView layoutSubtreeIfNeeded];
+                [self->_solar displayIfNeeded];
+                const auto camera = [self->_solar cameraState];
+                const auto center = our_galaxy_center({{0, 0, 0}});
+                if (std::abs(camera.target.x - center.x_pc * astronomical_units_per_parsec) > 1e-6 ||
+                    std::abs(camera.target.y - center.y_pc * astronomical_units_per_parsec) > 1e-6 ||
+                    std::abs(camera.target.z - center.z_pc * astronomical_units_per_parsec) > 1e-6)
+                    failGalaxySmoke("ground transition did not frame the galaxy center");
+                const auto diag = [self->_solar galaxyOverlayDiagnostics];
+                if (diag.display != GalaxyOverlayDisplay::complete || !diag.displayed ||
+                    !solarGalaxyCameraMatches(diag.displayed->camera, camera)) return;
+                if (diag.our_galaxy_drawn == 0 || diag.displayed_drawn == 0)
+                    failGalaxySmoke("ground transition did not draw the galaxy and available catalog points");
+                if (state->phase == 20) {
+                    self->_mode.selectedSegment = 2; [self changeMode:nil];
+                    [self loadPlusGalaxyCatalogs:nil];
+                    state->phase = 21; return;
+                }
+                std::printf("Ground/galaxy AppKit smoke passed: sky and horizon action, current camera, real OurGalaxy and available catalog points draw\n");
+                state->phase = 0; return;
             }
             if (state->phase == 10) {
                 if ([self->_solar ourGalaxyModel]) {

@@ -23,6 +23,10 @@ struct HipSpatialPick {
     double depth_pc;
 };
 
+// 画面点の図形寸法を描画と選択で共有する。
+constexpr double hip_spatial_point_radius = .75;
+constexpr double hip_spatial_preview_size = 1.5;
+bool hip_spatial_point_contains(double center_x, double center_y, double x, double y, bool preview) noexcept;
 // preview は描画と同じ最大約 6000 件の間引きを使う。
 std::size_t hip_spatial_preview_step(std::size_t count) noexcept;
 std::optional<HipSpatialPick> pick_hip_spatial_point(

@@ -88,6 +88,29 @@ int main(int argc, char **argv) {
             const auto model = std::make_shared<const SkyModel>(SkyModel::load(argv[1]));
             SkyView *view = [[SkyView alloc] initWithFrame:NSMakeRect(0, 0, 1024, 512)];
             [view setModel:model bodies:model->bodies(2451545)];
+            const auto sun = model->bodies(2451545)[0].coordinates;
+            [view setViewport:{sun.right_ascension_deg, sun.declination_deg, 4}];
+            const NSPoint center = NSMakePoint(NSMidX(view.bounds), NSMidY(view.bounds));
+            NSEvent *click = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:center modifierFlags:0
+                timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:1 pressure:0];
+            NSEvent *hover = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:center modifierFlags:0
+                timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:0 pressure:0];
+            [view selectBody:1];
+            view.targetSelectionMode = 0;
+            [view mouseUp:click]; [view mouseMoved:hover];
+            check(view.selectedBodyIndex == 1, "sky none mode ignores pointer events");
+            view.targetSelectionMode = 1;
+            [view mouseUp:click];
+            check(view.selectedBodyIndex == 1, "sky hover mode ignores clicks");
+            [view mouseMoved:hover];
+            check(view.selectedBodyIndex == 0, "sky hover mode selects drawn Sun");
+            [view selectBody:1];
+            view.targetSelectionMode = 2;
+            [view mouseMoved:hover];
+            check(view.selectedBodyIndex == 1, "sky click mode ignores hover");
+            [view mouseUp:click];
+            check(view.selectedBodyIndex == 0, "sky click mode selects drawn Sun");
+            [view resetView];
             __block unsigned dateNotifications = 0;
             view.selectionChanged = ^(NSString *) { ++dateNotifications; };
             [view selectBody:0];

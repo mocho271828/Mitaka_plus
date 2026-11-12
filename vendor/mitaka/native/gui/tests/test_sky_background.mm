@@ -76,6 +76,41 @@ std::vector<char> read_bytes(const fs::path& path) {
     return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
 }
 
+void solar_mapping_tests() {
+    const auto texture = gradient();
+    SolarCamera camera;
+    for (int mode = 0; mode < 3; ++mode) {
+        camera.vertical_fov_deg = mode == 0 ? 10 : (mode == 1 ? 45 : 90);
+        if (mode == 1) { camera.orbit(83, -39); camera.roll(32); }
+        if (mode == 2) { camera.frame = solar_camera_basis(camera); camera.frame_is_orbit = true; }
+        const auto image = render_solar_background(texture, camera, 13, 9);
+        for (std::size_t y = 0; y < 9; ++y) for (std::size_t x = 0; x < 13; ++x) {
+            const auto ray = solar_camera_ray(camera, x + .5, y + .5, 13, 9);
+            const auto coords = equatorial_coordinates(j2000_ecliptic_to_equatorial(ray));
+            const auto reference = render_sky_background(texture,
+                {coords.right_ascension_deg, coords.declination_deg, 10}, 1, 1);
+            const auto offset = (y * 13 + x) * 4;
+            for (std::size_t c = 0; c < 4; ++c)
+                expect(std::abs(int(image.rgba[offset + c]) - int(reference.rgba[c])) <= 1,
+                       "solar background must match each camera ray");
+        }
+    }
+    rejects([&] { render_solar_background(texture, camera, 0, 1); });
+    rejects([&] { render_solar_background({}, camera, 1, 1); });
+    camera = SolarCamera{};
+    camera.frame = SolarCameraBasis{{1,0,0}, {0,1,0}, {0,0,1}};
+    camera.frame_is_orbit = true;
+    camera.distance_au = astronomical_units_per_parsec;
+    for (double distance_pc : {0., 1000., 1850., 2700., 1e6, 1e40}) {
+        camera.set_target_pc({distance_pc - 1,0,0});
+        const double expected = std::clamp((2700. - distance_pc) / 1700., 0., 1.);
+        near(solar_background_opacity(camera), expected, 1e-12, "incorrect solar-distance fade");
+    }
+    camera.set_target_pc({1849,0,0});
+    camera.translate_target_au({astronomical_units_per_parsec, 0, 0});
+    near(solar_background_opacity(camera), 849. / 1700., 1e-12, "fade must include precise camera offset");
+}
+
 void mapping_tests() {
     const EquatorialCoordinates center{266.41682625, -29.007796944444443};
     const EquatorialCoordinates north{192.85, 27.133333333333333};
@@ -263,6 +298,15 @@ void local_tests(const fs::path& data) {
         expect(image->width == 1024 && image->height == 512, "verified local images must preserve their known dimensions");
         const auto rendered = render_sky_background(*image, {}, 1024, 512);
         expect(rendered.rgba.size() == 1024 * 512 * 4, "local background output size mismatch");
+        SolarCamera camera;
+        const auto solar = render_solar_background(*image, camera, 128, 64);
+        expect(solar.rgba.size() == 128 * 64 * 4, "local solar background output size mismatch");
+        const auto center = solar_camera_ray(camera, 64.5, 32.5, 128, 64);
+        const auto coords = equatorial_coordinates(j2000_ecliptic_to_equatorial(center));
+        const auto reference = render_sky_background(*image, {coords.right_ascension_deg, coords.declination_deg, 10}, 1, 1);
+        for (std::size_t c = 0; c < 4; ++c)
+            expect(std::abs(int(solar.rgba[(32 * 128 + 64) * 4 + c]) - int(reference.rgba[c])) <= 1,
+                   "local solar background must follow the camera");
         const auto horizon = render_horizon_background(*image, {}, ObservationFrame({35.68, 139.76}, 2451545), 1024, 512);
         expect(horizon.rgba.size() == rendered.rgba.size() && horizon.rgba != rendered.rgba,
             "local horizon background must use the observer frame");
@@ -275,6 +319,7 @@ void local_tests(const fs::path& data) {
 int main(int argc, char** argv) {
     try {
         mapping_tests();
+        solar_mapping_tests();
         loader_tests();
         horizon_mapping_tests();
         if (argc == 2) local_tests(argv[1]);

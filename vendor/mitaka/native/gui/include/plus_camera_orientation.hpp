@@ -18,9 +18,14 @@ struct PlusOrientationEuler {
 };
 
 inline PlusOrientationQuaternion plus_orientation_normalized(PlusOrientationQuaternion q) {
-    const double length = std::hypot(std::hypot(q.x, q.y), std::hypot(q.z, q.w));
-    if (!std::isfinite(length) || length == 0)
+    if (!std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z) || !std::isfinite(q.w))
         throw std::invalid_argument("camera orientation must be a finite nonzero quaternion");
+    const double scale = std::max({std::abs(q.x), std::abs(q.y), std::abs(q.z), std::abs(q.w)});
+    if (scale == 0)
+        throw std::invalid_argument("camera orientation must be a finite nonzero quaternion");
+    // 先に最大成分で縮尺を揃え、ノルム計算の overflow と subnormal の丸めを防ぐ。
+    q = {q.x / scale, q.y / scale, q.z / scale, q.w / scale};
+    const double length = std::hypot(std::hypot(q.x, q.y), std::hypot(q.z, q.w));
     return {q.x / length, q.y / length, q.z / length, q.w / length};
 }
 
@@ -33,15 +38,15 @@ inline PlusOrientationQuaternion plus_orientation_multiply(PlusOrientationQuater
             a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z};
 }
 
-// Euler の回転順は qY(-heading) * qX(pitch) * qZ(roll)。
+// 旧 Plus の Euler の回転順は qY(heading) * qX(pitch) * qZ(-roll)。
 inline PlusOrientationQuaternion plus_orientation_from_euler(double heading, double pitch, double roll) {
     if (!std::isfinite(heading) || !std::isfinite(pitch) || !std::isfinite(roll))
         throw std::invalid_argument("camera Euler angles must be finite");
     constexpr double half_radians_per_degree = 3.14159265358979323846 / 360;
     // quaternion 自体は 720 度周期なので、360 度回転時の符号も保持する。
-    const double h = -std::remainder(heading, 720) * half_radians_per_degree;
+    const double h = std::remainder(heading, 720) * half_radians_per_degree;
     const double p = std::remainder(pitch, 720) * half_radians_per_degree;
-    const double r = std::remainder(roll, 720) * half_radians_per_degree;
+    const double r = -std::remainder(roll, 720) * half_radians_per_degree;
     const PlusOrientationQuaternion qh{0, std::sin(h), 0, std::cos(h)};
     const PlusOrientationQuaternion qp{std::sin(p), 0, 0, std::cos(p)};
     const PlusOrientationQuaternion qr{0, 0, std::sin(r), std::cos(r)};
@@ -100,11 +105,11 @@ inline PlusOrientationEuler plus_orientation_to_euler(PlusOrientationQuaternion 
     constexpr double degrees_per_radian = 180 / 3.14159265358979323846;
     if (horizontal <= 1e-12) {
         const double r01 = scale*(x*y - w*z), r00 = 1 - scale*(y*y + z*z);
-        return {0, pitch * degrees_per_radian, -std::atan2(r01, r00) * degrees_per_radian};
+        return {0, pitch * degrees_per_radian, std::atan2(r01, r00) * degrees_per_radian};
     }
-    return {-std::atan2(r02, r22) * degrees_per_radian,
+    return {std::atan2(r02, r22) * degrees_per_radian,
             pitch * degrees_per_radian,
-            std::atan2(scale*(x*y + w*z), 1 - scale*(x*x + z*z)) * degrees_per_radian};
+            -std::atan2(scale*(x*y + w*z), 1 - scale*(x*x + z*z)) * degrees_per_radian};
 }
 
 // 単位 quaternion で基準の右・上・視線を回す。

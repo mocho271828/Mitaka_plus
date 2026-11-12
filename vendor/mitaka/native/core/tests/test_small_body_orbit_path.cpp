@@ -93,6 +93,17 @@ void missing_samples() {
         }
         expect(small_body_orbit_segments(path).empty(), "unresolved rows have no segments");
     }
+    record = comet(0.5);
+    record.id.source_key = "mp2.dat";
+    record.kind = SmallBodyKind::asteroid;
+    record.encoding = SmallBodyEncoding::packed_37;
+    path = sample_small_body_orbit_path(record, {2451543, 2451547, 5});
+    for (const auto& sample : path.samples) {
+        expect(!sample.evaluation.state, "37-byte source cannot yield positions through generic orbit sampling");
+        expect(diagnostic(sample.evaluation, SmallBodyDiagnosticCode::invalid_source),
+               "37-byte position contract failure retained in orbit samples");
+    }
+    expect(small_body_orbit_segments(path).empty(), "37-byte source cannot yield orbit segments");
     record = comet(1);
     record.orbit = std::monostate{};
     path = sample_small_body_orbit_path(record, {2451543, 2451547, 2});

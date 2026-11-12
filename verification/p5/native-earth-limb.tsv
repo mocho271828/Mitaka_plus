@@ -1,0 +1,3 @@
+revision_run	window_png	solar_fov_deg	map_width_px	map_height_px	eye_to_earth_km	optical_axis_to_geocenter_deg	model_angular_diameter_deg	used_limb_directions	earth_center_dx_px	earth_center_dy_px	fitted_radius_px	median_radial_residual_px	p90_radial_residual_px	target
+base-vd-api3-disk	12-up-earth-disk.png	45	1928	1058	57403.229400000404	10.000000000000233	12.758740416885518	450	-1.286733170880325	227.42774076998694	145.95581209868251	1.0128314205012003	5.7599166342497226	Satellite.Moon
+p5ship-api3-disk	11-up-earth-disk.png	45	1928	1058	21142.725561925	1.2074182697257333e-06	35.11592981742378	431	-1.6411738850606525	-1.2338289071001327	404.9308323798349	0.8383188533770749	6.818808475263893	Satellite.Moon

@@ -46,7 +46,8 @@ void keys() {
         [](auto& r){r.camera.yaw_deg=1;},[](auto& r){r.camera.pitch_deg=1;},
         [](auto& r){r.camera.roll_deg=1;},[](auto& r){r.camera.frame_is_orbit=true;},
         [](auto& r){r.camera.precise_target=PreciseCameraTarget{};},
-        [](auto& r){r.camera.distance_au*=2;},[](auto& r){r.camera.frame=solar_camera_basis(r.camera);},
+        [](auto& r){r.camera.distance_au*=2;},[](auto& r){r.camera.vertical_fov_deg=90;},
+        [](auto& r){r.camera.frame=solar_camera_basis(r.camera);},
         [](auto& r){++r.width;},[](auto& r){++r.height;},
         [](auto& r){++r.load_limits.max_file_bytes;},[](auto& r){++r.load_limits.max_patches;},
         [](auto& r){++r.load_limits.max_index_bytes;},[](auto& r){++r.load_limits.max_grid_bytes;},
@@ -82,7 +83,8 @@ void keys() {
         [](auto& r){r.body=static_cast<TerrainBody>(99);},[](auto& r){r.julian_date=NAN;},
         [](auto& r){r.center_au.x=INFINITY;},[](auto& r){r.display_radius_au=0;},
         [](auto& r){r.elevation_factor=-1;},[](auto& r){r.width=0;},[](auto& r){r.height=1025;},
-        [](auto& r){r.camera.distance_au=NAN;},[](auto& r){r.orientation.x_axis.x=2;},
+        [](auto& r){r.camera.distance_au=NAN;},[](auto& r){r.camera.vertical_fov_deg=0;},
+        [](auto& r){r.orientation.x_axis.x=2;},
         [](auto& r){r.orientation.north_axis.z=-1;},[](auto& r){r.load_limits.max_patches=0;},
         [](auto& r){r.surface_limits.triangles=0;},[](auto& r){r.surface_limits.frame_bytes=1;}
     };

@@ -8,6 +8,7 @@
 namespace mitaka::gui {
 
 inline constexpr double astronomical_unit_km = 149597870.7;
+inline constexpr double earth_reference_radius_km = 6378.1366;
 inline constexpr double minimum_surface_height_km = 0.002;
 
 struct SurfaceBodyInfo {
@@ -26,6 +27,9 @@ struct SurfaceSite {
     double heading_deg = 0; // 北0、東90。
     double elevation_deg = 0; // 地平線0、天頂90。
     double roll_deg = 0;
+    // 描画地形の基準球からの符号付き半径オフセット。
+    // height_kmはこの局所地表からの高さとして扱う。
+    double terrain_offset_km = 0;
 };
 
 // カメラが天体外にあり、地表の水平姿勢で表せる場合だけ逆変換する。
@@ -35,6 +39,11 @@ SurfaceSite surface_site_from_camera(const SolarCamera& camera, const SolarBodie
 // 通常降下ではロールを保持したまま地表の局所姿勢へ変換する。
 SurfaceSite surface_site_from_camera_with_roll(const SolarCamera& camera, const SolarBodies& bodies,
                                                std::size_t body_index);
+// 直前の地表視点と同じ位置に限り、既知の符号付き地形高を引き継ぐ。
+// 一致しなければ nullopt を返し、任意の球内視点を地表と誤認しない。
+std::optional<SurfaceSite> surface_site_from_camera_with_known_terrain(
+    const SolarCamera& camera, const SolarBodies& bodies, std::size_t body_index,
+    const SurfaceSite& known_site);
 
 // 遠距離等からの強制着陸は天体中心から見た視点方向に着陸し、ロールを捨てる。
 SurfaceSite forced_surface_site_from_camera(const SolarCamera& camera, const SolarBodies& bodies,
@@ -46,14 +55,21 @@ public:
     // 緯度±90、仰角±90、高度[0.002,1e9]km。経度/方位は周期化する。
     // 不正入力はinvalid_argumentで状態を保持。設定成功時は飛行を止める。
     void set_site(SurfaceSite site);
+    // 新たな描画地形を適用。上空のカメラ位置は維持し、地中なら地上へ上げる。
+    // 飛行中は残り時間と到着目標を維持し、現在位置から補間を組み直す。
+    void update_terrain_offset(double offset_km);
     // 同一日時の天体中心と姿勢から地表固定ENUカメラを再計算する。
     SolarCamera camera(const SolarBodies& bodies) const;
     // 既定では実時間3秒。0秒は即時移動。
     void begin_ascent(double monotonic_seconds, double duration_seconds = 3);
+    // 地球のプラネタリウムから宇宙へ出る際は旧Plusのカメラ尺度を使う。
+    void begin_earth_horizon_ascent(double monotonic_seconds, double duration_seconds);
     void begin_descent(double monotonic_seconds, double duration_seconds = 3);
     // 視線方向を維持して降下し、必要な場合は水平姿勢に戻す。
     void begin_descent_preserving_look(double monotonic_seconds, double duration_seconds = 3,
                                       bool level_roll = false);
+    // 同じ観測地点への帰還では、保存した地平の視線へ降下中に戻す。
+    void begin_descent_to_view(double time, double duration, const SurfaceSite& ground_view);
     // >1秒の空白、時計逆行、非有限時計は現在位置を保って中断する。
     // 戻り値は視点が変化したか。開始時の非有限時計はinvalid_argument。
     bool advance(double monotonic_seconds);
@@ -63,11 +79,16 @@ public:
     void zoom(double logarithmic_delta);
 
 private:
+    enum class HeightCurve { logarithmic, plus_earth };
     struct Flight {
         double start_time, previous_time, start_height, end_height;
         double start_elevation, end_elevation, start_roll, end_roll, duration;
+        double start_heading, end_heading;
+        HeightCurve height_curve;
     };
-    void begin_flight(double time, double height, double elevation, double roll, double duration);
+    void begin_flight(double time, double height, double elevation, double roll, double duration,
+                      std::optional<double> arrival_heading = std::nullopt,
+                      HeightCurve height_curve = HeightCurve::logarithmic);
     SurfaceSite site_;
     std::optional<Flight> flight_;
 };
