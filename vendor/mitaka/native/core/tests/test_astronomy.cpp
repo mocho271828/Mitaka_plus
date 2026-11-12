@@ -73,6 +73,15 @@ void test_orbits() {
     near(orbital_state(orbit, orbit.epoch_jd + 365.25*100000).position_au, {1,0,0}, 1e-10, "many revolutions");
     orbit.inclination_deg = 90;
     near(orbital_state(orbit, orbit.epoch_jd + 365.25/4).position_au, {0,0,1}, 1e-14, "reference rotation");
+    for (const auto [ecc, mean_deg] : {std::array<double,2>{1e30, 1}, {1.2, -1e-30}}) {
+        const auto state = orbital_state({2451545, 1, ecc, mean_deg, .5, 0, 0, 0}, 2451545);
+        const double h = std::asinh(state.position_au.y / (std::sqrt(ecc - 1) * std::sqrt(ecc + 1)));
+        const double recovered = std::fma(ecc, std::sinh(h), -h) * 180 / pi;
+        near(recovered / mean_deg, 1.0, 2e-14, "small hyperbolic anomaly preserves the mean anomaly");
+    }
+    throws<std::out_of_range>([]{
+        orbital_state({2451545, 1, 1e300, 1e-100, .5, 0, 0, 0}, 2451545);
+    }, "unrepresentable nonzero hyperbolic anomaly");
     orbit = {2451545, 2, 0.7, 0, 1, 12, 34, 56};
     for (double eccentricity : {0.0, 0.7, 0.999999, 1.000001, 1.5, 10.0}) {
         orbit.eccentricity = eccentricity;

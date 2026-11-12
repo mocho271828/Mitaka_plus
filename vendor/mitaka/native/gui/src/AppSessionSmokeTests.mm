@@ -1,4 +1,5 @@
 #import "AppControllerInternal.h"
+#import "SolarSystemViewInternal.h"
 #include "session_smoke_compare.hpp"
 
 #include <algorithm>
@@ -17,6 +18,35 @@ void requireSession(bool condition, const char *message) {
 - (BOOL)runSessionLayerSmokeTest {
     const auto original = [self sessionState];
     try {
+        // 地球離陸後の同じカメラで、保存・復元を挟んでも円盤の投影半径を保つ。
+        _mode.selectedSegment = 2;
+        [self changeMode:nil];
+        NSString *flightError = nil;
+        requireSession([self setEarthSurfaceMode:NO duration:0 error:&flightError], "session test could not take off");
+        auto earthRadius = [&] {
+            const auto scene = [_solar scene];
+            const auto center = project_solar(solar_display_position(scene, 3), scene.camera,
+                                              scene.map.size.width, scene.map.size.height);
+            requireSession(center.has_value(), "post-takeoff Earth left the test viewport");
+            return solar_scene_radius(scene, 3, center->depth);
+        };
+        const double beforeRestore = earthRadius();
+        const auto flightState = decode_session_state(encode_session_state([self sessionState]));
+        requireSession(flightState.physical_space && !flightState.surface_site &&
+                       [self applySessionState:flightState] && _solar.usesPhysicalScene && !_solar.flightAnimating &&
+                       std::abs(earthRadius() - beforeRestore) < 1e-8, "restoring the Earth orbit changed its disk radius");
+        // 上昇を途中で停止した場合、地球の固定地点を失うと周囲の星野も変わる。
+        SurfaceSite paused{3, 35.675, 139.54, 4200, 70, -87, 7};
+        requireSession([_solar restoreSurfaceSite:paused physicalSpace:YES error:&flightError],
+                       "session test could not set a paused view above Earth");
+        const auto pausedState = decode_session_state(encode_session_state([self sessionState]));
+        const double pausedRadius = earthRadius();
+        SurfaceSite actual;
+        requireSession(pausedState.physical_space && pausedState.surface_site &&
+                       [self applySessionState:pausedState] && !_solar.flightAnimating && [_solar earthSurfaceSite:&actual] &&
+                       actual.height_km == paused.height_km && actual.heading_deg == paused.heading_deg &&
+                       std::abs(earthRadius() - pausedRadius) < 1e-8, "restoring a paused flight lost its Earth-fixed viewpoint");
+        requireSession([self applySessionState:original], "session test could not restore the original camera");
         SessionState saved = original;
         saved.mode = 2;
         auto small = *_smallBodyDisplay;
@@ -109,6 +139,26 @@ void requireSession(bool condition, const char *message) {
         requireSession([self applySessionState:decode_session_state(savedJSON)] &&
                        sameSessionSmokeJSON(encode_session_state([self sessionState]), savedJSON),
                        "v9 layer settings did not restore from JSON");
+
+        auto surface = saved;
+        surface.mode = 1;
+        surface.physical_space = false;
+        surface.solar_camera.vertical_fov_deg = 30;
+        surface.surface_site = SurfaceSite{4, -20, 45, minimum_surface_height_km, 125, 15, 22, -2};
+        requireSession([self applySessionState:decode_session_state(encode_session_state(surface))],
+                       "surface session did not restore");
+        SurfaceSite restoredSite;
+        requireSession([_solar scriptSurfaceSite:&restoredSite] && restoredSite.body_index == 4 &&
+                       restoredSite.latitude_deg == -20 && restoredSite.longitude_deg == 45 &&
+                       restoredSite.height_km == minimum_surface_height_km &&
+                       std::isfinite(restoredSite.terrain_offset_km) &&
+                       restoredSite.heading_deg == 125 && restoredSite.elevation_deg == 15 &&
+                       restoredSite.roll_deg == 22 &&
+                       [_solar cameraState].vertical_fov_deg == 30 &&
+                       [self sessionState].surface_site.has_value(),
+                       "surface view, orientation, terrain or FOV was lost");
+        requireSession([self applySessionState:saved] && ![_solar scriptSurfaceSite:nullptr],
+                       "legacy camera did not clear surface state");
 
         auto precise = saved;
         precise.solar_camera.set_target_pc({1e9, -2e9, 3e9});

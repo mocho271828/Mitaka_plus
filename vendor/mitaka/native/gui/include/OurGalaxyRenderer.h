@@ -25,6 +25,10 @@ struct OurGalaxyPointId {
     }
     bool operator!=(const OurGalaxyPointId& other) const noexcept { return !(*this == other); }
 };
+struct OurGalaxyPointStyle {
+    double red, green, blue, alpha, radius_points;
+};
+using OurGalaxyStyles = std::array<OurGalaxyPointStyle, 4>;
 struct OurGalaxyPointPick {
     OurGalaxyPointId id;
     NativeEclipticPositionPc position;
@@ -43,18 +47,15 @@ std::optional<NativeEclipticPositionPc> our_galaxy_point_position(
 bool our_galaxy_point_visible(const mitaka::OurGalaxyModel& model, OurGalaxyPointId id,
     const OurGalaxyTransform& transform, OurGalaxyPointDisplay display, GalaxyCameraPc camera,
     double width, double height, const mitaka::OurGalaxyRadiativeModel* radiative);
-// 画面距離、奥行き、群、原順の順に決定。取消時は部分結果を返さない。
+// 描画図形内は後描き優先、それ以外は画面距離・奥行き・群・原順で決定。
+// 加算合成には最前面がないため後描き優先は暫定の選択規則。取消時は部分結果を返さない。
 // complete では同一モデルから作成済みの radiative を再利用できる。
 // null の場合は候補があるときだけ内部で作成する。
 std::optional<OurGalaxyPointPick> pick_our_galaxy_point(
     const mitaka::OurGalaxyModel& model, const OurGalaxyTransform& transform,
-    OurGalaxyPointDisplay display, GalaxyCameraPc camera, double width, double height,
+    const OurGalaxyStyles& styles, OurGalaxyPointDisplay display, GalaxyCameraPc camera, double width, double height,
     double x, double y, double radius, std::function<bool()> should_cancel = {},
     const mitaka::OurGalaxyRadiativeModel* radiative = nullptr);
-struct OurGalaxyPointStyle {
-    double red, green, blue, alpha, radius_points;
-};
-using OurGalaxyStyles = std::array<OurGalaxyPointStyle, 4>;
 struct OurGalaxyRenderSettings {
     OurGalaxyTransform transform;
     OurGalaxyStyles styles;

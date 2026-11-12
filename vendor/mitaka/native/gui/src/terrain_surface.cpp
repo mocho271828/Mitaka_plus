@@ -1,4 +1,5 @@
 #include "terrain_surface.hpp"
+#include "surface_navigation.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -32,37 +33,36 @@ void validate(const TerrainSurfaceBinding& b, int width, int height) {
         std::abs(dot(o.y_axis,o.north_axis))>1e-8 || dot(cross(o.x_axis,o.y_axis),o.north_axis)<1-1e-8)
         throw std::invalid_argument("terrain orientation must be right-handed and orthogonal");
 }
-// 全int16標高と球面区画を包む球を用い、画錐外が確実な場合だけ省く。
-// 球は凸なので、各頂点を結ぶ三角形もこの境界の内側にある。
-bool outside_view(const TerrainPatch& patch, const TerrainHeader& header, double elevation_factor,
-    Vec3 target, double distance, const BodyOrientation& orientation,
-    const std::array<Vec3,4>& planes, const std::array<double,4>& slopes) {
+struct PatchBounds { Vec3 center; double chord; };
+std::optional<PatchBounds> patch_bounds(const TerrainPatch& patch) {
     constexpr double radians=3.14159265358979323846/180;
-    // メッシュの経度補間と剰余計算との丸め差が拡大する範囲は判定しない。
-    if (patch.longitude_begin_deg < -360 || patch.longitude_end_deg > 360) return false;
-    const double factor=double(header.elevation_unit_m)/header.radius_m*elevation_factor;
-    const double radial_margin=32768*factor;
-    // この場合は不正な頂点の検出も従来どおりメッシュ生成に任せる。
-    if (!std::isfinite(radial_margin) || radial_margin>=1) return false;
+    // 経度補間に伴う丸めの上限が不確かな入力は選別しない。
+    if (patch.longitude_begin_deg < -360 || patch.longitude_end_deg > 360) return std::nullopt;
     const double lon=std::remainder((double(patch.longitude_begin_deg)+patch.longitude_end_deg)*.5,360.0)*radians;
     const double lat=(double(patch.latitude_begin_deg)+patch.latitude_end_deg)*.5*radians;
     const double angle=std::min(3.14159265358979323846,
         (double(patch.longitude_end_deg)-patch.longitude_begin_deg+
          double(patch.latitude_begin_deg)-patch.latitude_end_deg)*.5*radians);
-    const Vec3 center{std::cos(lat)*std::cos(lon),std::cos(lat)*std::sin(lon),std::sin(lat)};
-    const double radius=radial_margin+2*(1+radial_margin)*std::sin(angle*.5);
-    const auto relative=subtract(world(center,orientation),target);
-    if (!finite(relative) || !std::isfinite(radius)) return false;
-    for (std::size_t i=0;i<planes.size();++i) {
-        const auto plane=planes[i];
-        const double signed_distance=dot(relative,plane)+slopes[i]*distance;
-        // orientation は単位直交の検査に 1e-8 の許容差がある。
-        const double bound=radius*(1+3e-8)*std::hypot(plane.x,plane.y,plane.z);
-        // 丸め誤差の境界は捨てない。
-        const double tolerance=1e-12*(1+std::hypot(relative.x,relative.y,relative.z)+bound);
-        if (std::isfinite(signed_distance) && std::isfinite(bound) && signed_distance < -bound-tolerance) return true;
+    return PatchBounds{{std::cos(lat)*std::cos(lon),std::cos(lat)*std::sin(lon),std::sin(lat)},2*std::sin(angle*.5)};
+}
+struct FrustumPlane {Vec3 normal; double length, offset, tolerance;};
+bool outside_view(const PatchBounds& patch, double min_radius, double max_radius,
+                  const std::array<FrustumPlane,4>& planes) {
+    for (const auto& plane:planes) {
+        // 任意の頂点方向はcenterから弦長chord以内。正の半径の最大/最小で
+        // 平面への射影を上から押さえる。全頂点の外側判定はその三角形にも成り立つ。
+        const double upper=std::min(plane.length,dot(patch.center,plane.normal)+plane.length*patch.chord);
+        if (upper*(upper<0 ? min_radius : max_radius)+plane.offset < -plane.tolerance) return true;
     }
     return false;
+}
+std::pair<double,double> grid_radii(const TerrainGridWindow& grid,double factor) {
+    std::int16_t low=INT16_MAX,high=INT16_MIN;
+    for (int y=0;y<=grid.descriptor().rows;++y) for (int x=0;x<=grid.descriptor().columns;++x) {
+        const auto value=grid.elevation_units(x,y);
+        low=std::min(low,value); high=std::max(high,value);
+    }
+    return {1+factor*low,1+factor*high};
 }
 struct ScreenPoint { double x,y; };
 struct Vertex { Vec3 position,normal; double u,v; std::optional<SolarProjection> screen; };
@@ -176,13 +176,15 @@ TerrainSurfaceFrame render_terrain_surface(const TerrainSurfaceBinding& binding,
     result.width=width; result.height=height; result.mode=terrain_surface_mode(local_eye);
     binding.source.verify_source_unchanged();
     if (result.mode!=TerrainSurfaceMode::terrain) return result;
+    const auto detail_eye=terrain_detail_eye(local_eye,binding.source.header(),binding.elevation_factor,
+                                             binding.display_radius_au*astronomical_unit_km);
     const auto count=std::size_t(width)*std::size_t(height);
     if (count>limits.frame_bytes/sizeof(TerrainSurfaceSample))
         throw std::invalid_argument("terrain frame memory limit exceeded");
     result.samples.resize(count);
     // 投影と同じ視野角係数を使用。camera frame の丸めを仮定しない。
-    const double horizontal=solar_camera_tangent_half_fov*width/height;
-    const double vertical=solar_camera_tangent_half_fov;
+    const double vertical=solar_camera_tangent(camera);
+    const double horizontal=vertical*width/height;
     const auto forward=scale(axes.outward,-1);
     const std::array<Vec3,4> planes{
         add(axes.right,scale(forward,horizontal)),
@@ -190,11 +192,33 @@ TerrainSurfaceFrame render_terrain_surface(const TerrainSurfaceBinding& binding,
         add(axes.up,scale(forward,vertical)),
         add(scale(axes.up,-1),scale(forward,vertical))};
     const std::array<double,4> slopes{horizontal,horizontal,vertical,vertical};
+    const auto target=scale(relative_camera.target,1/binding.display_radius_au);
+    const auto distance=camera.distance_au/binding.display_radius_au;
+    std::array<FrustumPlane,4> frustum;
+    for (std::size_t i=0;i<planes.size();++i) {
+        const auto normal=local(planes[i],binding.orientation);
+        const auto length=std::hypot(normal.x,normal.y,normal.z);
+        const auto translation=dot(target,planes[i]), eye_term=slopes[i]*distance;
+        frustum[i]={normal,length,eye_term-translation,
+            1e-12*(1+length+std::hypot(target.x,target.y,target.z)*length+std::abs(eye_term))};
+    }
+    const auto& header=binding.source.header();
+    const double radial_factor=double(header.elevation_unit_m)/header.radius_m*binding.elevation_factor;
+    const double margin=32768*radial_factor;
     for (std::size_t p=0;p<binding.source.patches().size();++p) {
         check_cancelled();
-        if (outside_view(binding.source.patches()[p],binding.source.header(),binding.elevation_factor,scale(relative_camera.target,1/binding.display_radius_au),
-            camera.distance_au/binding.display_radius_au,binding.orientation,planes,slopes)) continue;
-        const auto level=terrain_level_index(binding.source.patches()[p],local_eye,binding.low_resolution);
+        const auto& patch=binding.source.patches()[p];
+        const auto bounds=patch_bounds(patch);
+        // 正の頂点半径を保証できない入力はメッシュ側の検証へ渡す。
+        const bool can_cull=bounds.has_value() && margin<1;
+        if (can_cull && outside_view(*bounds,1-margin,1+margin,frustum)) continue;
+        const auto level=terrain_level_index(patch,detail_eye,binding.low_resolution);
+        if (can_cull && margin>bounds->chord) {
+            // 高倍率ではint16全域の包囲がパッチ自体より広い。描くLODの原格子を
+            // 一枚だけ読み、実標高で絞る。必要な格子はこの後のメッシュ生成と共有する。
+            const auto radii=grid_radii(binding.source.read_grid(p,level),radial_factor);
+            if (outside_view(*bounds,radii.first,radii.second,frustum)) continue;
+        }
         const auto mesh=make_terrain_patch_mesh(binding.source,p,level,binding.elevation_factor,limits.mesh_bytes);
         ++result.patches_read;
         if (result.triangles_visited>limits.triangles || mesh.triangle_count()>limits.triangles-result.triangles_visited)

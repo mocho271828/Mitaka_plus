@@ -28,7 +28,7 @@ inline bool horizon_morph_subpixel(const std::array<EquatorialCoordinates, 5>& p
     if (longitude + longitude_distance >= 180 * radians) return false;
 
     const double blend = viewport.perspective_blend;
-    const double scale = horizon_perspective_scale;
+    const double scale = horizon_perspective_scale(viewport.perspective_fov_deg);
     const double aspect_scale = scale * width / height;
     const double fov = std::max(viewport.vertical_fov_deg, horizon_minimum_render_fov_deg) * radians;
     // u, v が [-1, 1] の画面内での経度・緯度の導関数の下限。
@@ -48,8 +48,9 @@ inline bool horizon_interval_small(double source_span, const HorizonProjectionVi
     // 狭視野では回転後の可視領域が極から離れるため、球面上の移動量から
     // 射影後の移動量を保守的に抑えられる。広視野では経度が極付近で
     // 急変するので角度だけによる打ち切りを行わない。
-    if (viewport.vertical_fov_deg > 1) return false;
-    return source_span <= std::max(viewport.vertical_fov_deg, 1e-9) / (8 * std::max(width, height));
+    const double fov = std::min(viewport.vertical_fov_deg, viewport.perspective_fov_deg);
+    if (fov > 1) return false;
+    return source_span <= std::max(fov, 1e-9) / (8 * std::max(width, height));
 }
 
 // 元区間の各座標の変化量は source_span 以下なので、球面上の移動距離は
@@ -57,7 +58,7 @@ inline bool horizon_interval_small(double source_span, const HorizonProjectionVi
 inline bool horizon_interval_outside(const std::array<EquatorialCoordinates, 5>& points,
     const HorizonProjectionViewport& viewport, double width, double height, double source_span) {
     if (!std::isfinite(source_span) || source_span < 0) return false;
-    const HorizonProjectionViewport centered{0, 0, viewport.vertical_fov_deg, viewport.perspective_blend};
+    const HorizonProjectionViewport centered{0, 0, viewport.vertical_fov_deg, viewport.perspective_blend, 0, viewport.perspective_fov_deg};
     const auto left = unproject_horizon({0, height / 2}, centered, width, height);
     const auto top = unproject_horizon({width / 2, 0}, centered, width, height);
     // 視野内のどの点も経度幅と高度幅の和以内にある。
@@ -86,7 +87,7 @@ inline HorizonMorphDecision project_morph_interval(
     if (source_span > limits.max_source_step_deg) return HorizonMorphDecision::subdivide;
     std::array<std::optional<ScreenPoint>, 5> projected;
     std::size_t visible = 0;
-    const HorizonProjectionViewport centered{0, 0, viewport.vertical_fov_deg, viewport.perspective_blend};
+    const HorizonProjectionViewport centered{0, 0, viewport.vertical_fov_deg, viewport.perspective_blend, 0, viewport.perspective_fov_deg};
     for (std::size_t i = 0; i < points.size(); ++i) {
         projected[i] = project_horizon(points[i], centered, width, height);
         visible += projected[i].has_value();

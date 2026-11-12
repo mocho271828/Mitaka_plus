@@ -12,7 +12,7 @@ struct SmallBodySearchPage {
     bool cancelled = false;
 };
 
-enum class SmallBodyEvaluationMode { unresolved, comet_tdb, packed36_legacy_jd };
+enum class SmallBodyEvaluationMode { unresolved, comet_tdb, packed36_legacy_jd, element_text_legacy_jd };
 
 class SmallBodyModel {
 public:
@@ -43,11 +43,12 @@ struct SmallBodySnapshot {
     std::size_t positioned_count = 0;
 };
 
-// 同じ数値 JD を各契約へ渡す。彗星は TDB、packed36 は物理時系未確定。
+// 同じ数値 JD を各契約へ渡す。彗星は TDB、packed36・個別小天体は物理時系未確定。
 // 出力は日心 J2000 黄道 AU。非表示中は選択行のみ評価できる。
 std::shared_ptr<const SmallBodySnapshot> evaluate_small_body_snapshot(
     std::shared_ptr<const SmallBodyModel> model, double julian_date,
     bool evaluate_all = true, std::optional<std::size_t> selection = {});
+std::string small_body_summary(const SmallBodyModel& model);
 std::string small_body_description(const SmallBodyModel& model, std::size_t index,
                                   const SmallBodySnapshot* snapshot = nullptr);
 

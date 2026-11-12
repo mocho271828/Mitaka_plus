@@ -55,6 +55,7 @@ void all_targets(const SolarBodies& bodies) {
         destination.body_index=index;
         destination.latitude_deg=-17;
         destination.longitude_deg=113;
+        destination.terrain_offset_km=1.25;
         InterplanetaryFlight flight;
         flight.begin(SurfaceSite{},destination,bodies,0);
         same_camera(flight.camera(),surface_camera(SurfaceSite{},bodies));
@@ -63,6 +64,7 @@ void all_targets(const SolarBodies& bodies) {
             throw std::runtime_error("target "+std::to_string(index)+": "+e.what());
         }
         check(flight.destination().height_km==minimum_surface_height_km,"landing height must be 2m");
+        check(flight.destination().terrain_offset_km==1.25,"landing terrain offset must be preserved");
     }
 }
 void boundaries(const SolarBodies& bodies) {
@@ -189,11 +191,156 @@ void sun_detour() {
         check(distance(eye(flight.camera()),{})>696000/astronomical_unit_km,"flight crossed the Sun");
     }
 }
+void real_surface_roundtrips(const SolarBodies& bodies) {
+    for (std::size_t body : {std::size_t{3}, std::size_t{4}, std::size_t{10}}) {
+        for (double latitude : {-90.0, -65.0, 0.0, 35.68, 90.0}) {
+            const SurfaceSite original{body, latitude, 139.76, minimum_surface_height_km,
+                                       125, -80, 17};
+            SurfaceNavigation navigation;
+            navigation.set_site(original);
+            const auto ground = navigation.camera(bodies);
+            navigation.begin_ascent(10, 3);
+            double previous_height = original.height_km;
+            for (int step = 1; step <= 6; ++step) {
+                check(navigation.advance(10 + step * 0.5), "real ascent must progress");
+                check(navigation.site().height_km > previous_height, "real ascent must rise");
+                previous_height = navigation.site().height_km;
+                solar_camera_basis(navigation.camera(bodies));
+            }
+            check(!navigation.flying(), "real ascent must finish");
+            const auto space = navigation.camera(bodies);
+            const auto recovered = surface_site_from_camera_with_roll(space, bodies, body);
+            navigation.set_site(recovered);
+            same_camera(navigation.camera(bodies), space, 1e-11);
+            navigation.begin_descent_preserving_look(20, 3);
+            for (int step = 1; step <= 6; ++step) {
+                check(navigation.advance(20 + step * 0.5), "real descent must progress");
+                check(navigation.site().height_km < previous_height, "real descent must fall");
+                previous_height = navigation.site().height_km;
+                solar_camera_basis(navigation.camera(bodies));
+            }
+            check(!navigation.flying(), "real descent must finish");
+            check(std::abs(navigation.site().height_km - minimum_surface_height_km) < 1e-9,
+                  "real descent must reach the ground");
+            same_camera(navigation.camera(bodies), ground, 1e-11);
+
+            navigation.set_site(original);
+            navigation.begin_ascent(30, 3);
+            navigation.advance(30.5);
+            const auto interrupted = navigation.camera(bodies);
+            navigation.interrupt();
+            navigation.begin_ascent(31, 3);
+            same_camera(navigation.camera(bodies), interrupted, 1e-11);
+            for (int step = 1; step <= 6; ++step) navigation.advance(31 + step * 0.5);
+            check(!navigation.flying(), "resumed ascent must finish");
+
+            auto far_camera = space;
+            far_camera.distance_au = 5;
+            const auto forced = forced_surface_site_from_camera(far_camera, bodies, body);
+            check(forced.body_index == body && forced.height_km == minimum_surface_height_km,
+                  "far forced landing must choose the selected body and ground height");
+            check(forced.roll_deg == 0, "forced landing must level roll");
+            solar_camera_basis(surface_camera(forced, bodies));
+
+            // 降下を途中で離陸へ切り替えても視点を保持し、途中の時刻欠落は移動を中断する。
+            navigation.set_site(recovered);
+            navigation.begin_descent_preserving_look(50, 3);
+            check(navigation.advance(50.5), "descent must progress before retarget");
+            const auto descentInterrupted = navigation.camera(bodies);
+            navigation.begin_ascent(50.5, 3);
+            same_camera(navigation.camera(bodies), descentInterrupted, 1e-11);
+            check(navigation.advance(51), "retargeted ascent must progress");
+            const auto beforeGap = navigation.camera(bodies);
+            check(!navigation.advance(53), "time gap must interrupt flight");
+            check(!navigation.flying(), "time gap left flight active");
+            same_camera(navigation.camera(bodies), beforeGap, 1e-11);
+
+            // 地形の読み込み・再指定では上空の位置を維持し、接地目標は地形から 2m。
+            auto terrainSite = original;
+            terrainSite.terrain_offset_km = 1.25;
+            navigation.set_site(terrainSite);
+            const auto terrainGround = navigation.camera(bodies);
+            navigation.begin_ascent(60, 3);
+            navigation.advance(60.5);
+            const auto beforeTerrain = navigation.camera(bodies);
+            navigation.update_terrain_offset(1.0);
+            same_camera(navigation.camera(bodies), beforeTerrain, 1e-11);
+            for (int step = 2; step <= 6; ++step) navigation.advance(60 + step * 0.5);
+            check(!navigation.flying(), "terrain-adjusted ascent must finish");
+            const auto terrainSpace = navigation.camera(bodies);
+            const auto terrainRecovered = surface_site_from_camera_with_roll(terrainSpace, bodies, body);
+            navigation.set_site(terrainRecovered);
+            navigation.update_terrain_offset(1.25);
+            same_camera(navigation.camera(bodies), terrainSpace, 1e-11);
+            navigation.begin_descent_preserving_look(70, 3);
+            for (int step = 1; step <= 6; ++step) navigation.advance(70 + step * 0.5);
+            check(!navigation.flying(), "terrain-adjusted descent must finish");
+            same_camera(navigation.camera(bodies), terrainGround, 1e-11);
+
+            // 負標高の地表から通常宇宙に切り替え、同じ視点を復元する。
+            auto belowDatum = original;
+            belowDatum.terrain_offset_km = -0.4;
+            navigation.set_site(belowDatum);
+            const auto belowSpace = navigation.camera(bodies);
+            rejects([&] { surface_site_from_camera_with_roll(belowSpace, bodies, body); });
+            const auto belowRecovered = surface_site_from_camera_with_known_terrain(
+                belowSpace, bodies, body, belowDatum);
+            check(belowRecovered.has_value(), "known below-datum site must restore");
+            check(belowRecovered->terrain_offset_km == belowDatum.terrain_offset_km,
+                  "restoration must retain signed terrain offset");
+            auto lookedSite = belowDatum;
+            lookedSite.heading_deg = 260;
+            lookedSite.elevation_deg = 30;
+            const auto lookedCamera = surface_camera(lookedSite, bodies);
+            const auto looked = surface_site_from_camera_with_known_terrain(lookedCamera, bodies, body, belowDatum);
+            check(looked.has_value(), "rotation at the same position must retain known terrain");
+            same_camera(surface_camera(*looked, bodies), lookedCamera, 1e-11);
+            navigation.set_site(*belowRecovered);
+            same_camera(navigation.camera(bodies), belowSpace, 1e-11);
+            navigation.begin_descent_preserving_look(80, 0);
+            same_camera(navigation.camera(bodies), belowSpace, 1e-11);
+            check(!surface_site_from_camera_with_known_terrain(belowSpace, bodies, body == 3 ? 4 : 3, belowDatum),
+                  "known terrain must not be reused for another body");
+            auto moved = belowSpace;
+            moved.target.x += 1e-10;
+            check(!surface_site_from_camera_with_known_terrain(moved, bodies, body, belowDatum),
+                  "known terrain must not be reused after moving");
+
+            navigation.set_site(original);
+            navigation.begin_ascent(40, 0);
+            check(!navigation.flying(), "zero-duration ascent must be immediate");
+            const auto immediate = navigation.camera(bodies);
+            navigation.set_site(surface_site_from_camera_with_roll(immediate, bodies, body));
+            same_camera(navigation.camera(bodies), immediate, 1e-11);
+            navigation.begin_descent_preserving_look(41, 0);
+            check(!navigation.flying(), "zero-duration descent must be immediate");
+            same_camera(navigation.camera(bodies), ground, 1e-11);
+        }
+    }
+}
 void real_data(const char* path) {
     const auto model=SkyModel::load(path);
     const auto range=model.time_range();
+    // この配置では離陸直後から月へ向かう線と、最初の横方向の迂回線が地球を横切る。
+    constexpr double blocked_lunar_route_jd = 2451501.600;
+    if (range.first <= blocked_lunar_route_jd && blocked_lunar_route_jd <= range.second) {
+        const auto bodies = model.solar_bodies(blocked_lunar_route_jd);
+        const SurfaceSite lunar{10,25,-40};
+        InterplanetaryFlight flight;
+        flight.begin({},lunar,bodies,0);
+        flight.advance(.5,bodies);
+        flight.interrupt();
+        const SolarCamera stopped = flight.camera();
+        flight.begin_from_camera(stopped,lunar,bodies,1);
+        same_camera(stopped,flight.camera());
+        finish(flight,bodies,1);
+    }
     const double date=std::clamp(2451545.0,range.first,range.second-1);
     all_targets(model.solar_bodies(date));
+    boundaries(model.solar_bodies(date));
+    invalid_and_interrupt(model.solar_bodies(date));
+    real_surface_roundtrips(model.solar_bodies(date));
+    real_surface_roundtrips(model.solar_bodies(date + std::min(30.0, (range.second - date) / 2)));
     for (std::size_t index=1;index<=10;++index) {
         InterplanetaryFlight flight;
         SurfaceSite destination;

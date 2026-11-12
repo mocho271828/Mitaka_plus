@@ -30,13 +30,16 @@ void same_frame(const SolarCameraBasis& actual, const SolarCameraBasis& expected
     same_axis(actual.up, expected.up);
 }
 void conversion_and_projection() {
-    for (bool rolled : {false, true}) {
+    for (bool rolled : {false, true}) for (double fov : {10., 45., 90.}) {
         SolarCamera solar{{3, -2, 5}, 20, -30, 10};
+        solar.vertical_fov_deg = fov;
         if (rolled) solar.frame = SolarCameraBasis{{1, 0, 0}, {0, 0, 1}, {0, -1, 0}};
         else solar.roll(37);
         const auto shared = shared_camera_from_solar(solar);
         const auto galaxy = galaxy_camera_from_shared(shared);
         const auto roundtrip = solar_camera_from_shared(shared_camera_from_galaxy(galaxy));
+        check(shared.vertical_fov_deg == fov && galaxy.vertical_fov_deg == fov &&
+              roundtrip.vertical_fov_deg == fov, "camera conversion lost FOV");
         same_axis(roundtrip.target, solar.target);
         close(roundtrip.distance_au, solar.distance_au);
         check(roundtrip.frame.has_value() == rolled, "frame presence changed");
@@ -77,6 +80,10 @@ void limits_and_validation() {
     rejects([&] { (void)galaxy_camera_from_shared(invalid); });
     invalid = shared; invalid.distance_au = 0;
     rejects([&] { (void)galaxy_camera_from_shared(invalid); });
+    invalid = shared; invalid.vertical_fov_deg = 0;
+    rejects([&] { (void)galaxy_camera_from_shared(invalid); });
+    invalid = shared; invalid.vertical_fov_deg = std::numeric_limits<double>::quiet_NaN();
+    rejects([&] { (void)solar_camera_from_shared(invalid); });
     GalaxyCameraPc bad;
     bad.frame = SolarCameraBasis{{1, 0, 0}, {0, 1, 0}, {0, 0, -1}};
     rejects([&] { (void)checked_galaxy_camera(bad); });

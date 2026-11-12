@@ -1,0 +1,23 @@
+# 停止中の地表視点の保存と復元
+
+## 実装範囲と仮定
+
+JSON v9 に任意の `surface_site` を加え、停止中の地表の天体、緯度、経度、地表からの高さ、方位、高度、ロール、符号付き地形高さを保存する。項目がない既存 v9 は従来どおりカメラだけを復元する。地表座標がある場合はカメラの絶対位置・姿勢より地表座標を優先し、保存 JD の天体位置から停止状態を再構成する。画角は `solar_camera.fov_deg` を保持する。
+
+旧 Plus の地表保存形式や地形更新の厳密な挙動は未確認のため、地表での見かけを優先する上記の動作は仮定である。地形データの再取得中は基準球への fallback により保存した高さが 0 となり、その後取得した地形高さに更新されることがある。飛行・移動の中間状態やタイマーは保存しない。未対応の状態 API、追加対象の選択、および旧 Plus の Lua 状態ファイルは対応済みと扱わない。
+
+復元前に地表値の範囲と同一 JD の天体位置を検証し、不正な値で適用を開始しない。セッション操作は既存の信頼境界を維持し、外部データや新たな依存を追加しない。
+
+## 依存と検証
+
+この単位は地表 FOV 実装および Lua 姿勢・地点指定や地形更新時に画角を維持する修正を含む `a8b4a65` に依存する。`SolarSystemNavigation.mm`、`session_state.mm`、`SolarSystemView.h` は前段と接するため、前段を確定してから適用する。
+
+`a8b4a65` 上の隔離環境で `make build`、`make test`、`make data-test`、`make reference-test` は成功。セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功した。AppKit smoke では地表セッションの保存・復元と従来状態への復帰の検証が成功したが、同じ `make smoke` の後続 flight 試験が初回タイムアウトした。原因は未確定だが、他の GUI 試験終了後の再実行では flight を含む `make smoke` 全体が成功した。旧 Plus との比較と手動での実画面確認は未実施。
+
+統合の実際の親は `62bbc36`（第 5b 単位）で、`a8b4a65` の FOV を祖先として含む。この統合版でも `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功した。統合版の smoke では地表セッション復元、地形着陸と flight 完了を通過した。
+
+P1-3 を含む再統合は `a82fd3a` を親とする。`make build`、`make test`、`make data-test`、`make reference-test` は成功。地表セッション状態 1,893 件、Plus 状態 988 件の対象試験も成功。`make smoke` も成功し、地表セッション復元、地形着陸、flight を通過した。前段の検証コピーは P1-3 の同名ディレクトリとの衝突を避けるため `2026-11-07-03-06-47` から `2026-11-07-03-06-48` に移した。
+
+共有 checkout への統合後、`make -j6 smoke` ではセッションと地形着陸の検証が成功した後、`flight did not complete` で失敗した。原因は未確定であり、共有 checkout での再検証が必要。
+
+共有 checkout で再度 `make -j6 build`、`make -j6 test`、`make -j6 data-test`、`make -j6 reference-test` を実行し、すべて成功した。その後の `make -j6 smoke` 再試行も、地表セッション復元・地形着陸・flight を含めて成功した。先の flight 失敗の原因は引き続き未確定である。

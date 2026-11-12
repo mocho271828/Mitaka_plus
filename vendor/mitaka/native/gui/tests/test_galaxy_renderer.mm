@@ -42,6 +42,74 @@ std::shared_ptr<const GalaxySpatialModel> fixture(std::size_t repeated = 1) {
         GalaxySdssSource{sdss, 0}, GalaxySdssSource{sdss, 1}, gc, nbg});
 }
 const GalaxyCameraPc camera{{0, 0, 0}, 0, 0, 10};
+void local_object_size_tests() {
+    PlusGlobularClusterCatalog clusters{{"gc", {1}}, {}};
+    PlusGlobularClusterRecord record;
+    record.distance_pc = 3;
+    record.half_light_radius_pc = 0.5f;
+    clusters.records.push_back(record);
+    GalaxySpatialModel model({clusters});
+    const GalaxySpatialRecordId id{GalaxySpatialFamily::globular_cluster, 0, 0};
+    auto view = camera;
+    view.target = *model.row(id).position;
+    const GalaxyProjector projector(view, 512, 512);
+    const auto shape = galaxy_spatial_shape(model, id, projector, false);
+    check(shape && shape->radius > 10 && shape->radius < 100, "physical size yields an extended shape");
+    RendererDisplayOptions quality; quality.antialias = false;
+    const auto bitmap = render_galaxy_bitmap(model, view, {}, quality, 512, 512, 1,
+                                              {}, GalaxyBackground::transparent);
+    const auto data = pixels(*bitmap);
+    const auto alpha = [&](std::size_t x, std::size_t y) { return data[(y * 512 + x) * 4 + 3]; };
+    check(alpha(266, 256) != 0 && alpha(356, 256) == 0, "bitmap uses extended shape bounds");
+    check(pick_galaxy_spatial_row(model, projector, {}, 266, 256, 8) == id,
+          "visible extended region is selectable beyond the point radius");
+    auto overlapping_clusters = clusters;
+    auto larger_record = record;
+    larger_record.half_light_radius_pc = 2;
+    overlapping_clusters.records.push_back(larger_record);
+    GalaxySpatialModel overlapping_model({overlapping_clusters});
+    const auto overlapping_bitmap = render_galaxy_bitmap(overlapping_model, view, {}, quality, 512, 512, 1,
+        {}, GalaxyBackground::transparent);
+    const auto overlapping_pixels = pixels(*overlapping_bitmap);
+    const GalaxySpatialRecordId larger_id{GalaxySpatialFamily::globular_cluster, 0, 1};
+    check(overlapping_bitmap->counts().drawn == 2 && overlapping_pixels[(256 * 512 + 346) * 4 + 3] != 0 &&
+          pick_galaxy_spatial_row(overlapping_model, projector, {}, 346, 256, 0) == larger_id,
+          "same-center rows with different radii retain the later visible extent");
+
+    clusters.records[0].half_light_radius_pc = 1e9f;
+    GalaxySpatialModel huge_model({clusters});
+    auto huge_view = camera;
+    huge_view.target = *huge_model.row(id).position;
+    GalaxyProjector huge_projector(huge_view, 512, 512);
+    const auto huge = galaxy_spatial_shape(huge_model, id, huge_projector, false);
+    check(huge && huge->radius > 1e10, "huge circle triggers safe clipping");
+    auto huge_bitmap = render_galaxy_bitmap(huge_model, huge_view, {}, quality, 512, 512, 1,
+                                             {}, GalaxyBackground::transparent);
+    auto huge_pixels = pixels(*huge_bitmap);
+    check(huge_pixels[(256 * 512 + 256) * 4 + 3] != 0 &&
+          pick_galaxy_spatial_row(huge_model, huge_projector, {}, 256, 256, 0) == id,
+          "huge centered circle is drawn and selected");
+    huge_view.pan(huge->radius, 0, 512, 512);
+    GalaxyProjector edge_projector(huge_view, 512, 512);
+    const auto edge = galaxy_spatial_shape(huge_model, id, edge_projector, false);
+    check(edge && !edge_projector.contains(edge->center) && edge->intersects_viewport(edge_projector),
+          "huge circle intersects viewport with its center outside");
+    const std::size_t inside_x = edge->center.x > 512 ? 400 : 100;
+    const std::size_t outside_x = edge->center.x > 512 ? 100 : 400;
+    huge_bitmap = render_galaxy_bitmap(huge_model, huge_view, {}, quality, 512, 512, 1,
+                                        {}, GalaxyBackground::transparent);
+    huge_pixels = pixels(*huge_bitmap);
+    check(huge_pixels[(256 * 512 + inside_x) * 4 + 3] != 0 &&
+          pick_galaxy_spatial_row(huge_model, edge_projector, {}, inside_x, 256, 0) == id,
+          "visible portion of huge offscreen circle is drawn and selected");
+    check(huge_pixels[(256 * 512 + outside_x) * 4 + 3] == 0 &&
+          !pick_galaxy_spatial_row(huge_model, edge_projector, {}, outside_x, 256, 0),
+          "outside huge offscreen circle stays unpainted and unselected");
+    std::size_t clip_cancel_checks = 0;
+    check(!render_galaxy_bitmap(huge_model, huge_view, {}, quality, 512, 512, 1,
+              [&] { return ++clip_cancel_checks == 4; }, GalaxyBackground::transparent) && clip_cancel_checks == 4,
+          "renderer does not publish an image after clipping cancellation");
+}
 void sdss_color_tests() {
     constexpr std::array<float, 7> classes{-1.0f, -0.26f, -0.09f, 0.08f, 0.25f, 0.42f, 1.0f};
     constexpr std::array<std::size_t, 7> expected_classes{0, 0, 1, 2, 3, 4, 4};
@@ -375,6 +443,7 @@ void transparent_background_tests() {
 }
 int main() {
     try {
+        local_object_size_tests();
         sdss_color_tests(); sdss_overlap_order_tests(); sdss_partial_overlap_pixel_tests(); dimensions_tests(); counts_and_pixels_tests(); duplicate_pixel_equivalence_tests(); cancellation_tests();
         transparent_background_tests();
         std::cout << "Galaxy renderer: " << checks << " checks passed\n";

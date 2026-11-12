@@ -158,7 +158,7 @@ static void draw_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     end.right_ascension_deg = start.right_ascension_deg;
                 const auto segments = horizontal_projection
                     ? project_equatorial_segment_to_horizon(line[index - 1], line[index], cache.frame(),
-                        {360 - horizon.center_ra_deg, horizon.center_dec_deg, horizon.vertical_fov_deg, horizon.perspective_blend, horizon.roll_deg},
+                        {360 - horizon.center_ra_deg, horizon.center_dec_deg, horizon.vertical_fov_deg, horizon.perspective_blend, horizon.roll_deg, horizon.perspective_fov_deg},
                         map.size.width, map.size.height).segments
                     : project_sky_segment(start, end, viewport, map.size.width, map.size.height);
                 for (const auto& segment : segments) {
@@ -216,6 +216,7 @@ void draw_solar_grid(CGContextRef context, const SolarScene& scene) {
     // 単位球をカメラ位置へ置くことで距離や注視点から独立した方向格子にする。
     SolarCamera directional;
     directional.distance_au = 1;
+    directional.vertical_fov_deg = scene.camera.vertical_fov_deg;
     directional.frame = solar_camera_basis(scene.camera);
     const auto directionPoint = [&](EquatorialCoordinates point) {
         const auto direction = j2000_equatorial_to_ecliptic(equatorial_direction(point));

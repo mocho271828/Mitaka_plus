@@ -78,4 +78,8 @@ std::optional<double> sphere_hit_distance(const SolarCamera& camera, Vec3 body_e
                                           double radius_au, double x, double y,
                                           double width, double height);
 
+// 球内で実地形を取得できない間は、未知の地表を不透明に扱う。
+std::optional<double> surface_sphere_fallback_distance(const SolarCamera& camera, Vec3 body_ecliptic,
+    double radius_au, double x, double y, double width, double height);
+
 } // namespace mitaka::gui

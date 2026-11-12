@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <deque>
 #include <limits>
 #include <set>
 #include <stdexcept>
@@ -134,6 +135,154 @@ bool GalaxySpatialVisibility::visible(GalaxySpatialFamily family) const {
     throw std::invalid_argument("galaxy scene: unknown display family");
 }
 
+bool GalaxySpatialShape::contains(double x, double y) const noexcept {
+    if (!std::isfinite(x) || !std::isfinite(y)) return false;
+    if (clipping) return std::any_of(clipping->rectangles.begin(), clipping->rectangles.end(),
+        [x, y](const auto& rect) {
+            return x >= rect.x && x <= rect.x + rect.width &&
+                   y >= rect.y && y <= rect.y + rect.height;
+        });
+    const double dx = x - center.x, dy = y - center.y;
+    if (preview_rectangle) return dx >= 0 && dx <= galaxy_spatial_preview_size &&
+                                  dy >= 0 && dy <= galaxy_spatial_preview_size;
+    return std::hypot(dx, dy) <= radius;
+}
+
+bool GalaxySpatialShape::intersects_viewport(const GalaxyProjector& projector) const noexcept {
+    if (clipping) return std::any_of(clipping->rectangles.begin(), clipping->rectangles.end(),
+        [&](const auto& rect) {
+            return rect.x <= projector.width() && rect.y <= projector.height() &&
+                   rect.x + rect.width >= 0 && rect.y + rect.height >= 0;
+        });
+    if (preview_rectangle)
+        return center.x <= projector.width() && center.y <= projector.height() &&
+               center.x + galaxy_spatial_preview_size >= 0 && center.y + galaxy_spatial_preview_size >= 0;
+    const double closest_x = std::clamp(center.x, 0.0, projector.width());
+    const double closest_y = std::clamp(center.y, 0.0, projector.height());
+    return std::hypot(center.x - closest_x, center.y - closest_y) <= radius;
+}
+
+bool galaxy_spatial_requires_clipping(const GalaxySpatialShape& shape, double scale_x, double scale_y) {
+    if (!std::isfinite(scale_x) || scale_x <= 0 || !std::isfinite(scale_y) || scale_y <= 0)
+        throw std::invalid_argument("galaxy scene: invalid raster scale");
+    if (shape.preview_rectangle) return false;
+    // Quartz の巨大 path は viewport の中心を含んでも描画されない場合がある。
+    constexpr double limit = 1e6;
+    return std::max(std::abs(shape.center.x), shape.radius) > limit / scale_x ||
+           std::max(std::abs(shape.center.y), shape.radius) > limit / scale_y;
+}
+
+GalaxySpatialClipResult galaxy_spatial_clip_circle(const GalaxySpatialShape& shape,
+    const GalaxyProjector& projector, double tolerance_points, std::size_t max_cells,
+    const std::function<bool()>& should_cancel) {
+    if (shape.preview_rectangle || !std::isfinite(shape.center.x) || !std::isfinite(shape.center.y) ||
+        !std::isfinite(shape.radius) || shape.radius <= 0 ||
+        !std::isfinite(tolerance_points) || tolerance_points <= 0 || max_cells == 0)
+        throw std::invalid_argument("galaxy scene: invalid circle clipping arguments");
+    GalaxySpatialClipResult result;
+    // clipping を既に持つ形状でも、元の解析円から一意に再生成する。
+    const auto contains = [&](double x, double y) {
+        return std::hypot(x - shape.center.x, y - shape.center.y) <= shape.radius;
+    };
+    std::deque<GalaxySpatialClipRect> pending{{0, 0, projector.width(), projector.height()}};
+    std::size_t visited = 0, processed = 0;
+    while (!pending.empty()) {
+        if (processed++ % 256 == 0 && should_cancel && should_cancel()) {
+            result.rectangles.clear();
+            result.cancelled = true;
+            return result;
+        }
+        const auto rect = pending.front();
+        pending.pop_front();
+        const double right = rect.x + rect.width, bottom = rect.y + rect.height;
+        const double closest_x = std::clamp(shape.center.x, rect.x, right);
+        const double closest_y = std::clamp(shape.center.y, rect.y, bottom);
+        if (!contains(closest_x, closest_y)) continue;
+        if (contains(rect.x, rect.y) && contains(right, rect.y) &&
+            contains(rect.x, bottom) && contains(right, bottom)) {
+            result.rectangles.push_back(rect);
+            continue;
+        }
+        ++visited;
+        const bool exhausted = visited >= max_cells;
+        if (exhausted || std::hypot(rect.width, rect.height) <= tolerance_points) {
+            result.approximated = true;
+            result.max_boundary_cell_diagonal = std::max(result.max_boundary_cell_diagonal, std::hypot(rect.width, rect.height));
+            result.budget_exhausted |= exhausted;
+            if (contains(rect.x + rect.width / 2, rect.y + rect.height / 2))
+                result.rectangles.push_back(rect);
+            continue;
+        }
+        const double half_width = rect.width / 2, half_height = rect.height / 2;
+        pending.push_back({rect.x, rect.y, half_width, half_height});
+        pending.push_back({rect.x + half_width, rect.y, rect.width - half_width, half_height});
+        pending.push_back({rect.x, rect.y + half_height, half_width, rect.height - half_height});
+        pending.push_back({rect.x + half_width, rect.y + half_height,
+                           rect.width - half_width, rect.height - half_height});
+    }
+    if (should_cancel && should_cancel()) {
+        result.rectangles.clear();
+        result.cancelled = true;
+    }
+    return result;
+}
+
+std::optional<GalaxySpatialShape> galaxy_spatial_shape(
+    const GalaxySpatialModel& model, GalaxySpatialRecordId id,
+    const GalaxyProjector& projector, bool preview, const std::function<bool()>& should_cancel) {
+    return galaxy_spatial_shape(model, model.row(id), projector, preview, should_cancel);
+}
+
+std::optional<GalaxySpatialShape> galaxy_spatial_shape(
+    const GalaxySpatialModel& model, const GalaxySpatialRow& row,
+    const GalaxyProjector& projector, bool preview, const std::function<bool()>& should_cancel) {
+    const auto id = row.id;
+    if (!row.position) return std::nullopt;
+    const auto center = projector.project(*row.position);
+    if (!center) return std::nullopt;
+    const bool extended = id.family == GalaxySpatialFamily::nearby_galaxy ||
+                          id.family == GalaxySpatialFamily::globular_cluster;
+    // SDSS/QSO の画面端と間引きの既存契約は変えない。
+    if (!extended && !projector.contains(*center)) return std::nullopt;
+    double radius = galaxy_spatial_point_radius(id.family);
+    double physical_radius = 0;
+    if (id.family == GalaxySpatialFamily::globular_cluster) {
+        physical_radius = std::get<PlusGlobularClusterCatalog>(model.sources().at(id.source_index))
+            .records.at(id.ordinal).half_light_radius_pc;
+    } else if (id.family == GalaxySpatialFamily::nearby_galaxy) {
+        const auto& record = std::get<PlusNearbyGalaxyCatalog>(model.sources().at(id.source_index))
+            .records.at(id.ordinal);
+        constexpr double pi = 3.14159265358979323846;
+        const double angle = record.angular_diameter_arcminutes * pi / 21600.0;
+        if (std::isfinite(angle) && angle > 0 && angle < pi / 2 &&
+            std::isfinite(record.distance_pc) && record.distance_pc > 0)
+            physical_radius = record.distance_pc * angle;
+    }
+    if (std::isfinite(physical_radius) && physical_radius > 0)
+        radius = std::max(radius, projector.projected_radius(physical_radius, center->depth_pc));
+    GalaxySpatialShape shape{*center, radius, preview && !extended, std::nullopt};
+    if (extended) {
+        // ceil(w * scale) / w < scale + 1 / w なので、微小 viewport の切上げも含める。
+        // 描画品質や preview/complete が変わっても hit test の形状を変えない。
+        const double safe_scale = std::min(std::numeric_limits<double>::max(),
+            16.0 + std::max(1.0 / projector.width(), 1.0 / projector.height()));
+        if (galaxy_spatial_requires_clipping(shape, safe_scale, safe_scale)) {
+            shape.clipping = galaxy_spatial_clip_circle(shape, projector,
+                std::max(0.25 / safe_scale, std::numeric_limits<double>::min()), 100000, should_cancel);
+        }
+    }
+    return shape;
+}
+
+bool galaxy_spatial_point_contains(GalaxySpatialFamily family, double center_x, double center_y,
+                                   double x, double y, bool preview) noexcept {
+    const double dx = x - center_x, dy = y - center_y;
+    if (preview) return dx >= 0 && dx <= galaxy_spatial_preview_size &&
+                        dy >= 0 && dy <= galaxy_spatial_preview_size;
+    const double r = galaxy_spatial_point_radius(family);
+    return dx * dx + dy * dy <= r * r;
+}
+
 std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     const GalaxySpatialModel& model, const GalaxyProjector& projector,
     GalaxySpatialVisibility visibility, double x, double y, double radius,
@@ -141,8 +290,9 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
     if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(radius) || radius < 0 || radius > 1e7)
         throw std::invalid_argument("galaxy scene: invalid pick position or radius");
     if (!projector.contains({x, y, 0})) return std::nullopt;
-    std::optional<GalaxySpatialRecordId> nearest;
+    std::optional<GalaxySpatialRecordId> nearest, painted;
     double nearest_distance = radius, nearest_depth = std::numeric_limits<double>::infinity();
+    double nearest_x = 0, nearest_y = 0;
     for (std::size_t source = 0; source < model.sources().size(); ++source) {
         if (should_cancel && should_cancel()) return std::nullopt;
         const auto family = model.family(source);
@@ -151,19 +301,22 @@ std::optional<GalaxySpatialRecordId> pick_galaxy_spatial_row(
         for (std::size_t ordinal = 0; ordinal < count; ++ordinal) {
             if (ordinal % 256 == 0 && should_cancel && should_cancel()) return std::nullopt;
             const GalaxySpatialRecordId id{family, source, ordinal};
-            const auto row = model.row(id);
-            if (!row.position) continue;
-            const auto point = projector.project(*row.position);
-            if (!point || !projector.contains(*point)) continue;
-            const double distance = std::hypot(point->x - x, point->y - y);
+            const auto shape = galaxy_spatial_shape(model, id, projector, false, should_cancel);
+            if (shape && shape->clipping && shape->clipping->cancelled) return std::nullopt;
+            if (!shape || !shape->intersects_viewport(projector)) continue;
+            const auto& point = shape->center;
+            const double distance = std::hypot(point.x - x, point.y - y);
+            if (shape->contains(x, y)) painted = id;
             if (distance > nearest_distance || (nearest && distance == nearest_distance &&
-                point->depth_pc >= nearest_depth)) continue;
+                point.depth_pc >= nearest_depth &&
+                (point.x != nearest_x || point.y != nearest_y))) continue;
             nearest = id;
             nearest_distance = distance;
-            nearest_depth = point->depth_pc;
+            nearest_depth = point.depth_pc;
+            nearest_x = point.x; nearest_y = point.y;
         }
     }
-    return should_cancel && should_cancel() ? std::nullopt : nearest;
+    return should_cancel && should_cancel() ? std::nullopt : painted ? painted : nearest;
 }
 
 void GalaxySpatialScene::set_model(std::shared_ptr<const GalaxySpatialModel> model) {

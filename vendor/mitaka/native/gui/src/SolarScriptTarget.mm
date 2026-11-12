@@ -52,12 +52,17 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
 - (const std::string&)scriptEarthPlaceTarget { return _scriptEarthPlaceTarget; }
 - (const std::string&)scriptOverviewTarget { return _scriptOverviewTarget; }
 - (BOOL)moveScriptEarthSurfaceLatitude:(double)latitude longitude:(double)longitude {
+    return [self moveScriptSurfaceBody:3 latitude:latitude longitude:longitude];
+}
+- (BOOL)moveScriptSurfaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude {
     SurfaceSite site;
-    if (![self scriptSurfaceSite:&site] || site.body_index != 3) return NO;
+    if (![self scriptSurfaceSite:&site] || site.body_index != body) return NO;
     site.latitude_deg = latitude;
     site.longitude_deg = longitude;
     _navigation.set_site(site);
+    const double fov = _camera.vertical_fov_deg;
     _camera = _navigation.camera(_bodies);
+    _camera.vertical_fov_deg = fov;
     [self notifyCamera];
     self.needsDisplay = YES;
     return YES;
@@ -81,8 +86,8 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     } else if (const auto* catalog = std::get_if<PlusNearbyGalaxyCatalog>(&source)) {
         const auto& record = catalog->records.at(id.ordinal);
         constexpr double pi = 3.14159265358979323846;
-        const double angle = record.angular_diameter_arcminutes * pi / 43200.0;
-        if (angle > 0 && angle < pi / 2) radius = record.distance_pc * std::tan(angle);
+        const double angle = record.angular_diameter_arcminutes * pi / 21600.0;
+        if (angle > 0 && angle < pi / 2) radius = record.distance_pc * angle;
     }
     if (!std::isfinite(radius) || radius <= 0) return std::nullopt;
     return radius * astronomical_units_per_parsec;
@@ -110,7 +115,7 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     const double weight = (1.0 - std::cos(pi * t)) / 2.0;
     auto destination = state.target;
     Vec3 target = state.body ? [self displayPosition:*state.body] : destination.target;
-    if (_scriptSpacePlace && state.body && *state.body == 3)
+    if (_scriptSpacePlace && state.body && *state.body == _scriptSpacePlace->body_index)
         target = [self scriptSpacePlacePositionForBodies:_bodies];
     if (state.small_body) {
         if (!_smallBodySnapshot || !_smallBodySelection || *_smallBodySelection != *state.small_body ||
@@ -202,6 +207,9 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     [NSRunLoop.mainRunLoop addTimer:_targetTimer forMode:NSRunLoopCommonModes];
 }
 - (BOOL)selectScriptEarthPlaceLatitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error {
+    return [self selectScriptPlaceBody:3 latitude:latitude longitude:longitude surface:surface error:error];
+}
+- (BOOL)selectScriptPlaceBody:(NSUInteger)body latitude:(double)latitude longitude:(double)longitude surface:(BOOL)surface error:(NSString **)error {
     if (!_hasData) {
         if (error) *error = @"Solar system is unavailable";
         return NO;
@@ -209,27 +217,28 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     try {
         SurfaceSite site;
         if (surface) {
-            if (![self scriptSurfaceSite:&site])
-                throw std::invalid_argument("Earth place selection requires a surface observer");
-            site.body_index = 3;
+            if (![self scriptSurfaceSite:&site] || site.body_index != body)
+                throw std::invalid_argument("Place selection requires an observer on the same body");
             site.latitude_deg = latitude;
             site.longitude_deg = longitude;
             SurfaceNavigation next;
             next.set_site(site);
-            const auto camera = next.camera(_bodies);
+            auto camera = next.camera(_bodies);
+            camera.vertical_fov_deg = _camera.vertical_fov_deg;
             [self interruptFlight];
             _navigation = next;
             _camera = camera;
-            [self selectBody:3];
+            [self selectBody:body];
         } else {
-            site = SurfaceSite{3, latitude, longitude, surface_body_info(3).radius_km * 8, 0, -90};
+            site = SurfaceSite{body, latitude, longitude, surface_body_info(body).radius_km * 8, 0, -90};
             SurfaceNavigation next;
             next.set_site(site);
             auto camera = next.camera(_bodies);
+            camera.vertical_fov_deg = _camera.vertical_fov_deg;
             camera.distance_au = _camera.distance_au;
             camera.frame_is_orbit = true;
             [self leaveNavigation];
-            [self selectBody:3];
+            [self selectBody:body];
             site.height_km = minimum_surface_height_km;
             _scriptSpacePlace = site;
             camera.set_target_au([self scriptSpacePlacePositionForBodies:_bodies]);
@@ -246,9 +255,17 @@ Vec3 targetDifference(const SolarCamera& destination, const SolarCamera& initial
     return YES;
 }
 - (std::optional<std::int32_t>)selectedScriptStarHIP {
+    if (_surfaceActive && _surfaceSkyModel && _surfaceStarSelection &&
+        *_surfaceStarSelection < _surfaceSkyModel->stars().size())
+        return _surfaceSkyModel->stars()[*_surfaceStarSelection].hip;
     const auto model = [_galaxyOverlay hipModel];
     if (!model || !_hipSelection || *_hipSelection >= model->points.size()) return std::nullopt;
     return model->points[*_hipSelection].hip;
+}
+- (std::optional<std::size_t>)selectedScriptConstellationInModel:(const std::shared_ptr<const SkyModel>&)model {
+    if (!_surfaceActive || !model || model != _surfaceSkyModel || !_surfaceConstellationSelection ||
+        *_surfaceConstellationSelection >= model->constellations().size()) return std::nullopt;
+    return _surfaceConstellationSelection;
 }
 - (std::optional<GalaxySpatialRecordId>)selectedScriptGalaxyRecord { return _galaxySelection; }
 - (BOOL)isScriptOurGalaxySelected { return _ourGalaxySelected; }
