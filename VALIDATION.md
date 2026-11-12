@@ -6,7 +6,7 @@ Lua の `Camera.zoom` と同じ pc 単位で距離の線形 `setZoomTo`・対数
 
 別 bundle ID の一時コピーを使う実画面検証では、実データの太陽系 3D を開き、`Camera:setZoomTo(10 * UNIT_AU, 2)` を含む手作成 Lua をメニューから選択して「スクリプトを実行しました」と表示された。操作後の距離・画面の変化は CUA のタイムアウトにより未確認。表面画像は 0/11 の読込警告が出た。旧 Plus との比較は未実施。対象移動中のズーム競合を修正し、関連試験の 79 checks は成功した（主担当報告）。
 
-最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はいずれも終了コード 0（主担当報告）。途中の `make test` は追加テストの宣言エラーで失敗し、その後の試験は修正のため中断された。Git の変更範囲と差分を確認し、commit した。[policy gate 検証コピー](temp_gates/2026-11-06-20-33-32/)では、指定 skill の利用可否と未実施事項の最終報告が未了のため検証 gate を暫定 NO とした。
+最終変更後の `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` はいずれも終了コード 0（主担当報告）。途中の `make test` は追加テストの宣言エラーで失敗し、その後の試験は修正のため中断された。Git の変更範囲と差分を確認し、commit した。[policy gate 検証コピー](temp_gates/2026-11-06-20-33-32/)では、指定 skill の利用可否と未実施事項の最終報告が未了のため検証 gate を暫定 NO とした。 11 月 12 日に PR #2 の実装先端 06f7043 を再確認し、補間の試験範囲と保全・skill 判定の根拠を追記した。今回の判定と実行結果は [11 月 12 日のレビュー検証](temp_gates/2026-11-12-14-40-03/verification.md) に記録した。
 
 ## 2026-11-06: 火星地表付近の地形描画
 
