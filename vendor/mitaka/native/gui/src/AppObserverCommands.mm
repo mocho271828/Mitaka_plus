@@ -41,7 +41,7 @@ NSStackView *observerRow(NSString *title, NSView *control) {
         _observerCatalogStatus.selectable = YES;
         _observerApplyButton = [NSButton buttonWithTitle:@"地平図に適用" target:self action:@selector(applyObserver:)];
         NSTextField *help = [NSTextField wrappingLabelWithString:
-            @"北緯・東経が正です。選択地点の経度は −180〜180° に換算して表示します。登録地点の風景を適用し、座標を編集すると既定風景へ戻ります。地球以外の地点、大気差・地心視差・時系補正は未対応です。"];
+            @"北緯・東経が正です。選択地点の経度は −180〜180° に換算して表示します。登録地点の風景を適用し、座標を編集すると既定風景へ戻ります。地球以外の地点、大気差・時系補正と小天体・PTH 探査機以外の地心視差は未対応です。"];
         NSStackView *layout = [NSStackView stackViewWithViews:@[
             observerRow(@"ローカルの地点", _observerPlacesPopup),
             observerRow(@"緯度（−90〜90°）", _observerLatitudeField),

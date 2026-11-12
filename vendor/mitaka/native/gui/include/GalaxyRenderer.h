@@ -14,6 +14,10 @@ struct GalaxyRenderCounts {
     std::size_t total = 0, hidden = 0, invalid = 0, outside = 0, drawn = 0;
 };
 enum class GalaxyBackground { opaque, transparent };
+struct GalaxyPointColor { double red, green, blue; };
+// 元の eClass による 5 区分。非有限入力は不正として拒否する。
+std::size_t sdss_galaxy_color_class(float eclass);
+GalaxyPointColor galaxy_point_color(const GalaxySpatialModel& model, GalaxySpatialRecordId id);
 class GalaxyBitmap final {
 public:
     GalaxyBitmap(CGImageRef image, GalaxyRenderCounts counts);
@@ -27,7 +31,7 @@ private:
     GalaxyRenderCounts counts_;
 };
 // 独立 CGContext を所有する worker 用描画。cancel 時は部分画像を返さない。
-// 色・点半径は native の識別表示であり、原版の形状や測光値を再現しない。
+// SDSS 銀河色は通常 Mitaka 1.3.1 の分類に基づく。点半径・測光は近似。
 std::shared_ptr<const GalaxyBitmap> render_galaxy_bitmap(
     const GalaxySpatialModel& model, GalaxyCameraPc camera, GalaxySpatialVisibility visibility,
     RendererDisplayOptions quality, double width_points, double height_points, double backing_scale,

@@ -45,6 +45,11 @@ int main() {
     const auto origin = our_galaxy_camera_origin(camera);
     const auto direct = our_galaxy_galactic_position({12000, 0, 0});
     assert(origin.x == direct.x && origin.y == direct.y && origin.z == direct.z);
+    auto shifted = camera;
+    shifted.target_offset_au = {1000 * astronomical_units_per_parsec, 0, 0};
+    const auto moved_origin = our_galaxy_camera_origin(shifted);
+    const auto moved_direct = our_galaxy_galactic_position({13000, 0, 0});
+    assert(moved_origin.x == moved_direct.x && moved_origin.y == moved_direct.y && moved_origin.z == moved_direct.z);
     assert(our_galaxy_alpha(camera) > 0);
     const auto rendered = render_our_galaxy_radiative(model, camera, 1, 1);
     assert(rendered && rendered->alpha() == our_galaxy_alpha(camera));
@@ -75,9 +80,11 @@ int main() {
         assert(std::abs(int(buffer[c])-expected) <= 2);
     }
     // 画像データの先頭行と最終行は左上原点の視線を使う。
+    camera.vertical_fov_deg = 90;
     const auto rows = render_our_galaxy_radiative(model, camera, 1, 2);
     const auto rows_mult = pixels(rows->multiplier()), rows_emiss = pixels(rows->emission());
     SolarCamera directional; directional.yaw_deg = camera.yaw_deg; directional.pitch_deg = camera.pitch_deg;
+    directional.vertical_fov_deg = camera.vertical_fov_deg;
     for (std::size_t y = 0; y < 2; ++y) {
         const auto direction = solar_camera_ray(directional, .5, y+.5, 1, 2);
         const auto target = our_galaxy_galactic_position({12000+direction.x*1000, direction.y*1000, direction.z*1000});
@@ -99,5 +106,9 @@ int main() {
     throws<std::invalid_argument>([&] { render_our_galaxy_radiative(model, camera, 0, 1); });
     throws<std::invalid_argument>([&] { our_galaxy_galactic_position({NAN, 0, 0}); });
     throws<std::out_of_range>([&] { our_galaxy_galactic_position({1e9, 0, 0}); });
-    throws<std::invalid_argument>([&] { camera.pitch_deg = 90; our_galaxy_camera_origin(camera); });
+    camera.distance_pc = 1e8;
+    assert(our_galaxy_alpha(camera) == 0);
+    camera.pitch_deg = 90;
+    throws<std::invalid_argument>([&] { our_galaxy_camera_origin(camera); });
+    throws<std::invalid_argument>([&] { our_galaxy_alpha(camera); });
 }

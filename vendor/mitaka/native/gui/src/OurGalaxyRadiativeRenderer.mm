@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -40,14 +41,15 @@ SolarCamera direction_camera(GalaxyCameraPc camera) {
     result.pitch_deg = camera.pitch_deg;
     result.frame = camera.frame;
     result.roll_deg = camera.roll_deg;
+    result.vertical_fov_deg = camera.vertical_fov_deg;
     return result;
 }
 NativeEclipticPositionPc eye_position(GalaxyCameraPc camera) {
     camera = checked_galaxy_camera(camera);
     const auto out = solar_camera_basis(direction_camera(camera)).outward;
-    return {camera.target.x_pc + camera.distance_pc * out.x,
-            camera.target.y_pc + camera.distance_pc * out.y,
-            camera.target.z_pc + camera.distance_pc * out.z};
+    return {camera.target.x_pc + camera.target_offset_au.x / astronomical_units_per_parsec + camera.distance_pc * out.x,
+            camera.target.y_pc + camera.target_offset_au.y / astronomical_units_per_parsec + camera.distance_pc * out.y,
+            camera.target.z_pc + camera.target_offset_au.z / astronomical_units_per_parsec + camera.distance_pc * out.z};
 }
 double dot(Vec3 a, Vec3 b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
 Vec3 galactic_components(Vec3 v) {
@@ -58,11 +60,16 @@ Vec3 galactic_components(Vec3 v) {
         j2000_equatorial_to_ecliptic(galactic_to_j2000_equatorial({0, 0, 1}))};
     return {dot(v, axes[0]), dot(v, axes[1]), dot(v, axes[2])};
 }
-void require_origin(Vec3 p) {
-    for (double value : {p.x, p.y, p.z}) {
+std::optional<OurGalaxyGalacticVector> radiative_position(NativeEclipticPositionPc position) {
+    const Vec3 input{position.x_pc, position.y_pc, position.z_pc};
+    auto transformed = galactic_components(input);
+    transformed.x -= center_distance_pc;
+    for (double value : {transformed.x, transformed.y, transformed.z}) {
         if (!std::isfinite(value)) throw std::invalid_argument("non-finite OurGalaxy position");
-        if (std::abs(value) > max_origin_pc) throw std::out_of_range("OurGalaxy position exceeds ray model range");
+        if (std::abs(value) > max_origin_pc) return std::nullopt;
     }
+    return OurGalaxyGalacticVector{static_cast<float>(transformed.x), static_cast<float>(transformed.y),
+                                   static_cast<float>(transformed.z)};
 }
 float norm(Vec3 p) { return static_cast<float>(std::hypot(p.x, p.y, p.z)); }
 float alpha_for(NativeEclipticPositionPc eye, OurGalaxyGalacticVector origin) {
@@ -102,20 +109,18 @@ CGImageRef make_image(const std::vector<std::uint8_t>& bytes, size_t width, size
 } // namespace
 
 OurGalaxyGalacticVector our_galaxy_galactic_position(NativeEclipticPositionPc position) {
-    const Vec3 input{position.x_pc, position.y_pc, position.z_pc};
-    if (!std::isfinite(input.x) || !std::isfinite(input.y) || !std::isfinite(input.z))
-        throw std::invalid_argument("non-finite OurGalaxy position");
-    auto transformed = galactic_components(input);
-    transformed.x -= center_distance_pc;
-    require_origin(transformed);
-    return {static_cast<float>(transformed.x), static_cast<float>(transformed.y), static_cast<float>(transformed.z)};
+    const auto origin = radiative_position(position);
+    if (!origin) throw std::out_of_range("OurGalaxy position exceeds ray model range");
+    return *origin;
 }
 OurGalaxyGalacticVector our_galaxy_camera_origin(GalaxyCameraPc camera) {
     return our_galaxy_galactic_position(eye_position(camera));
 }
 float our_galaxy_alpha(GalaxyCameraPc camera) {
     const auto eye = eye_position(camera);
-    return alpha_for(eye, our_galaxy_galactic_position(eye));
+    // 有効な広域カメラでも、天の川の光線モデルだけが適用範囲を外れる。
+    const auto origin = radiative_position(eye);
+    return origin ? alpha_for(eye, *origin) : 0;
 }
 OurGalaxyRadiativeImages::OurGalaxyRadiativeImages(CGImageRef multiplier, CGImageRef emission, float alpha)
     : multiplier_(CGImageRetain(multiplier)), emission_(CGImageRetain(emission)), alpha_(alpha) {}

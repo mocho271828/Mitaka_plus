@@ -35,6 +35,10 @@ struct HorizonPreparedDate {
 }
 
 @interface HorizonView : NSView
+@property(nonatomic) BOOL flightOverlay;
+@property(nonatomic, readonly) BOOL drawsFlightTitle;
+@property(nonatomic) NSInteger targetSelectionMode;
+@property(nonatomic, strong) NSTrackingArea *targetSelectionTrackingArea;
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;
 @property(nonatomic) mitaka::gui::PlanetDisplayOptions planetDisplayOptions;
 @property(nonatomic) mitaka::gui::RadiusDisplayOptions radiusDisplayOptions;
@@ -100,6 +104,8 @@ struct HorizonPreparedDate {
 - (BOOL)viewportForStarHIP:(int32_t)hip result:(mitaka::gui::HorizonViewport *)result;
 - (BOOL)viewportForHeliocentricPosition:(mitaka::Vec3)position julianDate:(double)julianDate
                                   result:(mitaka::gui::HorizonViewport *)result;
+- (BOOL)viewportForTopocentricHeliocentricPosition:(mitaka::Vec3)position julianDate:(double)julianDate
+                                              result:(mitaka::gui::HorizonViewport *)result;
 - (void)focusSelection;
 - (void)resetView;
 - (void)zoomIn;

@@ -2,6 +2,7 @@
 #import "SmallBodyRenderer.h"
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 using namespace mitaka;
@@ -13,6 +14,7 @@ using namespace mitaka::gui;
 @interface SolarSystemView (SmallBodyPickingTests)
 - (BOOL)zoomNavigationRegression;
 - (BOOL)zoomCollisionRegression;
+- (BOOL)scriptOtherBodyPlaceRegression;
 @end
 @implementation SolarSystemView (SmallBodyPickingTests)
 - (BOOL)zoomNavigationRegression {
@@ -42,6 +44,35 @@ using namespace mitaka::gui;
     _surfaceActive = NO;
     return rejectedInitial && rejectedTarget && preserved && rejectedSurface;
 }
+- (BOOL)scriptOtherBodyPlaceRegression {
+    NSString *error = nil;
+    for (const std::size_t body : {std::size_t(4), std::size_t(10)}) {
+        if (![self selectScriptPlaceBody:body latitude:17 longitude:23 surface:NO error:&error]
+            || !_scriptSpacePlace || _scriptSpacePlace->body_index != body || !_following) return NO;
+        const auto oldTarget = _camera.target;
+        auto moved = _bodies;
+        moved[body].position_au.x += 1;
+        [self setBodies:moved];
+        if (std::abs(_camera.target.x - oldTarget.x - 1) > 1e-9) return NO;
+        _navigation.set_site(SurfaceSite{body, 4, 6, minimum_surface_height_km, 0, 0});
+        _surfaceActive = YES;
+        _camera = _navigation.camera(_bodies);
+        if (![self selectScriptPlaceBody:body latitude:-8 longitude:179 surface:YES error:&error]) return NO;
+        SurfaceSite result;
+        if (![self scriptSurfaceSite:&result] || result.body_index != body
+            || result.latitude_deg != -8 || result.longitude_deg != 179) return NO;
+        if ([self selectScriptPlaceBody:3 latitude:0 longitude:0 surface:YES error:&error]) return NO;
+        SurfaceSite after;
+        if (![self scriptSurfaceSite:&after] || after.body_index != body || after.latitude_deg != -8) return NO;
+        if (![self moveScriptSurfaceBody:body latitude:10 longitude:-179]) return NO;
+        if ([self moveScriptSurfaceBody:3 latitude:20 longitude:0]) return NO;
+        if (![self scriptSurfaceSite:&after] || after.latitude_deg != 10 || after.longitude_deg != -179) return NO;
+        if ([self selectScriptPlaceBody:body latitude:91 longitude:0 surface:YES error:&error]) return NO;
+        if (![self scriptSurfaceSite:&after] || after.latitude_deg != 10) return NO;
+        _surfaceActive = NO;
+    }
+    return YES;
+}
 - (BOOL)zoomCollisionRegression {
     _earthMoonMode = YES;
     _camera = SolarCamera{};
@@ -62,6 +93,68 @@ namespace {
 unsigned checks = 0;
 void require(bool value, const char *message) { ++checks; if (!value) throw std::runtime_error(message); }
 bool same(Vec3 a, Vec3 b) { return std::hypot(a.x-b.x, a.y-b.y, a.z-b.z) < 1e-12; }
+void nearby_galaxy_radius_tests() {
+    PlusNearbyGalaxyCatalog catalog{{"NBG fixture", {}}, {}};
+    for (const float diameter : {120.0f, 0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN(),
+                                 std::numeric_limits<float>::infinity(), 10800.0f}) {
+        PlusNearbyGalaxyRecord record;
+        record.distance_pc = 100.0f;
+        record.angular_diameter_arcminutes = diameter;
+        catalog.records.push_back(record);
+    }
+    auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{catalog});
+    SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [view setGalaxyModel:model];
+    NSString *error = nil;
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 0, 0} error:&error],
+        "valid nearby galaxy can be selected");
+    constexpr double pi = 3.14159265358979323846;
+    const double expected = 100.0 * (pi / 180.0) * astronomical_units_per_parsec;
+    const auto radius = [view scriptTargetRadiusAU];
+    require(radius && std::abs(*radius / expected - 1.0) < 1e-12,
+        "120 arcminute diameter yields one degree angular radius");
+    [view applyScriptZoomMode:2 previousRadius:std::nullopt initialDistance:1.0];
+    require(std::abs([view cameraState].distance_au / (9.0 * expected) - 1.0) < 1e-12,
+        "always zoom uses nine times nearby galaxy radius");
+    [view applyScriptZoomMode:1 previousRadius:expected / 2.0 initialDistance:42.0];
+    require(std::abs([view cameraState].distance_au / (9.0 * expected) - 1.0) < 1e-12,
+        "auto zoom expands when the new target is larger");
+    [view applyScriptZoomMode:1 previousRadius:expected * 2.0 initialDistance:42.0];
+    require([view cameraState].distance_au == 42.0, "auto zoom preserves distance for a smaller target");
+    for (std::size_t row = 1; row < catalog.records.size(); ++row) {
+        require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 0, row} error:&error],
+            "boundary fixture with valid position can be selected");
+        require(![view scriptTargetRadiusAU], "invalid diameter has no known radius");
+        [view applyScriptZoomMode:2 previousRadius:std::nullopt initialDistance:42.0];
+        require([view cameraState].distance_au == 42.0, "unknown radius retains initial distance");
+    }
+}
+void galaxy_identity_tests() {
+    PlusGlobularClusterCatalog gc{{"globular_cluster.dat", {}}, {}};
+    PlusGlobularClusterRecord cluster;
+    constexpr char name[] = "NGC 6205";
+    std::copy(name, name + sizeof(name) - 1, cluster.name_bytes.begin());
+    cluster.distance_pc = 100;
+    gc.records.push_back(cluster);
+    PlusNearbyGalaxyCatalog nbg{{"NBG.dat", {}}, {}};
+    PlusNearbyGalaxyRecord galaxy;
+    galaxy.distance_pc = 710000;
+    galaxy.catalog_code = 'N';
+    galaxy.catalog_number = 224;
+    nbg.records.push_back(galaxy);
+    auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{gc, nbg});
+    SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    [view setGalaxyModel:model];
+    __block NSString *description = nil;
+    view.selectionChanged = ^(NSString *text) { description = text; };
+    NSString *error = nil;
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::globular_cluster, 0, 0} error:&error] &&
+        [description containsString:@"NGC 6205"] && [description containsString:@"原行 1"],
+        "GC selection displays its original name and source row");
+    require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 1, 0} error:&error] &&
+        [description containsString:@"原 ID N224"] && [description containsString:@"出典 2"],
+        "nearby galaxy selection displays its original code, number and source");
+}
 void minor_planet_orbit_tests() {
     auto dataset = std::make_shared<SmallBodyDataset>();
     SmallBodyRecord asteroid;
@@ -193,6 +286,8 @@ void tests() {
     [view setBodies:bodies];
     SolarSystemView *zoomFixture = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
     [zoomFixture setBodies:bodies];
+    require([zoomFixture scriptOtherBodyPlaceRegression], "Mars and Moon places track their body and reject invalid surface moves");
+    [zoomFixture setBodies:bodies];
     require([zoomFixture zoomNavigationRegression], "zoom validates the post-navigation frame and preserves state on rejection");
     require([zoomFixture zoomCollisionRegression], "instant and animated zoom stay outside Earth");
     [view setCameraState:camera];
@@ -210,6 +305,26 @@ void tests() {
     const auto viewPoints = visible_small_bodies(*frame, *display, camera, viewMap);
     require(viewPoints.size() == 1, "click fixture has a visible small body");
     const auto click = NSMakePoint(viewPoints[0].point.x, viewPoints[0].point.y);
+    const NSPoint eventPoint = [view convertPoint:click toView:nil];
+    NSEvent *clickEvent = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:eventPoint modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:1 pressure:0];
+    NSEvent *hoverEvent = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:eventPoint modifierFlags:0
+        timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:0 pressure:0];
+    [view selectBody:1];
+    view.targetSelectionMode = 0;
+    [view mouseUp:clickEvent]; [view mouseMoved:hoverEvent];
+    require(view.selectedBodyIndex == 1, "none mode ignores click and hover");
+    view.targetSelectionMode = 1;
+    [view mouseUp:clickEvent];
+    require(view.selectedBodyIndex == 1, "hover mode ignores click");
+    [view mouseMoved:hoverEvent];
+    require(view.selectedSmallBodyIndex == 0, "hover mode selects the displayed small body");
+    [view selectBody:1];
+    view.targetSelectionMode = 2;
+    [view mouseMoved:hoverEvent];
+    require(view.selectedBodyIndex == 1, "click mode ignores hover");
+    [view mouseUp:clickEvent];
+    require(view.selectedSmallBodyIndex == 0, "click mode selects the same displayed small body");
     [view pickBodyAtPoint:click];
     require(view.selectedSmallBodyIndex == 0, "visible small body is selected through the view");
     view.smallBodiesVisible = NO;
@@ -374,7 +489,7 @@ void tests() {
 int main() {
     @autoreleasepool {
         [NSApplication sharedApplication];
-        try { minor_planet_orbit_tests(); tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
+        try { galaxy_identity_tests(); nearby_galaxy_radius_tests(); minor_planet_orbit_tests(); tests(); std::cout << "Solar small-body tests passed: " << checks << " checks\n"; return 0; }
         catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }
     }
 }

@@ -128,6 +128,36 @@ void checkCapturedImage(DisplayOutputController *output, DisplayImageFormat form
     try {
         requirePlus(_model && !_loading && _mode.segmentCount == 3, "Plus views are not ready");
         const SessionState original = [self sessionState];
+        NSMenuItem *flightToggle = commands(@selector(toggleFlightMode:), 1, self).firstObject;
+        const auto savedModeDuration = _scriptCameraModeDuration;
+        _scriptCameraModeDuration = 0;
+        _mode.selectedSegment = 2;
+        [self changeMode:nil];
+        [flightToggle.menu update];
+        requirePlus(flightToggle.enabled &&
+                    [NSApp sendAction:flightToggle.action to:flightToggle.target from:flightToggle] &&
+                    [self plusCameraMode] == 1 && !_solar.flightAnimating,
+                    "the flight menu must honor an immediate takeoff");
+        [_travelButtons[6] sendAction:_travelButtons[6].action to:_travelButtons[6].target];
+        requirePlus(_mode.selectedSegment == 2 && [self plusCameraMode] == 0 && !_horizonFlightView,
+                    "the horizon landing button must honor the same duration");
+        [_horizon setViewport:{70, 12, 35, 0, 7}];
+        NSString *flightError = nil;
+        requirePlus([self setEarthSurfaceMode:NO duration:12 error:&flightError] &&
+                    [self plusCameraMode] == 1 && _solar.flightAnimating,
+                    "Earth takeoff must publish space mode on acceptance");
+        requirePlus([self setEarthSurfaceMode:YES duration:1 error:&flightError] &&
+                    [self plusCameraMode] == 1 && _solar.flightAnimating,
+                    "another ordinary mode request must leave the current Earth flight in progress");
+        requirePlus([self setEarthSurfaceMode:YES duration:0 force:YES error:&flightError] &&
+                    [self plusCameraMode] == 0 && !_solar.flightAnimating && !_horizonFlightView,
+                    "forceMode must finish and clear an interrupted Earth takeoff");
+        const auto returned = [_horizon viewport];
+        requirePlus(returned.center_altitude_deg == 12 && returned.center_azimuth_deg == 70 &&
+                    returned.vertical_fov_deg == 35 && returned.roll_deg == 7,
+                    "forcing a return to the observer must restore the ground view");
+        _scriptCameraModeDuration = savedModeDuration;
+        requirePlus([self applySessionState:original], "could not restore the scene after the flight controls");
         requirePlus(bool(_observerPlaces), "observer place catalog was not loaded with the sky model");
         const auto observerSource = _observerPlaces;
         [self showObserver:nil];

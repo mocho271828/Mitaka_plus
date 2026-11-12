@@ -7,13 +7,21 @@
 namespace mitaka::gui {
 
 constexpr double solar_camera_tangent_half_fov = 0.41421356237309504880;
-constexpr double maximum_solar_distance_au = (648000.0 / 3.14159265358979323846) * 1e40;
+constexpr double astronomical_units_per_parsec = 648000.0 / 3.14159265358979323846;
+constexpr double maximum_solar_anchor_pc = 1e40;
+constexpr double maximum_solar_distance_au = astronomical_units_per_parsec * 1e40;
 
 // outwardは視線の逆方向。right/up/outwardは右手正規直交基底。
 struct SolarCameraBasis { Vec3 outward, right, up; };
 
+// 原点の pc 座標と、そこからの AU 差分を別々に保持する。
+struct PreciseCameraTarget { Vec3 anchor_pc, offset_au; };
+
+// 大きくなった残差を、移動や投影の精度を保てる近くの基準へ移す。
+PreciseCameraTarget normalized_camera_target(PreciseCameraTarget target, double distance_au);
+
 // Z-up の透視投影カメラ。入力座標・target・距離の単位は AU。
-// yaw は XY 面の +X からの角度。垂直視野角は45度。
+// yaw は XY 面の +X からの角度。垂直視野角は既定45度。
 // 正常範囲を外れた公開値や非有限入力は invalid_argument。
 struct SolarCamera {
     Vec3 target{0, 0, 0};
@@ -26,6 +34,16 @@ struct SolarCamera {
     double roll_deg = 0;
     // 任意姿勢の frame でも通常の投影範囲を使う。地表・飛行は false。
     bool frame_is_orbit = false;
+    // target は旧来の近似 AU 座標。精密値がある場合はこの値と一致する必要がある。
+    std::optional<PreciseCameraTarget> precise_target = std::nullopt;
+
+    // 透視投影の縦方向全画角。極小画角の描画は 1e-9 度に丸める。
+    double vertical_fov_deg = 45;
+
+    // 位置の置換と移動は、近似値と精密値を同時に更新する。
+    void set_target_pc(Vec3 position_pc);
+    void set_target_au(Vec3 position_au);
+    void translate_target_au(Vec3 delta_au);
 
     // 左上原点のドラッグ量。orbitは0.35度/point。通常のpitchは±89度で制限。
     void orbit(double dx_points, double dy_points);
@@ -38,6 +56,9 @@ struct SolarCamera {
 };
 
 struct SolarProjection { double x, y, depth; };
+
+// 描画と地形視錐台で共用する、縦方向半画角の正接。
+double solar_camera_tangent(const SolarCamera& camera);
 
 // カメラ座標系の単位ベクトル。outwardは注視点からカメラへ向く。
 SolarCameraBasis solar_camera_basis(const SolarCamera& camera);

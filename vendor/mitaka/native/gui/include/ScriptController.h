@@ -57,6 +57,7 @@ struct ScriptSnapshot {
     std::optional<double> camera_duration;
     std::optional<int> camera_mode;
     double camera_mode_duration = 7.1;
+    int target_selection_mode = 2;
     int camera_zoom_mode = 2; // 同梱 option.lua は ZOOM_ALWAYS を指定する。
     std::optional<std::array<double, 4>> camera_orientation;
     std::optional<std::array<double, 3>> camera_euler;
@@ -98,7 +99,7 @@ enum class ScriptActionKind {
     set_camera_orientation, set_camera_euler, add_camera_euler,
     animate_camera_orientation, animate_camera_euler, animate_add_camera_euler,
     set_camera_mode, set_camera_mode_duration, set_camera_zoom_mode, animate_camera_zoom,
-    set_camera_fov, animate_camera_fov
+    set_camera_fov, animate_camera_fov, set_target_selection_mode
 };
 struct ScriptAction {
     ScriptActionKind kind;
@@ -128,6 +129,8 @@ struct ScriptAction {
 - (BOOL)runFile:(NSURL *)file error:(NSError **)error;
 // 明示的に信頼されたローカル HTML 等の UTF-8 ソース。元ファイルへの書込みは行わない。
 - (BOOL)runSource:(NSString *)source error:(NSError **)error;
+// ユーザーがコンソールで明示実行したローカル入力。入力ごとに独立した Lua 環境を使う。
+- (BOOL)runConsoleSource:(NSString *)source error:(NSError **)error;
 // テスト・別配置ビルド向け。通常は init で同一bundleの MitakaScript を使用する。
 - (instancetype)initWithHelperURL:(NSURL *)helperURL;
 - (void)cancel;

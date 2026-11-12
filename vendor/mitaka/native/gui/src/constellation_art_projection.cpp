@@ -156,11 +156,12 @@ HorizonSegmentProjection project_horizon_constellation_art_segment(Vec3 start, V
     if (!std::isfinite(viewport.center_azimuth_deg) || !std::isfinite(viewport.center_altitude_deg)
         || std::abs(viewport.center_altitude_deg) > 90 || !std::isfinite(viewport.vertical_fov_deg)
         || viewport.vertical_fov_deg <= 0 || viewport.vertical_fov_deg > 180
+        || !std::isfinite(viewport.perspective_fov_deg) || viewport.perspective_fov_deg <= 0 || viewport.perspective_fov_deg > 90
         || !std::isfinite(viewport.perspective_blend) || viewport.perspective_blend < 0
         || viewport.perspective_blend > 1 || !std::isfinite(viewport.roll_deg))
         throw std::invalid_argument("invalid CAB projection parameters");
     const HorizonProjectionViewport horizon_viewport{360 - viewport.center_azimuth_deg,
-        viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+        viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg};
     const SkyViewport sky_viewport{0, 0, 180 / std::max(viewport.vertical_fov_deg, 1e-9)};
     return project(start, end, &frame, sky_viewport, horizon_viewport, width, height, limits);
 }

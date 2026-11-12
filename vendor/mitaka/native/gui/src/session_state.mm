@@ -106,6 +106,13 @@ void validate(const SessionState& state) {
     if (!std::isfinite(horizon.roll_deg)) invalid(@"horizon_viewport.roll_deg");
     // 保存状態のカメラも描画時と同じ基底・距離の契約を通す。
     (void)solar_camera_basis(state.solar_camera);
+    if (state.surface_site) {
+        SurfaceNavigation navigation;
+        navigation.set_site(*state.surface_site);
+        const bool above_ground = state.surface_site->height_km > minimum_surface_height_km + 1e-9;
+        if (above_ground != state.physical_space || (above_ground && state.surface_site->body_index != 3))
+            invalid(@"surface_site.height_km with solar_camera.physical_space");
+    }
     const int selected = static_cast<int>(state.selected_body);
     if (selected < 0 || selected > static_cast<int>(Body::moon)) invalid(@"selected_body");
     for (const auto body : {state.sky_selected_body, state.horizon_selected_body})
@@ -145,17 +152,39 @@ SessionState decode_session_state(std::string_view json) {
         state.horizon_viewport = {horizon_azimuth, horizon_altitude, horizon_fov};
         if (horizon[@"roll_deg"]) state.horizon_viewport.roll_deg = numeric_field(horizon, @"roll_deg");
         NSDictionary *camera = dictionary(required(object, @"solar_camera"), @"solar_camera");
-        state.solar_camera.target = vector_field(camera, @"target");
+        const Vec3 legacy_target = vector_field(camera, @"target");
+        if (id precise_value = camera[@"precise_target"]) {
+            NSDictionary *precise = dictionary(precise_value, @"precise_target");
+            state.solar_camera.set_target_pc(vector_field(precise, @"anchor_pc"));
+            state.solar_camera.translate_target_au(vector_field(precise, @"offset_au"));
+        } else {
+            state.solar_camera.set_target_au(legacy_target);
+        }
         state.solar_camera.yaw_deg = numeric_field(camera, @"yaw_deg");
         state.solar_camera.pitch_deg = numeric_field(camera, @"pitch_deg");
         state.solar_camera.distance_au = numeric_field(camera, @"distance_au");
+        if (camera[@"fov_deg"]) state.solar_camera.vertical_fov_deg = numeric_field(camera, @"fov_deg");
         if (camera[@"roll_deg"]) state.solar_camera.roll_deg = numeric_field(camera, @"roll_deg");
+        if (camera[@"physical_space"]) state.physical_space = boolean_field(camera, @"physical_space");
         if (camera[@"frame_is_orbit"]) state.solar_camera.frame_is_orbit = boolean_field(camera, @"frame_is_orbit");
         id frame = required(camera, @"frame");
         if (frame != NSNull.null) {
             NSDictionary *axes = dictionary(frame, @"frame");
             state.solar_camera.frame = SolarCameraBasis{vector_field(axes, @"outward"),
                 vector_field(axes, @"right"), vector_field(axes, @"up")};
+        }
+        if (id raw_site = object[@"surface_site"]) {
+            NSDictionary *site = dictionary(raw_site, @"surface_site");
+            SurfaceSite value;
+            value.body_index = integer_field(site, @"body_index", 1, 10);
+            value.latitude_deg = numeric_field(site, @"latitude_deg");
+            value.longitude_deg = numeric_field(site, @"longitude_deg");
+            value.height_km = numeric_field(site, @"height_km");
+            value.heading_deg = numeric_field(site, @"heading_deg");
+            value.elevation_deg = numeric_field(site, @"elevation_deg");
+            value.roll_deg = numeric_field(site, @"roll_deg");
+            value.terrain_offset_km = numeric_field(site, @"terrain_offset_km");
+            state.surface_site = value;
         }
         state.selected_body = static_cast<Body>(integer_field(object, @"selected_body", 0,
                                                                static_cast<int>(Body::moon)));
@@ -246,6 +275,15 @@ std::string encode_session_state(const SessionState& state) {
         id frame = NSNull.null;
         if (camera.frame) frame = @{@"outward": vector_json(camera.frame->outward),
                                    @"right": vector_json(camera.frame->right), @"up": vector_json(camera.frame->up)};
+        NSMutableDictionary *camera_object = [@{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
+            @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
+            @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit),
+            @"fov_deg": @(camera.vertical_fov_deg)} mutableCopy];
+        if (state.physical_space) camera_object[@"physical_space"] = @YES;
+        if (camera.precise_target) {
+            camera_object[@"precise_target"] = @{@"anchor_pc": vector_json(camera.precise_target->anchor_pc),
+                                                 @"offset_au": vector_json(camera.precise_target->offset_au)};
+        }
         NSMutableDictionary *object = [@{
             @"version": @(state.version), @"julian_date": @(state.julian_date),
             @"simulation_rate": @(state.simulation_rate), @"mode": @(state.mode),
@@ -256,9 +294,7 @@ std::string encode_session_state(const SessionState& state) {
                 @"center_altitude_deg": @(horizon.center_altitude_deg),
                 @"zoom": @(180 / std::max(horizon.vertical_fov_deg, 1.0)),
                 @"fov_deg": @(horizon.vertical_fov_deg), @"roll_deg": @(horizon.roll_deg)},
-            @"solar_camera": @{@"target": vector_json(camera.target), @"yaw_deg": @(camera.yaw_deg),
-                               @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
-                               @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit)},
+            @"solar_camera": camera_object,
             @"selected_body": @(static_cast<int>(state.selected_body)),
             @"sky_selected_body": state.sky_selected_body ? @(static_cast<int>(*state.sky_selected_body)) : NSNull.null,
             @"horizon_selected_body": state.horizon_selected_body ? @(static_cast<int>(*state.horizon_selected_body)) : NSNull.null,
@@ -304,6 +340,13 @@ std::string encode_session_state(const SessionState& state) {
             @"observer_latitude_deg": @(state.observer_latitude_deg),
             @"observer_longitude_deg": @(state.observer_longitude_deg)
         } mutableCopy];
+        if (state.surface_site) {
+            const auto& site = *state.surface_site;
+            object[@"surface_site"] = @{@"body_index": @(site.body_index), @"latitude_deg": @(site.latitude_deg),
+                @"longitude_deg": @(site.longitude_deg), @"height_km": @(site.height_km),
+                @"heading_deg": @(site.heading_deg), @"elevation_deg": @(site.elevation_deg),
+                @"roll_deg": @(site.roll_deg), @"terrain_offset_km": @(site.terrain_offset_km)};
+        }
         [object addEntriesFromDictionary:encode_session_layers(state)];
         NSError *error = nil;
         NSData *data = [NSJSONSerialization dataWithJSONObject:object

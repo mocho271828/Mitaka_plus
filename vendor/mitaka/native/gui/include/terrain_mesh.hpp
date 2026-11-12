@@ -4,6 +4,8 @@
 #include "mitaka/terrain.hpp"
 
 #include <array>
+#include <functional>
+#include <optional>
 #include <vector>
 
 namespace mitaka::gui {
@@ -29,7 +31,7 @@ public:
     std::array<std::size_t, 3> triangle(std::size_t ordinal) const;
 
 private:
-    friend TerrainPatchMesh make_terrain_patch_mesh(TerrainFile&, std::size_t, std::size_t, double, std::size_t);
+    friend TerrainPatchMesh make_terrain_patch_mesh(TerrainFile&, std::size_t, std::size_t, double, std::size_t, const std::function<bool()>&);
     std::size_t patch_ = 0, level_ = 0, columns_ = 0, rows_ = 0;
     std::vector<TerrainVertex> vertices_;
 };
@@ -40,13 +42,27 @@ private:
 // 不正値/非正半径/法線退化/上限超過はinvalid_argument。原本のI/OエラーはCatalogError。
 TerrainPatchMesh make_terrain_patch_mesh(TerrainFile& source, std::size_t patch_index,
     std::size_t level_index, double elevation_factor = 1,
-    std::size_t max_working_bytes = 8 * 1024 * 1024);
+    std::size_t max_working_bytes = 8 * 1024 * 1024,
+    const std::function<bool()>& cancelled = {});
 
 enum class TerrainSurfaceMode { none, sphere, terrain };
 
-// eyeは天体固定座標、Rdisplay単位。datum内/上はnone、遠方は原版6度規則でsphere。
+// eyeは天体固定座標、Rdisplay単位。中心はnone（負標高も描画する）、遠方は原版6度規則でsphere。
 TerrainSurfaceMode terrain_surface_mode(Vec3 eye);
 // .13度×2^levelの原版閾値。格子寸法やstored_levelではなく原ordinalを返す。
 std::size_t terrain_level_index(const TerrainPatch& patch, Vec3 eye, bool low_resolution = false);
 
+} // namespace mitaka::gui
+
+namespace mitaka::gui {
+// 地形起伏が届く高度では、基準球に投影した足元と同じ詳細度を使う。
+// 距離・深度には適用しない。入力の眼と出力は天体固定・基準半径単位。
+Vec3 terrain_detail_eye(Vec3 physical_eye, const TerrainHeader& header,
+                        double elevation_factor, double display_radius_km);
+// 着地時に描くLODの三角形との交点。重なるパッチでは最も外側の半径を返す。
+// 描画倍率・display_radiusは描画と同じ値。交点なしはnullopt。
+// 地形ソースは呼出側が安全に開き、専有している必要がある。
+std::optional<double> terrain_landing_radius_km(TerrainFile& source,
+    double latitude_deg, double longitude_deg, double display_radius_km, double elevation_factor,
+    const std::function<bool()>& cancelled = {});
 } // namespace mitaka::gui

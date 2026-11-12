@@ -24,6 +24,9 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     NSMenu *capture = submenu(fileMenu, @"画像を保存");
     for (NSInteger i = 0; i < 3; ++i)
         command(capture, @[@"PNG…", @"JPEG…", @"BMP…"][i], @selector(captureImage:), self).tag = i;
+    NSMenu *flight = submenu(menu, @"着陸・離陸");
+    NSMenuItem *toggleFlight = command(flight, @"着陸・離陸", @selector(toggleFlightMode:), self);
+    toggleFlight.toolTip = @"主画面で S キーを押しても切り替えられます。";
     NSMenu *view = submenu(menu, @"表示");
     command(view, @"視野角を 45° に戻す", @selector(resetViewAngle:), self);
     command(view, @"天体ブラウザ…", @selector(showBrowser:), self, @"f");
@@ -32,7 +35,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(view, @"探査機ブラウザ…", @selector(showSpacecraftBrowser:), self);
     command(view, @"銀河・球状星団の3D表示…", @selector(showGalaxyBrowser:), self);
     command(view, @"天の川銀河の全景（近似）", @selector(showOurGalaxyOverview:), self);
-    command(view, @"旧Plus形式の球状星団・近傍銀河を読み込む", @selector(loadPlusGalaxyCatalogs:), self);
+    command(view, @"旧Plus形式の球状星団・近傍銀河を主画面に読み込む", @selector(loadPlusGalaxyCatalogs:), self);
     command(view, @"画像・動画・音声ブラウザ…", @selector(showMediaBrowser:), self);
     command(view, @"太陽系の小天体を表示", @selector(toggleSmallBodies:), self);
     command(view, @"太陽系の衛星を表示", @selector(toggleSatellites:), self);
@@ -65,7 +68,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(script, @"ローカル Lua を実行…", @selector(runScript:), self);
     command(script, @"信頼したローカルHTML…", @selector(showHtmlBrowser:), self);
     command(script, @"実行を停止", @selector(cancelScript:), self);
-    command(script, @"実行ログ", @selector(showScriptConsole:), self);
+    command(script, @"Lua コンソール", @selector(showScriptConsole:), self);
     [self addTimeMenu:menu];
 }
 - (void)showRadiusDisplay:(id)sender {
@@ -181,8 +184,9 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     [self setMilkyWayMode:static_cast<MilkyWayMode>(sender.tag)];
 }
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(toggleFlightMode:)) return [self canToggleFlightMode];
     if (item.action == @selector(resetViewAngle:))
-        return _model && !_loading && _mode.selectedSegment == 2 && !_horizonProjectionTimer &&
+        return _model && !_loading && _mode.selectedSegment == 2 && !_horizonFlightView &&
             [_horizon viewport].perspective_blend == 0;
     if (item.action == @selector(showRadiusDisplay:)) return _model && !_loading;
     if (item.action == @selector(reloadTerrain:)) return _model && !_loading;

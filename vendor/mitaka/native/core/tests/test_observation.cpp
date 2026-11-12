@@ -1,5 +1,6 @@
 #include "mitaka/observation.hpp"
 #include "mitaka/rotation.hpp"
+#include "mitaka/lunar.hpp"
 
 #include <array>
 #include <cmath>
@@ -98,6 +99,39 @@ void test_roundtrips() {
                    ObservationFrame({35,139}, 2460000).to_equatorial({45,30}), "convenience API");
 }
 
+void test_other_body_frames() {
+    using namespace mitaka;
+    for (double date : {2451545.0, 2460000.5}) {
+        for (const auto& orientation : {planet_orientation(Planet::mars, date), lunar_orientation(date)}) {
+            const ObservationFrame equator({0, 0}, orientation);
+            const auto expected = [](Vec3 axis) { return equatorial_coordinates(j2000_ecliptic_to_equatorial(axis)); };
+            same_direction(equator.to_equatorial({0,90}), expected(orientation.x_axis), "other body zenith");
+            same_direction(equator.to_equatorial({90,0}), expected(orientation.y_axis), "other body east");
+            same_direction(equator.to_equatorial({0,0}), expected(orientation.north_axis), "other body north");
+            for (const auto site : {ObserverSite{35,139}, {-40,-180}, {90,90}, {-90,-90}}) {
+                const ObservationFrame frame(site, orientation);
+                for (const auto input : {HorizontalCoordinates{0,0}, {90,30}, {180,-45}, {270,89}}) {
+                    const auto result = frame.to_horizontal(frame.to_equatorial(input));
+                    near(std::remainder(result.azimuth_deg-input.azimuth_deg,360), 0, 2e-10, "other body azimuth");
+                    near(result.altitude_deg, input.altitude_deg, 1e-12, "other body altitude");
+                }
+            }
+        }
+        same_direction(ObservationFrame({35,139}, date).to_equatorial({33,25}),
+                       ObservationFrame({35,139}, planet_orientation(Planet::earth,date)).to_equatorial({33,25}),
+                       "earth overload agreement");
+    }
+    BodyOrientation bad;
+    bad.y_axis = bad.x_axis;
+    throws<std::invalid_argument>([&]{ObservationFrame frame({0,0}, bad);}, "nonorthogonal orientation");
+    bad = {};
+    bad.north_axis.z = -1;
+    throws<std::invalid_argument>([&]{ObservationFrame frame({0,0}, bad);}, "left-handed orientation");
+    bad = {};
+    bad.x_axis.x = std::numeric_limits<double>::quiet_NaN();
+    throws<std::invalid_argument>([&]{ObservationFrame frame({0,0}, bad);}, "nonfinite orientation");
+}
+
 void test_sidereal_time() {
     using namespace mitaka;
     // USNO 式の J2000 UT1 12h。時刻系変換を含む観測値ではない。
@@ -139,6 +173,7 @@ int main() {
     try {
         test_cardinal_directions();
         test_roundtrips();
+        test_other_body_frames();
         test_sidereal_time();
         test_invalid_input();
         std::cout << "observation: " << checks << " checks passed\n";

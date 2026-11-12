@@ -44,6 +44,46 @@ void rejects_field(NSString *field, id value) {
     rejects([&] { decode_session_state(json_bytes(object)); });
 }
 
+void test_surface_session() {
+    SessionState state;
+    check(!decode_session_state(encode_session_state(state)).surface_site, "old session acquired surface state");
+    auto oldCamera = session_object();
+    [oldCamera[@"solar_camera"] removeObjectForKey:@"physical_space"];
+    check(!decode_session_state(json_bytes(oldCamera)).physical_space, "legacy v9 must retain the schematic camera");
+    state.physical_space = true;
+    check(decode_session_state(encode_session_state(state)).physical_space, "physical space classification lost");
+    oldCamera[@"solar_camera"][@"physical_space"] = @1;
+    rejects([&] { decode_session_state(json_bytes(oldCamera)); });
+    state.physical_space = false;
+    state.surface_site = SurfaceSite{4, -35, 139, minimum_surface_height_km, 210, -30, 42, -3};
+    const auto json = encode_session_state(state);
+    const auto restored = decode_session_state(json);
+    check(restored.surface_site && restored.surface_site->body_index == 4 &&
+          restored.surface_site->terrain_offset_km == -3 && restored.surface_site->roll_deg == 42 &&
+          encode_session_state(restored) == json, "surface site did not roundtrip");
+    state.physical_space = true;
+    rejects([&] { encode_session_state(state); });
+    state.surface_site->height_km = 4200;
+    rejects([&] { encode_session_state(state); });
+    state.surface_site->body_index = 3;
+    const auto orbitSite = decode_session_state(encode_session_state(state));
+    check(orbitSite.physical_space && orbitSite.surface_site->height_km == 4200,
+          "stopped Earth surface navigation above ground must retain its site");
+    state.physical_space = false;
+    rejects([&] { encode_session_state(state); });
+    for (const auto bad : {SurfaceSite{0}, SurfaceSite{11}, SurfaceSite{4, 91},
+                           SurfaceSite{4, 0, 0, 0.1}, SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 91},
+                           SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 0, 0, -4000}}) {
+        state.surface_site = bad;
+        rejects([&] { encode_session_state(state); });
+    }
+    auto object = session_object();
+    object[@"surface_site"] = NSNull.null;
+    rejects([&] { decode_session_state(json_bytes(object)); });
+    object[@"surface_site"] = @{@"body_index": @4};
+    rejects([&] { decode_session_state(json_bytes(object)); });
+}
+
 void test_roundtrip() {
     SessionState state;
     auto json = encode_session_state(state);
@@ -51,6 +91,20 @@ void test_roundtrip() {
     check(encode_session_state(initial) == json, "default state did not roundtrip exactly");
     check(initial.version == 9 && initial.simulation_rate == 3600 && !initial.solar_camera.frame,
           "default values changed");
+    for (const double fov : {0.001, 45.0, 90.0}) {
+        state.solar_camera.vertical_fov_deg = fov;
+        check(decode_session_state(encode_session_state(state)).solar_camera.vertical_fov_deg == fov,
+              "solar camera FOV did not roundtrip");
+    }
+    NSMutableDictionary *old_fov = session_object();
+    [old_fov[@"solar_camera"] removeObjectForKey:@"fov_deg"];
+    check(decode_session_state(json_bytes(old_fov)).solar_camera.vertical_fov_deg == 45,
+          "legacy solar FOV default");
+    for (const double fov : {0.0, -1.0, 90.1}) {
+        state.solar_camera.vertical_fov_deg = fov;
+        rejects([&] { encode_session_state(state); });
+    }
+    state.solar_camera.vertical_fov_deg = 45;
     state.solar_camera.roll(37);
     check(decode_session_state(encode_session_state(state)).solar_camera.roll_deg == 37,
           "camera roll did not roundtrip");
@@ -225,7 +279,7 @@ void test_missing_null_and_types() {
         NSArray *keys = [object[parent] allKeys];
         for (NSString *key in keys) {
             if ([parent isEqualToString:@"solar_camera"] &&
-                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"])) continue;
+                ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"frame_is_orbit"] || [key isEqualToString:@"fov_deg"])) continue;
             if ([parent isEqualToString:@"horizon_viewport"] &&
                 ([key isEqualToString:@"roll_deg"] || [key isEqualToString:@"fov_deg"])) continue;
             object = session_object();
@@ -304,6 +358,62 @@ void test_ranges_and_camera() {
     bad = SessionState{};
     bad.magnitude_limit = std::numeric_limits<double>::infinity();
     rejects([&] { encode_session_state(bad); });
+}
+
+void test_precise_camera() {
+    SessionState state;
+    state.solar_camera.set_target_pc({1e9, -2e9, 3e9});
+    state.solar_camera.translate_target_au({0.001, -0.002, 0.003});
+    const auto json = encode_session_state(state);
+    const auto restored = decode_session_state(json);
+    check(encode_session_state(restored) == json && restored.solar_camera.precise_target &&
+          restored.solar_camera.precise_target->anchor_pc.x == 1e9 &&
+          restored.solar_camera.precise_target->anchor_pc.y == -2e9 &&
+          restored.solar_camera.precise_target->anchor_pc.z == 3e9 &&
+          restored.solar_camera.precise_target->offset_au.x == 0.001 &&
+          restored.solar_camera.precise_target->offset_au.y == -0.002 &&
+          restored.solar_camera.precise_target->offset_au.z == 0.003,
+          "precise camera target did not roundtrip");
+
+    NSData *data = [NSData dataWithBytes:json.data() length:json.size()];
+    auto object = (NSMutableDictionary *)[NSJSONSerialization JSONObjectWithData:data
+        options:NSJSONReadingMutableContainers error:nil];
+    object[@"solar_camera"][@"target"] = @[@1, @2, @3];
+    const auto authoritative = decode_session_state(json_bytes(object));
+    check(authoritative.solar_camera.precise_target &&
+          authoritative.solar_camera.precise_target->anchor_pc.x == 1e9 &&
+          authoritative.solar_camera.target.x != 1,
+          "precise target was not authoritative over legacy target");
+    object[@"solar_camera"][@"target"] = @[@1, @YES, @3];
+    rejects([&] { decode_session_state(json_bytes(object)); });
+    object[@"solar_camera"][@"target"] = @[@1, @2, @3];
+    [object[@"solar_camera"] removeObjectForKey:@"precise_target"];
+    const auto legacy = decode_session_state(json_bytes(object));
+    check(!legacy.solar_camera.precise_target && legacy.solar_camera.target.x == 1 &&
+          legacy.solar_camera.target.y == 2 && legacy.solar_camera.target.z == 3,
+          "legacy v9 target was not restored in AU");
+
+    SessionState edge;
+    edge.solar_camera.set_target_pc({1e40, -1e40, 0});
+    edge.solar_camera.translate_target_au({1e-10, -1e-10, 1e-10});
+    const auto edgeRestored = decode_session_state(encode_session_state(edge));
+    check(edgeRestored.solar_camera.precise_target &&
+          edgeRestored.solar_camera.precise_target->offset_au.x == 1e-10,
+          "precise camera boundary did not roundtrip");
+
+    for (id value in @[NSNull.null, @YES, @1, @"target", @[], @{},
+        @{@"anchor_pc": @[@1, @2, @3]}, @{@"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @2], @"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @YES, @3], @"offset_au": @[@1, @2, @3]},
+        @{@"anchor_pc": @[@1, @2, @3], @"offset_au": @[@1, @"2", @3]},
+        @{@"anchor_pc": @[@(std::numeric_limits<double>::max()), @0, @0], @"offset_au": @[@0, @0, @0]}]) {
+        auto invalid = session_object();
+        invalid[@"solar_camera"][@"precise_target"] = value;
+        rejects([&] { decode_session_state(json_bytes(invalid)); });
+    }
+    auto invalid = state;
+    invalid.solar_camera.precise_target->offset_au.x = std::numeric_limits<double>::infinity();
+    rejects([&] { encode_session_state(invalid); });
 }
 
 void test_display_option_boundaries() {
@@ -395,6 +505,8 @@ void test_plus_time_zone() {
     check(!decode_session_state(default_json).plus_time_zone, "default timezone was inferred");
     check(session_object()[@"plus_time_zone"] == NSNull.null, "absent timezone was not encoded as null");
     SessionState state;
+    // 整数秒が JD の浮動小数点で近似されても保存・復元で値を変えない。
+    state.julian_date = mitaka::julian_date({2000,1,2,3,4,5});
     state.time_settings.utc_offset_minutes = 540;
     check(!decode_session_state(encode_session_state(state)).plus_time_zone,
           "UI offset was copied into an unset Plus timezone");
@@ -403,6 +515,8 @@ void test_plus_time_zone() {
         state.plus_time_zone = PlusTimeZone(seconds);
         const auto json = encode_session_state(state);
         const auto restored = decode_session_state(json);
+        check(restored.julian_date == state.julian_date,
+              "calendar-adjacent Julian date changed during session restore");
         check(restored.plus_time_zone && restored.plus_time_zone->seconds_west_of_utc == seconds,
               "explicit Plus timezone changed or became unset");
         check(restored.time_settings.utc_offset_minutes == 540,
@@ -455,6 +569,10 @@ void test_json_limits() {
 
 void test_layer_roundtrip_and_boundaries() {
     SessionState state;
+    check(state.small_bodies.orbit_sampling.sample_count == 201, "new sessions start with 200 orbit intervals");
+    state.small_bodies.orbit_sampling.sample_count = 129;
+    check(decode_session_state(encode_session_state(state)).small_bodies.orbit_sampling.sample_count == 129,
+          "explicitly saved 129-point sampling survives a v9 roundtrip");
     const std::string raw_key("\x82\xa0.dat");
     state.small_bodies.visible = true;
     state.small_bodies.kinds = {{{false,true,false,true}, {true,false,true,false}, {true,true,true,true}}};
@@ -544,9 +662,11 @@ void test_layer_roundtrip_and_boundaries() {
 int main() {
     @autoreleasepool {
         try {
+            test_surface_session();
             test_roundtrip();
             test_missing_null_and_types();
             test_ranges_and_camera();
+            test_precise_camera();
             test_display_option_boundaries();
             test_v6_display_boundaries();
             test_plus_time_zone();
