@@ -1,5 +1,21 @@
 # 検証記録
 
+## 2026-11-12　PR #8 とローカル5件の統合検証
+
+PR #8 の `8335aba` に、Lua 対話コンソール（`54f75fe`）、固定マニュアルの所在監査（`8822e19`）、火星連続降下の回帰（`2318686`）、描画品質ダイアログ（`a5c9ce4`）、Lua 5.4 互換監査（`35089e9`）を統合した。個別小惑星軌道の `3c10fcb` は PR #8 の `eb913ea` で取り込み済みで、`a59e2ad` の明示平均運動も保持した。
+
+macOS 26.6.2 / arm64 の同一ホストで、統合コミット `ebca717` を検証した。専用ビルドディレクトリ `BUILD_DIR=build-pr8-integration` を使い、同梱の `resources/` を一時ディレクトリに複写して Earth・Mars の LFS 実体を展開した。その `data` ディレクトリの絶対パスを `DATA_ROOT` に指定した。
+
+| 実行対象 | 結果 |
+| --- | --- |
+| ルートの `make build`、`make test` | 終了 0。コンソール UI 29 checks、helper 実行回帰、描画品質ダイアログ 107 checks を含む。 |
+| `make data-test`、`make reference-test` | 終了 0。公式比較は CF96 5,427、自転 33,129、月 12,108、大気 12,606＋792、食 7,993、天の川 22。 |
+| GUI の `terrain-real-data-test` | 終了 0。地球・火星の既存試験に加え、火星の負標高地点で降下中に地形面から約 19.84 km・0.71 km の表示カメラに対応する地形との交点を観測し、着地後は実地形面上 2 m のカメラと一致した。観測した高度や公開世代数は試験の固定値にはしていない。 |
+| GUI の `lua-compatibility-test` | 終了 0、168 checks。同梱スクリプト 12 本はコンパイルのみで、9 本を受理、日本語 3 本で既知のエスケープエラーを確認した。原本は実行していない。 |
+| `make smoke`、`git lfs fsck` | 終了 0。AppKit の地形着陸、月への連続飛行、実タイマーによる中断・再開・到着を通過した。 |
+
+`shasum -a 256 -c verification/lua04-script-SHA256SUMS` は 12 件すべて一致した。旧 Plus 実機との比較、Intel Mac、macOS 13、sanitizer は今回再実施していない。固定 PDF/CHM は未収録で、マニュアルを開く UI は対象外。[今回の gate 判定](temp_gates/2026-11-12-14-41-11/)。
+
 ## 2026-11-11: 火星への連続降下中の地形更新
 
 11月6日の修正（`215d9a2`）は画面外の地形を三角形上限に数えていた問題に対するもの。同じ日時での連続降下では、現行の描画経路で地形更新の停止は再現しなかった。飛行タイマー（公称30 Hz）の [`advanceFlightAtTime:`](vendor/mitaka/native/gui/src/SolarSystemNavigation.mm) が高度からカメラを更新して再描画を要求し、[`drawRect:`](vendor/mitaka/native/gui/src/SolarSystemView.mm) が [`refreshTerrain`](vendor/mitaka/native/gui/src/SolarTerrain.mm) を呼ぶ。[地形の世代管理](vendor/mitaka/native/gui/include/terrain_generation_coordinator.hpp)は計算中の要求を完了させ、その間の入力は最新の1件にまとめる。公開時は地形と計算元のカメラ・天体を組にし、描画側でも要求の一致を検査する。降下開始時の旧視点の破棄と、降下の各 tick を区別する。

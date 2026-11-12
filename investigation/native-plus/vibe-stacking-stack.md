@@ -26,6 +26,7 @@
 
 - 公開状態: 最初の 6 行は個別の draft PR として作成済み。以降の行の `local-only` は個別 PR がないことを示し、統合済みの変更は下記の累積 Draft PR に含まれる。
   - 累積統合: [Draft PR #8](https://github.com/mocho271828/Mitaka_plus/pull/8)。head は `codex/mitaka-08f-surface-session-integrated`、base は PR #7 の `codex/mitaka-04c-large-scale-continuity`。2026-11-07 のユーザー指示により、`84a6867` から `c7e7dfa` までの53コミットを含む現在ブランチを push し、通常のレビュー枠6件とは別の確認用 Draft として追加した。後続の文書更新も同じ PR に含める。
+  - 2026-11-12 に Lua 対話コンソール、マニュアル所在監査、描画品質ダイアログ、Lua 5.4 互換監査、火星連続降下回帰を統合した。個別小惑星軌道 `3c10fcb` の内容は `eb913ea` で統合済み。今回の同時検証と適用範囲は [検証記録](../../VALIDATION.md) に記載した。
   - PR #8 は複数単位の累積差分であり、直近の CAM-08 だけの PR ではない。個別単位のレビュー完了・受入・マージを意味せず、通常の分割方針とレビュー枠は変更しない。別チャットの Rust 移行計画の未 commit 文書は含めていない。
   - 1: [PR #2](https://github.com/mocho271828/Mitaka_plus/pull/2)、2: [PR #3](https://github.com/mocho271828/Mitaka_plus/pull/3)、3: [PR #4](https://github.com/mocho271828/Mitaka_plus/pull/4)、4: [PR #5](https://github.com/mocho271828/Mitaka_plus/pull/5)、4b: [PR #6](https://github.com/mocho271828/Mitaka_plus/pull/6)、4c: [PR #7](https://github.com/mocho271828/Mitaka_plus/pull/7)。各 PR の base は直前の親ブランチ。
 - 実装状態: `implemented` は行の範囲を実装・検証済み、`partial` は一部を実装済みで行の受入条件が残る、`in-progress` は現在統合中、`not-started` は今回の作業未着手を表す。既存コードがある項目も今回の受入検証は未着手という意味であり、既存機能が未実装との意味ではない。
@@ -108,8 +109,8 @@
 | 46 | `codex/mitaka-46-language-switch` | `codex/mitaka-45-external-data` | P3: DATA-05 | 翻訳データの共存と言語切替を実現する | 2 言語、文字コード、未翻訳、切替と保存 | `local-only` | `not-started` | yes* |
 | 47 | `codex/mitaka-47-window-layout` | `codex/mitaka-46-language-switch` | P3: UI-02, UI-06, UI-08 | ウィンドウ配置の保存と複数画面出力を整える | 全画面、再起動、画面消失、物理複数画面の同期 | `local-only` | `not-started` | yes* |
 | 48 | `codex/mitaka-48-snapshot-options` | `codex/mitaka-47-window-layout` | P3: UI-03 | スナップショットの寸法・透明背景・保存操作を実現する | 形式別、寸法境界、透明、保存先と再読込 | `local-only` | `not-started` | yes* |
-| 49 | `codex/mitaka-49-settings-dialog` | `codex/mitaka-48-snapshot-options` | P3: UI-04 | 描画品質・操作スタイル設定ダイアログを実現する | 全設定、検証、再起動復元 | `local-only` | `not-started` | yes* |
-| 50 | `codex/mitaka-50-documentation` | `codex/mitaka-49-settings-dialog` | P3: UI-07 | 同梱マニュアルと明示された文書を開く操作を実現する | 文書不在、パス・URL、起動失敗、既存信頼境界 | `local-only` | `not-started` | yes* |
+| 49 | `codex/mitaka-49-settings-dialog` | `codex/mitaka-48-snapshot-options` | P3: UI-04 | 描画品質・操作スタイル設定ダイアログを実現する | 全設定、検証、再起動復元。描画品質4項目を統合。操作スタイルは未対応。 | `local-only` | `partial` | yes* |
+| 50 | `codex/mitaka-50-documentation` | `codex/mitaka-49-settings-dialog` | P3: UI-07 | 同梱マニュアルと明示された文書を開く操作を実現する | 文書不在、パス・URL、起動失敗、既存信頼境界。旧メニューが参照する PDF/CHM の所在を監査。実資料と使用条件が未確認で、表示 UI は保留。 | `local-only` | `partial` | yes* |
 | 51 | `codex/mitaka-51-projection-control` | `codex/mitaka-50-documentation` | P3: UI-09, UI-10 | 投影フェードとポインターの制御を実現する | 補間中再指定、3 成分往復、投影のみへの反映 | `local-only` | `not-started` | yes* |
 | 52 | `codex/mitaka-52-text-quality` | `codex/mitaka-51-projection-control` | P3: UI-11, RENDER-01 | テキスト・情報表示と文字品質を独立設定する | 文字倍率・ルビ・情報表示、設定復元、画素比較 | `local-only` | `not-started` | yes* |
 | 53 | `codex/mitaka-53-explicit-rendering` | `codex/mitaka-52-text-quality` | P3: RENDER-02 | 明示描画と安全なフレーム出力を実現する | フレーム番号、サイズ・出力パターン境界、出力先 | `local-only` | `not-started` | yes* |
@@ -118,8 +119,8 @@
 | 56 | `codex/mitaka-56-initial-state` | `codex/mitaka-55-memory-state` | P3: STATE-03 | 初期状態の保存・解除・起動時復元を実現する | 起動優先順位、欠損、非実行 JSON、自動コード実行の禁止 | `local-only` | `not-started` | yes* |
 | 57 | `codex/mitaka-57-script-editor` | `codex/mitaka-56-initial-state` | P3: LUA-02 | 明示実行できるスクリプトエディタを実現する | 新規・保存・読込・実行・取消、信頼済み選択 | `local-only` | `not-started` | yes* |
 | 58 | `codex/mitaka-58-script-recording` | `codex/mitaka-57-script-editor` | P3: LUA-02 | 通常操作とカメラ状態を区別して記録する | 記録と再生、途中停止、明示カメラ記録 | `local-only` | `not-started` | yes* |
-| 59 | `codex/mitaka-59-script-console` | `codex/mitaka-58-script-recording` | P3: LUA-03 | 対話コンソールの入力と履歴を実現する | 式・文、履歴、位置付きエラー、失敗後の継続 | `local-only` | `not-started` | yes* |
-| 60 | `codex/mitaka-60-lua-compat` | `codex/mitaka-59-script-console` | P3: LUA-04 | Lua 5.1 と固定 5.4 の互換性と必要な shim を検証する | 旧スクリプト、構文・標準関数、取消、互換性を記録 | `local-only` | `not-started` | yes* |
+| 59 | `codex/mitaka-59-script-console` | `codex/mitaka-58-script-recording` | P3: LUA-03 | 対話コンソールの入力と履歴を実現する | 式・文、履歴、位置付きエラー、失敗後の継続。明示入力と履歴を統合。旧 Plus の環境寿命・履歴の一致は未確認。 | `local-only` | `implemented` | yes* |
+| 60 | `codex/mitaka-60-lua-compat` | `codex/mitaka-59-script-console` | P3: LUA-04 | Lua 5.1 と固定 5.4 の互換性と必要な shim を検証する | 旧スクリプト、構文・標準関数、取消、互換性を記録。標準機能と原本12本をコンパイルして確認。旧5.1実機比較・原本の実行は未実施。 | `local-only` | `partial` | yes* |
 | 61 | `codex/mitaka-61-host-api-audit` | `codex/mitaka-60-lua-compat` | P3: LUA-01 | 各実装単位に分散した Lua API の残件を監査する | 対象別契約、別名、未対応名付きエラー、信頼境界 | `local-only` | `not-started` | yes* |
 | 62 | `codex/mitaka-62-input-controls` | `codex/mitaka-61-host-api-audit` | P3: INPUT-02 | 方向入力・速度・慣性の操作 API を実現する | 開始停止、速度境界、フォーカス喪失、ヘルプ | `local-only` | `not-started` | yes* |
 | 63 | `codex/mitaka-63-input-bindings` | `codex/mitaka-62-input-controls` | P3: INPUT-01 | 入力デバイスのショートカット登録を実現する | 登録・上書き・解除、反復、照会、デバイス切断 | `local-only` | `not-started` | yes* |
