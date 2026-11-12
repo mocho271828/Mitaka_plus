@@ -35,6 +35,7 @@ TERRAIN_OBJECTS = $(addprefix $(BUILD_DIR)/,terrain_mesh.o terrain_surface.o ter
 OBJECTS += $(addprefix $(BUILD_DIR)/,terrain_landing.o TerrainLandingController.o)
 OBJECTS += $(GALAXY_OBJECTS) $(TERRAIN_OBJECTS) $(BUILD_DIR)/GalaxyOverlay.o $(BUILD_DIR)/OurGalaxyRenderer.o $(BUILD_DIR)/OurGalaxyRadiativeRenderer.o $(BUILD_DIR)/HipSpatialRenderer.o $(BUILD_DIR)/our_galaxy_navigation.o
 OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o TerrainSurfaceController.o SolarTerrain.o plus_time_calendar.o plus_time_animation.o AppScriptingTime.o radius_display.o RadiusDisplayController.o)
+OBJECTS += $(BUILD_DIR)/ScriptConsoleController.o
 OBJECTS += $(BUILD_DIR)/SolarScriptTarget.o $(BUILD_DIR)/SolarScriptOrientation.o
 
 ifneq ($(ARCH),)
@@ -59,8 +60,8 @@ all: core $(OBJECTS) $(SCRIPT_HELPER)
 $(LUA_LIBRARY): tools/build_lua.sh vendor/lua-5.4.9.tar.gz
 	bash tools/build_lua.sh "$(LUA_BUILD)" "$(ARCH)" "$(SANITIZE)"
 
-$(SCRIPT_HELPER): src/ScriptWorker.mm $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o $(LUA_LIBRARY) core
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I"$(LUA_BUILD)/include" -fobjc-arc $< $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o "$(CORE_LIBRARY)" "$(LUA_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+$(SCRIPT_HELPER): src/ScriptWorker.mm include/lua_console.hpp $(BUILD_DIR)/lua_console.o $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o $(LUA_LIBRARY) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I"$(LUA_BUILD)/include" -fobjc-arc $< $(BUILD_DIR)/lua_console.o $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o $(BUILD_DIR)/plus_time_calendar.o $(BUILD_DIR)/radius_display.o "$(CORE_LIBRARY)" "$(LUA_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
 
 $(BUILD_DIR)/test_script_controller: tests/test_script_controller.mm $(BUILD_DIR)/ScriptController.o $(BUILD_DIR)/script_transport.o $(BUILD_DIR)/star_brightness.o $(BUILD_DIR)/plus_time_step.o $(BUILD_DIR)/plus_time_playback.o core
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
@@ -616,3 +617,19 @@ script-place-controller-test: $(BUILD_DIR)/test_script_place_controller $(SCRIPT
 	"$(BUILD_DIR)/test_script_place_controller" "$(abspath $(SCRIPT_HELPER))" "$${DATA_ROOT:?Set DATA_ROOT}"
 .PHONY: script-place-controller-test
 data-test: script-place-controller-test
+
+# LUA-03: 対話 UI と既存 helper の実行契約を個別に検証する。
+$(BUILD_DIR)/lua_console.o: src/lua_console.cpp include/lua_console.hpp $(LUA_LIBRARY)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I"$(LUA_BUILD)/include" -MMD -MP -c $< -o "$@"
+
+$(BUILD_DIR)/test_script_console: tests/test_script_console.mm $(BUILD_DIR)/ScriptConsoleController.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
+
+$(BUILD_DIR)/test_script_console_execution: tests/test_script_console_execution.mm $(addprefix $(BUILD_DIR)/,ScriptController.o script_transport.o star_brightness.o plus_time_step.o plus_time_playback.o plus_time_calendar.o radius_display.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+
+.PHONY: script-console-test
+script-console-test: $(BUILD_DIR)/test_script_console $(BUILD_DIR)/test_script_console_execution $(SCRIPT_HELPER)
+	"$(BUILD_DIR)/test_script_console"
+	"$(BUILD_DIR)/test_script_console_execution" "$(abspath $(SCRIPT_HELPER))"
+controller-test: script-console-test

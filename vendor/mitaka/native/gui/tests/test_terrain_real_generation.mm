@@ -1,6 +1,7 @@
 #import "../src/SolarSystemViewInternal.h"
 #import "SolarDateUpdate.h"
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 using namespace mitaka;
@@ -8,6 +9,7 @@ using namespace mitaka::gui;
 bool solar_scene_opaque_at(const SolarScene& scene, NSPoint point);
 struct Record { double date; double yaw; bool coherent; bool realTerrain; };
 @interface SolarSystemView (Validation)
+- (double)takeFlightClockForTest;
 - (void)configureNearBody:(std::size_t)index;
 - (void)checkNegativeRoundtrip:(std::size_t)index root:(const char *)root;
 - (void)configureSurface:(SurfaceSite)site;
@@ -21,6 +23,10 @@ struct Record { double date; double yaw; bool coherent; bool realTerrain; };
 - (void)refreshTerrain {}
 @end
 @implementation SolarSystemView (Validation)
+- (double)takeFlightClockForTest {
+    [self invalidateFlightTimer];
+    return _lastFlightTime;
+}
 - (void)configureSurface:(SurfaceSite)site {
     _navigation.set_site(site);
     _surfaceActive = YES;
@@ -198,6 +204,103 @@ static void constellationOcclusion(const char *root) {
         }
     }
 }
+static std::optional<double> publishedMarsDistance(SolarSystemView *view, const std::filesystem::path &source) {
+    const auto scene = [view displayedScene];
+    const auto snapshot = scene.terrain ? (*scene.terrain)[4] : nullptr;
+    if (!snapshot) return std::nullopt;
+    require(snapshot->status == TerrainSnapshotStatus::ready, snapshot->diagnostic.c_str());
+    require(scene.surface_body == 4 && scene.julian_date == 2451545 &&
+        snapshot->source_path == source,
+        "descent published the wrong body, date or terrain source");
+    const auto *frame = solar_terrain_frame(scene, 4);
+    require(frame && frame->mode == TerrainSurfaceMode::terrain && frame->patches_read > 0 &&
+        std::any_of(frame->samples.begin(), frame->samples.end(), [](const auto &sample) {
+            return std::isfinite(sample.distance_au) && sample.distance_au > 0;
+        }), "displayed Mars camera has no matching real terrain intersections");
+    return scene.camera.distance_au;
+}
+
+static void marsDescent(const SolarBodies &bodies, const char *root) {
+    const auto source = std::filesystem::canonical(root / terrain_source_relative_path(TerrainBody::mars));
+    SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 196, 180)];
+    [view setBodies:bodies];
+    [view setObservationSite:{0, 0} julianDate:2451545];
+    view.planetDisplayOptions = {true, false, false, false};
+    [view setTerrainDataDirectory:[NSString stringWithUTF8String:root]];
+    // 降下中の公開カメラとは独立に、同じ負標高地点の実データから各高度の基準を求める。
+    TerrainLandingRequest landing;
+    landing.data_directory = root;
+    landing.body = TerrainBody::mars;
+    landing.latitude_deg = 31.5;
+    landing.longitude_deg = 35.5;
+    landing.display_radius_km = surface_body_info(4).radius_km;
+    const auto expected = prepare_terrain_landing(landing);
+    require(expected.status == TerrainSnapshotStatus::ready && expected.radius_km &&
+        *expected.radius_km < landing.display_radius_km, "negative real Mars landing surface required");
+    const double groundRadiusKm = *expected.radius_km;
+    SurfaceNavigation navigation;
+    navigation.set_site({4, landing.latitude_deg, landing.longitude_deg, 20, 45, -20});
+    [view setCameraState:navigation.camera(bodies)];
+    [view selectBody:4];
+    constexpr double duration = 60;
+    NSString *error = nil;
+    if (![view descendToSelectedSurfaceWithDuration:duration error:&error])
+        throw std::runtime_error(error ? error.UTF8String : "could not start Mars descent");
+    const double start = [view takeFlightClockForTest];
+    const double initialDistance = [view cameraState].distance_au;
+    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
+        pixelsWide:196 pixelsHigh:180 bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
+        isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
+    NSGraphicsContext *context = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap];
+    require(context != nil, "could not create descent drawing context");
+    const auto draw = [&] {
+        [NSGraphicsContext saveGraphicsState];
+        NSGraphicsContext.currentContext = context;
+        [view drawRect:view.bounds];
+        [NSGraphicsContext restoreGraphicsState];
+    };
+    draw();
+    double elapsed = 0, lastDistance = initialDistance;
+    std::optional<double> highKm, lowKm;
+    unsigned intermediate = 0, lagging = 0;
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+    while (elapsed < duration && deadline.timeIntervalSinceNow > 0) {
+        @autoreleasepool {
+            // 遅い実行環境でも両高度帯を観測できるよう時計を減速し、地形待ちの間も入力と描画を続ける。
+            const bool slow = (!highKm && elapsed >= duration * 0.15) || (!lowKm && elapsed >= duration * 0.65);
+            elapsed = std::min(duration, elapsed + (slow ? 0.005 : 0.25));
+            [view advanceFlightAtTime:start + elapsed];
+            draw();
+            [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
+            const auto distance = publishedMarsDistance(view, source);
+            if (view.flightAnimating && distance && *distance != lastDistance) {
+                require(*distance < lastDistance && *distance >= [view cameraState].distance_au,
+                    "Mars terrain frames did not follow descending camera order");
+                if (*distance > [view cameraState].distance_au) ++lagging;
+                lastDistance = *distance;
+                ++intermediate;
+                const double heightKm = *distance * astronomical_unit_km - groundRadiusKm;
+                if (heightKm > 1 && !highKm) highKm = heightKm;
+                if (heightKm > minimum_surface_height_km && heightKm <= 1 && !lowKm) lowKm = heightKm;
+            }
+        }
+    }
+    require(highKm && lowKm, "continuous descent starved Mars terrain above or below 1 km");
+    require(!view.flightAnimating, "Mars descent did not finish");
+    const double finalDistance = [view cameraState].distance_au;
+    require(std::abs(finalDistance * astronomical_unit_km - groundRadiusKm -
+        minimum_surface_height_km) < 1e-6, "Mars descent did not land 2 m above real terrain");
+    deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+    while (publishedMarsDistance(view, source) != finalDistance && deadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.01]];
+    require(publishedMarsDistance(view, source) == finalDistance &&
+        [view matchesDisplayedCamera:[view cameraState] map:[view mapRect]], "landed Mars camera did not get its terrain");
+    [view cancelTerrain];
+    std::cout << "Real Mars descent: " << intermediate << " intermediate frames, " << lagging
+              << " behind live camera; terrain clearances (km) " << *highKm << ", " << *lowKm
+              << "; matching landed frame (2 m above real terrain)" << std::endl;
+}
+
 static void run(std::size_t index, const char *root) {
     RealTerrainView *view=[[RealTerrainView alloc] initWithFrame:NSMakeRect(0,0,196,180)];
     SolarBodies bodies{}; const std::array<Body,11> ids{Body::sun,Body::mercury,Body::venus,Body::earth,Body::mars,Body::jupiter,Body::saturn,Body::uranus,Body::neptune,Body::pluto,Body::moon};
@@ -248,6 +351,7 @@ static void run(std::size_t index, const char *root) {
     require(found,"missing terrain diagnostic absent");
     std::cout << (index==3 ? "Real Earth" : "Real Mars") << " resize: 180x120 matching frame; missing root: datum sphere and explicit source diagnostic" << std::endl;
     [view cancelTerrain];
+    if (index == 4) marsDescent(bodies, root);
 }
 int main(int argc,char **argv) { @autoreleasepool { [NSApplication sharedApplication]; try {
     require(argc==2,"expected root"); constellationOcclusion(argv[1]); run(3,argv[1]); run(4,argv[1]); return 0;

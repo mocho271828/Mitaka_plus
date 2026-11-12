@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "ScriptController.h"
 #include "script_transport.hpp"
+#include "lua_console.hpp"
 #include "star_brightness.hpp"
 #include "mitaka/astronomy.hpp"
 #include <lua.hpp>
@@ -912,7 +913,8 @@ int traceback(lua_State *state) {
 }
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
-        if (argc != 2 || ::setpgid(0, 0) != 0) return 2;
+        const bool consoleMode = argc == 3 && std::strcmp(argv[2], "--console") == 0;
+        if ((argc != 2 && !consoleMode) || ::setpgid(0, 0) != 0) return 2;
         try {
             std::ifstream input(argv[1], std::ios::binary);
             if (!input) throw std::runtime_error("Cannot open script file");
@@ -927,8 +929,16 @@ int main(int argc, const char *argv[]) {
             *static_cast<Context **>(lua_getextraspace(state.get())) = &runtime;
             install(state.get());
             const std::string name = std::string("@") + argv[1];
-            int status = luaL_loadbufferx(state.get(), source.data(), source.size(), name.c_str(), "t");
-            if (status == LUA_OK) {
+            int status = consoleMode ? execute_console_source(state.get(), source, traceback) :
+                luaL_loadbufferx(state.get(), source.data(), source.size(), name.c_str(), "t");
+            if (consoleMode && status == LUA_OK) {
+                std::size_t length = 0;
+                const char *result = lua_tolstring(state.get(), -1, &length);
+                if (length) {
+                    NSString *text = [[NSString alloc] initWithBytes:result length:length encoding:NSUTF8StringEncoding];
+                    request(@{@"op":@"log", @"text":text ? text : @"[non-UTF-8 output]"});
+                }
+            } else if (status == LUA_OK) {
                 lua_pushcfunction(state.get(), traceback);
                 lua_insert(state.get(), 1);
                 status = lua_pcall(state.get(), 0, 0, 1);

@@ -6,6 +6,7 @@
 #import "CatalogBrowserController.h"
 #import "HorizonView.h"
 #import "ScriptController.h"
+#import "ScriptConsoleController.h"
 #import "DisplayOutputController.h"
 #import "SmallBodyController.h"
 #import "SatelliteController.h"
@@ -139,9 +140,9 @@ struct ScriptLookTarget {
     RadiusScaleMode _radiusScaleMode;
     BOOL _terminating;
     BOOL _displayPreferencesLoadFailed;
-    NSWindow *_scriptWindow;
+    ScriptConsoleController *_scriptConsole;
+    BOOL _scriptConsoleExecution;
     HtmlBrowserController *_htmlBrowser;
-    NSTextView *_scriptLog;
     NSWindow *_calendarWindow;
     NSWindow *_plusTimeZoneWindow;
     NSButton *_plusTimeZoneEnabledButton;

@@ -1,5 +1,29 @@
 # 検証記録
 
+## 2026-11-11: 火星への連続降下中の地形更新
+
+11月6日の修正（`215d9a2`）は画面外の地形を三角形上限に数えていた問題に対するもの。同じ日時での連続降下では、現行の描画経路で地形更新の停止は再現しなかった。飛行タイマー（公称30 Hz）の [`advanceFlightAtTime:`](vendor/mitaka/native/gui/src/SolarSystemNavigation.mm) が高度からカメラを更新して再描画を要求し、[`drawRect:`](vendor/mitaka/native/gui/src/SolarSystemView.mm) が [`refreshTerrain`](vendor/mitaka/native/gui/src/SolarTerrain.mm) を呼ぶ。[地形の世代管理](vendor/mitaka/native/gui/include/terrain_generation_coordinator.hpp)は計算中の要求を完了させ、その間の入力は最新の1件にまとめる。公開時は地形と計算元のカメラ・天体を組にし、描画側でも要求の一致を検査する。降下開始時の旧視点の破棄と、降下の各 tick を区別する。
+
+既定の3秒降下を実タイマーとオフスクリーンの AppKit 描画で測定した（Apple M4、固定 JD 2451545、緯度・経度 0°、試験用の天体配置、テクスチャなし、各1回）。400×300 と 800×450 で着地前にそれぞれ7世代・6世代の火星地形を公開し、いずれも表示カメラと一致して地形との交点があった。800×450 では入力が基準球面上2 m に着いたのが開始3.112秒後、その高度の地形を公開したのが3.935秒後。途中の入力をすべて描くことや一定の応答時間は保証しない。
+
+[実データ回帰](vendor/mitaka/native/gui/tests/test_terrain_real_generation.mm)を既存の `terrain-real-data-test` に追加した。方位45°・仰角−20°を保ち、火星の高度20 kmから2 mまで、試験時計で飛行を進めながら毎回160×100の地図を描画する。非同期計算は実装どおりに実行し、1 kmの上下でカメラと同じ世代の地形に有限の交点があること、着地後に最終カメラの地形へ到達することを検査する。今回の実行では途中12世代を観測した（17.5253 km、0.421462 kmを含む）。特定の公開回数や遅延時間は要求しない。一時ビルドで飛行中だけ `refreshTerrain` を抑止すると、同じ試験が途中の地形不足を検出して終了コード1になった。
+
+地形ファイルはこの checkout では Git LFS のポインターだったため、同梱 Earth・Mars の LFS オブジェクトを一時的な `DATA_ROOT` に展開し、両方の SHA-256 が[出典記録](vendor/mitaka/native/core/TERRAIN_PROVENANCE.md)と一致することを確認した。実ファイルがある環境では `DATA_ROOT="$PWD/resources/data" make -C vendor/mitaka/native/gui terrain-real-data-test` で再実行できる。同ターゲット、`make build`、`make test`、`make data-test`、`make reference-test`、`make smoke`、`git lfs fsck` はいずれも成功。
+
+固定日時の降下について描画スケジューラの変更を必要とする根拠は得られなかった。日時を連続変更する場合は、新しい日時に古い地形を重ねないよう計算を取り消すため、地形が間に合うまで基準球面になる。この制約は残る。元の操作の視点・負荷は不明で、実画面での操作感、旧 Plus との描画一致、他機種での速度は未検証。原本・依存・方針に変更なし。[今回の gate 検証コピー](temp_gates/2026-11-11-22-15-30/)。
+
+## 2026-11-07: UI-07 同梱マニュアルの所在監査
+
+別 PC との担当調整に従い、旧メニューが指定する PDF/CHM を調査したが、この checkout の resources には未収録だった。取得・再配布や任意 System.openDocument の実装は行わず、[所在監査](investigation/native-plus/manual-availability-audit.md)に制約と再開条件を記録した。文書のみの変更で、ビルド/テストは再実行せず親の LUA-03 の成功結果を継承する。方針原本・依存・データ・Rust文書は変更せず、[gate検証コピー](temp_gates/2026-11-07-03-14-14/)を記入した。
+
+## 2026-11-07: P3 LUA-03 Lua 対話コンソール
+
+独立ブランチ `codex/mitaka-lua-console`（基点 `84a6867`）で、複数行入力、式・文、結果と行番号付きエラー、履歴、取消を実装した。入力ごとに既存 helper の独立 Lua 環境を使い、権限・print・実行制限を維持する。履歴はメモリ内のみという仮定を画面に明記した。
+
+`make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は終了コード0。実画面で正常入力・print・構文/実行エラー後の継続・履歴/下書き・取消を確認した。ダーク表示の文字色修正後、buildと専用UI29checks/実行回帰も成功した。旧版比較、Intel/macOS13実機、sanitizerは未実施。詳細・ログ・仮定・残課題は [LUA-03 検証記録](investigation/native-plus/lua-console-validation.md)、[gate 検証コピー](temp_gates/2026-11-07-03-02-25/) に記録した。
+
+/simplifier-lai は同名skill不在で未実行。既存AppKit・Lua依存と差分を独立レビューし、新規依存・原本変更・Rust文書変更はない。方針とgateはコンソール入力の契約を追記した。push・他ブランチ統合・公開設定変更は行わない。
+
 ## 2026-11-07: P2 CAM-08 天体ブラウザの右クリック
 
 天体ブラウザ検索結果の右クリック行を選択し、メニューから選択または中央表示を行う。元の基点 `a8b4a65` では対象試験 30 件と 5 種の make が成功している。統合基点は `cab9b90` であり、その検証結果は元の基点の結果と区別する。

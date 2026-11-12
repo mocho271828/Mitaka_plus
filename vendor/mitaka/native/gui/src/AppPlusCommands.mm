@@ -65,7 +65,7 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     command(script, @"ローカル Lua を実行…", @selector(runScript:), self);
     command(script, @"信頼したローカルHTML…", @selector(showHtmlBrowser:), self);
     command(script, @"実行を停止", @selector(cancelScript:), self);
-    command(script, @"実行ログ", @selector(showScriptConsole:), self);
+    command(script, @"Lua コンソール", @selector(showScriptConsole:), self);
     [self addTimeMenu:menu];
 }
 - (void)showRadiusDisplay:(id)sender {

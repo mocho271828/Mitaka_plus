@@ -579,7 +579,7 @@ static NSString *const scriptCompatibilityNote =
         state.target_browser = controller->_browser.window.visible;
         state.time_setting = controller->_calendarWindow.visible;
         state.place_setting = controller->_observerWindow.visible;
-        state.script_output = controller->_scriptWindow.visible;
+        state.script_output = controller->_scriptConsole.window.visible;
         state.dual_screen = controller->_displayOutput.projectionVisible;
         return state;
     };
@@ -589,42 +589,42 @@ static NSString *const scriptCompatibilityNote =
     _scripts.output = ^(NSString *text) {
         AppController *controller = weakSelf;
         if (!controller) return;
-        NSTextStorage *storage = controller->_scriptLog.textStorage;
-        // output は print 一回ごとのレコード。文字列内の改行も保持して Lua の行出力に合わせる。
-        [storage appendAttributedString:[[NSAttributedString alloc] initWithString:[text stringByAppendingString:@"\n"]]];
-        // 長時間動くスクリプトの出力でウィンドウのメモリが増え続けることを防ぐ。
-        constexpr NSUInteger limit = 1024 * 1024;
-        if (storage.length > limit) [storage deleteCharactersInRange:NSMakeRange(0, storage.length - limit)];
-        [controller->_scriptLog scrollRangeToVisible:NSMakeRange(storage.length, 0)];
+        [controller->_scriptConsole appendOutput:text];
     };
     _scripts.completion = ^(BOOL succeeded, NSString *message) {
         AppController *controller = weakSelf;
         if (!controller) return;
         controller->_scripts.output(message);
-        if (!succeeded) [controller showError:message];
+        controller->_scriptConsole.running = NO;
+        const BOOL consoleExecution = controller->_scriptConsoleExecution;
+        controller->_scriptConsoleExecution = NO;
+        if (!succeeded && !consoleExecution) [controller showError:message];
     };
 }
 - (void)showScriptConsole:(id)sender {
     (void)sender;
-    if (!_scriptWindow) {
-        _scriptWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 740, 420)
-            styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
-            backing:NSBackingStoreBuffered defer:NO];
-        _scriptWindow.releasedWhenClosed = NO;
-        _scriptWindow.title = @"ローカル Lua スクリプト";
-        NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:_scriptWindow.contentView.bounds];
-        scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-        scroll.hasVerticalScroller = YES;
-        _scriptLog = [[NSTextView alloc] initWithFrame:scroll.bounds];
-        _scriptLog.editable = NO;
-        _scriptLog.string = scriptCompatibilityNote;
-        _scriptLog.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
-        _scriptLog.autoresizingMask = NSViewWidthSizable;
-        scroll.documentView = _scriptLog;
-        [_scriptWindow.contentView addSubview:scroll];
-        [_scriptWindow center];
+    [self configureScripts];
+    if (!_scriptConsole) {
+        _scriptConsole = [ScriptConsoleController new];
+        [_scriptConsole appendOutput:scriptCompatibilityNote];
+        __weak AppController *weakSelf = self;
+        _scriptConsole.runSource = ^BOOL(NSString *source, NSError **error) {
+            AppController *controller = weakSelf;
+            if (!controller || !controller->_model || controller->_loading) {
+                if (error) *error = [NSError errorWithDomain:@"MitakaScript" code:1
+                    userInfo:@{NSLocalizedDescriptionKey:@"天文データが使用できません。"}];
+                return NO;
+            }
+            controller->_scripts.workingDirectoryURL = [NSURL fileURLWithPath:
+                controller->_activePath.stringByDeletingLastPathComponent isDirectory:YES];
+            if (![controller->_scripts runConsoleSource:source error:error]) return NO;
+            controller->_scriptConsoleExecution = YES;
+            return YES;
+        };
+        _scriptConsole.cancelExecution = ^{ [weakSelf cancelScript:nil]; };
     }
-    [_scriptWindow makeKeyAndOrderFront:nil];
+    _scriptConsole.running = _scripts.running;
+    [_scriptConsole showWindow:nil];
 }
 - (void)runScript:(id)sender {
     (void)sender;
@@ -638,11 +638,17 @@ static NSString *const scriptCompatibilityNote =
     panel.message = @"信頼したローカル Lua ファイルを選択してください。ファイルの読み書きとコマンド実行を許可して実行します。";
     [panel beginSheetModalForWindow:_window completionHandler:^(NSModalResponse result) {
         if (result != NSModalResponseOK || !self->_model || self->_loading) return;
+        if (self->_scripts.running) {
+            [self showError:@"実行中の Lua を停止してからファイルを選択してください。"];
+            return;
+        }
         [self showScriptConsole:nil];
-        self->_scriptLog.string = [NSString stringWithFormat:@"実行: %@\n%@", panel.URL.path, scriptCompatibilityNote];
+        [self->_scriptConsole clearOutput];
+        [self->_scriptConsole appendOutput:[NSString stringWithFormat:@"実行: %@\n%@", panel.URL.path, scriptCompatibilityNote]];
         self->_scripts.workingDirectoryURL = [NSURL fileURLWithPath:self->_activePath.stringByDeletingLastPathComponent isDirectory:YES];
         NSError *error = nil;
         if (![self->_scripts runFile:panel.URL error:&error]) [self showError:error.localizedDescription];
+        self->_scriptConsole.running = self->_scripts.running;
     }];
 }
 - (void)showHtmlBrowser:(id)sender {
@@ -668,6 +674,7 @@ static NSString *const scriptCompatibilityNote =
                 if (failure) *failure = error.localizedDescription;
                 return NO;
             }
+            controller->_scriptConsole.running = YES;
             controller->_scripts.output([NSString stringWithFormat:@"ローカル HTML から実行: %@", file.path]);
             return YES;
         };
@@ -1326,7 +1333,7 @@ static NSString *const scriptCompatibilityNote =
                 if (action.enabled) [self showObserver:nil]; else [_observerWindow orderOut:nil];
                 break;
             case ScriptActionKind::set_script_output:
-                if (action.enabled) [self showScriptConsole:nil]; else [_scriptWindow orderOut:nil];
+                if (action.enabled) [self showScriptConsole:nil]; else [_scriptConsole.window orderOut:nil];
                 break;
             case ScriptActionKind::set_dual_screen:
                 if (action.enabled) [[self displayOutput] showProjection]; else [_displayOutput closeProjection];
