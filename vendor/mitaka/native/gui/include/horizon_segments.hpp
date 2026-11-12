@@ -10,7 +10,7 @@ struct HorizonSamplingLimits {
     double max_source_step_deg = 2;
     double screen_tolerance = 0.25;
     std::size_t max_evaluations = 8193;
-    unsigned max_depth = 20;
+    unsigned max_depth = 48;
 };
 
 struct HorizonSegmentProjection {
@@ -27,7 +27,7 @@ struct HorizonSegmentProjection {
 // 円筒投影の極では左右を分離し、継ぎ目・画面の clip は project_sky_segment を使う。
 // 下半球も返す。暗く描くかどうかは描画側の責務。
 // viewport は zoom [1,180]、中心高度 [-90,90]。不正入力は invalid_argument。
-// max_evaluations [5,1048577]、max_depth [1,24]、step (0,2]、tolerance (0,4]。
+// max_evaluations [5,1048577]、max_depth [1,52]、step (0,2]、tolerance (0,4]。
 HorizonSegmentProjection project_equatorial_segment_to_horizon(
     EquatorialCoordinates start, EquatorialCoordinates end, const ObservationFrame& frame,
     const HorizonViewport& viewport, double width, double height,

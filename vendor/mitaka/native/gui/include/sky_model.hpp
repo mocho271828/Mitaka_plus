@@ -89,6 +89,16 @@ struct SkyViewport {
     double roll_deg = 0;
 };
 
+// 地平投影は視野角を正本とし、全天図の倍率制限から独立させる。
+struct HorizonProjectionViewport {
+    double center_ra_deg = 180;
+    double center_dec_deg = 0;
+    double vertical_fov_deg = 180;
+    double perspective_blend = 0;
+    double roll_deg = 0;
+    double perspective_fov_deg = 45;
+};
+
 struct ScreenPoint { double x, y; };
 struct ScreenSegment { ScreenPoint start, end; };
 
@@ -117,16 +127,19 @@ std::vector<ScreenSegment> project_sky_segment(EquatorialCoordinates start,
 // 地平図用。合成赤経 = 360 - 方位、高度を視野中心に合わせて球面回転し、
 // perspective_blend = 0 は全天図と同じ経緯度投影、1 は縦視野角45度の透視投影。
 // 中間値では各画素が指す経度と緯度を補間する。逆変換も同じ座標系を返す。
-EquatorialCoordinates rotate_horizon(EquatorialCoordinates coordinates, const SkyViewport& viewport);
+HorizonProjectionViewport normalize_horizon_viewport(HorizonProjectionViewport viewport);
+HorizonProjectionViewport pan_horizon(HorizonProjectionViewport viewport, double delta_x, double delta_y,
+                                      double width, double height);
+EquatorialCoordinates rotate_horizon(EquatorialCoordinates coordinates, const HorizonProjectionViewport& viewport);
 std::optional<ScreenPoint> project_horizon(EquatorialCoordinates coordinates,
-                                         const SkyViewport& viewport,
+                                         const HorizonProjectionViewport& viewport,
                                          double width, double height);
-EquatorialCoordinates unproject_horizon(ScreenPoint point, const SkyViewport& viewport,
+EquatorialCoordinates unproject_horizon(ScreenPoint point, const HorizonProjectionViewport& viewport,
                                         double width, double height);
 // ラスターの画素中心を逆変換する。各軸と視野の計算を画像ごとに共有する。
 class HorizonRasterProjection {
 public:
-    HorizonRasterProjection(const SkyViewport& viewport, std::size_t width, std::size_t height);
+    HorizonRasterProjection(const HorizonProjectionViewport& viewport, std::size_t width, std::size_t height);
     // x < width、y < height が必要。
     EquatorialCoordinates direction(std::size_t x, std::size_t y) const;
 
@@ -137,14 +150,15 @@ private:
     double cos_roll_;
     double sin_roll_;
     double perspective_blend_;
-    double zoom_;
+    double vertical_fov_deg_;
+    double perspective_scale_;
     std::vector<std::array<double, 2>> longitudes_;
     std::vector<std::array<double, 2>> latitudes_;
     std::vector<double> perspective_denominators_;
     std::vector<double> vertical_coordinates_;
 };
 // 可能な範囲でポインター下の方向を維持して拡大する。
-SkyViewport zoom_horizon(SkyViewport viewport, double factor, ScreenPoint anchor,
+HorizonProjectionViewport zoom_horizon(HorizonProjectionViewport viewport, double factor, ScreenPoint anchor,
                          double width, double height);
 
 enum class ObjectKind { star, body };

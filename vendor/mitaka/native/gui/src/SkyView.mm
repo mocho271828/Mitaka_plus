@@ -83,8 +83,34 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     NSSize _backgroundSize;
 }
 
+- (void)setTargetSelectionMode:(NSInteger)mode {
+    if (_targetSelectionMode == mode) return;
+    _targetSelectionMode = mode;
+    [self updateTrackingAreas];
+}
+- (void)updateTrackingAreas {
+    if (_targetSelectionTrackingArea) [self removeTrackingArea:_targetSelectionTrackingArea];
+    _targetSelectionTrackingArea = nil;
+    if (_targetSelectionMode == 1) {
+        _targetSelectionTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+            options:NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect owner:self userInfo:nil];
+        [self addTrackingArea:_targetSelectionTrackingArea];
+        self.window.acceptsMouseMovedEvents = YES;
+    }
+    [super updateTrackingAreas];
+}
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (_targetSelectionMode == 1) self.window.acceptsMouseMovedEvents = YES;
+}
+- (void)mouseMoved:(NSEvent *)event {
+    if (_targetSelectionMode == 1 && !self.hidden)
+        [self pickTargetAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame {
     if ((self = [super initWithFrame:frame])) {
+        _targetSelectionMode = 2;
         _magnitudeLimit = 6.5;
         self.accessibilityElement = YES;
         self.accessibilityRole = NSAccessibilityImageRole;
@@ -353,10 +379,16 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     _lastDragPoint = point;
 }
 - (void)mouseUp:(NSEvent *)event {
-    if (!_model || _dragging) return;
+    if (!_model || _dragging || _targetSelectionMode != 2) return;
     const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    if (!NSPointInRect(point, [self mapRect])) return;
+    [self pickTargetAtPoint:point];
+    if (event.clickCount == 2) [self focusSelection];
+}
+- (void)pickTargetAtPoint:(NSPoint)point {
+    if (!_model) return;
     const NSRect map = [self mapRect];
-    if (map.size.width <= 0 || map.size.height <= 0) return;
+    if (map.size.width <= 0 || map.size.height <= 0 || !NSPointInRect(point, map)) return;
     _selection = pick_object(*_model, _bodies, _viewport, map.size.width, map.size.height,
                             point.x - map.origin.x, point.y - map.origin.y, _magnitudeLimit, 8,
                             _starDisplayOptions.visible, _planetDisplayOptions.visible);
@@ -377,7 +409,6 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     _catalogSelection.reset();
     [self notifySelection];
     self.needsDisplay = YES;
-    if (event.clickCount == 2) [self focusSelection];
 }
 - (void)scrollWheel:(NSEvent *)event {
     const NSRect map = [self mapRect];

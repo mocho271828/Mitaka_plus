@@ -17,6 +17,26 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     return view;
 }
 
+@interface MitakaMainWindow : NSWindow
+@end
+
+@implementation MitakaMainWindow
+- (void)sendEvent:(NSEvent *)event {
+    // S は主画面の単独キー。入力欄・日本語変換・修飾キーは通常の AppKit 配送に任せる。
+    const auto modifiers = NSEventModifierFlagDeviceIndependentFlagsMask & ~NSEventModifierFlagCapsLock;
+    if (event.type == NSEventTypeKeyDown && self.isKeyWindow && !self.attachedSheet &&
+        !(event.modifierFlags & modifiers) && [event.charactersIgnoringModifiers.lowercaseString isEqualToString:@"s"] &&
+        ![self.firstResponder isKindOfClass:NSText.class]) {
+        AppController *controller = (AppController *)self.delegate;
+        if ([controller canToggleFlightMode]) {
+            if (!event.isARepeat) [controller toggleFlightMode:self];
+            return;
+        }
+    }
+    [super sendEvent:event];
+}
+@end
+
 @implementation AppController (Window)
 
 - (void)buildMenu {
@@ -57,7 +77,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
 }
 
 - (void)buildWindow {
-    _window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1280, 800)
+    _window = [[MitakaMainWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1280, 800)
         styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
         backing:NSBackingStoreBuffered defer:NO];
     _window.title = @"Mitaka Native — 星と惑星";
@@ -155,7 +175,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _travelButtons[1].toolTip = @"選択天体の上空へ移動して降下します。ガス惑星は基準面への接近です。";
     _travelButtons[3].toolTip = @"指定した緯度・東経の地球の地表から上昇します。";
     _travelButtons[5].toolTip = @"地平図の観測地点と視線から地球の上空へ移動します。";
-    _travelButtons[6].toolTip = @"地球近傍の視点から降下し、地平図へ移ります。ロール付きの視点には対応していません。";
+    _travelButtons[6].toolTip = @"地球近傍の視点から降下し、地平図へ移ります。";
     NSStackView *travelControls = stack(@[_travelButtons[0], label(@"緯度", 12), _latitudeField,
         label(@"東経", 12), _longitudeField, _travelButtons[1], _travelButtons[2],
         _travelButtons[3], _travelButtons[4]], NSUserInterfaceLayoutOrientationHorizontal);
@@ -179,7 +199,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _playback.stateChanged = ^{ [weakSelf updateEnabled]; };
     _playback.didStop = ^{ [weakSelf refreshOrbits]; };
     [self configurePlayback];
-    _horizon.userViewportChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf stopScriptPlaceTransition]; [weakSelf cancelHorizonProjection]; };
+    _horizon.userViewportChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf stopScriptFovAnimation]; [weakSelf stopScriptPlaceTransition]; [weakSelf cancelHorizonProjection]; };
     _horizon.selectionChanged = ^(NSString *description) {
         AppController *controller = weakSelf;
         if (!controller) return;
@@ -204,7 +224,10 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     };
     _solar.cameraChanged = ^(NSString *description) {
         AppController *controller = weakSelf;
-        if (controller) controller->_cameraLabel.stringValue = description;
+        if (controller) {
+            controller->_cameraLabel.stringValue = description;
+            [controller updateHorizonFlightProjection];
+        }
     };
     _solar.navigationChanged = ^{ [weakSelf surfaceNavigationChanged]; };
     _solar.userSurfaceViewChange = ^{ [weakSelf stopScriptCameraAnimation]; [weakSelf stopScriptPlaceTransition]; };

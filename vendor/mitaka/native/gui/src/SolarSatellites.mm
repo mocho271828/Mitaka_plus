@@ -99,7 +99,7 @@ PreparedSatelliteScene mitaka::gui::prepare_satellite_scene(
         return;
     }
     [self leaveNavigation];
-    _camera.target = *position;
+    _camera.set_target_au(*position);
     _camera.frame.reset();
     _camera.distance_au = std::max(0.05, _camera.distance_au);
     _following = YES;

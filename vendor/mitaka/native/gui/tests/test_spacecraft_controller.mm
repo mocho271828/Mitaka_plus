@@ -16,6 +16,17 @@ NSButton *button(NSView *root, NSString *title) {
     });
 }
 void action(NSControl *control) { [NSApp sendAction:control.action to:control.target from:control]; }
+void menuAction(NSMenuItem *item) { [NSApp sendAction:item.action to:item.target from:item]; }
+NSMenu *contextMenu(NSTableView *table, NSPoint point) {
+    const NSPoint windowPoint = [table convertPoint:point toView:nil];
+    NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown location:windowPoint
+        modifierFlags:0 timestamp:0 windowNumber:table.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:1];
+    return [table menuForEvent:event];
+}
+NSMenu *contextMenuForRow(NSTableView *table, NSInteger row) {
+    const NSRect bounds = [table rectOfRow:row];
+    return contextMenu(table, NSMakePoint(NSMidX(bounds), NSMidY(bounds)));
+}
 void waitForResult(NSTextField *label) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
     while ([label.stringValue containsString:@"検索中"] && deadline.timeIntervalSinceNow > 0)
@@ -70,8 +81,9 @@ void tests() {
     require(table.numberOfRows == 1 && !next.enabled && !previous.enabled, "latest search generation wins");
     __block NSUInteger selected = NSNotFound;
     __block BOOL centered = NO;
+    __block unsigned selections = 0;
     controller.chooseObject = ^(NSUInteger index, BOOL centerView) {
-        selected = index; centered = centerView;
+        selected = index; centered = centerView; ++selections;
         require(NSThread.isMainThread, "selection callback runs on main thread");
     };
     [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
@@ -83,13 +95,70 @@ void tests() {
     require(centered, "center intent is passed to guarded solar focus");
     search.stringValue = @"Spacecraft0"; action(search); waitForResult(count);
     require(table.numberOfRows == 2, "same-name rows from different sources remain separate");
+    [controller.window.contentView layoutSubtreeIfNeeded];
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    const auto beforeMenu = selections;
+    NSMenu *menu = contextMenuForRow(table, 1);
+    require(menu.numberOfItems == 2 && table.selectedRow == 1 && selections == beforeMenu,
+        "context menu selects the clicked duplicate without invoking an action");
+    NSMenuItem *contextSelect = [menu itemAtIndex:0], *contextCenter = [menu itemAtIndex:1];
+    require([contextSelect.title isEqualToString:select.title] && [contextCenter.title isEqualToString:center.title],
+        "context actions use the existing button wording");
+    NSString *unresolved = [controller tableView:table objectValueForTableColumn:table.tableColumns[2] row:1];
+    require([unresolved isEqualToString:@"未解決・診断あり"], "context fixture retains an unresolved source definition");
+    menuAction(contextSelect);
+    require(selected == 1036 && !centered && selections == beforeMenu + 1,
+        "context selection passes the clicked original index despite duplicate names and unresolved position");
+    menuAction(contextCenter);
+    require(selected == 1036 && centered && selections == beforeMenu + 2,
+        "context center passes unresolved source identity to the existing guarded focus callback");
+    NSMenuItem *invalidItem = [contextCenter copy];
+    invalidItem.representedObject = @"invalid generation";
+    menuAction(invalidItem);
+    invalidItem.representedObject = nil;
+    menuAction(invalidItem);
+    require(selections == beforeMenu + 2, "context items without a numeric generation must be ignored");
+    require(contextMenu(table, NSMakePoint(-5, -5)) == nil && table.selectedRow == 1 && selections == beforeMenu + 2,
+        "empty-space context click must preserve the selection and produce no menu");
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    menuAction(contextCenter);
+    require(selections == beforeMenu + 2, "an old menu must not act on a different selected row");
     [source selectItemWithTitle:@"spacecraft/second.dat"]; action(source); waitForResult(count);
     require(table.numberOfRows == 1, "source filter selects only the requested catalog");
     [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
     action(select);
     require(selected == 1036, "duplicate source selection returns its original index");
+    const auto afterFilter = selections;
+    menuAction(contextCenter);
+    require(selections == afterFilter, "source filtering invalidates a menu even when the same original index is selected");
     NSString *provenance = [controller tableView:table objectValueForTableColumn:table.tableColumns[1] row:0];
     require([provenance containsString:@"spacecraft/second.dat"], "selected duplicate retains its source provenance");
+    menu = contextMenuForRow(table, 0);
+    contextCenter = [menu itemAtIndex:1];
+    [controller setModel:model snapshot:frame];
+    menuAction(contextCenter);
+    require(selections == afterFilter && table.numberOfRows == 0,
+        "model reload invalidates a menu while the new search is pending");
+    waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:1] byExtendingSelection:NO];
+    menuAction(contextCenter);
+    require(selections == afterFilter, "model reload invalidates a menu after the same source row returns");
+
+    search.stringValue = @""; action(search); waitForResult(count);
+    action(next); waitForResult(count);
+    menu = contextMenuForRow(table, 1);
+    contextCenter = [menu itemAtIndex:1];
+    menuAction(contextCenter);
+    require(selected == 501 && centered && selections == afterFilter + 1,
+        "context menu on a later page uses the original index rather than the visible row");
+    action(previous);
+    menuAction(contextCenter);
+    require(selections == afterFilter + 1 && table.numberOfRows == 0,
+        "page navigation invalidates the previous page menu immediately");
+    waitForResult(count);
+    [table selectRowIndexes:[NSIndexSet indexSetWithIndex:1] byExtendingSelection:NO];
+    menuAction(contextCenter);
+    require(selections == afterFilter + 1, "previous page cannot reuse a menu for the same visible row number");
     [source selectItemAtIndex:0]; search.stringValue = @"Spacecraft1035"; action(search); waitForResult(count);
     [table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
     [controller showWindow:nil];
@@ -134,6 +203,9 @@ void tests() {
     [controller setModel:{} snapshot:{}];
     require(table.numberOfRows == 0 && source.numberOfItems == 1 && !next.enabled && !select.enabled,
         "clearing the model removes old source choices and selection");
+    menuAction(contextCenter);
+    require(contextMenu(table, NSMakePoint(10, 10)) == nil && selections == afterFilter + 1,
+        "empty source cannot expose or execute a stale context action");
     [controller showWindow:nil];
     [controller.window.contentView layoutSubtreeIfNeeded];
     [controller.window displayIfNeeded];

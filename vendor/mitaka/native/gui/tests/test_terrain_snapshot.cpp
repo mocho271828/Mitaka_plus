@@ -44,7 +44,10 @@ void keys() {
         [](auto& r){r.low_resolution=true;},[](auto& r){r.camera.target.x=1;},
         [](auto& r){r.camera.target.y=1;},[](auto& r){r.camera.target.z=1;},
         [](auto& r){r.camera.yaw_deg=1;},[](auto& r){r.camera.pitch_deg=1;},
-        [](auto& r){r.camera.distance_au*=2;},[](auto& r){r.camera.frame=solar_camera_basis(r.camera);},
+        [](auto& r){r.camera.roll_deg=1;},[](auto& r){r.camera.frame_is_orbit=true;},
+        [](auto& r){r.camera.precise_target=PreciseCameraTarget{};},
+        [](auto& r){r.camera.distance_au*=2;},[](auto& r){r.camera.vertical_fov_deg=90;},
+        [](auto& r){r.camera.frame=solar_camera_basis(r.camera);},
         [](auto& r){++r.width;},[](auto& r){++r.height;},
         [](auto& r){++r.load_limits.max_file_bytes;},[](auto& r){++r.load_limits.max_patches;},
         [](auto& r){++r.load_limits.max_index_bytes;},[](auto& r){++r.load_limits.max_grid_bytes;},
@@ -59,12 +62,29 @@ void keys() {
         if(axis==2) g.camera.frame->up.x+=.1;
         require(!terrain_surface_request_matches(f,g),"explicit camera basis belongs to key");
     }
+    auto precise=a;precise.camera.set_target_pc({1e9,1e9,1e9});
+    require(terrain_surface_request_matches(precise,precise),"precise target matches itself");
+    auto moved=precise;moved.camera.translate_target_au({.001,0,0});
+    require(moved.camera.target.x==precise.camera.target.x,"small movement preserves rounded AU target");
+    require(!terrain_surface_request_matches(precise,moved)&&!terrain_surface_request_matches(moved,precise),
+        "sub-ULP precise movement changes request key");
+    for(int axis=0;axis<3;++axis) {
+        for(bool anchor:{false,true}) {
+            auto changed=precise;
+            auto& v=anchor?changed.camera.precise_target->anchor_pc:changed.camera.precise_target->offset_au;
+            if(axis==0) v.x+=1;
+            if(axis==1) v.y+=1;
+            if(axis==2) v.z+=1;
+            require(!terrain_surface_request_matches(precise,changed),"every precise coordinate belongs to key");
+        }
+    }
     const std::vector<std::function<void(TerrainSurfaceRequest&)>> invalid{
         [](auto& r){r.data_directory="relative";},[](auto& r){r.data_directory=std::string("/a\0b",4);},
         [](auto& r){r.body=static_cast<TerrainBody>(99);},[](auto& r){r.julian_date=NAN;},
         [](auto& r){r.center_au.x=INFINITY;},[](auto& r){r.display_radius_au=0;},
         [](auto& r){r.elevation_factor=-1;},[](auto& r){r.width=0;},[](auto& r){r.height=1025;},
-        [](auto& r){r.camera.distance_au=NAN;},[](auto& r){r.orientation.x_axis.x=2;},
+        [](auto& r){r.camera.distance_au=NAN;},[](auto& r){r.camera.vertical_fov_deg=0;},
+        [](auto& r){r.orientation.x_axis.x=2;},
         [](auto& r){r.orientation.north_axis.z=-1;},[](auto& r){r.load_limits.max_patches=0;},
         [](auto& r){r.surface_limits.triangles=0;},[](auto& r){r.surface_limits.frame_bytes=1;}
     };

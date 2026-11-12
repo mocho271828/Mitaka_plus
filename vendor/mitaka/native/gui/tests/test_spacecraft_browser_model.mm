@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #include "spacecraft_browser_model.hpp"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -66,6 +67,14 @@ void syntheticTests() {
         "confirmed PTH coordinates use requested numeric JD");
     require(snapshot->evaluations[0]->legacy_julian_date == snapshot->julian_date, "same JD flows to evaluator");
     const auto description = spacecraft_description(*model, 0, snapshot.get());
+    const auto provisional = std::find_if(dataset.diagnostics.begin(), dataset.diagnostics.end(), [](const auto& diagnostic) {
+        return diagnostic.code == SpacecraftDiagnosticCode::unresolved_pth_contract;
+    });
+    require(provisional != dataset.diagnostics.end(), "raw PTH reader keeps its own contract diagnostic");
+    require(description.find(provisional->message) == std::string::npos &&
+        spacecraft_catalog_description(*model).find(provisional->message) == std::string::npos &&
+        description.find("日心 J2000 黄道 AU") != std::string::npos && description.find("UTC/TT/TDB") != std::string::npos,
+        "browser reports the evaluated PTH contract and outstanding time scale");
     require(description.find("線形補間") != std::string::npos && description.find("Unknown = custom bytes") != std::string::npos,
         "sampling and unknown fields visible");
     require(description.find("物理時系・精度保証期間は不明") != std::string::npos, "unverified physical time scale visible");

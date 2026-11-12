@@ -25,10 +25,12 @@ private:
     mutable std::optional<CoordinateGrid> horizontal_;
 };
 
-// horizontal_projection は視野中心に合わせて球面を回転した地平図投影を使う。
-// viewport は SkyViewport の表現（center_ra = 360 - azimuth）に統一する。
+// viewport の center_ra は地平図では 360 - azimuth を表す。
 void draw_sky_grids(CGContextRef context, NSRect map, SkyViewport viewport,
                     const GridDisplayOptions& options, const GridGeometryCache& cache,
                     bool horizontal_projection, const RendererDisplayOptions& quality);
+void draw_horizon_grids(CGContextRef context, NSRect map, HorizonProjectionViewport viewport,
+                        const GridDisplayOptions& options, const GridGeometryCache& cache,
+                        const RendererDisplayOptions& quality);
 
 } // namespace mitaka::gui

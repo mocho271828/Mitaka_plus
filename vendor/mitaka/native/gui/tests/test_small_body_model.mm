@@ -60,6 +60,7 @@ void packedTests() {
     records[6].raw_record_bytes.pop_back();
     records[7].time_scale = SmallBodyTimeScale::unresolved;
     records[8].encoding = SmallBodyEncoding::element_text;
+    records[8].orbit = std::monostate{};
     records[8].frame = SmallBodyFrame::heliocentric_j2000_ecliptic;
     records[8].time_scale = SmallBodyTimeScale::tdb;
     records[9].name_bytes = "duplicate id number";
@@ -93,6 +94,9 @@ void packedTests() {
     require(minorDetail.find("(TDB 入力") == std::string::npos && minorDetail.find("raw frame unresolved") == std::string::npos,
         "resolved packed frame is not contradicted or mislabeled as TDB");
     require(minorDetail.find("raw physical time unresolved") != std::string::npos, "physical time diagnostic is preserved");
+    require(small_body_description(*model, 3, frame.get()).find("packed 37 byte · 原フラグ 0（意味未確定）")
+        != std::string::npos && minorDetail.find("原フラグ") == std::string::npos,
+        "show a zero raw flag on the 37-byte row, never on its 36-byte counterpart");
     require(small_body_description(*model, 0, frame.get()).find("(TDB 入力") != std::string::npos, "comet detail retains TDB label");
     require(small_body_description(*model, 4, frame.get()).find("requires a > 0") != std::string::npos, "invalid packed input retains evaluator diagnostic");
     require(records[1].frame == SmallBodyFrame::unresolved && records[1].time_scale == SmallBodyTimeScale::unresolved
@@ -122,6 +126,67 @@ void packedTests() {
         requirePosition(all->positions[index], {0, 2, 0}, "all same-number same-epoch original rows are evaluated");
         require(large->dataset().records[index].id.record_ordinal == index, "original duplicate row order is preserved");
     }
+}
+void individualTests() {
+    auto data = std::make_shared<SmallBodyDataset>();
+    auto text = packed(0);
+    text.id = {"orbits/asteroids/custom.dat", 0};
+    text.encoding = SmallBodyEncoding::element_text;
+    text.name_bytes = "Independent text orbit";
+    text.orbit = OrbitalElements{0, 1, 0, 0, 0.985607669, 0, 0, 0};
+    text.raw_record_bytes = "original text bytes";
+    text.fields = {{"Visible", "0"}, {"Size", "999 999 999"}};
+    text.diagnostics.clear();
+    data->records = {packed(0), text, text, text, text, packed(1), text};
+    data->records[2].id.source_key = "orbits/asteroids/custom_jp.dat";
+    data->records[2].kind = SmallBodyKind::trans_neptunian;
+    data->records[2].display_name_bytes = "\x83\x65\x83\x58\x83\x67";
+    data->records[3].id.source_key = "orbits/asteroids/explicit-n.dat";
+    data->records[3].fields.push_back({"n", "90"});
+    std::get<OrbitalElements>(data->records[3].orbit).semi_major_axis_au = 4;
+    std::get<OrbitalElements>(data->records[3].orbit).mean_motion_deg_per_day = 90;
+    data->records[6].id.source_key = "orbits/asteroids/inconsistent-n.dat";
+    data->records[6].fields.push_back({"n", "1"});
+    data->records[4].id.source_key = "orbits/asteroids/non-elliptic.dat";
+    std::get<OrbitalElements>(data->records[4].orbit).eccentricity = 1;
+    data->records[5].encoding = SmallBodyEncoding::packed_37;
+    const auto model = std::make_shared<SmallBodyModel>(data);
+    require(model->evaluation_mode(1) == SmallBodyEvaluationMode::element_text_legacy_jd,
+        "individual format has its own numeric JD mode");
+    const auto frame = evaluate_small_body_snapshot(model, 90 / 0.985607669);
+    require(frame->positions.size() == 7 && frame->positioned_count == 4,
+        "same-number packed and language variants remain independent; unsupported inputs are rejected");
+    require(small_body_summary(*model) == "原本 7 件 · 位置評価候補（未対応を含む） 6 件 · 出典診断 0 件",
+        "summary calls dispatch candidates candidates and does not count unresolved 37-byte input");
+    requirePosition(frame->positions[1], {0, 1, 0}, "individual circle advances without extra units or frame conversion");
+    requirePosition(frame->positions[2], {0, 1, 0}, "TNO language variant is independently evaluated");
+    const auto explicitFrame = evaluate_small_body_snapshot(model, 1);
+    requirePosition(explicitFrame->positions[3], {0, 4, 0}, "explicit mean motion drives the selected row position");
+    require(!frame->positions[6] && small_body_description(*model, 6, frame.get()).find("explicit n") != std::string::npos,
+        "inconsistent explicit n is explained in row detail");
+    require(!frame->positions[4] && !frame->positions[5], "non-elliptic and unresolved 37-byte records do not produce positions");
+    const auto detail = small_body_description(*model, 1, frame.get());
+    require(detail.find("原版の数値 JD") != std::string::npos && detail.find("個別軌道") != std::string::npos
+        && detail.find("(TDB 入力") == std::string::npos, "individual detail names its contract without certifying physical time");
+    require(model->search("テスト", {}, 0, 100).rows == std::vector<std::size_t>{2},
+        "individual Japanese name remains searchable");
+    const auto hidden = evaluate_small_body_snapshot(model, 0, false);
+    require(hidden->positioned_count == 0, "hidden individual rows skip evaluation");
+    const auto selected = evaluate_small_body_snapshot(model, 0, false, 2);
+    require(selected->positioned_count == 1 && selected->positions[2] && !selected->positions[1],
+        "hidden selection evaluates only the exact source row");
+    const auto selectedExplicit = evaluate_small_body_snapshot(model, 1, false, 3);
+    require(selectedExplicit->positioned_count == 1 && !selectedExplicit->positions[1],
+        "hidden selection evaluates only the explicit-n source row");
+    requirePosition(selectedExplicit->positions[3], {0, 4, 0}, "hidden explicit-n selection keeps its mean motion");
+    const auto selectedUnsupported = evaluate_small_body_snapshot(model, 0, false, 6);
+    require(!selectedUnsupported->positions[6]
+        && small_body_description(*model, 6, selectedUnsupported.get()).find("explicit n") != std::string::npos,
+        "hidden selection retains the inconsistent-n diagnostic");
+    require(data->records[1].raw_record_bytes == text.raw_record_bytes
+        && data->records[1].frame == SmallBodyFrame::unresolved
+        && data->records[1].time_scale == SmallBodyTimeScale::unresolved,
+        "individual evaluation leaves bytes and source metadata unchanged");
 }
 void syntheticTests() {
     auto dataset = std::make_shared<SmallBodyDataset>();
@@ -178,14 +243,17 @@ void localTests(const char *directory) {
     for (int step = 0; step < 30; ++step) frame = evaluate_small_body_snapshot(model, 2451545 + step);
     const double frameMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - frameStart).count() / 30;
     require(frame->positions.size() == dataset->records.size(), "local frame keeps original row cardinality");
-    std::size_t expectedCount = 0, packedCount = 0, cometCount = 0;
+    std::size_t expectedCount = 0, packedCount = 0, individualCount = 0, cometCount = 0;
     for (std::size_t index = 0; index < dataset->records.size(); ++index) {
         const auto& record = dataset->records[index];
         std::optional<Vec3> expected;
         if ((record.kind == SmallBodyKind::asteroid || record.kind == SmallBodyKind::trans_neptunian)
-            && record.encoding == SmallBodyEncoding::packed_36) {
+            && (record.encoding == SmallBodyEncoding::packed_36 || record.encoding == SmallBodyEncoding::element_text)) {
             expected = evaluate_minor_planet_position(record, frame->julian_date).heliocentric_j2000_ecliptic_au;
-            if (expected) ++packedCount;
+            if (expected) {
+                if (record.encoding == SmallBodyEncoding::packed_36) ++packedCount;
+                else ++individualCount;
+            }
         } else if (record.kind == SmallBodyKind::comet && record.encoding != SmallBodyEncoding::packed_37) {
             const auto result = evaluate_small_body(record, frame->julian_date);
             if (result.state) { expected = result.state->position_au; ++cometCount; }
@@ -194,7 +262,8 @@ void localTests(const char *directory) {
         if (expected) { ++expectedCount; requirePosition(frame->positions[index], *expected, "local result uses core position without additional transform"); }
         if (record.encoding == SmallBodyEncoding::packed_37) require(!frame->positions[index], "all local 37-byte rows remain retained but unpositioned");
     }
-    require(frame->positioned_count == expectedCount && expectedCount == packedCount + cometCount, "local counts derive from actual records and contracts");
+    require(frame->positioned_count == expectedCount && expectedCount == packedCount + individualCount + cometCount,
+        "local counts derive from actual records and contracts");
     if (!dataset->records.empty()) {
         auto last = model->search("", {}, dataset->records.size() - 1, 500);
         require(last.rows.size() == 1 && last.rows.front() == dataset->records.size() - 1, "last local row is reachable");
@@ -203,13 +272,14 @@ void localTests(const char *directory) {
     for (int step = 0; step < 30; ++step) (void)evaluate_small_body_snapshot(model, 2451545 + step, false);
     const double hiddenMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - hiddenStart).count() / 30;
     std::cout << "Local small bodies: records=" << dataset->records.size() << " evaluable=" << model->evaluable_indices().size()
-        << " positioned=" << frame->positioned_count << " packed=" << packedCount << " comets=" << cometCount << " frame_ms=" << frameMs << " hidden_ms=" << hiddenMs
+        << " positioned=" << frame->positioned_count << " packed=" << packedCount << " individual=" << individualCount
+        << " comets=" << cometCount << " frame_ms=" << frameMs << " hidden_ms=" << hiddenMs
         << " total_ms=" << std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() << '\n';
 }
 }
 int main(int argc, char **argv) {
     @autoreleasepool {
-        try { syntheticTests(); packedTests(); if (argc > 1) localTests(argv[1]); std::cout << "Small-body model tests passed: " << checks << " checks\n"; return 0; }
+        try { syntheticTests(); packedTests(); individualTests(); if (argc > 1) localTests(argv[1]); std::cout << "Small-body model tests passed: " << checks << " checks\n"; return 0; }
         catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }
     }
 }

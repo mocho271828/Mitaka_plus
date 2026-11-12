@@ -40,7 +40,7 @@ double plus_julian_date(const mitaka::GregorianDateTime& date) {
     while (month < 1) { month += 12; --year; }
     while (month > 12) { month -= 12; ++year; }
     const double result = julian_date({year, month, 1, 0, 0, 0}) + (date.day - 1) +
-        date.hour / 24.0 + date.minute / 1440.0 + date.second / 86400.0;
+        (date.hour * 3600.0 + date.minute * 60.0 + date.second) / 86400.0;
     (void)gregorian_date_time(result);
     return result;
 }

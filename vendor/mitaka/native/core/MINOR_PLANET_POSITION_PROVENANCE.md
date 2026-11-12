@@ -7,7 +7,7 @@
 
 [小惑星位置契約の監査](../../investigation/native-plus/unit5/minor-planet-position-contracts.md) に
 対象 executable の SHA-256、reader・更新・getter のアドレス、距離係数、同一数値 JD の伝播、
-公式 1.3.1 との相違を記録した。根拠は限定した静的解析であり、旧アプリとの実行比較ではない。
+公式 1.3.1 との相違を記録した。2026-10-29 の監査は静的解析で行った。個別形式の旧 Plus 実行比較は以下の該当節に記録した。
 
 `mp.dat` / `TNO.dat` の 36 byte は番号、binary64 元期、binary32 の M0 / w / node / i / e / n である。
 既存 `load_small_body_dataset` が little-endian の原 bytes・source・ordinal・offset・重複を保持して読み込む。
@@ -26,7 +26,9 @@ const record を受け、`MinorPlanetPositionEvaluation` に ID、要求 JD、op
 天体番号、名称、現在の原本件数は条件にしない。
 `packed_37` は 36 byte 行と数値入力が一致しても未対応の診断を返す。
 追加 byte の意味と reader の契約が未確定であるため、代用・優先・統合に使わない。
-個別軌道 text、彗星、非楕円、要素欠損は本 API の適用外であり、位置を返さない。
+個別 Asteroid/TNObject の契約は `mitaka-plus-1.5.4-element-text-legacy-jd-native-au-v1`。正の有限な a または n が必須で、n のみなら `a=(0.985607669/n)^(2/3)`、a のみなら `n=0.985607669/(a√a)` とする。両方があるときは両方の指定値を使う。明示した不正値は出典名と行位置で診断し、原 bytes を保持する。n のみの条件は旧版のセレスから作った検証用コピーで確かめた。[旧 reader と同梱57定義の監査](../../../../investigation/native-plus/minor-planet-individual-format-audit.md)・[n のみの読込結果](../../../../verification/p4/individual-n-loader.tsv)
+
+個別の `e>1` は双曲線上の時刻位置を返す。旧 1.5.4 の実画面で `M<0` と `M>360°` を含む4日時の注視方向を調べ、剰余を取らず `e sinh H − H = M` を解く分岐と一致した。a と等価な n の単独指定も旧版2日時で一致した。双曲線には一周期の標本を作らず、その理由を返す。`e=1` は個別形式の旧版独自の注視挙動を記録し、統合版では位置なしの診断とする。[旧版の注視・統合版の画素比較](../../../../verification/p4/individual-conic-look.md)
 既存の確定済み JPL 彗星 evaluator は別の API として維持する。
 
 時刻は元期と同じ尺度の数値 JD をそのまま渡す。物理時系を UTC / TT / TDB と認定せず、
@@ -37,8 +39,8 @@ const record を受け、`MinorPlanetPositionEvaluation` に ID、要求 JD、op
 
 ## 既存計算の利用と旧実装との差
 
-既存 `orbital_state` へ元期・M0・n を一度だけ渡す。
-`M = M0 + n * (t - epoch)`、楕円 Kepler 方程式、軌道面上の位置、
+既存 `orbital_state` へ元期・M0・n を一度だけ渡す。楕円で |M0| ≥ 360° の場合は、巨大なM0に短い時間差を加えた際の丸め落ちを防ぐため、度の単位で周回分を取り除いてから評価する。双曲線の平均近点角は周期化しない。
+`M = M0 + n * (t - epoch)`、楕円・双曲線の Kepler 方程式、軌道面上の位置、
 `Rz(node) * Rx(i) * Rz(w)` を既存コアへ委ねる。新しい solver や時刻変換は追加しない。
 太陽位置加算、追加の黄道変換、衛星用の基準面回転は行わない。
 
@@ -48,32 +50,35 @@ libm の相違まで含む bit 一致は主張しない。旧非収束時のゼ�
 invalid_argument / out_of_range / runtime_error を計算失敗の診断に変換する。
 速度は本 API に公開しない。
 
+## 楕円の描画用標本
+
+旧 Plus 1.5.4 の既定は近日点を起点とする離心近点角の200等分で、終点を含めると201標本になる。個別ファイルと36 byteの楕円を同じ規則で描く。幾何学的に等価な近日点の中から、native は元期を含む1周を採用する。平均近点角を元期で0〜360°に正規化したとき、始点は `epoch − M0/n`、終点は次の近日点である。各標本は `E = 2π i/(N−1)`、`t = start + (end−start)(E−e sin E)/(2π)` を使い、同じ小天体の位置評価器を通す。元の入力時刻が有効期間内かどうかは各標本のJDで検証する。[旧版の実画面照合](../../../../verification/p4/legacy-orbits-projection.tsv)
+
+短周期・高離心率の組合せで近日点付近の隣接JDがdoubleで区別できない場合は、検証済みの等時間格子を使う。周期全体や等時間格子そのものを表現できない場合は `orbit_period` の診断を返し、その行の軌道は作らない。GUIでは彗星と小惑星に共通の標本数を設定し、保存済みの明示値を使う。位置だけを保持する小惑星の1回の予算は2,097,152標本で、既定の実データ8,508行 × 201 = 1,710,108を収める。彗星・未確定行の別予算は524,288のままである。
+
 ## 検証
 
 P1-4 の sampler は、位置評価で行全体が無効な場合と、その時刻だけ位置を得られない場合を明示的に区別する。原レコードに以前の不正診断があっても、元期が宣言期間外なだけなら後続の有効な標本を計算する。同一の code / field の以前の失敗診断と今回の異なる原因も保持する。この境界不具合は人工レコードで再現し、同梱 36 byte 実データでは再現していない。
 
-専用テストは `native/core/tests/test_minor_planet_position.cpp`。次の依存で独立ビルドする。
+位置試験 `native/core/tests/test_minor_planet_position.cpp` は一周期を持たない双曲線の標本拒否も検証する。コアディレクトリで本体と同じライブラリにリンクして実行する。
 
 ```sh
-clang++ -std=c++17 -Wall -Wextra -Werror -pedantic -O2 -I native/core/include \
-  native/core/src/astronomy.cpp native/core/src/catalog.cpp \
-  native/core/src/small_body_catalog.cpp native/core/src/small_body_text.cpp \
-  native/core/src/small_body_orbit.cpp native/core/src/minor_planet_position.cpp \
-  native/core/tests/test_minor_planet_position.cpp -o /tmp/mitaka-unit5-minor-position
+make build/test_minor_planet_position
+build/test_minor_planet_position "$DATA_ROOT"
 ```
 
 引数には任意のローカル data directory を複数渡せる。試験用データの書き込み先は一時ディレクトリのみである。
 
 - 円軌道の元期・四分の一周期・一周期・負の時間差、楕円の近点・遠点・既知の離心近点角を検算する。
 - 各軸 90 度と一般角の基本回転を独立に適用し、回転順・AU・時間進行が一度であることを確認する。
-- e→1、NaN / Inf、非正 a / n、未確認 conic、演算 overflow、欠損要素、異なる encoding を拒否する。
+- 個別楕円・双曲線の e=1 近傍で時刻位置を検算する。個別 e=1 と packed 36 の e≥1 は位置なし。NaN / Inf、非正 a / n、演算 overflow、欠損要素、異なる encoding を診断する。
 - 宣言期間の両端・直前直後、未知の精度期間、原診断の保持を確認する。
 - 10,037 行の同じ独自レコードを間引かず評価し、番号 -1・重複・原 bytes・source / ordinal を保持する。
 - 37 byte の余分な 1 byte を除けば 36 byte と完全一致する fixture でも、位置なしを確認する。
 - 読込後に試験用ファイルを差し替えても snapshot の原 bytes が変化しないことを確認する。
 - 実データは実際の loaded rows から対象数を数え、現況件数を固定 assertion にしない。
 
-通常 strict build、ASan+UBSan、x86_64 の各構成で Plus / 通常版のローカル data を検証し、
+2026-10-29 の packed 36 検証では、通常 strict build、ASan+UBSan、x86_64 の各構成で Plus / 通常版のローカル data を検証し、
 いずれも **253,211 checks PASS**。sanitizer の検出はない。
 Plus の観測値は全 19,475 行、packed 36 byte 8,451 行の位置評価成功、他の 11,024 行を保持。
 通常版はこの loader の対象小天体 source がなく、0 行と欠損診断になる。

@@ -94,6 +94,20 @@ int main(int argc, const char *argv[]) {
             check(actions.size() == 1 && !state.clock_tracking, "integer second replaces fractional second");
             check(near(state.julian_date, mitaka::julian_date({2001,1,31,12,34,12})), "second setter truncates original fraction");
 
+            for (int second = 0; second < 60; ++second) {
+                state.plus_time_zone = PlusTimeZone(-32400);
+                state.julian_date = plus_local_julian_date({2000,1,2,3,4,static_cast<double>(second)}, *state.plus_time_zone);
+                actions.clear(); state.clock_tracking = true;
+                succeeds(controller, @R"lua(
+                    Time.localYear=Time.localYear; Time.localMonth=Time.localMonth
+                    Time.localDay=Time.localDay; Time.localHour=Time.localHour
+                    Time.localMinute=Time.localMinute; Time.localSecond=Time.localSecond
+                )lua");
+                check(actions.empty() && state.clock_tracking,
+                      "integer calendar getter/setter roundtrip must not interrupt tracking second " + std::to_string(second));
+            }
+            state.plus_time_zone = PlusTimeZone(0);
+
             struct ComponentCase { const char *suffix; int value; PlusTimeComponent component; };
             const ComponentCase components[] = {
                 {"Year",2004,PlusTimeComponent::year}, {"Month",2,PlusTimeComponent::month},

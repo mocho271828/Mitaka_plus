@@ -137,8 +137,8 @@ TextureImage render_horizon_background(const TextureImage& texture, HorizonViewp
     require_texture(texture);
     if (!width || !height || width > maximum_dimension || height > maximum_dimension)
         throw std::invalid_argument("invalid horizon background output dimensions");
-    const auto normalized = normalize_sky_viewport(
-        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.zoom, viewport.perspective_blend, viewport.roll_deg}, true);
+    const auto normalized = normalize_horizon_viewport(
+        {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg});
     TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
     const HorizonRasterProjection projection(normalized, width, height);
     for (std::size_t y = 0; y < height; ++y) {
@@ -149,6 +149,42 @@ TextureImage render_horizon_background(const TextureImage& texture, HorizonViewp
         }
     }
     return result;
+}
+
+TextureImage render_solar_background(const TextureImage& texture, const SolarCamera& camera,
+                                     std::size_t width, std::size_t height) {
+    require_texture(texture);
+    if (!width || !height || width > maximum_dimension || height > maximum_dimension)
+        throw std::invalid_argument("invalid solar background output dimensions");
+    const auto axes = solar_camera_basis(camera);
+    const Vec3 outward = j2000_ecliptic_to_equatorial(axes.outward);
+    const Vec3 right = j2000_ecliptic_to_equatorial(axes.right);
+    const Vec3 up = j2000_ecliptic_to_equatorial(axes.up);
+    TextureImage result{width, height, std::vector<std::uint8_t>(width * height * 4)};
+    const double tangent = solar_camera_tangent(camera);
+    for (std::size_t y = 0; y < height; ++y) {
+        const double vertical = ((height / 2.0 - (y + 0.5)) / height) * (2 * tangent);
+        for (std::size_t x = 0; x < width; ++x) {
+            const double horizontal = (((x + 0.5) - width / 2.0) / height) * (2 * tangent);
+            const Vec3 direction{-outward.x + horizontal * right.x + vertical * up.x,
+                                 -outward.y + horizontal * right.y + vertical * up.y,
+                                 -outward.z + horizontal * right.z + vertical * up.z};
+            sample(texture, direction_uv(direction), &result.rgba[(y * width + x) * 4]);
+        }
+    }
+    return result;
+}
+
+double solar_background_opacity(const SolarCamera& camera) {
+    const auto axes = solar_camera_basis(camera);
+    const Vec3 anchor = camera.precise_target ? camera.precise_target->anchor_pc : Vec3{};
+    const Vec3 offset = camera.precise_target ? camera.precise_target->offset_au : camera.target;
+    const double distance = camera.distance_au / astronomical_units_per_parsec;
+    const Vec3 eye{anchor.x + offset.x / astronomical_units_per_parsec + distance * axes.outward.x,
+                   anchor.y + offset.y / astronomical_units_per_parsec + distance * axes.outward.y,
+                   anchor.z + offset.z / astronomical_units_per_parsec + distance * axes.outward.z};
+    // 既存 3D 銀河モデルの太陽距離によるフェードと対応させた暫定仕様。
+    return std::clamp((2700.0 - std::hypot(eye.x, eye.y, eye.z)) / 1700.0, 0.0, 1.0);
 }
 
 } // namespace mitaka::gui

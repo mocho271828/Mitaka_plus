@@ -165,7 +165,7 @@ void test_projection() {
     rejects<std::invalid_argument>([&] { project_sky({0, 0}, {}, 0, 180); });
     rejects<std::invalid_argument>([&] { project_sky({0, 0}, {}, 360, nan); });
     for (const double altitude : {-90.0, -45.0, 0.0, 45.0, 90.0}) {
-        const SkyViewport view{73, altitude, 1};
+        const HorizonProjectionViewport view{73, altitude, 180};
         for (const auto point : {ScreenPoint{20, 20}, ScreenPoint{100, 60}, ScreenPoint{180, 90},
                                  ScreenPoint{270, 120}, ScreenPoint{340, 160}}) {
             const auto projected = project_horizon(unproject_horizon(point, view, 360, 180), view, 360, 180);
@@ -175,7 +175,7 @@ void test_projection() {
         }
     }
     for (const double blend : {0.0, 0.25, 0.5, 0.75, 1.0}) {
-        const SkyViewport view{73, 32, 2, blend};
+        const HorizonProjectionViewport view{73, 32, 90, blend};
         const HorizonRasterProjection raster(view, 360, 180);
         for (const auto point : {ScreenPoint{20.5, 20.5}, ScreenPoint{100.5, 60.5},
                                  ScreenPoint{180.5, 90.5}, ScreenPoint{340.5, 160.5}}) {
@@ -190,12 +190,120 @@ void test_projection() {
             near(projected->y, point.y);
         }
     }
-    const SkyViewport perspective{0, 0, 1, 1};
+    const HorizonProjectionViewport perspective{0, 0, 180, 1};
     const auto top = unproject_horizon({320, 0}, perspective, 640, 480);
     near(top.declination_deg, 22.5);
     const auto right = unproject_horizon({640, 240}, perspective, 640, 480);
     near(right.right_ascension_deg,
          360 - std::atan(0.4142135623730950488 * 4 / 3) * 180 / 3.14159265358979323846);
+}
+
+void test_perspective_field_of_view() {
+    constexpr double width = 360, height = 180;
+    for (const double fov : {1e-6, 20., 45., 90.}) {
+        for (const double blend : {0.0, 0.5, 1.0}) {
+            const HorizonProjectionViewport view{73, 32, 90, blend, 15, fov};
+            const HorizonRasterProjection raster(view, width, height);
+            for (const ScreenPoint point : {ScreenPoint{20.5, 20.5}, {180.5, 90.5}, {340.5, 160.5}}) {
+                const auto direction = unproject_horizon(point, view, width, height);
+                const auto raster_direction = raster.direction(static_cast<std::size_t>(point.x), static_cast<std::size_t>(point.y));
+                near(raster_direction.right_ascension_deg, direction.right_ascension_deg, 1e-9);
+                near(raster_direction.declination_deg, direction.declination_deg, 1e-9);
+                const auto projected = project_horizon(direction, view, width, height);
+                check(projected.has_value(), "perspective direction should project");
+                near(projected->x, point.x, fov < 0.001 ? 1e-4 : 1e-7);
+                near(projected->y, point.y, fov < 0.001 ? 1e-4 : 1e-7);
+            }
+        }
+        const HorizonProjectionViewport view{0, 0, 180, 1, 0, fov};
+        near(unproject_horizon({width / 2, 0}, view, width, height).declination_deg, fov / 2, 1e-9);
+    }
+    for (const double fov : {0., -1., 90.01, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()}) {
+        const HorizonProjectionViewport view{0, 0, 180, 1, 0, fov};
+        rejects<std::invalid_argument>([&] { unproject_horizon({10, 10}, view, width, height); });
+        rejects<std::invalid_argument>([&] { normalize_horizon_viewport(view); });
+    }
+}
+
+void test_horizon_field_of_view() {
+    constexpr double pi = 3.14159265358979323846;
+    constexpr double perspective_scale = 0.4142135623730950488;
+    constexpr double width = 640, height = 480;
+    for (const double field_of_view : {180.0, 90.0, 45.0, 0.5}) {
+        for (const double blend : {0.0, 0.5, 1.0}) {
+            const HorizonProjectionViewport view{0, 0, field_of_view, blend};
+            // 中央の上下端と左右端は、正逆変換の往復とは独立に求める。
+            const double half_height = ((1 - blend) * field_of_view + blend * 45) / 2;
+            const auto top = unproject_horizon({width / 2, 0}, view, width, height);
+            const auto bottom = unproject_horizon({width / 2, height}, view, width, height);
+            near(top.declination_deg, half_height, 1e-9);
+            near(bottom.declination_deg, -half_height, 1e-9);
+            const double half_width = (1 - blend) * field_of_view
+                + blend * std::atan(perspective_scale * width / height) * 180 / pi;
+            const auto right = unproject_horizon({width, height / 2}, view, width, height);
+            near(std::remainder(right.right_ascension_deg + half_width, 360.0), 0, 1e-9);
+
+            const HorizonRasterProjection raster(view, 640, 480);
+            for (const auto point : {ScreenPoint{80.5, 60.5}, ScreenPoint{320.5, 240.5},
+                                     ScreenPoint{559.5, 419.5}}) {
+                const auto direction = unproject_horizon(point, view, width, height);
+                const auto pixel = raster.direction(static_cast<std::size_t>(point.x),
+                                                    static_cast<std::size_t>(point.y));
+                near(std::remainder(pixel.right_ascension_deg - direction.right_ascension_deg, 360.0), 0, 1e-9);
+                near(pixel.declination_deg, direction.declination_deg, 1e-9);
+                const auto projected = project_horizon(direction, view, width, height);
+                check(projected.has_value(), "field-of-view sample must remain visible");
+                near(projected->x, point.x, 1e-7);
+                near(projected->y, point.y, 1e-7);
+            }
+        }
+    }
+
+    // 正の画角を保持できても極小値では方向が丸められるため、ここでは有限性を確認する。
+    const HorizonProjectionViewport tiny{0, 0, 1e-300, 0};
+    const auto direction = unproject_horizon({160, 120}, tiny, width, height);
+    check(std::isfinite(direction.right_ascension_deg) && std::isfinite(direction.declination_deg),
+          "tiny field of view must yield a finite direction");
+    const HorizonRasterProjection raster(tiny, 640, 480);
+    const auto pixel = raster.direction(160, 120);
+    check(std::isfinite(pixel.right_ascension_deg) && std::isfinite(pixel.declination_deg),
+          "tiny field of view must yield a finite raster direction");
+    const auto center = project_horizon({0, 0}, tiny, width, height);
+    check(center && std::isfinite(center->x) && std::isfinite(center->y),
+          "tiny field of view must project its center to finite coordinates");
+    const auto zoomed_out = zoom_horizon(tiny, 0.5, {width / 2, height / 2}, width, height);
+    near(tiny.vertical_fov_deg, 1e-300, 0);
+    near(zoomed_out.vertical_fov_deg, 2e-9, 1e-21);
+    const auto visible_top = unproject_horizon({width / 2, 0}, zoomed_out, width, height);
+    near(visible_top.declination_deg, 1e-9, 1e-15);
+    const HorizonProjectionViewport subpixel{0, 0, 1e-12};
+    const ScreenPoint off_center{width / 4, height / 4};
+    const auto unchanged = zoom_horizon(subpixel, 1, off_center, width, height);
+    near(unchanged.vertical_fov_deg, subpixel.vertical_fov_deg, 0);
+    near(unchanged.center_ra_deg, subpixel.center_ra_deg, 0);
+    near(unchanged.center_dec_deg, subpixel.center_dec_deg, 0);
+    const auto zoomed_in = zoom_horizon(subpixel, 1.5, off_center, width, height);
+    near(zoomed_in.vertical_fov_deg, 1e-12 / 1.5, 1e-24);
+    const auto anchored_out = zoom_horizon(subpixel, 0.5, off_center, width, height);
+    const auto original_anchor = unproject_horizon(off_center, subpixel, width, height);
+    const auto projected_anchor = project_horizon(original_anchor, anchored_out, width, height);
+    check(projected_anchor.has_value(), "zoomed-out anchor must remain visible");
+    near(projected_anchor->x, off_center.x, 0.1);
+    near(projected_anchor->y, off_center.y, 0.1);
+
+    for (const double pole : {-90.0, 90.0}) {
+        const HorizonProjectionViewport polar{0, pole, 1e-9};
+        const auto above = unproject_horizon({width / 2, height / 4}, polar, width, height);
+        const auto below = unproject_horizon({width / 2, 3 * height / 4}, polar, width, height);
+        check(std::abs(above.declination_deg) < 90 && std::abs(below.declination_deg) < 90,
+              "small polar offsets must not round to the pole");
+        for (const auto screen : {ScreenPoint{width / 2, height / 4}, ScreenPoint{width / 2, 3 * height / 4}}) {
+            const auto projected = project_horizon(unproject_horizon(screen, polar, width, height), polar, width, height);
+            check(projected.has_value(), "small polar offset must remain visible");
+            near(projected->x, screen.x, 0.1);
+            near(projected->y, screen.y, 0.1);
+        }
+    }
 }
 
 void test_navigation() {
@@ -212,14 +320,18 @@ void test_navigation() {
     check(anchor.has_value(), "zoom anchor remains visible");
     near(anchor->x, 270);
     near(anchor->y, 70);
-    for (const SkyViewport view : {SkyViewport{73, -70, 2}, SkyViewport{73, 0, 2}, SkyViewport{73, 70, 2}}) {
+    for (const HorizonProjectionViewport view : {HorizonProjectionViewport{73, -70, 90},
+                                                 HorizonProjectionViewport{73, 0, 90},
+                                                 HorizonProjectionViewport{73, 70, 90},
+                                                 HorizonProjectionViewport{73, 20, 0.5, 0, 25},
+                                                 HorizonProjectionViewport{73, 20, 45, 0.5, 25}}) {
         const ScreenPoint point{230, 60};
         const auto target = unproject_horizon(point, view, 360, 180);
         const auto zoomed_horizon = zoom_horizon(view, 1.5, point, 360, 180);
         const auto projected = project_horizon(target, zoomed_horizon, 360, 180);
         check(projected.has_value(), "horizon zoom anchor remains visible");
-        near(projected->x, point.x);
-        near(projected->y, point.y);
+        near(projected->x, point.x, 1e-7);
+        near(projected->y, point.y, 1e-7);
     }
     const auto seam = project_sky_segment({350, 0}, {10, 0}, {}, 360, 180);
     check(seam.size() == 2, "RA seam must produce two short segments");
@@ -406,6 +518,8 @@ int main(int argc, char** argv) {
     const auto directory = std::filesystem::path(pattern);
     try {
         test_projection();
+        test_horizon_field_of_view();
+        test_perspective_field_of_view();
         test_navigation();
         test_model(directory);
         test_constellations(directory);
