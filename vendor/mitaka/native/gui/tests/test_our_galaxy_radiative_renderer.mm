@@ -106,5 +106,9 @@ int main() {
     throws<std::invalid_argument>([&] { render_our_galaxy_radiative(model, camera, 0, 1); });
     throws<std::invalid_argument>([&] { our_galaxy_galactic_position({NAN, 0, 0}); });
     throws<std::out_of_range>([&] { our_galaxy_galactic_position({1e9, 0, 0}); });
-    throws<std::invalid_argument>([&] { camera.pitch_deg = 90; our_galaxy_camera_origin(camera); });
+    camera.distance_pc = 1e8;
+    assert(our_galaxy_alpha(camera) == 0);
+    camera.pitch_deg = 90;
+    throws<std::invalid_argument>([&] { our_galaxy_camera_origin(camera); });
+    throws<std::invalid_argument>([&] { our_galaxy_alpha(camera); });
 }

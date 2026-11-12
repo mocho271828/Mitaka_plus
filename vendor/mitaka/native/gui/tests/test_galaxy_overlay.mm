@@ -56,7 +56,8 @@ std::shared_ptr<const GalaxySpatialModel> fixture() {
         GalaxySdssSource{snapshot, 0}, GalaxySdssSource{snapshot, 1}, clusters, galaxies});
 }
 NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera, bool opaqueBackground = false,
-                          int scale = 1, RendererDisplayOptions quality = {}, bool flipped = false) {
+                          int scale = 1, RendererDisplayOptions quality = {}, bool flipped = false,
+                          std::optional<GalaxySpatialRecordId> selected = std::nullopt) {
     NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
         pixelsWide:512 * scale pixelsHigh:512 * scale bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
         isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
@@ -74,7 +75,7 @@ NSBitmapImageRep *drawImage(GalaxyOverlay *overlay, const GalaxyCameraPc& camera
         [[NSColor colorWithSRGBRed:.1 green:.2 blue:.3 alpha:1] setFill];
         NSRectFill(NSMakeRect(0, 0, 512, 512));
     }
-    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:quality scale:scale];
+    [overlay drawInRect:NSMakeRect(0, 0, 512, 512) camera:camera quality:quality scale:scale selectedRecord:selected];
     [NSGraphicsContext restoreGraphicsState];
     return image;
 }
@@ -257,6 +258,75 @@ NSPoint position(const GalaxySpatialModel& model, GalaxySpatialRecordId id, cons
     const auto point = GalaxyProjector(camera, 512, 512).project(*row.position);
     check(point.has_value(), "fixture projection missing");
     return NSMakePoint(point->x, point->y);
+}
+void selectedCatalogRowRemainsInPreview() {
+    PlusNearbyGalaxyCatalog catalog{{"nbg", {}}, {}};
+    PlusNearbyGalaxyRecord invalid;
+    invalid.distance_pc = -1;
+    catalog.records.assign(6001, invalid); // stride 2。奇数の選択行を通常の原行4と同じ枠へ割り当てる。
+    auto& target = catalog.records[5];
+    target.distance_pc = 710000;
+    target.angular_diameter_arcminutes = 190;
+    catalog.records[4] = target;
+    catalog.records[4].right_ascension_degrees = 12;
+    const GalaxySpatialRecordId chosen{GalaxySpatialFamily::nearby_galaxy, 0, 5};
+    const GalaxySpatialRecordId regular{GalaxySpatialFamily::nearby_galaxy, 0, 4};
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
+    GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
+    [overlay setModel:std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{catalog})];
+    const GalaxyCameraPc camera{{710000, 0, 0}, 0, 0, 710000};
+    const auto drawWithSelection = [&](std::optional<GalaxySpatialRecordId> selected) {
+        return drawImage(overlay, camera, false, 1, {}, false, selected);
+    };
+    const auto without = drawWithSelection(std::nullopt);
+    const auto budgetUsed = [overlay diagnostics].preview_rows;
+    check(![overlay isRecordDisplayed:chosen] && [overlay isRecordDisplayed:regular] &&
+          [without colorAtX:256 y:256].alphaComponent == 0, "unselected unsampled disk was drawn");
+    const auto with = drawWithSelection(chosen);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::preview &&
+          [overlay diagnostics].preview_rows == budgetUsed && budgetUsed <= 6000 &&
+          [overlay isRecordDisplayed:chosen] && ![overlay isRecordDisplayed:regular] &&
+          [with colorAtX:256 y:256].alphaComponent > 0, "selected disk did not replace its preview slot");
+
+    const auto picked = std::make_shared<PickResult>();
+    [overlay pickAtPoint:NSMakePoint(256, 256) camera:camera completion:^(std::optional<GalaxySpatialRecordId> id) {
+        picked->picked = id; picked->called = true;
+    }];
+    // 主画面はクリック時に選択をいったん解除する。結果はクリック時に描いていた行から得る。
+    drawWithSelection(std::nullopt);
+    check(![overlay isRecordDisplayed:chosen] && [overlay isRecordDisplayed:regular],
+          "clearing selection did not restore the regular preview sample");
+    waitFor([&] { return picked->called; }, "selected preview disk pick did not finish");
+    check(picked->picked == chosen, "pick did not use the displayed selected disk");
+    waitFor([&] { drawWithSelection(chosen); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+            "selected disk did not reach the complete image");
+    drawWithSelection(std::nullopt);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::complete && [overlay isRecordDisplayed:regular] &&
+          [overlay isRecordDisplayed:chosen], "selection change invalidated complete image");
+
+    // 同じ円に後続原行が重なれば、選択を固定しても後描きの原行をクリックする。
+    catalog.records[6] = target;
+    [overlay setModel:std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{std::move(catalog)})];
+    drawWithSelection(chosen);
+    const auto overlap = std::make_shared<PickResult>();
+    [overlay pickAtPoint:NSMakePoint(256, 256) camera:camera completion:^(std::optional<GalaxySpatialRecordId> id) {
+        overlap->picked = id; overlap->called = true;
+    }];
+    waitFor([&] { return overlap->called; }, "overlap pick did not finish");
+    check(overlap->picked == GalaxySpatialRecordId{chosen.family, 0, 6}, "selected row overrode a later painted disk");
+
+    auto offscreen = camera;
+    offscreen.target = *[overlay model]->row(regular).position;
+    offscreen.distance_pc = 50000;
+    drawImage(overlay, offscreen, false, 1, {}, false, chosen);
+    check(![overlay isRecordDisplayed:chosen] && [overlay isRecordDisplayed:regular],
+          "offscreen selected disk displaced a visible preview row");
+    GalaxySpatialVisibility hidden;
+    hidden.nearby_galaxies = false;
+    [overlay setVisibility:hidden];
+    drawWithSelection(chosen);
+    check(![overlay isRecordDisplayed:chosen] && [overlay diagnostics].preview_rows == 0,
+          "selected disk bypassed family visibility");
 }
 void previewAndCompleteUseSameSdssColor() {
     for (bool reverse : {false, true}) {
@@ -472,6 +542,14 @@ void radiativeFailureKeepsOtherLayers() {
         check([overlay diagnostics].display == GalaxyOverlayDisplay::complete && !view.needsDisplay,
               "failed layer retried the same request");
     }
+    auto moved = camera;
+    moved.distance_pc *= 2;
+    draw(overlay, moved);
+    check([overlay.status containsString:@"全件を描画中"], "new preview retained the old render failure");
+    draw(overlay, camera);
+    check([overlay diagnostics].display == GalaxyOverlayDisplay::complete &&
+          [overlay.status containsString:@"radiative maps must be 512 by 512"],
+          "cached frame lost its render failure after a camera round trip");
 }
 void visibilityControls() {
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
@@ -723,11 +801,13 @@ void previewOurGalaxyPreservesOpaqueBackground() {
         check(maxBrightening >= 1.0 / 255.0, "preview point did not brighten the background");
     }
 }
-void outOfRangePreviewSkipsInvisibleOurGalaxy() {
+void outOfRangeCameraSkipsInvisibleOurGalaxy() {
     const auto center = our_galaxy_center({{0, 0, 0}});
     const GalaxyCameraPc camera{center, 0, 0, 1e8};
     check(hit_our_galaxy({{0, 0, 0}}, camera, 256, 256, 512, 512),
           "test ray must intersect the invisible galaxy fallback");
+    const OurGalaxyPointId ourPoint{OurGalaxyPointGroup::disk1, 0};
+    const GalaxySpatialRecordId sdss{GalaxySpatialFamily::sdss_galaxy, 0, 0};
     for (bool includeHip : {false, true}) {
         NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 512, 512)];
         GalaxyOverlay *overlay = [[GalaxyOverlay alloc] initWithView:view];
@@ -735,25 +815,43 @@ void outOfRangePreviewSkipsInvisibleOurGalaxy() {
         for (auto& map : model->maps) {
             map.width = 512; map.height = 512; map.values.assign(512 * 512, 0);
         }
+        model->groups[0].positions.push_back({0, 0, 0});
         [overlay setOurGalaxyModel:model];
         if (includeHip) {
             auto hip = std::make_shared<HipSpatialModel>();
             hip->points.push_back({0, 1, center});
             [overlay setHipModel:hip];
+            [overlay setModel:fixture()];
         }
         draw(overlay, camera);
-        check([overlay diagnostics].display == GalaxyOverlayDisplay::preview,
-              "out-of-range selection must inspect preview");
-        const auto done = std::make_shared<bool>(false);
-        const auto selection = std::make_shared<GalaxyOverlaySelection>();
-        [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
-            *selection = result; *done = true;
-        }];
-        waitFor([&] { return *done; }, "out-of-range preview pick did not finish");
-        check(!selection->our_galaxy && !selection->our_galaxy_point,
-              "out-of-range preview selected invisible OurGalaxy");
-        check(selection->hip.has_value() == includeHip,
-              "out-of-range OurGalaxy must not interfere with HIP selection");
+        for (auto mode : {GalaxyOverlayDisplay::preview, GalaxyOverlayDisplay::complete}) {
+            if (mode == GalaxyOverlayDisplay::complete) {
+                waitFor([&] { draw(overlay, camera); return [overlay diagnostics].display == mode; },
+                        "distant camera did not finish rendering");
+                check(!overlay.status.length, "distant camera reported a render failure");
+            }
+            check([overlay diagnostics].display == mode && ![overlay displayedOurGalaxyPointPosition:ourPoint],
+                  "out-of-range OurGalaxy point remained visible");
+            check([overlay isRecordDisplayed:sdss] == includeHip && [overlay isHipDisplayed:0] == includeHip,
+                  "distant camera lost the remaining layers");
+            const auto done = std::make_shared<bool>(false);
+            const auto selection = std::make_shared<GalaxyOverlaySelection>();
+            [overlay pickSpatialAtPoint:NSMakePoint(256, 256) camera:camera completion:^(GalaxyOverlaySelection result) {
+                *selection = result; *done = true;
+            }];
+            waitFor([&] { return *done; }, "out-of-range pick did not finish");
+            check(!selection->our_galaxy && !selection->our_galaxy_point,
+                  "out-of-range camera selected invisible OurGalaxy");
+            check(selection->hip.has_value() == includeHip, "out-of-range camera lost HIP selection");
+        }
+        if (includeHip) {
+            const GalaxyCameraPc near{{0, 0, 0}, 0, 0, 2700};
+            waitFor([&] { draw(overlay, near); return [overlay diagnostics].display == GalaxyOverlayDisplay::complete; },
+                    "return to the Milky Way did not finish rendering");
+            check(!overlay.status.length && [overlay diagnostics].our_galaxy_drawn > 0 &&
+                  [overlay displayedOurGalaxyPointPosition:ourPoint].has_value(),
+                  "return to the Milky Way did not restore its visible and selectable point");
+        }
     }
 }
 void ourGalaxyCompetesWithHip() {
@@ -878,13 +976,13 @@ void tests() {
     previewOurGalaxyDistanceFade();
     previewOurGalaxyCenterFade();
     previewOurGalaxyPreservesOpaqueBackground();
-    outOfRangePreviewSkipsInvisibleOurGalaxy();
+    outOfRangeCameraSkipsInvisibleOurGalaxy();
     ourGalaxyCompetesWithHip();
 }
 } // namespace
 int main() {
     @autoreleasepool {
-        try { extendedObjectsMatchPaintedPixels(); asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); previewAndCompletePartialOverlapPick(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
+        try { extendedObjectsMatchPaintedPixels(); selectedCatalogRowRemainsInPreview(); asynchronousRedrawDoesNotInvalidateScene(); previewAndCompleteUseSameSdssColor(); previewAndCompletePartialOverlapPick(); tests(); std::cout << "Galaxy overlay: PASS\n"; }
         catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }
 }

@@ -974,7 +974,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
                 const auto galaxyCamera = galaxy_camera_from_shared(shared_camera_from_solar(frame.camera));
                 [_galaxyOverlay setHipVisible:_hipVisible && !sharedStars];
                 [_galaxyOverlay drawInRect:frame.map camera:galaxyCamera quality:frame.renderer_display
-                                    scale:frame.backing_scale];
+                                    scale:frame.backing_scale selectedRecord:_galaxySelection];
                 galaxyDrawn = true;
                 galaxyStatus = _galaxyOverlay.status;
             } catch (const std::exception& error) {

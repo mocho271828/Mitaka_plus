@@ -1,6 +1,7 @@
 #include "HipSpatialRenderer.h"
 #include "mitaka/astronomy.hpp"
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -60,6 +61,58 @@ void render() {
     const auto second = render_hip_spatial_bitmap(*model, away, {}, 128, 128, 1);
     check(second && second->counts().drawn == 1, "arbitrary camera basis accepted");
     check(!render_hip_spatial_bitmap(*model, camera, {}, 128, 128, 1, [] { return true; }), "render cancellation");
+    bool invalid_scale = false;
+    try { (void)render_hip_spatial_bitmap(*model, camera, {}, 1e-310, 128, 1); }
+    catch (const std::invalid_argument&) { invalid_scale = true; }
+    check(invalid_scale, "non-finite device transform rejected before allocating a bitmap");
+}
+// 512 個ずつ元順に直接塗った Quartz 画像と、密集・疎・最後の端数を含む描画を照合する。
+void compare_dense_compositing(double scale, bool smoothing) {
+    const GalaxyCameraPc camera{{0,0,0}, 0,0,10};
+    constexpr double width = 120.5, height = 95.25;
+    const GalaxyProjector projector(camera, width, height);
+    const auto raster = galaxy_raster_size(width, height, scale);
+    HipSpatialModel model;
+    for (int i = 0; i < 1537; ++i) {
+        const bool dense = i < 1024;
+        model.points.push_back({std::size_t(i), i,
+            {0, dense ? 2.4 + (i % 17) * .0003 : ((i % 61) - 30) * .2,
+                dense ? 1.3 + (i % 31) * .0004 : ((i % 13) - 6) * .6}});
+    }
+    RendererDisplayOptions quality;
+    quality.point_smoothing = smoothing;
+    const auto image = render_hip_spatial_bitmap(model, camera, quality, width, height, scale);
+    const auto colors = CGColorSpaceCreateDeviceRGB();
+    const auto ctx = CGBitmapContextCreate(nullptr, raster.width, raster.height, 8, 4 * raster.width,
+        colors, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colors);
+    check(ctx != nullptr, "reference bitmap");
+    CGContextTranslateCTM(ctx, 0, raster.height);
+    CGContextScaleCTM(ctx, raster.width / width, -double(raster.height) / height);
+    CGContextSetShouldAntialias(ctx, smoothing);
+    CGContextClipToRect(ctx, CGRectMake(0,0,width,height));
+    CGContextSetRGBFillColor(ctx, 1,1,1,.8);
+    std::size_t drawn = 0;
+    for (const auto& star : model.points) {
+        const auto point = projector.project(star.position);
+        if (!point || !projector.contains(*point)) continue;
+        constexpr double r = hip_spatial_point_radius;
+        CGContextAddEllipseInRect(ctx, CGRectMake(point->x-r, point->y-r, 2*r, 2*r));
+        if (++drawn % 512 == 0) CGContextFillPath(ctx);
+    }
+    if (drawn % 512) CGContextFillPath(ctx);
+    const auto bytes = CGDataProviderCopyData(CGImageGetDataProvider(image->image()));
+    const bool identical = bytes && std::memcmp(CFDataGetBytePtr(bytes), CGBitmapContextGetData(ctx),
+        raster.width * raster.height * 4) == 0;
+    if (bytes) CFRelease(bytes);
+    CGContextRelease(ctx);
+    check(image->counts().drawn == drawn && drawn > 1024 && drawn < model.points.size(), "all projected HIP source counts");
+    check(identical, "dense batches and sparse stars preserve the direct Quartz RGBA image");
+    // 開始時と256原行ごとの取消照会を通し、並列描画後の合成で一度だけ取消を返す。
+    const auto initial_queries = 1 + (model.points.size() + 255) / 256;
+    std::size_t calls = 0;
+    check(!render_hip_spatial_bitmap(model, camera, quality, width, height, scale,
+          [&] { return ++calls == initial_queries + 1; }), "cancellation never publishes a partial dense frame");
 }
 void picking() {
     const GalaxyProjector projector(GalaxyCameraPc{{0,0,0}, 0,0,10}, 128, 128);
@@ -97,6 +150,7 @@ void picking() {
 int main(int argc, char** argv) {
     try {
         positions(); render(); picking();
+        compare_dense_compositing(1, false); compare_dense_compositing(2, true);
         if (argc > 1) {
             const auto stars = load_hipparcos(argv[1]);
             const auto model = build_hip_spatial_model(stars);
