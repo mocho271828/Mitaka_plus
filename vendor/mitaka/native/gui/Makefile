@@ -642,3 +642,11 @@ script-console-test: $(BUILD_DIR)/test_script_console $(BUILD_DIR)/test_script_c
 	"$(BUILD_DIR)/test_script_console"
 	"$(BUILD_DIR)/test_script_console_execution" "$(abspath $(SCRIPT_HELPER))"
 controller-test: script-console-test
+
+# LUA-04: 標準ライブラリの回帰と同梱 Lua 原本のコンパイルのみを明示実行する。
+$(BUILD_DIR)/test_lua_compatibility: tests/test_lua_compatibility.mm $(addprefix $(BUILD_DIR)/,ScriptController.o script_transport.o star_brightness.o plus_time_step.o plus_time_playback.o plus_time_calendar.o radius_display.o) core
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $(filter-out core,$^) "$(CORE_LIBRARY)" $(LDFLAGS) -framework Foundation -o "$@"
+
+.PHONY: lua-compatibility-test
+lua-compatibility-test: $(BUILD_DIR)/test_lua_compatibility $(SCRIPT_HELPER)
+	"$(BUILD_DIR)/test_lua_compatibility" "$(abspath $(SCRIPT_HELPER))" "$(abspath ../../../../resources/scripts)"
