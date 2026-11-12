@@ -15,6 +15,23 @@ double heading(double angle) {
     return reduced < 0 ? reduced + 360 : reduced;
 }
 
+double plus_flight_weight(double progress) {
+    return 0.5 - 0.5 * std::cos(180 * radians_per_degree * progress);
+}
+
+double earth_horizon_look_weight(double datum_height_km) {
+    // 旧Plusの地平線モードは、地心距離が2Rから1.002Rに近づくにつれ
+    // 天底から元の地平視線へ戻る。途中では地平線の見かけの角度で補間する。
+    constexpr double inner_radius = 1.002, outer_radius = 2.0;
+    const double radius = 1 + datum_height_km / earth_reference_radius_km;
+    if (radius <= inner_radius) return 1;
+    if (radius >= outer_radius) return 0;
+    const double outer_angle = std::asin(inner_radius / outer_radius);
+    const double phase = (std::asin(inner_radius / radius) - outer_angle) /
+        (90 * radians_per_degree - outer_angle);
+    return phase < 0.5 ? 2 * phase * phase : 1 - 2 * (1 - phase) * (1 - phase);
+}
+
 Vec3 transform(Vec3 value, const BodyOrientation& orientation) {
     return {value.x * orientation.x_axis.x + value.y * orientation.y_axis.x + value.z * orientation.north_axis.x,
             value.x * orientation.x_axis.y + value.y * orientation.y_axis.y + value.z * orientation.north_axis.y,
@@ -178,16 +195,23 @@ void SurfaceNavigation::update_terrain_offset(double offset_km) {
     if (flight_) {
         auto& flight = *flight_;
         const double progress = std::clamp((flight.previous_time - flight.start_time) / flight.duration, 0.0, 1.0);
-        const double remaining = flight.duration * (1.0 - progress);
         // 着陸は地上2mを目標に保ち、離陸は可能な限り元の半径を保つ。
         if (flight.end_height != minimum_surface_height_km)
             flight.end_height = std::clamp(flight.end_height + old_offset - offset_km,
                                            minimum_surface_height_km, maximum_height_km);
-        flight.start_time = flight.previous_time;
-        flight.duration = remaining;
-        flight.start_height = height;
-        flight.start_elevation = site_.elevation_deg;
-        flight.start_roll = site_.roll_deg;
+        if (flight.height_curve == HeightCurve::plus_earth) {
+            // 地形の受領時にも離着陸の時計を進め、同じ余弦位相で現在高と到着高を結ぶ。
+            const double remaining_weight = plus_flight_weight(1 - progress);
+            if (remaining_weight > 0)
+                flight.start_height = flight.end_height + (height - flight.end_height) / remaining_weight;
+        } else {
+            flight.start_time = flight.previous_time;
+            flight.duration *= 1.0 - progress;
+            flight.start_height = height;
+            flight.start_elevation = site_.elevation_deg;
+            flight.start_roll = site_.roll_deg;
+            flight.start_heading = site_.heading_deg;
+        }
     }
     site_.terrain_offset_km = offset_km;
     site_.height_km = height;
@@ -235,22 +259,26 @@ SolarCamera SurfaceNavigation::camera(const SolarBodies& bodies) const {
     return result;
 }
 
-void SurfaceNavigation::begin_flight(double time, double height, double elevation, double roll, double duration) {
+void SurfaceNavigation::begin_flight(double time, double height, double elevation, double roll,
+                                     double duration, std::optional<double> arrival_heading, HeightCurve height_curve) {
     if (!std::isfinite(time)) throw std::invalid_argument("flight time must be finite");
     if (!std::isfinite(duration) || duration < 0) throw std::invalid_argument("flight duration must be nonnegative and finite");
+    const double end_heading = arrival_heading.value_or(site_.heading_deg);
     if (duration == 0) {
         site_.height_km = height;
         site_.elevation_deg = elevation;
         site_.roll_deg = roll;
+        site_.heading_deg = end_heading;
         interrupt();
         return;
     }
-    if (site_.height_km == height && site_.elevation_deg == elevation && site_.roll_deg == roll) {
+    if (site_.height_km == height && site_.elevation_deg == elevation && site_.roll_deg == roll
+        && site_.heading_deg == end_heading) {
         interrupt();
         return;
     }
     flight_ = Flight{time, time, site_.height_km, height, site_.elevation_deg, elevation,
-                     site_.roll_deg, roll, duration};
+                     site_.roll_deg, roll, duration, site_.heading_deg, end_heading, height_curve};
 }
 
 void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_seconds) {
@@ -258,6 +286,17 @@ void SurfaceNavigation::begin_ascent(double monotonic_seconds, double duration_s
     const double target_height = surface_body_info(site_.body_index).radius_km * 8 - site_.terrain_offset_km;
     begin_flight(monotonic_seconds, std::max(site_.height_km, target_height),
                  -80, site_.roll_deg, duration_seconds);
+}
+
+void SurfaceNavigation::begin_earth_horizon_ascent(double time, double duration) {
+    if (site_.body_index != 3) throw std::invalid_argument("Earth horizon takeoff requires an Earth site");
+    // 旧Plusの既定zoomは地球半径の7.5倍。物理高度には同梱設定の
+    // (ObjZ + ScreenZ) / (ScreenW / 180 × 2000) を掛ける。
+    constexpr double takeoff_scale = 7.5;
+    constexpr double height_per_zoom = (400.0 + 217.3) / 2000.0;
+    const double height = earth_reference_radius_km * takeoff_scale * height_per_zoom - site_.terrain_offset_km;
+    begin_flight(time, std::max(site_.height_km, height), -90, site_.roll_deg, duration,
+                 std::nullopt, HeightCurve::plus_earth);
 }
 
 void SurfaceNavigation::begin_descent(double monotonic_seconds, double duration_seconds) {
@@ -268,6 +307,14 @@ void SurfaceNavigation::begin_descent_preserving_look(double monotonic_seconds, 
                                                       bool level_roll) {
     begin_flight(monotonic_seconds, minimum_surface_height_km, site_.elevation_deg,
                  level_roll ? 0 : site_.roll_deg, duration_seconds);
+}
+
+void SurfaceNavigation::begin_descent_to_view(double time, double duration, const SurfaceSite& ground_view) {
+    SurfaceNavigation destination;
+    destination.set_site(ground_view);
+    const auto& view = destination.site();
+    begin_flight(time, minimum_surface_height_km, view.elevation_deg, view.roll_deg, duration, view.heading_deg,
+                 site_.body_index == 3 ? HeightCurve::plus_earth : HeightCurve::logarithmic);
 }
 
 bool SurfaceNavigation::advance(double monotonic_seconds) {
@@ -283,19 +330,32 @@ bool SurfaceNavigation::advance(double monotonic_seconds) {
     if (t == 0) return false;
     const double smooth = t * t * (3 - 2 * t);
     const double old_height = site_.height_km, old_elevation = site_.elevation_deg, old_roll = site_.roll_deg;
-    // 2mから惑星規模までの距離差を、地表付近で急激に飛ばない対数高度でつなぐ。
-    site_.height_km = std::clamp(std::exp(std::log(flight.start_height) * (1 - smooth)
-                              + std::log(flight.end_height) * smooth),
-                              minimum_surface_height_km, maximum_height_km);
-    site_.elevation_deg = flight.start_elevation * (1 - smooth) + flight.end_elevation * smooth;
-    site_.roll_deg = flight.start_roll * (1 - smooth) + flight.end_roll * smooth;
+    const double old_heading = site_.heading_deg;
+    double height, look_progress = smooth;
+    if (flight.height_curve == HeightCurve::plus_earth) {
+        const double weight = plus_flight_weight(t);
+        height = flight.start_height * (1 - weight) + flight.end_height * weight;
+        const double start = earth_horizon_look_weight(flight.start_height + site_.terrain_offset_km);
+        const double end = earth_horizon_look_weight(flight.end_height + site_.terrain_offset_km);
+        if (start != end)
+            look_progress = std::clamp((earth_horizon_look_weight(height + site_.terrain_offset_km) - start)
+                                       / (end - start), 0.0, 1.0);
+    } else {
+        height = std::exp(std::log(flight.start_height) * (1 - smooth) + std::log(flight.end_height) * smooth);
+    }
+    site_.height_km = std::clamp(height, minimum_surface_height_km, maximum_height_km);
+    site_.elevation_deg = flight.start_elevation * (1 - look_progress) + flight.end_elevation * look_progress;
+    site_.roll_deg = std::remainder(flight.start_roll + smooth * std::remainder(flight.end_roll - flight.start_roll, 360.0), 360.0);
+    site_.heading_deg = heading(flight.start_heading + smooth * std::remainder(flight.end_heading - flight.start_heading, 360.0));
     if (t == 1) {
         site_.height_km = flight.end_height;
         site_.elevation_deg = flight.end_elevation;
         site_.roll_deg = flight.end_roll;
+        site_.heading_deg = flight.end_heading;
         interrupt();
     }
-    return site_.height_km != old_height || site_.elevation_deg != old_elevation || site_.roll_deg != old_roll;
+    return site_.height_km != old_height || site_.elevation_deg != old_elevation || site_.roll_deg != old_roll
+        || site_.heading_deg != old_heading;
 }
 
 void SurfaceNavigation::look(double dx_points, double dy_points) {

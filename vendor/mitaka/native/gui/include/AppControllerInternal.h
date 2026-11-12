@@ -89,10 +89,7 @@ struct ScriptLookTarget {
     NSArray<NSButton *> *_cameraButtons, *_travelButtons;
     NSButton *_journeyButton, *_resumeJourneyButton;
     BOOL _pendingEarthDescent;
-    NSTimer *_horizonProjectionTimer;
-    double _horizonProjectionStartTime, _horizonProjectionDuration;
-    double _horizonProjectionStart, _horizonProjectionTarget, _horizonAscentDuration;
-    double _earthDescentProjectionDuration;
+    std::optional<mitaka::gui::HorizonViewport> _horizonFlightView;
     NSTextField *_latitudeField, *_longitudeField;
     NSTextField *_cameraLabel, *_note;
     NSString *_skySelection, *_solarSelection, *_horizonSelection;
@@ -204,9 +201,14 @@ struct ScriptLookTarget {
 - (void)changeMode:(id)sender;
 - (void)surfaceNavigationChanged;
 - (void)cancelHorizonProjection;
+- (void)updateHorizonFlightProjection;
+- (std::optional<int>)plusCameraMode;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force selectedSurface:(BOOL)selectedSurface error:(NSString **)error;
+- (double)cameraModeDuration;
+- (BOOL)canToggleFlightMode;
+- (void)toggleFlightMode:(id)sender;
 - (void)takeOffFromHorizon:(id)sender;
 - (void)descendToHorizon:(id)sender;
 - (void)stepHour:(NSButton *)sender;

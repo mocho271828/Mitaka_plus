@@ -148,7 +148,11 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (BOOL)isFlipped { return YES; }
 - (BOOL)isOpaque { return YES; }
-- (BOOL)acceptsFirstResponder { return YES; }
+- (BOOL)drawsFlightTitle { return self.flightOverlay && _viewport.perspective_blend < 0.5; }
+- (BOOL)acceptsFirstResponder { return !self.flightOverlay; }
+- (NSView *)hitTest:(NSPoint)point {
+    return self.flightOverlay ? nil : [super hitTest:point];
+}
 - (NSRect)mapRect {
     const double blend = _viewport.perspective_blend;
     return NSInsetRect(self.bounds, 42 - 24 * blend, 34 + 6 * blend);
@@ -393,7 +397,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 }
 - (double)verticalFovDegrees {
     return (1 - _viewport.perspective_blend) * _viewport.vertical_fov_deg
-        + _viewport.perspective_blend * 45;
+        + _viewport.perspective_blend * _viewport.perspective_fov_deg;
 }
 - (BOOL)setVerticalFovDegrees:(double)degrees {
     if (!std::isfinite(degrees) || degrees <= 0 || degrees > 90 || _viewport.perspective_blend != 0)
@@ -751,8 +755,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [self drawSkyBackgroundInRect:map];
     [self drawGrid:context inRect:map];
     NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · JD %.5f", _julianDate] : @"";
-    drawText([NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
-        _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
+    if (!self.flightOverlay || self.drawsFlightTitle) {
+        drawText([NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
+            _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
+    }
     if (!_model) {
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);
         return;

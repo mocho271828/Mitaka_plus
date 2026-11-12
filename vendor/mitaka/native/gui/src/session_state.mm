@@ -109,7 +109,9 @@ void validate(const SessionState& state) {
     if (state.surface_site) {
         SurfaceNavigation navigation;
         navigation.set_site(*state.surface_site);
-        if (state.surface_site->height_km > minimum_surface_height_km + 1e-9) invalid(@"surface_site.height_km");
+        const bool above_ground = state.surface_site->height_km > minimum_surface_height_km + 1e-9;
+        if (above_ground != state.physical_space || (above_ground && state.surface_site->body_index != 3))
+            invalid(@"surface_site.height_km with solar_camera.physical_space");
     }
     const int selected = static_cast<int>(state.selected_body);
     if (selected < 0 || selected > static_cast<int>(Body::moon)) invalid(@"selected_body");
@@ -163,6 +165,7 @@ SessionState decode_session_state(std::string_view json) {
         state.solar_camera.distance_au = numeric_field(camera, @"distance_au");
         if (camera[@"fov_deg"]) state.solar_camera.vertical_fov_deg = numeric_field(camera, @"fov_deg");
         if (camera[@"roll_deg"]) state.solar_camera.roll_deg = numeric_field(camera, @"roll_deg");
+        if (camera[@"physical_space"]) state.physical_space = boolean_field(camera, @"physical_space");
         if (camera[@"frame_is_orbit"]) state.solar_camera.frame_is_orbit = boolean_field(camera, @"frame_is_orbit");
         id frame = required(camera, @"frame");
         if (frame != NSNull.null) {
@@ -276,6 +279,7 @@ std::string encode_session_state(const SessionState& state) {
             @"pitch_deg": @(camera.pitch_deg), @"distance_au": @(camera.distance_au), @"frame": frame,
             @"roll_deg": @(camera.roll_deg), @"frame_is_orbit": @(camera.frame_is_orbit),
             @"fov_deg": @(camera.vertical_fov_deg)} mutableCopy];
+        if (state.physical_space) camera_object[@"physical_space"] = @YES;
         if (camera.precise_target) {
             camera_object[@"precise_target"] = @{@"anchor_pc": vector_json(camera.precise_target->anchor_pc),
                                                  @"offset_au": vector_json(camera.precise_target->offset_au)};

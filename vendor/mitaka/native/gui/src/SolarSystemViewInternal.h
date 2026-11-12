@@ -12,6 +12,8 @@
 #import "StarRenderer.h"
 @class GalaxyOverlay;
 
+enum class SurfaceFlightMotion { ascent, earth_horizon_ascent, descent, descent_preserving_look };
+
 enum class ScriptOrientationInterpolation { quaternion, euler, relative_euler };
 
 struct ScriptOrientationAnimation {
@@ -190,7 +192,7 @@ struct LandingKey {
 - (void)updateJourneyAtTime:(double)time;
 - (void)restoreFlightOrientation;
 - (void)startFlightTimer;
-- (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site ascending:(BOOL)ascending preserveLook:(BOOL)preserveLook duration:(double)duration error:(NSString **)error;
+- (BOOL)beginFlightAtSite:(mitaka::gui::SurfaceSite)site motion:(SurfaceFlightMotion)motion duration:(double)duration error:(NSString **)error;
 - (void)changeSurfaceByX:(double)dx y:(double)dy zoom:(double)zoom;
 - (BOOL)smallBodiesSceneVisible;
 - (void)focusSmallBodySelection;

@@ -321,6 +321,20 @@ void real_surface_roundtrips(const SolarBodies& bodies) {
 void real_data(const char* path) {
     const auto model=SkyModel::load(path);
     const auto range=model.time_range();
+    // この配置では離陸直後から月へ向かう線と、最初の横方向の迂回線が地球を横切る。
+    constexpr double blocked_lunar_route_jd = 2451501.600;
+    if (range.first <= blocked_lunar_route_jd && blocked_lunar_route_jd <= range.second) {
+        const auto bodies = model.solar_bodies(blocked_lunar_route_jd);
+        const SurfaceSite lunar{10,25,-40};
+        InterplanetaryFlight flight;
+        flight.begin({},lunar,bodies,0);
+        flight.advance(.5,bodies);
+        flight.interrupt();
+        const SolarCamera stopped = flight.camera();
+        flight.begin_from_camera(stopped,lunar,bodies,1);
+        same_camera(stopped,flight.camera());
+        finish(flight,bodies,1);
+    }
     const double date=std::clamp(2451545.0,range.first,range.second-1);
     all_targets(model.solar_bodies(date));
     boundaries(model.solar_bodies(date));

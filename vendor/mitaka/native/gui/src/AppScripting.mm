@@ -208,7 +208,7 @@ static NSString *const scriptCompatibilityNote =
     [NSRunLoop.mainRunLoop addTimer:_scriptPlaceTimer forMode:NSRunLoopCommonModes];
 }
 - (HorizonViewport)scriptCameraViewport {
-    auto viewport = [_horizon viewport];
+    auto viewport = _horizonFlightView.value_or([_horizon viewport]);
     SurfaceSite site;
     if (_mode.selectedSegment == 1 && [_solar scriptSurfaceSite:&site]) {
         viewport.center_azimuth_deg = site.heading_deg;
@@ -394,7 +394,7 @@ static NSString *const scriptCompatibilityNote =
 }
 - (BOOL)scriptFovAvailable {
     return (_mode.selectedSegment == 1 && [_solar scriptPlanetariumMode]) ||
-        (_mode.selectedSegment == 2 && !_horizonProjectionTimer && [_horizon viewport].perspective_blend == 0);
+        (_mode.selectedSegment == 2 && !_horizonFlightView && [_horizon viewport].perspective_blend == 0);
 }
 - (double)scriptFovValue {
     return _mode.selectedSegment == 1 ? [_solar cameraState].vertical_fov_deg : [_horizon viewport].vertical_fov_deg;
@@ -560,13 +560,14 @@ static NSString *const scriptCompatibilityNote =
         state.camera_azimuth_deg = azimuth > 180 ? azimuth - 360 : azimuth;
         state.camera_altitude_deg = scriptViewport.center_altitude_deg;
         if ([controller scriptFovAvailable]) state.camera_fov = [controller scriptFovValue];
+        else if (controller->_mode.selectedSegment == 1 && controller->_solar.selectedBodyIndex == 3)
+            // 旧Plusの地球離着陸では、宇宙の透視画角と独立に地上用のFOVを読み戻せる。
+            state.camera_fov = scriptViewport.vertical_fov_deg;
         state.camera_duration = controller->_scriptCameraDuration;
         state.camera_zoom_mode = controller->_scriptCameraZoomMode;
         state.target_selection_mode = controller->_scriptTargetSelectionMode;
-        if (controller->_mode.selectedSegment == 1)
-            state.camera_mode = controller->_solar.scriptPlanetariumMode ? 0 : 1;
-        else if (controller->_mode.selectedSegment == 2) state.camera_mode = 0;
-        state.camera_mode_duration = controller->_scriptCameraModeDuration.value_or(7.1);
+        state.camera_mode = [controller plusCameraMode];
+        state.camera_mode_duration = [controller cameraModeDuration];
         if ((controller->_mode.selectedSegment == 1 && [controller->_solar scriptCameraOrientationAvailable]) ||
             (controller->_mode.selectedSegment == 2 && controller->_model)) {
             const auto q = controller->_mode.selectedSegment == 2

@@ -62,10 +62,14 @@ public:
     SolarCamera camera(const SolarBodies& bodies) const;
     // 既定では実時間3秒。0秒は即時移動。
     void begin_ascent(double monotonic_seconds, double duration_seconds = 3);
+    // 地球のプラネタリウムから宇宙へ出る際は旧Plusのカメラ尺度を使う。
+    void begin_earth_horizon_ascent(double monotonic_seconds, double duration_seconds);
     void begin_descent(double monotonic_seconds, double duration_seconds = 3);
     // 視線方向を維持して降下し、必要な場合は水平姿勢に戻す。
     void begin_descent_preserving_look(double monotonic_seconds, double duration_seconds = 3,
                                       bool level_roll = false);
+    // 同じ観測地点への帰還では、保存した地平の視線へ降下中に戻す。
+    void begin_descent_to_view(double time, double duration, const SurfaceSite& ground_view);
     // >1秒の空白、時計逆行、非有限時計は現在位置を保って中断する。
     // 戻り値は視点が変化したか。開始時の非有限時計はinvalid_argument。
     bool advance(double monotonic_seconds);
@@ -75,11 +79,16 @@ public:
     void zoom(double logarithmic_delta);
 
 private:
+    enum class HeightCurve { logarithmic, plus_earth };
     struct Flight {
         double start_time, previous_time, start_height, end_height;
         double start_elevation, end_elevation, start_roll, end_roll, duration;
+        double start_heading, end_heading;
+        HeightCurve height_curve;
     };
-    void begin_flight(double time, double height, double elevation, double roll, double duration);
+    void begin_flight(double time, double height, double elevation, double roll, double duration,
+                      std::optional<double> arrival_heading = std::nullopt,
+                      HeightCurve height_curve = HeightCurve::logarithmic);
     SurfaceSite site_;
     std::optional<Flight> flight_;
 };

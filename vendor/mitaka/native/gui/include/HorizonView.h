@@ -35,6 +35,8 @@ struct HorizonPreparedDate {
 }
 
 @interface HorizonView : NSView
+@property(nonatomic) BOOL flightOverlay;
+@property(nonatomic, readonly) BOOL drawsFlightTitle;
 @property(nonatomic) NSInteger targetSelectionMode;
 @property(nonatomic, strong) NSTrackingArea *targetSelectionTrackingArea;
 @property(nonatomic) mitaka::gui::ConstellationDisplayOptions constellationDisplayOptions;

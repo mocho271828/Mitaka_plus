@@ -49,6 +49,14 @@ void test_state(HorizonView *view) {
     near([view viewport].center_altitude_deg, 0);
     near([view viewport].vertical_fov_deg, 180);
     check(viewportChanges == 4, "viewport callback mismatch");
+    // HUD の縦画角は遷移中にも地図中央を上下に横切る実際の角距離を示す。
+    for (double blend : {0.0, 0.5, 1.0}) {
+        [view setViewport:{0, 0, 25, blend, 0, 65}];
+        const HorizonProjectionViewport projection{0, 0, 25, blend, 0, 65};
+        const auto top = unproject_horizon({400, 0}, projection, 800, 600);
+        const auto bottom = unproject_horizon({400, 600}, projection, 800, 600);
+        near(view.verticalFovDegrees, top.declination_deg - bottom.declination_deg);
+    }
     [view setViewport:{180, 90, 180}];
     near([view viewport].center_altitude_deg, 90);
     [view zoomIn];

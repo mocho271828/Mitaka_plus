@@ -290,6 +290,44 @@ void test_ascent_datum_endpoint() {
     nav.begin_ascent(0, 0);
     near(nav.site().height_km, target + 5);
 }
+void test_earth_horizon_takeoff() {
+    SurfaceNavigation nav;
+    const SurfaceSite ground{3,35.675,139.54,minimum_surface_height_km,0,22.5,17};
+    nav.set_site(ground);
+    nav.begin_earth_horizon_ascent(1,2);
+    constexpr double earth_height = 14764.49;
+    const double progress = std::acos(1 - 2 * 1.62 / 7.5) / 3.141592653589793;
+    nav.advance(1 + 2 * progress);
+    // 旧1.5.4の三鷹で、停止した1.62Rの画面における地点マークは中心の約198px下。
+    near(nav.site().elevation_deg, -90 + 8.79, .03);
+    nav.advance(2);
+    const auto halfway = nav.site();
+    near(halfway.height_km,earth_height / 2,.2);
+    near(halfway.elevation_deg,-90);
+    nav.update_terrain_offset(.38);
+    nav.advance(3);
+    const auto camera = nav.camera(fixture());
+    const auto center = j2000_equatorial_to_ecliptic(fixture()[3].position_au);
+    same(camera.target, center);
+    const auto disk = project_solar(center, camera, 1592, 1058);
+    check(disk.has_value(), "the Earth center must remain visible on arrival");
+    near(disk->x, 796, 1e-6); near(disk->y, 529, 1e-6);
+    // 旧版の同画角の画面で測定した地球外縁は半径約404px。
+    const double distance = camera.distance_au * astronomical_unit_km;
+    const double half_angle = std::asin(earth_reference_radius_km / distance);
+    const double projected_radius = 529 * std::tan(half_angle) / std::tan(3.141592653589793 / 8);
+    near(projected_radius,404.47,2);
+    near(nav.site().roll_deg,17);
+    nav.begin_descent_to_view(3,2,ground);
+    nav.advance(4);
+    near(nav.site().height_km + nav.site().terrain_offset_km, halfway.height_km,.25);
+    nav.advance(5 - 2 * progress);
+    near(nav.site().elevation_deg,-90 + 8.79,.04);
+    nav.advance(5);
+    near(nav.site().elevation_deg,ground.elevation_deg);
+    near(nav.site().height_km,minimum_surface_height_km);
+}
+
 void test_body_radii() {
     constexpr std::array<double, 10> radii{2439.7, 6051.8, 6378.1366, 3396.19,
         71492, 60268, 25559, 24764, 1185, 1738.092};
@@ -564,7 +602,8 @@ void test_camera_rays() {
 int main() {
     try {
         test_surface_star_pick(); test_non_earth_sky_projection(); test_surface_sky_below_datum(); test_terrain_offset();
-        test_terrain_offset_updates(); test_negative_terrain(); test_ascent_datum_endpoint(); test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
+        test_terrain_offset_updates(); test_negative_terrain(); test_ascent_datum_endpoint(); test_earth_horizon_takeoff();
+        test_body_radii(); test_site_contract(); test_surface_frames(); test_flights();
         test_flight_interruptions(); test_manual_controls(); test_camera_rays();
         std::cout << "surface navigation tests passed\n";
         return 0;

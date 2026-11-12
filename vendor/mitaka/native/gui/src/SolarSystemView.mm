@@ -153,6 +153,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
 }
 - (void)dealloc { [_landingController invalidate]; [_flightTimer invalidate]; [_orientationTimer invalidate]; [_targetTimer invalidate]; [_zoomTimer invalidate]; [self cancelTerrain]; }
 - (BOOL)surfaceNavigationActive { return _surfaceActive; }
+- (BOOL)usesPhysicalScene { return _journeyActive || _surfaceActive || _physicalSpaceActive; }
 - (BOOL)scriptPlanetariumMode {
     return _surfaceActive && !_navigation.flying()
         && _navigation.site().height_km <= minimum_surface_height_km + 1e-9;
@@ -309,7 +310,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     return {_bodies, _orbits, _lunarOrbit, _camera, _textures.get(), _selection,
         [self mapRect], self.window ? self.window.backingScaleFactor : 1, static_cast<bool>(_earthMoonMode), _surfacePreview ? _selection : std::nullopt,
         _surfaceActive ? std::optional<std::size_t>(_navigation.site().body_index) : std::nullopt,
-        static_cast<bool>(_journeyActive || _surfaceActive || _physicalSpaceActive),
+        static_cast<bool>(self.usesPhysicalScene),
         [self smallBodiesSceneVisible] ? _smallBodySnapshot.get() : nullptr,
         !_selection ? _smallBodySelection : std::nullopt, _planetDisplayOptions, _gridDisplayOptions, &_gridCache, _rendererDisplayOptions,
         [self satellitesSceneVisible] ? _satelliteSnapshot.get() : nullptr,
@@ -548,6 +549,9 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         self.cameraChanged([@"視点を変更できません: " stringByAppendingString:error]);
 }
 - (BOOL)applyCameraState:(const SolarCamera&)camera error:(NSString **)error {
+    return [self applyCameraState:camera physicalSpace:NO error:error];
+}
+- (BOOL)applyCameraState:(const SolarCamera&)camera physicalSpace:(BOOL)physical error:(NSString **)error {
     const SolarCamera next = camera;
     try {
         // 飛行の中断や frame の解除より先に、表示側と同じ規則で全候補を検証する。
@@ -560,6 +564,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     [self leaveNavigation];
     [_galaxyOverlay invalidatePendingPicks];
     _scriptOrientation.reset();
+    _physicalSpaceActive = physical;
     _camera = next;
     _following = NO;
     if (_ourGalaxyPointSelection) { _ourGalaxyPointSelection.reset(); [self notifySelection]; }
@@ -917,7 +922,8 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         if (_showsTimeInfo || _terrainSceneCoordinator.has_active())
             title = [title stringByAppendingFormat:@" · 表示 JD %.5f", frame.julian_date];
         if (_terrainSceneCoordinator.has_active()) title = [title stringByAppendingString:@" · 地形更新中"];
-        [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
+        if (!self.horizonTitleVisible)
+            [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
         NSString *galaxyStatus = nil;
         bool galaxyDrawn = false;
         // 地表は同じ公開フレーム内の天体姿勢を使い、星・星座と3Dカメラを揃える。

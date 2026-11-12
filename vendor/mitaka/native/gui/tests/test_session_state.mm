@@ -47,12 +47,30 @@ void rejects_field(NSString *field, id value) {
 void test_surface_session() {
     SessionState state;
     check(!decode_session_state(encode_session_state(state)).surface_site, "old session acquired surface state");
+    auto oldCamera = session_object();
+    [oldCamera[@"solar_camera"] removeObjectForKey:@"physical_space"];
+    check(!decode_session_state(json_bytes(oldCamera)).physical_space, "legacy v9 must retain the schematic camera");
+    state.physical_space = true;
+    check(decode_session_state(encode_session_state(state)).physical_space, "physical space classification lost");
+    oldCamera[@"solar_camera"][@"physical_space"] = @1;
+    rejects([&] { decode_session_state(json_bytes(oldCamera)); });
+    state.physical_space = false;
     state.surface_site = SurfaceSite{4, -35, 139, minimum_surface_height_km, 210, -30, 42, -3};
     const auto json = encode_session_state(state);
     const auto restored = decode_session_state(json);
     check(restored.surface_site && restored.surface_site->body_index == 4 &&
           restored.surface_site->terrain_offset_km == -3 && restored.surface_site->roll_deg == 42 &&
           encode_session_state(restored) == json, "surface site did not roundtrip");
+    state.physical_space = true;
+    rejects([&] { encode_session_state(state); });
+    state.surface_site->height_km = 4200;
+    rejects([&] { encode_session_state(state); });
+    state.surface_site->body_index = 3;
+    const auto orbitSite = decode_session_state(encode_session_state(state));
+    check(orbitSite.physical_space && orbitSite.surface_site->height_km == 4200,
+          "stopped Earth surface navigation above ground must retain its site");
+    state.physical_space = false;
+    rejects([&] { encode_session_state(state); });
     for (const auto bad : {SurfaceSite{0}, SurfaceSite{11}, SurfaceSite{4, 91},
                            SurfaceSite{4, 0, 0, 0.1}, SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 91},
                            SurfaceSite{4, 0, 0, minimum_surface_height_km, 0, 0, 0, -4000}}) {

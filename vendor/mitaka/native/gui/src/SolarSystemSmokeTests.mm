@@ -284,7 +284,7 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         invalidSite.latitude_deg = std::numeric_limits<double>::quiet_NaN();
         NSString *invalidError = nil;
         const auto beforeInvalidFlight = _camera;
-        const BOOL failedPreservesPoint = ![self beginFlightAtSite:invalidSite ascending:YES preserveLook:NO duration:3 error:&invalidError]
+        const BOOL failedPreservesPoint = ![self beginFlightAtSite:invalidSite motion:SurfaceFlightMotion::ascent duration:3 error:&invalidError]
             && invalidError.length && !_selection && _ourGalaxyPointSelection && *_ourGalaxyPointSelection == point
             && sameFlightCamera(beforeInvalidFlight, _camera);
         [self takeOffFromEarthAtLatitude:35 longitude:135];
@@ -293,6 +293,15 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         for (int step = 1; step <= 6; ++step) [self advanceFlightAtTime:ascentStart + step*0.5];
         const BOOL ascended = !self.flightAnimating && _navigation.site().body_index == 3
             && std::abs(_navigation.site().height_km - 8*surface_body_info(3).radius_km) < 1e-6;
+        // 同じ地球でも、太陽系の地表からのモード切替は通常の上昇経路。
+        SurfaceSite comparisonSite{3, 35, 135, minimum_surface_height_km, 20, 22.5};
+        const BOOL generalModeAscent = [self forceSurfaceMode:YES bodyIndex:nullptr error:&fovError]
+            && [self selectScriptPlaceBody:3 latitude:35 longitude:135 surface:YES error:&fovError]
+            && [self ascendFromSurfaceWithDuration:0 error:&fovError]
+            && std::abs(_navigation.site().height_km + _navigation.site().terrain_offset_km - 8 * surface_body_info(3).radius_km) < 1e-6
+            && _navigation.site().elevation_deg == -80;
+        const BOOL horizonModeAscent = [self takeOffFromHorizon:comparisonSite duration:0 error:&fovError]
+            && std::abs(_navigation.site().height_km - 14764.59) < .01 && _navigation.site().elevation_deg == -90;
         [self focusSelection];
         const auto earthPosition = [self displayPosition:3];
         const BOOL focusedEarth = std::hypot(_camera.target.x-earthPosition.x, _camera.target.y-earthPosition.y,
@@ -308,9 +317,9 @@ static std::shared_ptr<const SatelliteDisplayModel> hiddenSatelliteDisplay(
         const BOOL spacePlace = [self selectScriptPlaceBody:10 latitude:25 longitude:-40 surface:NO error:&fovError]
             && _camera.vertical_fov_deg == 30;
         passed = fovSet && fovInvalid && fovLook && orientationInterpolated && orientationRetargeted && surfaceMoved && spacePlace && surfacePlace && pairVisible && pickedEdge && pickedBehindCenter && landed && tracked && movedSurface &&
-            failedPreservesPoint && selectedEarth && ascended && focusedEarth && interrupted;
-        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
-            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint,
+            failedPreservesPoint && generalModeAscent && horizonModeAscent && selectedEarth && ascended && focusedEarth && interrupted;
+        if (!passed) NSLog(@"SURFACE_NAVIGATION: pair=%d edge=%d behind=%d landed=%d tracked=%d moved=%d failure=%d generalModeAscent=%d horizonModeAscent=%d selectedEarth=%d ascended=%d focusedEarth=%d interrupted=%d",
+            pairVisible, pickedEdge, pickedBehindCenter, landed, tracked, movedSurface, failedPreservesPoint, generalModeAscent, horizonModeAscent,
             selectedEarth, ascended, focusedEarth, interrupted);
     } catch (const std::exception& error) { [self reportNavigationError:error.what()]; }
     [self invalidateFlightTimer];

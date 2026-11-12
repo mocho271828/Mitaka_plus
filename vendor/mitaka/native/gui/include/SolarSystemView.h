@@ -46,9 +46,11 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 @property(nonatomic, readonly) NSUInteger visibleBodyCount;
 @property(nonatomic, readonly) NSUInteger selectedBodyIndex;
 @property(nonatomic, readonly) BOOL surfaceNavigationActive;
+@property(nonatomic, readonly) BOOL usesPhysicalScene;
 @property(nonatomic, readonly) BOOL scriptPlanetariumMode;
 @property(nonatomic, readonly) BOOL journeyActive;
 @property(nonatomic, readonly) BOOL flightAnimating;
+@property(nonatomic) BOOL horizonTitleVisible;
 @property(nonatomic) BOOL showsTimeInfo;
 @property(nonatomic, copy) void (^navigationChanged)(void);
 @property(nonatomic, copy) void (^userSurfaceViewChange)(void);
@@ -94,6 +96,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (void)setCameraState:(const mitaka::gui::SolarCamera&)camera;
 // 検証に失敗した場合は、視点・追従・飛行状態を変更しない。
 - (BOOL)applyCameraState:(const mitaka::gui::SolarCamera&)camera error:(NSString **)error;
+- (BOOL)applyCameraState:(const mitaka::gui::SolarCamera&)camera physicalSpace:(BOOL)physical error:(NSString **)error;
 @end
 
 @interface SolarSystemView (ScriptZoom)
@@ -170,6 +173,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)forceSpaceFromHorizon:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
 - (BOOL)descendToHorizon:(NSString **)error;
 - (BOOL)descendToHorizonWithDuration:(double)duration error:(NSString **)error;
+- (BOOL)descendToHorizonWithDuration:(double)duration groundView:(const mitaka::gui::SurfaceSite *)groundView error:(NSString **)error;
 - (BOOL)descendToSelectedSurfaceWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)ascendFromEarthWithDuration:(double)duration error:(NSString **)error;
 - (BOOL)ascendFromSurfaceWithDuration:(double)duration error:(NSString **)error;
@@ -177,6 +181,7 @@ namespace mitaka::gui { struct SmallBodyOrbitSnapshot; struct SatelliteOrbitGeom
 - (BOOL)scriptSurfaceSite:(mitaka::gui::SurfaceSite *)site;
 // 読込済みの同一 JD の天体位置を使い、検証済み地表視点を停止状態で復元する。
 - (BOOL)restoreSurfaceSite:(mitaka::gui::SurfaceSite)site error:(NSString **)error;
+- (BOOL)restoreSurfaceSite:(mitaka::gui::SurfaceSite)site physicalSpace:(BOOL)physical error:(NSString **)error;
 - (BOOL)scriptSetSurfaceAzimuth:(double)azimuth altitude:(double)altitude;
 - (BOOL)scriptBodyEclipticPosition:(NSUInteger)index result:(mitaka::Vec3 *)result;
 - (BOOL)scriptSurfaceLookVector:(mitaka::Vec3)vector position:(BOOL)isPosition result:(mitaka::gui::SurfaceSite *)result;

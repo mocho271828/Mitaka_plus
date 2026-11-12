@@ -44,10 +44,13 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     state.mode = (int)_mode.selectedSegment;
     state.magnitude_limit = _sky.magnitudeLimit;
     state.sky_viewport = [_sky viewport];
-    state.horizon_viewport = [_horizon viewport];
+    state.horizon_viewport = _horizonFlightView.value_or([_horizon viewport]);
     state.solar_camera = [_solar cameraState];
     SurfaceSite surface;
-    if ([_solar scriptSurfaceSite:&surface]) state.surface_site = surface;
+    if ([_solar scriptSurfaceSite:&surface] || [_solar earthSurfaceSite:&surface]) {
+        state.surface_site = surface;
+        state.physical_space = surface.height_km > minimum_surface_height_km + 1e-9;
+    } else state.physical_space = _solar.usesPhysicalScene;
     const NSUInteger selected = _solar.selectedBodyIndex;
     state.selected_body = selected < _solarBodies.size() ? _solarBodies[selected].id : Body::sun;
     if (_sky.selectedBodyIndex < _bodies.size()) state.sky_selected_body = _bodies[_sky.selectedBodyIndex].id;
@@ -93,10 +96,12 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
             throw std::logic_error(message != nullptr ? message : "validated Plus time could not be restored");
         }
         [_playback setPlusTimeZone:state.plus_time_zone];
-        [_solar setCameraState:state.solar_camera];
+        NSString *cameraError = nil;
+        if (![_solar applyCameraState:state.solar_camera physicalSpace:state.physical_space error:&cameraError])
+            throw std::logic_error(cameraError ? cameraError.UTF8String : "validated session camera could not be restored");
         if (state.surface_site) {
             NSString *failure = nil;
-            if (![_solar restoreSurfaceSite:*state.surface_site error:&failure]) {
+            if (![_solar restoreSurfaceSite:*state.surface_site physicalSpace:state.physical_space error:&failure]) {
                 const char *message = failure.UTF8String;
                 throw std::logic_error(message ? message : "validated surface site could not be restored");
             }
@@ -302,7 +307,10 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         [self showError:[NSString stringWithFormat:@"保存された表示設定を適用できません: %s", error.what()]];
     }
 }
-- (NSView *)activeView { return _mode.selectedSegment == 1 ? _solar : _mode.selectedSegment == 2 ? _horizon : _sky; }
+- (NSView *)activeView {
+    if (_horizonFlightView && _mode.selectedSegment == 1) return _solar.superview;
+    return _mode.selectedSegment == 1 ? _solar : _mode.selectedSegment == 2 ? _horizon : _sky;
+}
 - (DisplayOutputController *)displayOutput {
     if (!_displayOutput) _displayOutput = [[DisplayOutputController alloc] init];
     _displayOutput.sourceView = [self activeView];
