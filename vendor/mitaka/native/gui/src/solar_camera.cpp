@@ -14,6 +14,28 @@ bool finite(Vec3 value) {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
+bool valid_anchor(Vec3 value) {
+    return finite(value) && std::abs(value.x) <= maximum_solar_anchor_pc &&
+           std::abs(value.y) <= maximum_solar_anchor_pc && std::abs(value.z) <= maximum_solar_anchor_pc;
+}
+
+Vec3 approximate_target(const PreciseCameraTarget& target) {
+    return {std::fma(target.anchor_pc.x, astronomical_units_per_parsec, target.offset_au.x),
+            std::fma(target.anchor_pc.y, astronomical_units_per_parsec, target.offset_au.y),
+            std::fma(target.anchor_pc.z, astronomical_units_per_parsec, target.offset_au.z)};
+}
+
+bool same(Vec3 a, Vec3 b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+
+PreciseCameraTarget anchor_au(Vec3 value) {
+    const Vec3 anchor{value.x / astronomical_units_per_parsec,
+                      value.y / astronomical_units_per_parsec,
+                      value.z / astronomical_units_per_parsec};
+    return {anchor, {std::fma(-anchor.x, astronomical_units_per_parsec, value.x),
+                     std::fma(-anchor.y, astronomical_units_per_parsec, value.y),
+                     std::fma(-anchor.z, astronomical_units_per_parsec, value.z)}};
+}
+
 double dot(Vec3 left, Vec3 right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
 }
@@ -31,8 +53,14 @@ void validate(const SolarCamera& camera) {
     if (!finite(camera.target) || !std::isfinite(camera.yaw_deg)
         || !std::isfinite(camera.pitch_deg) || std::abs(camera.pitch_deg) > 89 || !std::isfinite(camera.roll_deg)
         || !std::isfinite(camera.distance_au) || camera.distance_au < minimum(camera)
-        || camera.distance_au > maximum_distance)
+        || camera.distance_au > maximum_distance || !std::isfinite(camera.vertical_fov_deg)
+        || camera.vertical_fov_deg <= 0 || camera.vertical_fov_deg > 90)
         throw std::invalid_argument("invalid solar camera");
+    if (camera.precise_target &&
+        (!valid_anchor(camera.precise_target->anchor_pc) || !finite(camera.precise_target->offset_au) ||
+         !finite(approximate_target(*camera.precise_target)) ||
+         !same(camera.target, approximate_target(*camera.precise_target))))
+        throw std::invalid_argument("inconsistent solar camera target");
     if (camera.frame) {
         const auto& f = *camera.frame;
         for (const auto axis : {f.right, f.up, f.outward})
@@ -81,21 +109,93 @@ Vec3 rotate(Vec3 value, Vec3 axis, double angle) {
 // x/yは画面の右/上方向のAU、zはカメラ前方の奥行AU。
 Vec3 camera_point(Vec3 position, const SolarCamera& camera, const SolarCameraBasis& axes) {
     if (!finite(position)) throw std::invalid_argument("solar position must be finite");
-    const Vec3 relative{position.x - camera.target.x, position.y - camera.target.y,
-                        position.z - camera.target.z};
+    Vec3 relative{position.x - camera.target.x, position.y - camera.target.y,
+                  position.z - camera.target.z};
+    if (camera.precise_target) {
+        const auto target = normalized_camera_target(*camera.precise_target, camera.distance_au);
+        relative = {std::fma(-target.anchor_pc.x, astronomical_units_per_parsec, position.x) - target.offset_au.x,
+                    std::fma(-target.anchor_pc.y, astronomical_units_per_parsec, position.y) - target.offset_au.y,
+                    std::fma(-target.anchor_pc.z, astronomical_units_per_parsec, position.z) - target.offset_au.z};
+    }
     return {dot(relative, axes.right), dot(relative, axes.up),
             camera.distance_au - dot(relative, axes.outward)};
 }
 
-std::optional<SolarProjection> project_point(Vec3 point, double near, double width, double height) {
+std::optional<SolarProjection> project_point(Vec3 point, double near, double width, double height, double tangent) {
     if (!finite(point) || point.z < near) return std::nullopt;
-    const double scale = (height / 2) / solar_camera_tangent_half_fov / point.z;
+    const double scale = (height / 2) / tangent / point.z;
     const double x = width / 2 + point.x * scale;
     const double y = height / 2 - point.y * scale;
     if (!std::isfinite(x) || !std::isfinite(y)) return std::nullopt;
     return SolarProjection{x, y, point.z};
 }
 } // namespace
+
+PreciseCameraTarget normalized_camera_target(PreciseCameraTarget target, double distance_au) {
+    if (!valid_anchor(target.anchor_pc) || !finite(target.offset_au) ||
+        !std::isfinite(distance_au) || distance_au <= 0)
+        throw std::invalid_argument("invalid precise camera target");
+    const auto normalize = [distance_au](double& anchor, double& offset) {
+        if (std::abs(offset) / distance_au <= 1e6) return;
+        const double shift = offset / astronomical_units_per_parsec;
+        const double next_anchor = anchor + shift;
+        if (!std::isfinite(next_anchor) || std::abs(next_anchor) > maximum_solar_anchor_pc) return;
+        // two-sum は基準加算の丸め誤差を回収する。FMA は単位変換時の桁落ちを防ぐ。
+        const double virtual_shift = next_anchor - anchor;
+        const double rounding = (anchor - (next_anchor - virtual_shift)) + (shift - virtual_shift);
+        const double remainder = std::fma(-shift, astronomical_units_per_parsec, offset);
+        const double next_offset = std::fma(rounding, astronomical_units_per_parsec, remainder);
+        if (!std::isfinite(next_offset)) return;
+        anchor = next_anchor;
+        offset = next_offset;
+    };
+    normalize(target.anchor_pc.x, target.offset_au.x);
+    normalize(target.anchor_pc.y, target.offset_au.y);
+    normalize(target.anchor_pc.z, target.offset_au.z);
+    return target;
+}
+
+void SolarCamera::set_target_pc(Vec3 position_pc) {
+    if (!valid_anchor(position_pc)) throw std::invalid_argument("solar target anchor outside finite parsec range");
+    const PreciseCameraTarget next{position_pc, {0, 0, 0}};
+    const auto approximate = approximate_target(next);
+    if (!finite(approximate)) throw std::invalid_argument("solar target exceeds finite coordinate range");
+    target = approximate;
+    precise_target = next;
+}
+
+void SolarCamera::set_target_au(Vec3 position_au) {
+    if (!finite(position_au)) throw std::invalid_argument("solar target must be finite");
+    target = position_au;
+    precise_target.reset();
+}
+
+void SolarCamera::translate_target_au(Vec3 delta_au) {
+    validate(*this);
+    if (!finite(delta_au)) throw std::invalid_argument("solar target movement must be finite");
+    auto next = precise_target.value_or(anchor_au(target));
+    if (!valid_anchor(next.anchor_pc)) {
+        // 太陽系単独で従来許可されていた pc 範囲外の AU 位置を維持する。
+        const Vec3 approximate{target.x + delta_au.x, target.y + delta_au.y, target.z + delta_au.z};
+        if (!finite(approximate)) throw std::invalid_argument("solar target movement exceeds finite coordinate range");
+        target = approximate;
+        return;
+    }
+    next = normalized_camera_target(next, distance_au);
+    next.offset_au = {next.offset_au.x + delta_au.x, next.offset_au.y + delta_au.y,
+                      next.offset_au.z + delta_au.z};
+    const auto approximate = approximate_target(next);
+    if (!finite(next.offset_au) || !finite(approximate))
+        throw std::invalid_argument("solar target movement exceeds finite coordinate range");
+    target = approximate;
+    precise_target = next;
+}
+
+double solar_camera_tangent(const SolarCamera& camera) {
+    validate(camera);
+    if (camera.vertical_fov_deg == 45) return solar_camera_tangent_half_fov;
+    return std::tan(std::max(camera.vertical_fov_deg, 1e-9) * radians_per_degree / 2);
+}
 
 SolarCameraBasis solar_camera_basis(const SolarCamera& camera) {
     validate(camera);
@@ -107,8 +207,9 @@ Vec3 solar_camera_ray(const SolarCamera& camera, double x, double y, double widt
     dimensions(width, height);
     deltas(x, y);
     const auto axes = basis(camera);
-    const double horizontal = ((x - width / 2) / height) * (2 * solar_camera_tangent_half_fov);
-    const double vertical = ((height / 2 - y) / height) * (2 * solar_camera_tangent_half_fov);
+    const double tangent = solar_camera_tangent(camera);
+    const double horizontal = ((x - width / 2) / height) * (2 * tangent);
+    const double vertical = ((height / 2 - y) / height) * (2 * tangent);
     const Vec3 ray{-axes.outward.x + horizontal * axes.right.x + vertical * axes.up.x,
                    -axes.outward.y + horizontal * axes.right.y + vertical * axes.up.y,
                    -axes.outward.z + horizontal * axes.right.z + vertical * axes.up.z};
@@ -160,13 +261,11 @@ void SolarCamera::pan(double dx_points, double dy_points, double width, double h
     dimensions(width, height);
     deltas(dx_points, dy_points);
     const auto axes = basis(*this);
-    const double scale = 2 * distance_au * solar_camera_tangent_half_fov / height;
+    const double scale = 2 * distance_au * solar_camera_tangent(*this) / height;
     const double horizontal = dx_points * scale, vertical = dy_points * scale;
-    const Vec3 next{target.x - axes.right.x * horizontal + axes.up.x * vertical,
-                    target.y - axes.right.y * horizontal + axes.up.y * vertical,
-                    target.z - axes.right.z * horizontal + axes.up.z * vertical};
-    if (!finite(next)) throw std::invalid_argument("solar pan exceeds finite coordinate range");
-    target = next;
+    translate_target_au({-axes.right.x * horizontal + axes.up.x * vertical,
+                         -axes.right.y * horizontal + axes.up.y * vertical,
+                         -axes.right.z * horizontal + axes.up.z * vertical});
 }
 
 void SolarCamera::zoom(double logarithmic_delta) {
@@ -183,7 +282,7 @@ std::optional<SolarProjection> project_solar(Vec3 position, const SolarCamera& c
     validate(camera);
     dimensions(width, height);
     return project_point(camera_point(position, camera, basis(camera)),
-                         near_plane(camera), width, height);
+                         near_plane(camera), width, height, solar_camera_tangent(camera));
 }
 
 std::optional<std::array<SolarProjection, 2>> project_solar_segment(
@@ -203,8 +302,8 @@ std::optional<std::array<SolarProjection, 2>> project_solar_segment(
         if (a.z < near) a = clipped;
         else b = clipped;
     }
-    const auto projected_a = project_point(a, near, width, height);
-    const auto projected_b = project_point(b, near, width, height);
+    const auto projected_a = project_point(a, near, width, height, solar_camera_tangent(camera));
+    const auto projected_b = project_point(b, near, width, height, solar_camera_tangent(camera));
     if (!projected_a || !projected_b) return std::nullopt;
     return std::array<SolarProjection, 2>{*projected_a, *projected_b};
 }

@@ -14,6 +14,10 @@ double dot(Vec3 a, Vec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
 struct SphereView { Vec3 eye; double distance; };
 struct SphereHit { Vec3 normal; double distance; };
+double fallback_depth(double radius) {
+    return std::max(std::numeric_limits<double>::denorm_min(),
+                    radius * std::numeric_limits<double>::epsilon());
+}
 
 SphereView sphere_view(const SolarCamera& camera, const SolarCameraBasis& axes,
                        Vec3 body, double radius) {
@@ -25,8 +29,8 @@ SphereView sphere_view(const SolarCamera& camera, const SolarCameraBasis& axes,
                    ((camera.target.y - body.y) + axes.outward.y * camera.distance_au) / radius,
                    ((camera.target.z - body.z) + axes.outward.z * camera.distance_au) / radius};
     const double distance = std::hypot(eye.x, eye.y, eye.z);
-    if (!std::isfinite(distance) || distance <= 1)
-        throw std::invalid_argument("surface viewpoint must be outside the sphere at a finite distance");
+    if (!std::isfinite(distance))
+        throw std::invalid_argument("surface viewpoint must be at a finite distance");
     return {eye, distance};
 }
 
@@ -379,6 +383,17 @@ TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
             continue;
         }
         const auto view = sphere_view(camera, axes, sphere.center, sphere.radius_au);
+        if (view.distance <= 1) {
+            // 地形待ち・失敗時、見えない地表越しに宇宙を表示しない。
+            const double opaque_depth = fallback_depth(sphere.radius_au);
+            for (std::size_t offset = 0; offset < depth.size(); ++offset) {
+                if (opaque_depth >= depth[offset]) continue;
+                depth[offset] = opaque_depth;
+                result.rgba[offset * 4] = result.rgba[offset * 4 + 1] = result.rgba[offset * 4 + 2] = 0;
+                result.rgba[offset * 4 + 3] = 255;
+            }
+            continue;
+        }
         const auto bounds = sphere_bounds(view, axes, width, height, double(height) / (2 * up_scale));
         for (std::size_t y = bounds.top; y < bounds.bottom; ++y) {
             for (std::size_t x = bounds.left; x < bounds.right; ++x) {
@@ -402,6 +417,7 @@ TextureImage render_surface_scene(const std::vector<SurfaceSphere>& spheres,
         const auto& sphere = spheres[index];
         const double radius = sphere.radius_au * layers.cloud_factor;
         const auto view = sphere_view(camera, axes, sphere.center, radius);
+        if (view.distance <= 1) continue;
         const auto bounds = sphere_bounds(view, axes, width, height, double(height) / (2 * up_scale));
         const auto light = layers.binding->view.earth_to_sun_ecliptic_unit;
         const double longitude_offset = std::remainder(sphere.longitude_offset_turns, 1);
@@ -430,12 +446,22 @@ std::optional<double> sphere_hit_distance(const SolarCamera& camera, Vec3 body_e
                                           double width, double height) {
     const auto ray = solar_camera_ray(camera, x, y, width, height);
     const auto view = sphere_view(camera, solar_camera_basis(camera), body_ecliptic, radius_au);
+    if (view.distance <= 1) return std::nullopt;
     const auto hit = intersect_sphere(view, ray);
     if (!hit) return std::nullopt;
     const double distance = hit->distance * radius_au;
     if (!std::isfinite(distance) || distance <= 0)
         throw std::invalid_argument("sphere intersection distance must be positive and finite");
     return distance;
+}
+
+std::optional<double> surface_sphere_fallback_distance(const SolarCamera& camera, Vec3 body,
+    double radius, double x, double y, double width, double height) {
+    // 座標・画面と幾何の検証も通常の球交差と同じにする。
+    const auto hit = sphere_hit_distance(camera, body, radius, x, y, width, height);
+    const auto view = sphere_view(camera, solar_camera_basis(camera), body, radius);
+    if (view.distance <= 1) return fallback_depth(radius);
+    return hit;
 }
 
 } // namespace mitaka::gui

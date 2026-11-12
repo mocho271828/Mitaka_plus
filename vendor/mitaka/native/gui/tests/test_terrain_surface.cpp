@@ -31,7 +31,7 @@ template<class T> void append(std::string& bytes,T value) {
     for (std::size_t i=0;i<sizeof(bits);++i) bytes+=char((bits>>(8*i))&255);
 }
 struct Patch { float lon0=-30,lon1=30,lat0=30,lat1=-30; int levels=1; };
-std::string fixture(const std::vector<Patch>& patches,int height,bool slope=false) {
+std::string fixture(const std::vector<Patch>& patches,int height,bool slope=false,int coarse_bias=0) {
     std::string bytes;
     append(bytes,1.0f); append(bytes,1000.0f);
     append(bytes,std::int32_t(patches.size())); append(bytes,std::int32_t(1));
@@ -42,7 +42,7 @@ std::string fixture(const std::vector<Patch>& patches,int height,bool slope=fals
             const int n=4<<level;
             append(bytes,std::int32_t(-123)); append(bytes,std::int32_t(n)); append(bytes,std::int32_t(n));
             for (int y=-1;y<=n+1;++y) for (int x=-1;x<=n+1;++x)
-                append(bytes,std::int16_t(height+(slope?3*x-2*y:0)));
+                append(bytes,std::int16_t(height+(slope?3*x-2*y:0)+(level==0?coarse_bias:0)));
         }
     }
     return bytes;
@@ -123,8 +123,9 @@ void mesh_tests(Temporary& temp) {
     }
     const auto seam=make_terrain_patch_mesh(poles,0,0);
     expect(seam.vertices().front().u<1 && seam.vertices()[4].u>1,"UV seam remains unwrapped");
-    expect(terrain_surface_mode({1,0,0})==TerrainSurfaceMode::none,"datum camera boundary");
-    expect(terrain_surface_mode({.9,0,0})==TerrainSurfaceMode::none,"inside camera boundary");
+    expect(terrain_surface_mode({1,0,0})==TerrainSurfaceMode::terrain,"datum camera boundary");
+    expect(terrain_surface_mode({.9,0,0})==TerrainSurfaceMode::terrain,"inside camera boundary");
+    expect(terrain_surface_mode({0,0,0})==TerrainSurfaceMode::none,"center camera boundary");
     expect(terrain_surface_mode({2,0,0})==TerrainSurfaceMode::terrain,"near terrain selection");
     expect(terrain_surface_mode({10,0,0})==TerrainSurfaceMode::sphere,"far six-degree selection");
     rejects([&]{terrain_surface_mode({NAN,0,0});},"nonfinite eye");
@@ -165,6 +166,23 @@ void rendering_tests(Temporary& temp) {
         }
     }
     expect(covered>100,"nonempty negative terrain");
+    for (double fov : {10., 90.}) {
+        auto adjusted=view; adjusted.vertical_fov_deg=fov;
+        const auto rendered=render_terrain_surface(binding,adjusted,33,33);
+        for (int y=0;y<33;++y) for (int x=0;x<33;++x) {
+            const auto ray=solar_camera_ray(adjusted,x+.5,y+.5,33,33);
+            double expected=INFINITY;
+            for (std::size_t t=0;t<mesh.triangle_count();++t) {
+                const auto id=mesh.triangle(t);
+                expected=std::min(expected,triangle_hit({.003,0,0},ray,mul(mesh.vertices()[id[0]].position,.001),
+                    mul(mesh.vertices()[id[1]].position,.001),mul(mesh.vertices()[id[2]].position,.001)));
+            }
+            const auto depth=rendered.samples[y*33+x].distance_au;
+            expect(std::isfinite(depth)==std::isfinite(expected),"FOV terrain oracle coverage");
+            if (std::isfinite(expected)) near(depth,expected,2e-14,"FOV terrain oracle depth");
+        }
+    }
+
     auto displaced=view; displaced.target={123,-3,5}; binding.center_au=displaced.target;
     const auto translated=render_terrain_surface(binding,displaced,65,65);
     near(translated.samples[32*65+32].distance_au,center.distance_au,1e-15,"large world translation invariant");
@@ -179,7 +197,9 @@ void rendering_tests(Temporary& temp) {
     near(rotated.samples[32*65+32].distance_au,center.distance_au,2e-15,"body orientation rotates position only");
     binding.orientation={};
     expect(render_terrain_surface(binding,camera(.01),8,8).mode==TerrainSurfaceMode::sphere,"far explicit sphere mode");
-    expect(render_terrain_surface(binding,camera(.001),8,8).samples.empty(),"inside datum explicit no surface");
+    const auto inside=render_terrain_surface(binding,camera(.00095),65,65);
+    expect(inside.mode==TerrainSurfaceMode::terrain,"inside datum terrain remains visible");
+    near(inside.samples[32*65+32].distance_au,.00005,2e-15,"inside datum negative terrain depth");
     TerrainSurfaceFrame unchanged=frame;
     for (int kind=0;kind<4;++kind) {
         TerrainSurfaceLimits limits;
@@ -309,10 +329,74 @@ void view_culling_tests(Temporary& temp) {
         }
         expect(visible>0,"comparison fixture must cover visible pixels");
     }
+    // 経度を二周ずらすと同じメッシュをカリングせず描ける。大きい標高幅の
+    // 一部だけを実際に使うパッチで、正負両方の地形を独立に全画素照合する。
+    const std::vector<Patch> relief_patches{{-1,1,1,-1,1},{24,26,1,-1,1},{-26,-24,1,-1,1}};
+    std::vector<Patch> shifted=relief_patches;
+    for (auto& patch:shifted) { patch.lon0+=720; patch.lon1+=720; }
+    for (int height:{-1000,1000}) {
+        auto raw=TerrainFile::open(temp.write("cull-relief.dat",fixture(relief_patches,height,true)));
+        auto control=TerrainFile::open(temp.write("full-relief.dat",fixture(shifted,height,true)));
+        auto view=camera(.0015);
+        const auto visible=render_terrain_surface({raw,{0,0,0},{},.001,.02},view,81,81);
+        const auto all=render_terrain_surface({control,{0,0,0},{},.001,.02},view,81,81);
+        expect(visible.patches_read<all.patches_read,"actual relief bounds remove offscreen patches");
+        std::size_t hits=0;
+        for (std::size_t pixel=0;pixel<all.samples.size();++pixel) {
+            const auto& a=visible.samples[pixel];const auto& b=all.samples[pixel];
+            expect(a.distance_au==b.distance_au,"real relief bounds preserve drawn depths");
+            if (!std::isfinite(a.distance_au)) continue;
+            ++hits;
+            near(a.u+2,b.u,1e-12,"culling preserves wrapped UV");
+            expect(a.normal_local.x==b.normal_local.x && a.normal_local.y==b.normal_local.y &&
+                   a.normal_local.z==b.normal_local.z && a.v==b.v,"culling preserves normals and latitude");
+        }
+        expect(hits>0,"relief fixture must draw terrain");
+    }
     // 倍率が大きく安全な正半径を保証できないときは選別しない。
     auto uncertain=TerrainFile::open(temp.write("cull-uncertain.dat",fixture({patches[1]},0)));
     const auto fallback=render_terrain_surface({uncertain,{0,0,0},{},.001,1},camera(),65,65);
     expect(fallback.patches_read==1,"uncertain elevation range must not be culled");
+}
+void landing_radius_tests(Temporary& temp) {
+    auto source=TerrainFile::open(temp.write("landing.dat",fixture({{-30,30,30,-30,3},{25,65,30,-30,2}},200,true,150)));
+    for (double factor : {0.0,1.0,2.0}) for (const auto& location : std::array<std::array<double,2>,4>{{
+        {{0,0}},{{14,13}},{{26,4}},{{-30,30}}}}) {
+        const auto ray=direction(location[0],location[1]);
+        double outer=0;
+        for(std::size_t p=0;p<source.patches().size();++p) {
+            const auto level=terrain_level_index(source.patches()[p],ray);
+            const auto mesh=make_terrain_patch_mesh(source,p,level,factor);
+            for(std::size_t t=0;t<mesh.triangle_count();++t) {
+                const auto ids=mesh.triangle(t);
+                const double hit=triangle_hit({0,0,0},ray,mesh.vertices()[ids[0]].position,
+                    mesh.vertices()[ids[1]].position,mesh.vertices()[ids[2]].position);
+                if(std::isfinite(hit)) outer=std::max(outer,hit);
+            }
+        }
+        const auto actual=terrain_landing_radius_km(source,location[1],location[0],1000,factor);
+        expect(bool(actual)==(outer>0),"landing intersection coverage");
+        if(actual) near(*actual,1000*outer,1e-7,"landing follows rendered LOD even when unused coarse terrain is higher");
+    }
+    expect(!terrain_landing_radius_km(source,0,180,1000,1),"outside mesh has no landing surface");
+    rejects([&]{terrain_landing_radius_km(source,91,0,1000,1);},"invalid landing latitude");
+    rejects([&]{terrain_landing_radius_km(source,0,0,1000,-1);},"invalid landing factor");
+    rejects<TerrainSurfaceCancelled>([&]{terrain_landing_radius_km(source,0,0,1000,1,[]{return true;});},"landing cancellation");
+    unsigned mesh_polls=0;
+    rejects<TerrainSurfaceCancelled>([&]{make_terrain_patch_mesh(source,0,0,1,8*1024*1024,[&]{
+        return ++mesh_polls==3;
+    });},"mesh generation observes cancellation within its rows");
+    unsigned landing_polls=0;
+    // 選択した16×16格子の生成後、三角形256個を走査した時点で中断する。
+    rejects<TerrainSurfaceCancelled>([&]{terrain_landing_radius_km(source,0,0,1000,1,[&]{
+        return ++landing_polls==20;
+    });},"landing triangle traversal observes cancellation");
+    expect(landing_polls==20,"landing cancellation occurs after mesh generation");
+    auto seam=TerrainFile::open(temp.write("landing_seam.dat",fixture({{350,370,90,75,2}},10)));
+    const auto a=terrain_landing_radius_km(seam,80,0,1000,1);
+    const auto b=terrain_landing_radius_km(seam,80,360,1000,1);
+    expect(a&&b,"landing wraps seam");
+    near(*a,*b,1e-9,"landing longitude periodic");
 }
 void real_data(const std::filesystem::path& path) {
     auto source=TerrainFile::open(path);
@@ -387,7 +471,7 @@ void clipping_and_order_tests(Temporary& temp) {
 }
 int main(int argc,char** argv) {
     try {
-        Temporary temp; mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp); view_culling_tests(temp);
+        Temporary temp; landing_radius_tests(temp); mesh_tests(temp); rendering_tests(temp); interpolated_attributes_test(temp); clipping_and_order_tests(temp); view_culling_tests(temp);
         for(int i=1;i<argc;++i) real_data(argv[i]);
         std::cout<<"terrain surface: "<<checks<<" checks passed\n";
         return 0;

@@ -23,9 +23,12 @@ std::string folded(const std::string& text) {
 SmallBodyEvaluationMode mode(const SmallBodyRecord& record) {
     if (record.encoding == SmallBodyEncoding::packed_37) return SmallBodyEvaluationMode::unresolved;
     if ((record.kind == SmallBodyKind::asteroid || record.kind == SmallBodyKind::trans_neptunian)
-        && record.encoding == SmallBodyEncoding::packed_36
-        && std::holds_alternative<OrbitalElements>(record.orbit))
-        return SmallBodyEvaluationMode::packed36_legacy_jd;
+        && std::holds_alternative<OrbitalElements>(record.orbit)) {
+        if (record.encoding == SmallBodyEncoding::packed_36)
+            return SmallBodyEvaluationMode::packed36_legacy_jd;
+        if (record.encoding == SmallBodyEncoding::element_text)
+            return SmallBodyEvaluationMode::element_text_legacy_jd;
+    }
     if (record.kind == SmallBodyKind::comet
         && record.frame == SmallBodyFrame::heliocentric_j2000_ecliptic
         && record.time_scale == SmallBodyTimeScale::tdb
@@ -97,7 +100,9 @@ std::shared_ptr<const SmallBodySnapshot> evaluate_small_body_snapshot(
         const auto& record = frame->model->dataset().records[index];
         std::optional<Vec3> position;
         std::vector<SmallBodyDiagnostic> diagnostics;
-        if (frame->model->evaluation_mode(index) == SmallBodyEvaluationMode::packed36_legacy_jd) {
+        const auto evaluationMode = frame->model->evaluation_mode(index);
+        if (evaluationMode == SmallBodyEvaluationMode::packed36_legacy_jd
+            || evaluationMode == SmallBodyEvaluationMode::element_text_legacy_jd) {
             auto result = evaluate_minor_planet_position(record, julian_date);
             position = result.heliocentric_j2000_ecliptic_au;
             diagnostics = std::move(result.diagnostics);
@@ -124,23 +129,35 @@ std::shared_ptr<const SmallBodySnapshot> evaluate_small_body_snapshot(
     return frame;
 }
 
+std::string small_body_summary(const SmallBodyModel& model) {
+    return "原本 " + std::to_string(model.dataset().records.size())
+        + " 件 · 位置評価候補（未対応を含む） " + std::to_string(model.evaluable_indices().size())
+        + " 件 · 出典診断 " + std::to_string(model.dataset().diagnostics.size()) + " 件";
+}
+
 std::string small_body_description(const SmallBodyModel& model, std::size_t index, const SmallBodySnapshot* frame) {
     const auto& record = model.dataset().records.at(index);
     const auto evaluationMode = model.evaluation_mode(index);
     const bool packed = evaluationMode == SmallBodyEvaluationMode::packed36_legacy_jd;
+    const bool individual = evaluationMode == SmallBodyEvaluationMode::element_text_legacy_jd;
     std::vector<SmallBodyDiagnostic> diagnostics = record.diagnostics;
     std::ostringstream output;
     output << model.title(index) << "\n" << model.provenance(index);
     if (record.number) output << "\n原番号 " << *record.number;
+    if (record.encoding == SmallBodyEncoding::packed_37 && record.raw_flag)
+        output << "\npacked 37 byte · 原フラグ " << static_cast<unsigned>(*record.raw_flag) << "（意味未確定）";
     if (frame && frame->model.get() == &model && index < frame->positions.size()) {
         output << "\nJD " << std::fixed << std::setprecision(5) << frame->julian_date;
         if (evaluationMode == SmallBodyEvaluationMode::comet_tdb) output << " (TDB 入力・時系変換なし)";
-        else if (packed) output << " (原版の数値 JD・時系変換なし)";
+        else if (packed || individual) output << " (原版の数値 JD・時系変換なし)";
         else output << " (時系未確定・変換なし)";
         if (frame->positions[index]) {
             const auto p = *frame->positions[index];
             output << "\n日心 J2000 黄道 AU · 二体近似\nX " << p.x << " / Y " << p.y << " / Z " << p.z;
-            if (packed) diagnostics.erase(std::remove_if(diagnostics.begin(), diagnostics.end(),
+            const auto* orbit = std::get_if<OrbitalElements>(&record.orbit);
+            if (individual && orbit && orbit->eccentricity > 1)
+                output << "\n双曲線の時刻位置です。軌道周期はありません。";
+            if (packed || individual) diagnostics.erase(std::remove_if(diagnostics.begin(), diagnostics.end(),
                 [](const auto& diagnostic) { return diagnostic.code == SmallBodyDiagnosticCode::unresolved_frame; }),
                 diagnostics.end());
         } else if (!frame->evaluated_all && frame->evaluated_selection != index
@@ -156,6 +173,7 @@ std::string small_body_description(const SmallBodyModel& model, std::size_t inde
         }
     } else output << "\n位置未評価";
     if (packed) output << "\npacked 36 byte の位置契約・物理時系 UTC/TT/TDB は未確定";
+    if (individual) output << "\n個別軌道は長半径 a と平均運動 n の指定値を使い、省略された側を導出・物理時系 UTC/TT/TDB は未確定";
     append_diagnostics(output, diagnostics);
     if (!record.declared_time_range) output << "\n精度保証期間は不明";
     if (evaluationMode == SmallBodyEvaluationMode::unresolved && record.diagnostics.empty())

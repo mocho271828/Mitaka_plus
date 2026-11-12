@@ -44,8 +44,13 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
     state.mode = (int)_mode.selectedSegment;
     state.magnitude_limit = _sky.magnitudeLimit;
     state.sky_viewport = [_sky viewport];
-    state.horizon_viewport = [_horizon viewport];
+    state.horizon_viewport = _horizonFlightView.value_or([_horizon viewport]);
     state.solar_camera = [_solar cameraState];
+    SurfaceSite surface;
+    if ([_solar scriptSurfaceSite:&surface] || [_solar earthSurfaceSite:&surface]) {
+        state.surface_site = surface;
+        state.physical_space = surface.height_km > minimum_surface_height_km + 1e-9;
+    } else state.physical_space = _solar.usesPhysicalScene;
     const NSUInteger selected = _solar.selectedBodyIndex;
     state.selected_body = selected < _solarBodies.size() ? _solarBodies[selected].id : Body::sun;
     if (_sky.selectedBodyIndex < _bodies.size()) state.sky_selected_body = _bodies[_sky.selectedBodyIndex].id;
@@ -60,6 +65,11 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         // 全項目と日時範囲を先に検査し、不正ファイルで部分的な状態変更を起こさない。
         const auto state = decode_session_state(encode_session_state(value));
         (void)_model->bodies(state.julian_date);
+        if (state.surface_site) {
+            SurfaceNavigation surface;
+            surface.set_site(*state.surface_site);
+            (void)surface.camera(_model->solar_bodies(state.julian_date));
+        }
         if (!_smallBodyModel || !_smallBodyDisplay || !_satelliteDisplay || !_starNameSelection)
             throw std::invalid_argument("session state: display catalogs are unavailable");
         (void)prepare_display_layers(state, *_model, *_smallBodyModel, *_smallBodyDisplay, *_satelliteDisplay, *_starNameSelection);
@@ -86,7 +96,16 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
             throw std::logic_error(message != nullptr ? message : "validated Plus time could not be restored");
         }
         [_playback setPlusTimeZone:state.plus_time_zone];
-        [_solar setCameraState:state.solar_camera];
+        NSString *cameraError = nil;
+        if (![_solar applyCameraState:state.solar_camera physicalSpace:state.physical_space error:&cameraError])
+            throw std::logic_error(cameraError ? cameraError.UTF8String : "validated session camera could not be restored");
+        if (state.surface_site) {
+            NSString *failure = nil;
+            if (![_solar restoreSurfaceSite:*state.surface_site physicalSpace:state.physical_space error:&failure]) {
+                const char *message = failure.UTF8String;
+                throw std::logic_error(message ? message : "validated surface site could not be restored");
+            }
+        }
         for (NSUInteger i = 0; i < _solarBodies.size(); ++i)
             if (_solarBodies[i].id == state.selected_body) [_solar selectBody:i];
         [_sky setViewport:state.sky_viewport];
@@ -288,7 +307,10 @@ PreparedDisplayLayers prepare_display_layers(const SessionState& state, const Sk
         [self showError:[NSString stringWithFormat:@"保存された表示設定を適用できません: %s", error.what()]];
     }
 }
-- (NSView *)activeView { return _mode.selectedSegment == 1 ? _solar : _mode.selectedSegment == 2 ? _horizon : _sky; }
+- (NSView *)activeView {
+    if (_horizonFlightView && _mode.selectedSegment == 1) return _solar.superview;
+    return _mode.selectedSegment == 1 ? _solar : _mode.selectedSegment == 2 ? _horizon : _sky;
+}
 - (DisplayOutputController *)displayOutput {
     if (!_displayOutput) _displayOutput = [[DisplayOutputController alloc] init];
     _displayOutput.sourceView = [self activeView];

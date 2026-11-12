@@ -21,10 +21,10 @@ double distance(ScreenPoint point, ScreenSegment segment) {
     const double t = square == 0 ? 0 : std::clamp(((point.x - segment.start.x) * dx + (point.y - segment.start.y) * dy) / square, 0.0, 1.0);
     return std::hypot(point.x - segment.start.x - t * dx, point.y - segment.start.y - t * dy);
 }
-void curve(EquatorialCoordinates start, EquatorialCoordinates end, const ObservationFrame& frame, HorizonViewport viewport) {
+void curve(EquatorialCoordinates start, EquatorialCoordinates end, const ObservationFrame& frame, HorizonViewport viewport, bool allows_boundary_omission = false) {
     const double width = 1200, height = 700;
     const auto result = project_equatorial_segment_to_horizon(start, end, frame, viewport, width, height);
-    check(result.evaluations <= 8193 && result.omitted_intervals == 0, "ordinary curve must finish within sampling budget");
+    check(result.evaluations <= 8193 && (allows_boundary_omission || result.omitted_intervals == 0), "ordinary curve must finish within sampling budget");
     for (const auto& segment : result.segments) {
         for (const auto point : {segment.start, segment.end}) check(std::isfinite(point.x) && std::isfinite(point.y)
             && point.x >= -1e-8 && point.x <= width + 1e-8 && point.y >= -1e-8 && point.y <= height + 1e-8, "segments must be finite and clipped");
@@ -36,7 +36,7 @@ void curve(EquatorialCoordinates start, EquatorialCoordinates end, const Observa
         const auto horizontal = frame.to_horizontal({start.right_ascension_deg + delta * fraction,
             start.declination_deg + (end.declination_deg - start.declination_deg) * fraction});
         const HorizonProjectionViewport sky_viewport{360 - viewport.center_azimuth_deg, viewport.center_altitude_deg,
-            viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg};
+            viewport.vertical_fov_deg, viewport.perspective_blend, viewport.roll_deg, viewport.perspective_fov_deg};
         const EquatorialCoordinates coordinates{360 - horizontal.azimuth_deg, horizontal.altitude_deg};
         // 回転後の極では経度が定義できず、任意の経度を描画上の正解にできない。
         if (std::abs(rotate_horizon(coordinates, sky_viewport).declination_deg) > 89.99999) continue;
@@ -202,6 +202,11 @@ void tests() {
             curve({88,-1}, {92,1}, frame, {center.azimuth_deg, center.altitude_deg,1});
         }
     const ObservationFrame frame({35,139}, 2451545);
+    const auto center_for_perspective = frame.to_horizontal({90, 0});
+    for (double fov : {20., 45., 90.})
+        for (double blend : {0.5, 1.})
+            curve({70, -10}, {110, 10}, frame,
+                  {center_for_perspective.azimuth_deg, center_for_perspective.altitude_deg, 180, blend, 25, fov}, true);
     seam_coverage({185,89.499}, {175,89.499}, frame, 1e-12);
     seam_coverage({175,89.499}, {185,89.499}, frame, 1e-12);
     seam_coverage({270,45}, {90,45}, frame, 1e-6);

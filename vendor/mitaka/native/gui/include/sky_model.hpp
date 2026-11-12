@@ -96,6 +96,7 @@ struct HorizonProjectionViewport {
     double vertical_fov_deg = 180;
     double perspective_blend = 0;
     double roll_deg = 0;
+    double perspective_fov_deg = 45;
 };
 
 struct ScreenPoint { double x, y; };
@@ -150,6 +151,7 @@ private:
     double sin_roll_;
     double perspective_blend_;
     double vertical_fov_deg_;
+    double perspective_scale_;
     std::vector<std::array<double, 2>> longitudes_;
     std::vector<std::array<double, 2>> latitudes_;
     std::vector<double> perspective_denominators_;

@@ -12,6 +12,23 @@ NSString *string(const std::string& text) {
 }
 }
 
+@interface SpacecraftController ()
+- (NSMenu *)contextMenuForRow:(NSInteger)row;
+@end
+
+@interface SpacecraftBrowserTableView : NSTableView
+@property(nonatomic, weak) SpacecraftController *contextController;
+@end
+
+@implementation SpacecraftBrowserTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSInteger row = [self rowAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return [self.contextController contextMenuForRow:row];
+}
+@end
+
 @implementation SpacecraftController {
     std::shared_ptr<const SpacecraftBrowserModel> _model;
     std::shared_ptr<const SpacecraftSnapshot> _snapshot;
@@ -53,7 +70,9 @@ NSString *string(const std::string& text) {
         _summary = [NSTextField labelWithString:@"データ未読込"];
         _summary.font = [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular];
         _summary.accessibilityIdentifier = @"spacecraft-summary";
-        _table = [[NSTableView alloc] init];
+        SpacecraftBrowserTableView *table = [[SpacecraftBrowserTableView alloc] init];
+        table.contextController = self;
+        _table = table;
         NSArray<NSString *> *identifiers = @[@"name", @"source", @"state"];
         NSArray<NSString *> *titles = @[@"探査機名", @"出典と原本内の順番", @"位置の評価"];
         for (NSUInteger index = 0; index < identifiers.count; ++index) {
@@ -220,18 +239,38 @@ NSString *string(const std::string& text) {
 - (void)updateDetails {
     const auto index = [self selectedIndex];
     if (_model && index) _details.string = string(spacecraft_description(*_model, *index, _snapshot.get()));
-    else if (_model) {
-        std::string text = "同名の探査機と未解決の定義もすべて保持します。PTH は旧版の数値 JD で評価し、PPI の座標は推定しません。行を選ぶと原定義・位置・診断を表示します。";
-        for (const auto& diagnostic : _model->model().dataset().diagnostics) text += "\n" + diagnostic.source_key + ": " + diagnostic.message;
-        _details.string = string(text);
-    } else _details.string = @"";
+    else if (_model) _details.string = string(spacecraft_catalog_description(*_model));
+    else _details.string = @"";
 }
 - (void)tableViewSelectionDidChange:(NSNotification *)notification {
     (void)notification;
     _select.enabled = _center.enabled = [self selectedIndex].has_value();
     [self updateDetails];
 }
-- (void)choose:(BOOL)center { const auto index = [self selectedIndex]; if (index && self.chooseObject) self.chooseObject(*index, center); }
-- (void)select:(id)sender { (void)sender; [self choose:NO]; }
-- (void)center:(id)sender { (void)sender; [self choose:YES]; }
+- (NSMenu *)contextMenuForRow:(NSInteger)row {
+    if (!_model || row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return nil;
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"探査機"];
+    [menu addItemWithTitle:_select.title action:@selector(select:) keyEquivalent:@""];
+    [menu addItemWithTitle:_center.title action:@selector(center:) keyEquivalent:@""];
+    for (NSMenuItem *item in menu.itemArray) {
+        item.target = self;
+        item.tag = static_cast<NSInteger>(_page.rows[row]);
+        item.representedObject = @(_generation->load(std::memory_order_relaxed));
+    }
+    return menu;
+}
+- (void)choose:(BOOL)center sender:(id)sender {
+    const auto index = [self selectedIndex];
+    if (!index || !self.chooseObject) return;
+    if ([sender isKindOfClass:NSMenuItem.class]) {
+        NSMenuItem *item = sender;
+        // 検索や読込で同じ行番号に別の原本が入っても、開いた時点の項目を転用しない。
+        if (![item.representedObject isKindOfClass:NSNumber.class]
+            || [item.representedObject unsignedLongLongValue] != _generation->load(std::memory_order_relaxed)
+            || item.tag != static_cast<NSInteger>(*index)) return;
+    }
+    self.chooseObject(*index, center);
+}
+- (void)select:(id)sender { [self choose:NO sender:sender]; }
+- (void)center:(id)sender { [self choose:YES sender:sender]; }
 @end

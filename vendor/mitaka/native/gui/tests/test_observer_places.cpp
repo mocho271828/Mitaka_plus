@@ -143,6 +143,40 @@ void test_keys(const std::filesystem::path& root) {
             "duplicate and unknown source rows are preserved byte for byte");
 }
 
+void test_body_resolution(const std::filesystem::path& root) {
+    using mitaka::gui::observer_place_body_index;
+    const auto original = definition("Planet.Earth.Tokyo", "Tokyo") +
+        definition("Planet.Mars.OlympusMons", "Olympus Mons") +
+        definition("Satellite.Moon.NorthPole", "Moon first", 10) +
+        definition("Satellite.Moon.NorthPole", "Moon replacement", 20) +
+        definition("Planet.Venus.Site", "Unsupported planet") +
+        definition("Satellite.Moon", "No suffix") +
+        definition("Satellite.Moon.", "Empty suffix") +
+        definition("Satellite.Moon.A.B", "Extra component") +
+        definition("Satellite.Moon2.Site", "Similar body") +
+        definition("Satellite.moon.Site", "Wrong case");
+    write(root / names[0], original);
+    const auto loaded = mitaka::gui::load_observer_places(root);
+    require(loaded.places.size() == 9 && loaded.sources[0].catalog->places.size() == 10,
+            "known Moon duplicates use the same last-wins rule as planets");
+    require(loaded.places[2].name_bytes == "Moon replacement" && loaded.origins[2].place == 3,
+            "Moon replacement preserves winning record and provenance");
+    require(loaded.warnings.size() == 5, "unsupported or incomplete Moon IDs remain unresolved");
+    require(observer_place_body_index(loaded.places[0]) == 3 &&
+            observer_place_body_index(loaded.places[1]) == 4 &&
+            observer_place_body_index(loaded.places[2]) == 10,
+            "Earth, Mars and Moon IDs resolve to the solar model indices");
+    require(mitaka::gui::observer_place_is_earth(loaded.places[0]) &&
+            !mitaka::gui::observer_place_is_earth(loaded.places[1]) &&
+            !mitaka::gui::observer_place_is_earth(loaded.places[2]),
+            "existing Earth-only behavior is retained");
+    for (std::size_t index = 3; index < loaded.places.size(); ++index)
+        require(!observer_place_body_index(loaded.places[index]),
+                "unsupported bodies and malformed IDs do not resolve");
+    require(std::string(loaded.sources[0].bytes.begin(), loaded.sources[0].bytes.end()) == original,
+            "source bytes remain unchanged");
+}
+
 void test_local(const std::filesystem::path& directory) {
     const auto loaded = mitaka::gui::load_observer_places(directory);
     std::optional<std::filesystem::path> selected;
@@ -161,6 +195,19 @@ void test_local(const std::filesystem::path& directory) {
         if (!selected) selected = path;
         const auto original = read(path);
         require(std::string(found->bytes.begin(), found->bytes.end()) == original, "all local candidate bytes retained");
+        if (path.filename() == "defaultplaces.dat" && found->catalog) {
+            const auto& places = found->catalog->places;
+            const auto verify = [&](const std::string& id, std::size_t body) {
+                const auto place = std::find_if(places.begin(), places.end(), [&](const auto& row) {
+                    return row.target_name == id;
+                });
+                if (place != places.end())
+                    require(mitaka::gui::observer_place_body_index(*place) == body,
+                            "known real-data place resolves to its own body");
+            };
+            verify("Satellite.Moon.NorthPole", 10);
+            verify("Planet.Mars.OlympusMons", 4);
+        }
     }
     require(bool(loaded.selected_source) == bool(selected), "local selection presence follows source existence");
     if (selected) {
@@ -189,6 +236,7 @@ int main(int argc, char** argv) {
         test_selection(root);
         test_errors_and_empty(root);
         test_keys(root);
+        test_body_resolution(root);
         std::filesystem::remove_all(root);
         if (argc > 1) test_local(argv[1]);
         std::cout << "Observer places: " << checks << " checks passed\n";

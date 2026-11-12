@@ -140,7 +140,13 @@ std::vector<Vec3> plan_route(Vec3 a, Vec3 b, Vec3 normal,
         const Vec3 direction=unit(sub(end,start));
         Vec3 side=cross(normal,direction);
         if (length(side)<1e-8) side=cross(std::abs(direction.x)<0.8 ? Vec3{1,0,0} : Vec3{0,1,0},direction);
-        const Vec3 detour=add(blocked->center,mul(unit(side),blocked->radius*2));
+        const double clearance = blocked->radius * 2;
+        Vec3 detour = add(blocked->center, mul(unit(side), clearance));
+        // 地表近くで再開すると、横の迂回点に向かう最初の弦まで出発天体に潜ることがある。
+        // この場合だけ元のカメラから半径方向に抜け、次の辺も他の天体を含めて検査する。
+        const Vec3 outward = sub(start, blocked->center);
+        if (segment == 0 && length(outward) < clearance && intersects(start, detour, *blocked))
+            detour = add(blocked->center, mul(unit(outward), clearance));
         points.insert(points.begin()+static_cast<std::ptrdiff_t>(segment+1),detour);
     }
     return points;

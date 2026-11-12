@@ -6,6 +6,7 @@
 #import "CatalogBrowserController.h"
 #import "HorizonView.h"
 #import "ScriptController.h"
+#import "ScriptConsoleController.h"
 #import "DisplayOutputController.h"
 #import "SmallBodyController.h"
 #import "SatelliteController.h"
@@ -15,6 +16,7 @@
 #import "StarBrightnessController.h"
 #import "GalaxyController.h"
 #import "RadiusDisplayController.h"
+#import "RendererOptionsController.h"
 #include "session_state.hpp"
 #include "extended_catalogs.hpp"
 #include "observer_places.hpp"
@@ -57,6 +59,7 @@ struct ScriptPlaceTransition {
     mitaka::Vec3 start, tangent;
     double angle, start_time, duration, latitude, longitude;
     NSInteger mode;
+    std::size_t body_index;
     std::string target;
 };
 
@@ -82,13 +85,11 @@ struct ScriptLookTarget {
     SolarSystemView *_solar;
     PlaybackController *_playback;
     NSSegmentedControl *_mode;
+    NSUInteger _modeGeneration;
     NSArray<NSButton *> *_cameraButtons, *_travelButtons;
     NSButton *_journeyButton, *_resumeJourneyButton;
     BOOL _pendingEarthDescent;
-    NSTimer *_horizonProjectionTimer;
-    double _horizonProjectionStartTime, _horizonProjectionDuration;
-    double _horizonProjectionStart, _horizonProjectionTarget, _horizonAscentDuration;
-    double _earthDescentProjectionDuration;
+    std::optional<mitaka::gui::HorizonViewport> _horizonFlightView;
     NSTextField *_latitudeField, *_longitudeField;
     NSTextField *_cameraLabel, *_note;
     NSString *_skySelection, *_solarSelection, *_horizonSelection;
@@ -109,6 +110,7 @@ struct ScriptLookTarget {
     NSTimer *_scriptCameraTimer;
     NSTimer *_scriptFovTimer;
     std::optional<ScriptCameraAnimation> _scriptFovAnimation;
+    NSInteger _scriptFovMode;
     NSTimer *_scriptPlaceTimer;
     std::optional<ScriptPlaceTransition> _scriptPlaceTransition;
     std::optional<ScriptCameraAnimation> _scriptAzimuthAnimation, _scriptAltitudeAnimation;
@@ -118,6 +120,7 @@ struct ScriptLookTarget {
     std::shared_ptr<const SpacecraftSnapshot> _scriptLookSpacecraftSnapshot;
     std::optional<double> _scriptCameraDuration;
     int _scriptCameraZoomMode;
+    int _scriptTargetSelectionMode;
     std::optional<double> _scriptCameraModeDuration;
     std::optional<std::int32_t> _scriptStarHIP;
     std::string _scriptStarTarget;
@@ -131,13 +134,14 @@ struct ScriptLookTarget {
     std::string _scriptOurGalaxyTarget;
     StarBrightnessController *_starBrightness;
     RadiusDisplayController *_radiusDisplayController;
+    RendererOptionsController *_rendererOptionsController;
     RadiusDisplayOptions _radiusDisplayOptions;
     RadiusScaleMode _radiusScaleMode;
     BOOL _terminating;
     BOOL _displayPreferencesLoadFailed;
-    NSWindow *_scriptWindow;
+    ScriptConsoleController *_scriptConsole;
+    BOOL _scriptConsoleExecution;
     HtmlBrowserController *_htmlBrowser;
-    NSTextView *_scriptLog;
     NSWindow *_calendarWindow;
     NSWindow *_plusTimeZoneWindow;
     NSButton *_plusTimeZoneEnabledButton;
@@ -197,9 +201,14 @@ struct ScriptLookTarget {
 - (void)changeMode:(id)sender;
 - (void)surfaceNavigationChanged;
 - (void)cancelHorizonProjection;
+- (void)updateHorizonFlightProjection;
+- (std::optional<int>)plusCameraMode;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration error:(NSString **)error;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force error:(NSString **)error;
 - (BOOL)setEarthSurfaceMode:(BOOL)surface duration:(double)duration force:(BOOL)force selectedSurface:(BOOL)selectedSurface error:(NSString **)error;
+- (double)cameraModeDuration;
+- (BOOL)canToggleFlightMode;
+- (void)toggleFlightMode:(id)sender;
 - (void)takeOffFromHorizon:(id)sender;
 - (void)descendToHorizon:(id)sender;
 - (void)stepHour:(NSButton *)sender;
@@ -316,6 +325,7 @@ struct ScriptLookTarget {
 - (GridDisplayOptions)gridDisplayOptions;
 - (void)setGridDisplayOptions:(const GridDisplayOptions&)options;
 - (RendererDisplayOptions)rendererDisplayOptions;
+- (void)showRendererOptions:(id)sender;
 - (void)setRendererDisplayOptions:(const RendererDisplayOptions&)options;
 - (void)addDisplayMenus:(NSMenu *)menu;
 - (void)togglePlanetDisplay:(NSMenuItem *)sender;

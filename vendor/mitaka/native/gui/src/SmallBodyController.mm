@@ -14,6 +14,20 @@ NSString *string(const std::string& text) {
 }
 }
 
+@interface SmallBodyTableView : NSTableView
+@property(nonatomic, copy) NSMenu *(^menuForRow)(NSInteger row);
+@end
+
+@implementation SmallBodyTableView
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    const NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    const NSInteger row = [self rowAtPoint:point];
+    if (row < 0 || row >= self.numberOfRows) return nil;
+    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    return self.menuForRow ? self.menuForRow(row) : nil;
+}
+@end
+
 @implementation SmallBodyController {
     std::shared_ptr<const SmallBodyModel> _model;
     std::shared_ptr<const SmallBodySnapshot> _snapshot;
@@ -58,7 +72,10 @@ NSString *string(const std::string& text) {
         _summary = [NSTextField labelWithString:@"データ未読込"];
         _summary.font = [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular];
         _summary.accessibilityIdentifier = @"small-body-summary";
-        _table = [[NSTableView alloc] init];
+        SmallBodyTableView *table = [[SmallBodyTableView alloc] init];
+        __weak SmallBodyController *weakSelf = self;
+        table.menuForRow = ^NSMenu *(NSInteger row) { return [weakSelf contextMenuForRow:row]; };
+        _table = table;
         NSArray<NSString *> *identifiers = @[@"name", @"source", @"state", @"member"];
         NSArray<NSString *> *titles = @[@"名称・原番号", @"出典と原本内の順番", @"位置の評価", @"表示集合"];
         for (NSUInteger index = 0; index < identifiers.count; ++index) {
@@ -120,7 +137,7 @@ NSString *string(const std::string& text) {
         }
         _firstJD = [NSTextField textFieldWithString:@""]; _firstJD.accessibilityIdentifier = @"small-body-orbit-first";
         _lastJD = [NSTextField textFieldWithString:@""]; _lastJD.accessibilityIdentifier = @"small-body-orbit-last";
-        _samples = [NSTextField textFieldWithString:@"129"]; _samples.accessibilityIdentifier = @"small-body-orbit-samples";
+        _samples = [NSTextField textFieldWithString:@(default_small_body_orbit_samples).stringValue]; _samples.accessibilityIdentifier = @"small-body-orbit-samples";
         [_firstJD.widthAnchor constraintGreaterThanOrEqualToConstant:145].active = YES;
         [_lastJD.widthAnchor constraintGreaterThanOrEqualToConstant:145].active = YES;
         [_samples.widthAnchor constraintEqualToConstant:65].active = YES;
@@ -130,7 +147,7 @@ NSString *string(const std::string& text) {
             [NSTextField labelWithString:@"標本数"], _samples, apply]];
         sampling.spacing = 8;
         [rows addObject:sampling];
-        NSTextField *orbitExplanation = [NSTextField wrappingLabelWithString:@"彗星は指定区間、36 byte の小惑星・外縁天体は元期から一周期を標本化します。標本数は共通です。小惑星・外縁天体の数値 JD の物理時系は未確定です。"];
+        NSTextField *orbitExplanation = [NSTextField wrappingLabelWithString:@"彗星は指定区間、小惑星・外縁天体は近日点から一周期を標本化します。36 byte と個別ファイルの長半径 a または平均運動 n 指定の楕円軌道に対応します。個別ファイルに平均運動 n がある場合はその値を使用します。標本数は共通です。小惑星・外縁天体の数値 JD の物理時系は未確定です。"];
         orbitExplanation.accessibilityIdentifier = @"small-body-orbit-explanation";
         orbitExplanation.font = [NSFont systemFontOfSize:11];
         [rows addObject:orbitExplanation];
@@ -180,8 +197,7 @@ NSString *string(const std::string& text) {
 - (void)setSnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot {
     if (snapshot && snapshot->model != _model) throw std::invalid_argument("small-body snapshot/model mismatch");
     _snapshot = std::move(snapshot);
-    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
-        _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
+    _summary.stringValue = _model ? string(small_body_summary(*_model)) : @"データ未読込";
     if (self.window.visible) { [_table reloadData]; [self updateDetails]; }
 }
 - (SmallBodyBrowserDate)prepareSnapshot:(std::shared_ptr<const SmallBodySnapshot>)snapshot
@@ -196,8 +212,7 @@ NSString *string(const std::string& text) {
     _display = std::move(prepared.display);
 }
 - (void)finishDateUpdate {
-    _summary.stringValue = _model ? [NSString stringWithFormat:@"原本 %lu 件 · 位置計算対応 %lu 件 · 出典診断 %lu 件",
-        _model->dataset().records.size(), _model->evaluable_indices().size(), _model->dataset().diagnostics.size()] : @"データ未読込";
+    _summary.stringValue = _model ? string(small_body_summary(*_model)) : @"データ未読込";
     [self updateOptions];
     [_table reloadData];
     [self updateSelectionControls];
@@ -361,7 +376,30 @@ NSString *string(const std::string& text) {
     _add.enabled = _remove.enabled = _display && _table.numberOfSelectedRows > 0;
     [self updateDetails];
 }
-- (void)choose:(BOOL)center { const auto index = [self selectedIndex]; if (index && self.chooseObject) self.chooseObject(*index, center); }
-- (void)select:(id)sender { (void)sender; [self choose:NO]; }
-- (void)center:(id)sender { (void)sender; [self choose:YES]; }
+- (NSMenu *)contextMenuForRow:(NSInteger)row {
+    if (row < 0 || static_cast<std::size_t>(row) >= _page.rows.size()) return nil;
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"小天体"];
+    NSMenuItem *select = [menu addItemWithTitle:_select.title action:@selector(select:) keyEquivalent:@""];
+    NSMenuItem *center = [menu addItemWithTitle:_center.title action:@selector(center:) keyEquivalent:@""];
+    for (NSMenuItem *item in @[select, center]) {
+        item.target = self;
+        item.tag = static_cast<NSInteger>(_page.rows[row]);
+        item.representedObject = @(_generation->load(std::memory_order_relaxed));
+    }
+    return menu;
+}
+- (void)choose:(BOOL)center sender:(id)sender {
+    const auto index = [self selectedIndex];
+    if (!index || !self.chooseObject) return;
+    if ([sender isKindOfClass:NSMenuItem.class]) {
+        NSMenuItem *item = sender;
+        // 検索・原本の差し替え後に残った項目を、別の行へ解決しない。
+        if (![item.representedObject isKindOfClass:NSNumber.class]
+            || [item.representedObject unsignedLongLongValue] != _generation->load(std::memory_order_relaxed)
+            || item.tag != static_cast<NSInteger>(*index)) return;
+    }
+    self.chooseObject(*index, center);
+}
+- (void)select:(id)sender { [self choose:NO sender:sender]; }
+- (void)center:(id)sender { [self choose:YES sender:sender]; }
 @end
