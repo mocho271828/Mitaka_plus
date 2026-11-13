@@ -17,6 +17,8 @@ build-*/
 local/
 /temp_gates/*
 !/temp_gates/.gitkeep
+policy_gate/
 verification/
+AGENTS.md
 vendor/mitaka/investigation/
 /docs/research/
