@@ -125,7 +125,7 @@ void test_upstream_fixtures() {
     using namespace mitaka;
     struct Fixture { double jd; std::array<Vec3,2> positions; BodyOrientation orientation; };
     // 未変更の公式位置関数と、原本から本文のまま抽出した姿勢関数の出力。
-    // 再生成方法は LUNAR_PROVENANCE.md を参照。新コアを期待値生成に使わない。
+    // 再生成方法は docs/core/LUNAR_PROVENANCE.md を参照。新コアを期待値生成に使わない。
     const std::array<Fixture,4> fixtures{{
         {2415020.5,
          {{{0.00016353511842929789,-0.0022715366457242976,-0.00093358837226923503},

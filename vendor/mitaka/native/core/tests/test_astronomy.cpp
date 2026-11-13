@@ -117,7 +117,7 @@ void test_orbits() {
 void test_official_regression() {
     using namespace mitaka;
     // 原本の cele_mech.cpp と vector3.h を Apple Clang で実行した JD 2451545.0 の値。
-    // 元の solver の停止誤差を許容する。生成元とライセンスは ASTRONOMY_PROVENANCE.md 参照。
+    // 元の solver の停止誤差を許容する。生成元とライセンスは docs/core/ASTRONOMY_PROVENANCE.md 参照。
     const std::array<OrbitalState, 9> original{{
         {{-0.12962828415225977,-0.447425225125201,-0.024619780233975885},{0.021373395519738887,-0.0064244796918684075,-0.0024873055004190473}},
         {{-0.71829521537928842,-0.03316175044972796,0.041014009848419741},{0.00081172890823552341,-0.02029424056729465,-0.00032365662868294416}},

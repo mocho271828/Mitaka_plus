@@ -117,7 +117,7 @@ void test_rotation_direction() {
 
 void test_upstream_golden() {
     using namespace mitaka;
-    // 原本を単独コンパイルして生成。再生成方法は ROTATION_PROVENANCE.md を参照。
+    // 原本を単独コンパイルして生成。再生成方法は docs/core/ROTATION_PROVENANCE.md を参照。
     near(planet_orientation(Planet::mercury, epoch),
          {{0.93117860203937042,-0.34621274992544016,-0.11420657990268573},
           {0.35292600127964935,0.93459867465463853,0.04436840040558538},

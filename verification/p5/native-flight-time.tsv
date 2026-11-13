@@ -1,9 +1,0 @@
-revision_run	direction	samples	observed_mode_switch_s	last_timer_stop_s	final_view	final_lua_mode	final_site_lat_deg	final_site_lon_deg	final_azimuth_deg	final_altitude_deg	final_earth_distance_km	status	trace_json_sha256
-before-default-trace	up	188	3.0064	7.1826	1	1	35.675	139.54	0	-80	57403.2294	飛行完了	d429e9b6668cd3a3c2ef7d25d86a89d50561d768b3366b60e260cd02b513e6ee
-before-default-trace	down	190	4.3463	7.1861	2	0	35.675	139.54	0.0	-80.0		飛行完了	d429e9b6668cd3a3c2ef7d25d86a89d50561d768b3366b60e260cd02b513e6ee
-p5ship-default-trace	up	104	0.0583	7.2541	1	1	35.675	139.54	0	-90	21142.7256	飛行完了	f1d6690f7da1f7aa6760533e24f7be81fab3f1c55e9a990a1dcedec63516ce3e
-p5ship-default-trace	down	104	7.1624	7.1625	2	0	35.675	139.54	0	22.5		飛行完了	f1d6690f7da1f7aa6760533e24f7be81fab3f1c55e9a990a1dcedec63516ce3e
-before-ui-trace	up	80	1.3447	3.0642	1	1	35.675	139.54	0	-80	57403.2294	飛行完了	97b9bedcd34573866ed335b6c9baf03f571a58bbe395ab419b3dc96079a3122c
-before-ui-trace	down	82	1.8842	3.0603	2	0	35.675	139.54	0.0	-80.0		飛行完了	97b9bedcd34573866ed335b6c9baf03f571a58bbe395ab419b3dc96079a3122c
-p5ship-api3-trace	up	46	0.0526	3.1798	1	1	35.675	139.54	0	-90	21142.7256	飛行完了	b675bd75ee928407e68f18f360e46367d1a448f3157a5032b8f9649c976c31e8
-p5ship-api3-trace	down	50	3.0740	3.0741	2	0	35.675	139.54	0	22.5		飛行完了	b675bd75ee928407e68f18f360e46367d1a448f3157a5032b8f9649c976c31e8

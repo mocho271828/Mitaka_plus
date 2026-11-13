@@ -43,7 +43,7 @@ THE SOFTWARE.
 2026 modifications: C++17 portable astronomy and validated catalog readers,
 an AppKit user interface, equatorial and horizon sky views, reversible time
 playback, local state and image export, projection output, and a Lua helper.
-Source provenance and modifications are documented in native/core/*_PROVENANCE.md.
+Source provenance and modifications are documented in docs/core/*_PROVENANCE.md.
 The software license does not grant redistribution rights for astronomical
 datasets. Those remain subject to their individual terms.
 
@@ -58,5 +58,6 @@ LUA_LICENSE.txt, installed in the application's Resources directory.
 
 This application provides partial Mitaka Plus 1.5.4 functionality, not full
 binary, scripting-language, host-API, or user-interface compatibility.
-Compatibility evidence and limitations are recorded in PLUS_FEATURE_MATRIX.md
-and native/gui/SCRIPTING.md in the source repository.
+Compatibility evidence and limitations are recorded in
+docs/compatibility/PLUS_FEATURE_MATRIX.md and docs/gui/SCRIPTING.md in the
+source repository.

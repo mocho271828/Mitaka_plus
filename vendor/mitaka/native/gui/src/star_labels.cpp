@@ -3,7 +3,7 @@
 
 namespace mitaka::gui {
 namespace {
-// ID対応は公式1.3.1 common/astro/constellation.cpp。帰属は STAR_DISPLAY_PROVENANCE.md。
+// ID対応は公式1.3.1 common/astro/constellation.cpp。帰属は docs/gui/STAR_DISPLAY_PROVENANCE.md。
 constexpr std::array<const char*, 88> abbreviations{{
     "And", "Mon", "Sgr", "Del", "Ind", "Psc", "Lep", "Boo", "Hya", "Eri",
     "Tau", "CMa", "Lup", "UMa", "Vir", "Ari", "Ori", "Pic", "Cas", "Dor",

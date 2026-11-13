@@ -1,6 +1,2 @@
 # 公式原本の CP932・CRLF を含むバイト列を checkout 時も保持する。
 /sources/official/** -text
-
-# 原文・コマンド出力の監査ログは CRLF と行末空白も記録として保持する。
-/investigation/native-plus/unit6/logs/n07/binary/local-lua-references.txt -text -whitespace
-/investigation/native-plus/unit6/logs/n07/binary/string-xrefs.txt -text -whitespace

@@ -6,7 +6,20 @@
 
 1. [README](README.md) の手順でアプリをビルドします。
 2. 天文計算とデータの読み込みは `vendor/mitaka/native/core/`、画面・操作・Lua は `vendor/mitaka/native/gui/` で変更します。各ディレクトリの `tests/` に関連するテストがあります。
-3. リポジトリのルートで `make test` を実行します。データの読み込み、天文計算、画面の変更には、それぞれ[検証手順](VALIDATION.md)の実データ試験、公式ソースとの比較、GUI スモークテストを利用できます。
-4. プルリクエストには利用者への影響と確認した手順を記載してください。旧 Plus との対応範囲が変わる場合は[機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md)も更新してください。
+3. [テスト](#テスト)を実行します。
+4. プルリクエストには利用者への影響と確認した手順を記載してください。旧 Plus との対応範囲が変わる場合は[機能対応表](docs/compatibility/PLUS_FEATURE_MATRIX.md)も更新してください。
 
 同梱コードの由来、天文データの扱い、レビュー条件は[実装方針](IMPLEMENTATION_POLICY.md)にまとめています。
+
+## テスト
+
+リポジトリのルートで実行します。
+
+| コマンド | 確認対象 |
+| --- | --- |
+| `make test` | 計算コア、GUI、コントローラーの自動テスト |
+| `make data-test` | 実データを使うカタログ・画像の読み込みと描画モデル |
+| `make reference-test` | 公式 Mitaka 1.3.1 と暦表、自転、月、大気、食、天の川の計算結果を比較 |
+| `make smoke` | macOS の GUI セッションでアプリを起動し、描画、状態復元、画像出力、再生、飛行、Lua 連携を確認 |
+
+実データを使う試験の既定の入力は `resources/data` です。地球・火星の地形は `git lfs pull` で取得できます。独自のデータで確認する場合は `make data-test DATA_ROOT="/absolute/path/to/data"` のように、`hip.dat` と `cf96.dat` が入ったディレクトリの絶対パスを指定してください。同梱データの件数・版を期待する試験もあります。

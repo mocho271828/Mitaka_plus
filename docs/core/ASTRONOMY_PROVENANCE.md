@@ -1,0 +1,64 @@
+# 天文計算の由来と互換範囲
+
+`src/astronomy.cpp` は、公式 Mitaka 1.3.1 の下記コードから、OS・描画・アプリケーションの状態に依存しない計算を抽出した改変版である。
+公式 ZIP および展開原本は編集していない。
+派生コードの著作権表示と MIT ライセンス全文は `src/astronomy.cpp` に保持した。
+ライブラリの実行と通常のテストには公式ソースツリーを必要としない。
+
+取得元: <https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/mitaka_source_131.zip>
+
+原本パスは `vendor/mitaka/sources/official/mitaka_source/` からの相対パス。
+
+| 原本 | 抽出した機能 | 原本 SHA-256 |
+|---|---|---|
+| `common/JulianDate.cpp` | 先発グレゴリオ暦と Julian date の変換 | `03807db3f307977b0ab9481bd9b0417f3fe1039638ebfb4f0aea79cc02213fbe` |
+| `common/astro/cele_mech.cpp` | 楕円・引力双曲線の位置と速度 | `da1296a5e04ba8a2d5e602ff41c5e77a849ec33d6c444faa2add3e128a512dda` |
+| `common/astro/astrometry.cpp` | 固有運動を含む B1950→J2000 変換 | `560b8610978daa16bcd7a88cbc076f1e640970447eefc830d6b7f14e4662b772` |
+| `common/math/vector3.h` | 軌道面から参照面への Euler 回転 | `0a7827644a754c009842ddded726c1e80bead0a390dc743ca957c34006606d91` |
+| `common/astro/astro_const.h` | J2000 黄道傾斜角 | `81de471ed93d07889ad9e0f11ca320b96404421d82d80715eb8959b0f2b3f592` |
+| `Mitaka/mtk_orbital_element.cpp` | 軌道要素を用いた位置・速度の座標変換 | `5179b9bddfe33e0724885814b9428953e2486085f9f93e37559d036f5df908ae` |
+| `Mitaka/mtk_planet_position.cpp` | 9 天体の平均軌道要素と平均運動 | `9c67e889384f5d3460344e72bbae80f47706250ce4cee7d989b4c549717f413c` |
+
+## 変更した振る舞い
+
+- 公開型は `Vec3`、`OrbitalElements`、`OrbitalState` 等の値型に限定し、グローバルな惑星状態を持たない。
+- 距離は AU、速度は AU/day、角度は度とし、原本のアプリケーション層による pc への変換を含めない。
+- 楕円の平均近点離角を全周で正規化し、Kepler 方程式を上限 160 回の二分法で解く。原本の非収束時のゼロベクトル返却は例外に変更した。
+- 双曲線の長半径は原本と同じく正の絶対値とする。負の離心率で表される斥力と、未対応の放物線を明示的に拒否する。
+- 座標・日付・軌道要素の非有限値、不正日付、ゼロ方向ベクトル、演算結果の overflow を検出する。
+- 日付の対応範囲は年 -4712..9999。年 0 は紀元前 1 年。整数中間値を 64 bit に変更し、OS の時計取得は含めない。
+- 原本の `RA_DEC::set_dirc_vec` は南天の赤緯に 360 度を加えるが、コアは赤緯を [-90,90] 度として返す。赤経は [0,360) 度。
+- 黄道・赤道変換は `astro_const.h` の J2000 傾斜角 `84381.448 / 3600` 度を使う。原本 `astrometry.cpp` の別定数 `23.43870583` 度とは混同しない。
+
+## 精度と未対応範囲
+
+平均惑星軌道は公式 1.3.1 の近似値をそのまま使用する。
+月・衛星・摂動・光行差・歳差章動・地球月重心補正・Pluto 重心補正は、この API の対象外である。
+`mean_planet_state` は高精度暦ではない。
+CF96 と trajectory は別のローダー API で扱い、平均軌道 API が暗黙にフォールバック先を切り替えることはない。
+日付 API は暦表現の変換のみで、UTC/TT/TDB の時系変換と閏秒は扱わない。
+浮動小数点 Julian date の時刻分解能に制限があり、テストの秒の往復許容誤差は 0.1 ms としている。
+
+## 検証
+
+`tests/test_astronomy.cpp` は、J2000・Unix epoch の既知値、負年を含む日付往復、円軌道、回転方向、楕円・双曲線のエネルギー保存、速度と位置の数値微分、近放物線、異常入力を検証する。
+9 天体の位置と速度は、未変更の公式 `cele_mech.cpp` と `vector3.h` を Apple Clang 21 で実行して得た JD 2451545.0 の値と比較する。
+位置の許容誤差 4e-7 AU、速度の許容誤差 1e-9 AU/day は、原本の反復停止精度を考慮した回帰比較用であり、物理的な予測精度を表さない。
+B1950→J2000 は原本の float 出力と比較し、赤緯だけ上記契約に正規化して比較する。
+
+原本から回帰値を再生成する補助プログラムは `tools/generate_astronomy_reference.cpp`。
+`vendor/mitaka/native/core` から以下で実行できる。出力は stdout のみで、元データを書き換えない。
+
+```sh
+mkdir -p build/reference
+xcrun clang++ -std=c++17 -Wno-invalid-utf8 \
+  -I ../../sources/official/mitaka_source/common \
+  tools/generate_astronomy_reference.cpp \
+  ../../sources/official/mitaka_source/common/astro/cele_mech.cpp \
+  ../../sources/official/mitaka_source/common/astro/astrometry.cpp \
+  -o build/reference/generate_astronomy_reference
+build/reference/generate_astronomy_reference
+```
+
+ライブラリ本体は C++17 標準ライブラリのみで構築する。
+非公式 macOS 移植のコードはこのモジュールにコピーしていない。

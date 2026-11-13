@@ -29,11 +29,11 @@ make run
 make run DATA_ROOT="/absolute/path/to/Mitaka/data"
 ```
 
-詳しい操作は [GUI ガイド](vendor/mitaka/native/gui/README.md) と [Lua ガイド](vendor/mitaka/native/gui/SCRIPTING.md) を参照してください。旧 Plus の公式ソースは含まれていません。対応するデータ形式や旧版との違いは [機能対応表](vendor/mitaka/PLUS_FEATURE_MATRIX.md) にまとめています。
+詳しい操作は [GUI ガイド](docs/gui/README.md) と [Lua ガイド](docs/gui/SCRIPTING.md) を参照してください。旧 Plus の公式ソースは含まれていません。対応するデータ形式や旧版との違いは [機能対応表](docs/compatibility/PLUS_FEATURE_MATRIX.md) にまとめています。計算コアや移植元の資料は [ドキュメント一覧](docs/README.md) から探せます。
 
 ## 開発に参加する
 
-リポジトリのルートで `make test` を実行できます。天文データや描画を変更する場合は、該当する実データ試験も実行してください。[コントリビューションガイド](CONTRIBUTING.md)・[検証手順](VALIDATION.md)
+リポジトリのルートで `make test` を実行できます。実データ試験と変更の提出方法は [コントリビューションガイド](CONTRIBUTING.md#テスト) を参照してください。
 
 ## ライセンス
 

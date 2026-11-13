@@ -67,8 +67,7 @@ struct OurGalaxyRenderSettings {
 // 点群だけを透過画像に描く。色・点の大きさは呼出側が明示する表示設定であり、
 // 元データの色情報でも旧 Plus の画素再現でもない。radiative を渡すと
 // 公式 1.3.1 の点ごとの吸収を使う。画面では加算合成する。
-// 公式 1.3.1 の点群・map・色・座標変換の根拠と Plus への適用限界は
-// investigation/native-plus/unit7/n16-galaxy-catalog-contracts.md に記録している。
+// 点光源の吸収計算と銀河座標変換の根拠は docs/core/OUR_GALAXY_RADIATIVE_PROVENANCE.md を参照。
 // 取消時は部分画像を公開せず null を返す。元モデルは変更しない。
 std::shared_ptr<const GalaxyBitmap> render_our_galaxy_points(
     const mitaka::OurGalaxyModel& model, const OurGalaxyRenderSettings& settings,

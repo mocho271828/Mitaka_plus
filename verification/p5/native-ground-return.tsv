@@ -1,7 +1,0 @@
-profile	start_lat	start_lon	start_az	start_alt	start_fov	end_lat	end_lon	end_az	end_alt	end_fov	quaternion_distance_deg	map_pixels	changed_rgb_pixels	changed_pixels_over_12_levels	max_channel_change
-base-vd-default	35.675	139.54	0	22.5	45	35.675	139.54	0.0	-80.0	45	102.5	1982224	389739	366819	249
-p5ship-default	35.675	139.54	0	22.5	45	35.675	139.54	0	22.5	45	0	1982224	0	0	0
-base-vd-angled	35.675	139.54	70	12	35	35.675	139.54	70.0	-80.0	35	92	1982224	294864	277590	249
-p5ship-angled	35.675	139.54	70	12	35	35.675	139.54	70	12	35	0	1982224	0	0	0
-base-vd-api3-disk	35.675	139.54	0	22.5	45	35.675	139.54	0.0	-80.0	45	102.5	1982224	389739	366819	249
-p5ship-api3-disk	35.675	139.54	0	22.5	45	35.675	139.54	0	22.5	45	0	1982224	0	0	0

@@ -42,7 +42,7 @@ OrbitalState perihelion_orbital_state(const PerihelionElements& e, double jd) {
     }
 
     // D = tan(f/2)、D^3 + 3D = 2B。Viète 解で巨大な B の二乗を避ける。
-    // 導出と定数の根拠は SMALL_BODY_PROVENANCE.md を参照。
+    // 導出と定数の根拠は docs/core/SMALL_BODY_PROVENANCE.md を参照。
     const double q = e.perihelion_distance_au;
     const double b = (3 * gaussian_k / (2 * std::sqrt(2.0))) * ((jd - e.perihelion_jd) / q) /
                      std::sqrt(q);

@@ -17,3 +17,6 @@ build-*/
 local/
 /temp_gates/*
 !/temp_gates/.gitkeep
+verification/
+vendor/mitaka/investigation/
+/docs/research/

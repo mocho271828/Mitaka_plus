@@ -1,8 +1,0 @@
-build	control	requested_seconds	direct_mode_after_dispatch	sampled_seconds	sampled_mode	end_mode	elapsed_seconds	end_window_sha256
-before	button-ascent	5	0	NA	NA	1	3.0564	NA
-after	single-s	7.1000	1	3.5706	1	1	7.1665	aab9736a47220ae8f3dacdd0530c660ce3d90febabcb389772c26115c9ba2488
-after	menu-return	1.5000	1	0.7857	1	0	1.5667	efdada12d792685010569046510e4f1e05e35182941f3b62f02818db779b2868
-after	button-ascent	5.0000	1	2.5395	1	1	5.0543	c5452ed9617acccdbec68c54a5059053e93e36aa243abe144c16778de37d3b8d
-after	button-descent	5.0000	1	2.5239	1	0	5.0265	15ccdd7c80e421bc04c3b5ede6715a9dc12a866d2d0099b2565db0d446118005
-after	button-instant-ascent	0.0000	1	0.0783	1	1	0.0783	aab9736a47220ae8f3dacdd0530c660ce3d90febabcb389772c26115c9ba2488
-after	menu-instant-return	0.0000	0	0.1037	0	0	0.1038	2d847680c28e62cefd3bd6a28e03bfa34b9f847af7a911b0c1c3038813e05682
