@@ -6,7 +6,7 @@
 
 ## 根拠と対象
 
-原本のアプリルートは `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。
+以下は旧 Plus 1.5.4 のアプリフォルダを起点とする相対パス。
 版の根拠は `ReadmeWin_J.txt:3`、基になった本体の記載は `Readme1st_J.txt:2`。
 入力の一覧と計算上の未確定事項は [orbit-contracts-audit.md](../../investigation/native-plus/orbit-contracts-audit.md) に記録されている。
 

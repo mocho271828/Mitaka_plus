@@ -4,7 +4,7 @@
 
 ## 原典と適用範囲
 
-以下では `P` を `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` とする。`P/...:行` は原本の改行を維持してデコードした位置、PDF のページは印刷ページと一致する。
+以下では `P` を `PLUS_ROOT` とする。`P/...:行` は原本の改行を維持してデコードした位置、PDF のページは印刷ページと一致する。
 
 |原典|確認した版・制約|
 |---|---|

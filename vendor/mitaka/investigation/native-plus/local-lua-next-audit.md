@@ -4,8 +4,8 @@
 
 ## 根拠と確定範囲
 
-- `D`: ローカル原本の [doc/script_jp](</Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/doc/script_jp>)。`D/file.html:行` は原本の行番号を示す。
-- `L`: 同じ原本の [scripts](</Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/scripts>)。主に `gui.lua` を照合した。
+- `D`: ローカル原本の `PLUS_ROOT/doc/script_jp`。`D/file.html:行` は原本の行番号を示す。
+- `L`: 同じ原本の `PLUS_ROOT/scripts`。主に `gui.lua` を照合した。
 - 原典 HTML は CP932 から読み取り時だけ変換した。Plus 1.5.4 build101013 に同梱された API 文書は 1.3.0 表記であり、版差や誤記がある。
 - プロパティの型とメソッドの引数は資料で確認できたものだけを記す。戻り値が記載されていないメソッドに、成功 `true` などの仕様を付け足さない。定数は名前と意味が確定したものを用い、旧数値を推測しない。
 - ユーザーが許可した信頼済みローカル Lua の権限は維持する。機能追加のために起動 Lua、オンライン HTML、URL からの自動実行を追加する必要はない。
@@ -38,7 +38,7 @@
 
 回帰では上限超過・下限未満・非有限値を、通常表示と飛行中の両方で確認する。不正値の Lua エラーに加え、カメラ、追従、飛行状態が部分更新されていないことを検証する。
 
-追補: 親担当の依頼により、この問題だけは第2単位内で修正した。`SolarSystemView.applyCameraState:error:` は候補をコピーし、既存の `solar_camera_basis` で検証した後だけ状態を変更する。Lua へ BOOL とエラーを返す。通常追従・航行中の4種の不正距離に対する状態保持、Lua の失敗伝播を既存試験へ追加した。警告をエラーとするビルド、Lua 通信試験、Solar small-body 試験19件、ローカル Plus データの全 AppKit smoke が成功した。[実行記録](unit2/logs/zoom-validation.log) を参照。
+`SolarSystemView.applyCameraState:error:` は候補をコピーし、既存の `solar_camera_basis` で検証した後だけ状態を変更する。Lua へ BOOL とエラーを返す。通常追従・航行中の4種の不正距離に対する状態保持、Lua の失敗伝播を既存試験へ追加した。警告をエラーとするビルド、Lua 通信試験、Solar small-body 試験19件、ローカル Plus データの全 AppKit smoke が成功した。
 
 ## 直接接続できる表示と時計
 
@@ -142,8 +142,6 @@ getter は timer の有無ではなく `clockTracking` を返す。native では
 
 原典、監査時点のプロパティ登録、GUI コールバック、選択・描画・時計の実装を照合した。第2単位で行った追加修正・試験は、上記のカメラ距離の失敗伝播修正である。第3単位の実装と検証結果は次節へ記録する。
 
-この監査と Lua 接続では実装方針や policy gate は変更していない。コミットと共有作業ツリー全体の確認は親担当がまとめて行う。
-
 ## 第3単位の実装追補
 
 次の旧 API を新しい native の表示設定・時計へ接続した。すべて明示的に選んだ信頼済みローカル Lua の範囲で、HTML・オンライン経路へ実行機能は加えていない。
@@ -158,6 +156,6 @@ getter は timer の有無ではなく `clockTracking` を返す。native では
 
 各 boolean は Lua の boolean 型だけを受け付ける。toggle は引数なし・戻り値なし。取得は毎回ホストの snapshot を読み、GUI の操作後も最新の状態を返す。文字列は列挙した完全一致だけを受理する。型違い、未知モード、未対応 API はホストの変更前に拒否する。`toggleType()` / `toggleMarkingType()` は循環順が資料にないため未実装のままとした。
 
-検証には専用 `native/gui/build-unit3-script` を使用した。`script-test` は17個の boolean の get/set/toggle、全モード、型違いと不明 API の無変更エラー、GUI 相当の外部状態変更後の取得、時計追従のホスト拒否を確認して成功した（`controller.log`）。AppKit の追加接続ファイルも警告をエラーとするコンパイルを通過した（`script-objects.log`）。全体 GUI build/smoke は親担当の統合試験で確認する。
+検証には専用 `native/gui/build-unit3-script` を使用した。`script-test` は17個の boolean の get/set/toggle、全モード、型違いと不明 API の無変更エラー、GUI 相当の外部状態変更後の取得、時計追従のホスト拒否を確認して成功した。AppKit の追加接続ファイルも警告をエラーとするコンパイルを通過した。
 
 独立した読み取りレビューでも、厳密な型検証、ホスト拒否の Lua エラー伝播、取得・切替時の最新 snapshot、GUI 共通 setter への接続に修正必須の問題は見つからなかった。

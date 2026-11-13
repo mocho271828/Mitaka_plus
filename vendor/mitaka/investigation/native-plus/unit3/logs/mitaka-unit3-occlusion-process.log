@@ -1,4 +1,0 @@
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_display_output.mm build-unit3-time-occlusion/DisplayOutputController.o  -framework AppKit -o "build-unit3-time-occlusion/test_display_output"
-Cover ready: frame={{251, 176}, {1152, 880}}, number=27500, visible=1, opaque=1, alpha=1
-Occlusion state: projection={{315, 240}, {1024, 752}}, backingScale=2, centerTop=27500, occlusion=8194
-DisplayOutputController test failed: test projection did not become occluded

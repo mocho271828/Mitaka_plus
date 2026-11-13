@@ -47,16 +47,11 @@ Source provenance and modifications are documented in native/core/*_PROVENANCE.m
 The software license does not grant redistribution rights for astronomical
 datasets. Those remain subject to their individual terms.
 
-Local original and user-added astronomical data take precedence and are read
-without conversion, replacement, or redistribution. Public source and data
-are format references, not replacements for the user's local data.
-
 Lua 5.4.9 is built from the official source archive and statically linked
 into the separate MitakaScript helper, not the astronomy core.
 Source: https://www.lua.org/ftp/lua-5.4.9.tar.gz
 SHA-256: 2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6
-The first build downloads this archive and verifies its checksum. The build
-targets macOS 13.0 or later for arm64 or x86_64. No external Lua dylib or
+The build verifies the checksum of the bundled source archive and targets macOS 13.0 or later for arm64 or x86_64. No external Lua dylib or
 Homebrew installation is required to run the built application.
 Lua copyright and MIT permission are reproduced in the accompanying
 LUA_LICENSE.txt, installed in the application's Resources directory.

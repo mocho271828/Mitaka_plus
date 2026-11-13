@@ -1,6 +1,0 @@
-mkdir -p "build"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppController.mm -o "build/AppController.o"
-mkdir -p "build"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppFlightSmokeTests.mm -o "build/AppFlightSmokeTests.o"
-mkdir -p "build"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppSmokeTests.mm -o "build/AppSmokeTests.o"

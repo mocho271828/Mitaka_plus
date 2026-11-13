@@ -1,7 +1,7 @@
 {
   "checked_at": "2026-10-29T04:18:32.600638+09:00",
-  "official_root": "/Users/kota/mitaka/sources/official/mitaka_source",
-  "reference_root": "/Users/kota/mitaka/sources/reference/Mitaka-macOS/Upstream/mitaka-1.3.1",
+  "official_root": "sources/official/mitaka_source",
+  "reference_root": "Mitaka-macOS/Upstream/mitaka-1.3.1",
   "official_files": 310,
   "reference_files": 310,
   "only_official": [],

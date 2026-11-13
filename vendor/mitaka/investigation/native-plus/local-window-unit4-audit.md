@@ -6,7 +6,7 @@
 
 原典のルートを以下の `PLUS` と表記する。原本は CP932 として読み取り、変更・コピー・再配布していない。
 
-`/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`
+`PLUS_ROOT`
 
 優先した資料は `PLUS/doc/script_jp/gui.html`、`system.html`、`PLUS/scripts/gui.lua` と `gui_jp.lua`。補助的に同梱 `.lua` / `.html` / `.htm` / `.ini` / `.txt` / `.xml` を検索した。CHM や PDF 全文の抽出、旧バイナリ内部の API 調査は行っていない。「見つからない」はこの範囲で根拠が見つからないという意味であり、旧実装に存在しないことの証明ではない。
 

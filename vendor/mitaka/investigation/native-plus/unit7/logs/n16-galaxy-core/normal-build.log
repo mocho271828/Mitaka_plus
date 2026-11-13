@@ -1,3 +1,0 @@
-+zsh:4> mkdir -p build-unit7-galaxy-normal
-+zsh:5> xcrun clang++ '-std=c++17' -Wall -Wextra -Wpedantic -Werror -g '-mmacosx-version-min=13.0' -Iinclude -O2 src/galaxy_catalog.cpp src/catalog.cpp src/astronomy.cpp tests/test_galaxy_catalog.cpp -o build-unit7-galaxy-normal/test_galaxy_catalog
-+zsh:6> xcrun clang++ '-std=c++17' -Wall -Wextra -Wpedantic -Werror -g '-mmacosx-version-min=13.0' -Iinclude -O2 src/galaxy_catalog.cpp src/our_galaxy_model.cpp src/catalog.cpp src/astronomy.cpp tests/test_our_galaxy_model.cpp -o build-unit7-galaxy-normal/test_our_galaxy_model

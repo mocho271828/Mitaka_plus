@@ -4,7 +4,7 @@
 
 ## 原典と確度
 
-`P` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。`D` は `P/doc/script_jp`、`L` は `P/scripts`。行番号は原本の改行を維持してデコードした位置で、HTML の表示行数ではない。CP932 と UTF-8 を区別して読み、原本には保存していない。
+`P` は `PLUS_ROOT`。`D` は `P/doc/script_jp`、`L` は `P/scripts`。行番号は原本の改行を維持してデコードした位置で、HTML の表示行数ではない。CP932 と UTF-8 を区別して読み、原本には保存していない。
 
 - 対象の README は Plus 1.5.4 build101013（`P/ReadmeWin_J.txt:3`）。API 文書は 1.3.0、2007-12-23（`D/contents.html:17`）。同じ版の仕様書として扱わない。
 - **文書確定**は API 文書に型・意味がある項目、**用例のみ**は同梱 Lua で使用を確認した項目、**未確定**は範囲・単位・境界・別名関係が確認できない項目とする。文書の明白な転記誤りも別途記す。

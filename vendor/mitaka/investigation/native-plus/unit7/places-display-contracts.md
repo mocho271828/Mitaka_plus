@@ -1,14 +1,6 @@
-# N07 地上ラベル群・風景の実効モデルと局所メッシュ
+# 風景と地上ラベルの定義・局所メッシュ
 
-2026-10-30。UNIT6 の [原版監査](../unit6/places-binary-contracts.md) と保存済み逆アセンブルを使い、表示定義の immutable snapshot と画像あり分岐の局所 mesh / UV を実装した。本資料はその時点の監査記録である。後続の地球観測地への風景接続と追加根拠は [runtime 契約](earth-landscape-runtime-contracts.md)、ラベルの追加監査は [label runtime 監査](label-runtime-audit.md) を参照。N07 全体の完了を示す資料ではない。
-
-## 原典と監査範囲
-
-対象はローカル `mitakaPlus.exe`、SHA-256 `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。以下のアドレスはこの PE の仮想アドレスである。UNIT6 に保存された `logs/n07/binary/places-class.txt`、`places-default-init.txt`、wrapper / adapter / imports を再読した。今回は新たな REA セッション、旧アプリ実行、GUI 起動を行っていない。静的解析結果と実画面での観測を区別する。
-
-公式標準版 `sources/official/mitaka_source/Mitaka/mtk_draw_places.cpp` も読み取ったが、Plus の描画式と同一とは扱っていない。ローカル原本の画像・データは読み取り専用で参照し、コピー、正規化、公開データによる置換を行っていない。使用した原本のハッシュは [SOURCE_SHA256SUMS](logs/n07/SOURCE_SHA256SUMS) に記録した。
-
-## 実装したモデル
+## 表示モデル
 
 `native/gui/include/place_display_model.hpp` / `src/place_display_model.cpp` の `PlaceDisplayModel` は `ObserverPlaces` を値として所有し、const accessors だけを公開する。
 
@@ -51,22 +43,3 @@ native 境界では既存 parser と同様に scale の正値・有限性を要�
 - 画像デコーダから texture upload までの上下方向。raw UV の符号だけから画像ピクセルの上下を推定しない。
 - 画像なし分岐の黒い半球。この分岐の極角は θ であり、画像ありの 2θ 球と異なる。
 - ラベルの全 surface / null-surface 分岐、サイズ・距離減衰・遮蔽・billboard の画面対応。特に null-surface 分岐には経度へ 180° を加える計算があり、公式標準版の単純な経緯度変換を代用しない。
-
-## 検証
-
-[commands.sh](logs/n07/commands.sh) は strict C++17 `-Wall -Wextra -Wpedantic -Werror` で通常 arm64、ASan/UBSan arm64、x86_64 をビルド・実行する。全3構成が成功した。
-
-| テスト | 各構成の結果 | 対象 |
-| --- | --- | --- |
-| `test_place_display_model` | 34 checks | 完全一致・大小文字・修飾キー衝突・後勝ち初出順・勝者 provenance・snapshot 独立性・全原 bytes・非選択元を合算しないこと・解析失敗・不正 index |
-| `test_landscape_geometry` | 12,165 checks | 全頂点と index、極・継ぎ目・四方位、全 quad 順序、単位球、90°回転・周期、非 clamp UV、入力独立性、非有限値・scale・UV overflow |
-
-実データ読取ではローカル Plus の 4 出典を保持し、選択元から 4 地点・1 群・2 風景を確認した。通常版は旧形式の 1 出典の原 bytes と診断を保持し、有効な表示定義を捏造しない。独立したファイル再読と snapshot の bytes 一致、全 distinct key 件数と最後の原行 index を照合した。これは元データの数値や名称を公開版へ合わせる試験ではない。
-
-実行ログは [logs/n07](logs/n07/) に保存し、[SHA256SUMS](logs/n07/SHA256SUMS) で対応づける。GUI、画像比較、原版 runtime fallback、アプリ全体の policy gate はこの担当単位では検証していない。
-
-## 統合時の引継ぎ
-
-新規 C++ 6 ファイルだけを追加し、既存ソース・Makefile・README・機能対応表・policy は UNIT6 freeze のため編集していない。新規依存はない。model test の link 対象は `place_display_model.cpp`、既存 `observer_places.cpp`、core `place_catalog.cpp` / `catalog.cpp`。mesh test は `landscape_geometry.cpp` だけを必要とする。
-
-原典監査に基づく限定された純粋モデルとして統合できるが、地上ラベルや風景の画面表示が実装済みとは記載しない。commit・stage・push と共有 policy gate の判定は親担当へ引き継ぐ。

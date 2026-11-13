@@ -1,5 +1,0 @@
-mkdir -p "build-unit6-earth"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/planet_textures.mm -o "build-unit6-earth/planet_textures.o"
-mkdir -p "build-unit6-earth"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/local_image.mm -o "build-unit6-earth/local_image.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_planet_textures.mm build-unit6-earth/planet_textures.o build-unit6-earth/local_image.o  -framework Foundation -framework ImageIO -framework CoreGraphics -o "build-unit6-earth/test_planet_textures"

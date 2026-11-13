@@ -36,13 +36,11 @@ native は連続円錐への ray 交点を評価する。原版の円周 64 分�
 
 ## 検証と修正履歴
 
-最終の通常 arm64、ASan/UBSan arm64、x86_64 の各構成で、surface **1,021**、display **92**、cone **28,293**、scene **21 checks PASS**。コマンド、全ログ、静的監査の抜粋、hash は [局所証跡](../../investigation/native-plus/unit7/logs/n13-rendering/COMMANDS.md) を参照する。全アプリ・controller・fresh clone の結果は UNIT7 全体記録で扱い、この局所結果で代用しない。
+最終の通常 arm64、ASan/UBSan arm64、x86_64 の各構成で、surface **1,021**、display **92**、cone **28,293**、scene **21 checks PASS**。
 
 display fixture は二出典の実 loader を使い、JD・登録根拠・親位置・原行 ID・評価と snapshot の位置一致、Radius の欠損・重複・不正値、先頭一致を検証する。surface は昼夜、表面と雲、境界、深度を、cone は独立幾何・全 16 フラグ・透明度・切断境界・負の終端・遮蔽を検証する。scene は既存描画経路で四フラグの可視差を確認する。
 
 初回の円錐実装は半影を下流一面の 0.5→0 としていた。追加の静的追跡により二面と下流 alpha 一定、母線ごとの再切断が確定し、UNIT7 内で修正した。修正直後の `final2-normal` は scene の半影独立性試験が失敗した。旧 fixture の距離 0.01 AU、121² 画素では、正しく切断された面が subpixel になったためである。物理半径と天体位置を変えず、カメラ target を 0.9995 AU、距離を 0.0015 AU へ寄せた。これは観測条件の修正であり、製品の影や公差を緩めていない。失敗ログも保存する。
-
-最終修正の独立読取レビューは必須修正なし。既存の数式・ray/球交点・画像型・AppKit を再利用し、新規依存は追加していない。正確な名前の `/simplifier-lai` は利用できず、責務と境界を手動レビューした。stage・commit と全体 gate 判定は統合担当が行う。
 
 ## 残る範囲
 

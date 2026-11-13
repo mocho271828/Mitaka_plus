@@ -1,16 +1,6 @@
-# UNIT5: 星座の個別表示と地平図
+# 星座の個別表示と地平図
 
-2026-10-29。UNIT4 source `002adcf663fd5005e14ac86c343a3ec7e56fa706` からの N05 実装・検証記録。
-原本は読み取り専用とし、カタログ・画像の書換え、公開データへの置換、旧アプリの起動は行っていない。
-本書は native の契約を記録する。未確定の旧 Lua 入力規則や星座絵まで対応済みとは扱わない。
-
-## 原典と採用範囲
-
-`PLUS` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。
-対象原版は Windows Plus 1.5.4 build101013、同梱 API 文書は 1.3.0 表示である。
-原典の詳しい照合は [星座契約監査](../local-constels-contract-audit.md) に記録済み。
-
-| 原典 | 今回使う根拠 | 今回確定しない内容 |
+| 原典 | 原典の記載 | 制約 |
 | --- | --- | --- |
 | `doc/script_jp/constels.html:12–31,42–63` | 名称・線・境界の独立 bool、略号を使った show/hide、単一略号の isVisible | 大小文字、未知略号、空入力、区切り、重複、全体 bool と集合の厳密な優先順位 |
 | `scripts/gui_jp.lua:164–168` | 名称・線・絵・境界が別メニュー | 絵の投影・配置式 |
@@ -19,7 +9,6 @@
 
 Ser の原行は offset 94,690 の `Ser1` / Serpens(Caput) と 95,602 の `Ser2` / Serpens(Cauda)。
 表示集合の ID は両方とも元の `Ser` なので、1 回の表示切替を両図形へ適用する。
-CDF/CAB の 89 資産と名称位置の対応は確認済みだが、絵の軸・元期・尺度は未確定のため本単位の renderer へ接続しない。
 
 ## native の表示契約
 
@@ -34,7 +23,7 @@ CDF/CAB の 89 資産と名称位置の対応は確認済みだが、絵の軸�
 未知 ID は `invalid_argument`、範囲外の原行 index は `out_of_range` とし、部分適用しない。
 モデル再読込では残存 ID の例外を保持し、新しい ID は既定値を使い、消失した例外を結果として報告する。
 手動 Session 復元は再bindとは異なり、不明な ID を含む保存状態全体を拒否する。
-Session v5 の接続担当とは、raw ID を canonical base64 の `exceptions_base64` として保存する境界を合意した。
+Session v5 では原 ID を canonical base64 の `exceptions_base64` として保存する。
 同じ略号が継続すれば元ファイル全体の SHA が変わっても ID は維持できる。
 
 App の共通 setter が検証済み設定を SkyView、HorizonView、ブラウザへ渡す。
@@ -64,12 +53,6 @@ Ser の一方を操作すると両方のチェック状態が揃う。
 HorizonView は omitted の存在を画面に示す。
 地平線の下の部分も投影し、屈折や視差による補正は行わない。
 
-## 検証
-
-専用 build は `build-unit5-time`、`build-unit5-time-san`、`build-unit5-time-x86`。
-通常、ASan+UBSan、Rosetta x86_64 の各構成を `-Werror` でビルドした。
-GUI を使う browser 試験は他担当と実行枠を調整し、同時にアプリを起動していない。
-
 | 試験 | 通常 | ASan+UBSan | x86_64 | 対象 |
 | --- | ---: | ---: | ---: | --- |
 | constellation_display + Plus 原本 | 7,897 | 7,897 | 7,897 | 89 行/88 ID、全レイヤー組合せ、Ser、追加 raw ID、原子的拒否、再bind |
@@ -78,12 +61,3 @@ GUI を使う browser 試験は他担当と実行枠を調整し、同時にア�
 | catalog_browser_controller + Plus 原本 | 46 | 46 | 46 | 原行対応、検索外への全表示、非星座行、空カタログ、選択維持 |
 
 地平区間の check 数は受理された区間数を含むため構成間で差がある。判定条件は同じ。
-通常版のローカル data には `constellation_HIP.dat` が存在せず、SkyModel の既存の optional 欠損経路になる。
-この状態は失敗にせず、空集合の更新と Sky/Horizon 両方・全 8 レイヤー組合せの空描画、欠損 warning を確認した。
-通常版の別形式 JSON をこの単位で自動代用しない。
-最終ログは [logs/n05-constellations](logs/n05-constellations/) に保存する。
-
-独立レビューでは helper の入力境界・原子的更新・極と budget 不足時の非接続、App/ブラウザの原行・世代管理、実描画試験を確認し、修正必須の指摘はなかった。
-新依存は追加せず、既存 core のカタログ、投影、ObservationFrame と AppKit/Core Graphics を再利用した。
-全体の Session・Lua・メニュー・アプリ smoke・policy gate は root の統合検証で判定する。
-この文書と担当差分は親担当がまとめて commit するため、子担当では stage/commit していない。

@@ -1,6 +1,6 @@
 # ローカル Lua スクリプト
 
-ユーザーが明示的に選んだ、信頼済みローカル Lua ファイルを実行する。ユーザーの選択に基づき Lua 標準ライブラリの `io`、`os`、`package`、`debug` を有効にしている。ファイル操作や外部コマンドはユーザー本人の権限で動く。これはサンドボックスではない。実行済みの書き込みや表示変更は、中断・エラー時にも巻き戻さない。
+ユーザーが明示的に選んだ、信頼済みローカル Lua ファイルを実行する。Lua 標準ライブラリの `io`、`os`、`package`、`debug` を有効にしている。ファイル操作や外部コマンドはユーザー本人の権限で動く。これはサンドボックスではない。実行済みの書き込みや表示変更は、中断・エラー時にも巻き戻さない。
 
 オンライン HTML からの自動実行、データフォルダの `init.lua` の自動実行、リモート URL の直接実行は提供しない。ホスト API は以下の実装済み範囲だけを公開し、未対応プロパティ・メソッドを呼ぶとエラーにする。
 
@@ -164,7 +164,7 @@ print("year", Time.year)
 - アプリ管理の隔離された WebKit script が raw `href` を取得し、main frame の実クリックだけを受け付ける。リンクの `target` は省略または `_self` のみ。`mtkp://` 後の payload を UTF-8 として一度 percent decode し、`+` はそのまま残す。空・不正 UTF-8・NUL・64 KiB 超過は拒否する。この復号は native 版の限定契約であり、旧 Internet Explorer の正規化を完全再現しない。
 - Lua の相対ファイル基準は、通常スクリプトと同じく選択中のデータフォルダの親。ユーザーが信頼を与えた Lua 標準ライブラリには同じ権限を与える。元 HTML は書き換えず、0600 の一時 Lua ファイルを専用の一時ディレクトリに保存し、終了・停止後に削除する。
 
-ホーム・ブックマーク、ブラウザ内の自由な遷移、オンライン閲覧、ページ JavaScript の動作互換は今回提供しない。資料は [ローカル HTML 調査](../../investigation/native-plus/local-html-bridge-audit.md) と [境界と検証](../../investigation/native-plus/html-bridge-policy-design.md) を参照する。
+ホーム・ブックマーク、ブラウザ内の自由な遷移、オンライン閲覧、ページ JavaScript の実行は対象外。資料は [ローカル HTML 調査](../../investigation/native-plus/local-html-bridge-audit.md) と [境界と検証](../../investigation/native-plus/html-bridge-policy-design.md) を参照する。
 
 ## 実行と中断
 
@@ -182,7 +182,7 @@ print("year", Time.year)
 
 `tools/build_lua.sh OUTPUT_DIR [ARCH] [SANITIZE]` は [公式 Lua 配布](https://www.lua.org/ftp/) の原本を収録した `vendor/lua-5.4.9.tar.gz` の SHA256 `2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6` を検証する。展開ソース・オブジェクトは build 配下に生成する。AppleClang でアプリと同じ macOS 13.0 以上・`arm64` または `x86_64` 向けにビルドし、2 回目以降はキャッシュを使う。初回を含めネットワーク接続は不要。
 
-Homebrew 版 Lua 5.4.8 の静的ライブラリは手元では macOS 15.0 向けだったため採用しない。Homebrew、Lua の別途インストール、外部 Lua dylib は完成したアプリの実行要件に含まれない。配布物には [Lua の MIT ライセンス](LUA_LICENSE.txt) を同梱する。
+Homebrew、Lua の別途インストール、外部 Lua dylib は完成したアプリの実行要件に含まれない。配布物には [Lua の MIT ライセンス](LUA_LICENSE.txt) を同梱する。
 
 Lua C API の仕様は [公式 5.4 マニュアル](https://www.lua.org/manual/5.4/manual.html) に従う。呼び出しが `longjmp` する箇所へ C++ / Objective-C の所有オブジェクトをまたがせず、POD の結果へ変換してから Lua スタックへ渡す。
 

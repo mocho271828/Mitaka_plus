@@ -1,29 +1,29 @@
 # LUA-04: Lua 5.4.9 標準機能と旧スクリプトの互換監査
 
-確認日: 2026-11-07。基点は `84a6867884314f8eeeabe7b29b066e44c135e0d7`、ブランチは `codex/mitaka-lua-compatibility`。LUA-03 の作業ブランチから独立させ、ランタイム・権限・ホスト API・データ原本は変更しない。
+確認日: 2026-11-07。
 
 ## 結果
 
-- `make -s -j4 -C vendor/mitaka/native/gui lua-compatibility-test script-test` が終了 0。新規の標準機能・互換監査は **168 checks**、既存の ScriptController 回帰も成功した。実行ログは [lua04-compatibility.log](../../verification/lua04-compatibility.log)。
+- `make -s -j4 -C vendor/mitaka/native/gui lua-compatibility-test script-test` が終了 0。新規の標準機能・互換監査は **168 checks**、既存の ScriptController 回帰も成功した。
 - `resources/scripts/*.lua` は **12 件すべてをコンパイルだけ**試みた。9 件は構文を受理し、日本語版 3 件は後述の既知の escape 不整合として拒否した。原本、`init.lua`、原本内のコールバック文字列を実行していない。
 - この試験の成功は「既知の非互換を含む現在の契約が確認できた」という意味であり、旧スクリプト 12 件の実行互換や旧 Plus の再現成功を意味しない。
 - 全 12 件の原 bytes はコンパイル前後で一致し、[SHA-256 一覧](../../verification/lua04-script-SHA256SUMS) に対する `shasum -a 256 -c` も全件成功した。
 
-環境は macOS 26.6.2 / arm64、Apple clang 21.0.0。試験用 helper と依存はこの worktree 内でビルドした。別ブランチのビルド生成物や検証結果を今回の成功として流用していない。
+環境は macOS 26.6.2 / arm64、Apple clang 21.0.0。
 
 ## 全体回帰
 
-今回の独立 worktree の最終差分で以下を実行し、いずれも終了 0。`DATA_ROOT` はこの worktree の `resources/data`。通常のビルド・回帰ログは生成物として Git に登録せず、下記の `/tmp` に保持する。
+`DATA_ROOT` はリポジトリの `resources/data`。
 
-| コマンド | 結果 | ローカルログ |
-| --- | --- | --- |
-| `make -s -j6 build` | 成功 | `/tmp/mitaka-lua04-build.log` |
-| `make -s -j6 test` | core / GUI / controller 成功 | `/tmp/mitaka-lua04-test.log` |
-| `make -s -j6 data-test` | 同梱 Plus データの読み取り検証成功 | `/tmp/mitaka-lua04-data-test.log` |
-| `make -s -j6 reference-test` | CF96・自転・月・大気・食・銀河 kernel 比較成功 | `/tmp/mitaka-lua04-reference-test.log` |
-| `make -s smoke` | AppKit / Script / Session / Plus と連続飛行を含む全体 smoke 成功 | `/tmp/mitaka-lua04-smoke.log` |
+| コマンド | 結果 |
+| --- | --- |
+| `make -s -j6 build` | 成功 |
+| `make -s -j6 test` | core / GUI / controller 成功 |
+| `make -s -j6 data-test` | 同梱 Plus データの読み取り検証成功 |
+| `make -s -j6 reference-test` | CF96・自転・月・大気・食・銀河 kernel 比較成功 |
+| `make -s smoke` | AppKit / Script / Session / Plus と連続飛行を含む全体 smoke 成功 |
 
-製品 UI の変更がないため、この作業単位での手動 CUA 操作は行わず、アプリ全体の表示・操作回帰は smoke で確認した。旧 Plus の実機照合は依然として未実施であり、他ブランチの CUA 成功をこの監査の結果へ含めない。
+アプリ全体の表示・操作は smoke で確認した。旧 Plus 実機との照合は未実施。
 
 ## 試験の境界
 
@@ -72,7 +72,7 @@ Lua 5.4.9 の根拠は同梱する `vendor/mitaka/native/gui/vendor/lua-5.4.9.ta
 
 Lua 5.4.9 の `src/llex.c` の `read_string` は `0x5c` を escape 開始として解釈し、未定義 escape を拒否する。公式 [Lua 5.1.5 の lexer](https://www.lua.org/source/5.1/llex.c.html) では未知の非数値 escape の扱いが異なることをソースで確認した。ただし、その違いだけから旧 Plus の日本語表示や文字列内容が正しかったとは推定しない。旧版独自の文字コード処理や Lua の改変有無は未確認である。
 
-初回の監査では非 UTF-8 の診断を既存 worker が `Lua execution failed` に縮退させることも観測した。監査出力の byte escape で位置と原因を取り出したが、製品側の診断や文字コード処理は今回変更していない。
+非 UTF-8 の診断を従来の worker が `Lua execution failed` に縮退させることも観測した。監査出力の byte escape で位置と原因を取り出したが、製品側の診断や文字コード処理は今回変更していない。
 
 ## ホスト API と残課題
 
@@ -82,10 +82,3 @@ Lua 5.4.9 の `src/llex.c` の `read_string` は `0x5c` を escape 開始とし�
 - 12 本の原本は実行していない。GUI、時刻、カメラ、メニュー、初期状態の副作用を伴う互換試験は残る。
 - 日本語原本の変換方針、旧 Plus の文字列エンコーディング、非 UTF-8 診断改善は未決定。原本書換えや暗黙変換で今回の監査結果を隠さない。
 - 全 Lua 5.1 標準関数、数値の全境界、locale、bytecode、C module ABI、Windows / Intel / macOS 13、旧版と同じ OS 環境での比較は未検証。
-- LUA-04 は部分対応のまま。LUA-03、描画、Rust 移行、Lua の権限や自動実行方針は変更しない。
-
-## 変更管理
-
-新規依存なし。既存 Foundation、ScriptController、同梱 Lua、Makefile を利用し、処理系や parser を独自実装していない。テスト対象の bytes を独自変換せず、診断の安全な表示だけに byte escape を用いる。
-
-正確な名前の `/simplifier-lai` は利用できず未実行。依存・責務・差分を手動レビューする。リポジトリ全体の方針変更はなく、`IMPLEMENTATION_POLICY.md` と gate 原本は変更しない。親担当と独立担当がコード・保全をレビューし、全体回帰後の commit を承認した。[3 gate の検証コピー](../../temp_gates/2026-11-07-03-16-44/) は YES。差分量が 300 行以上のため、この単位を commit する。push・merge・公開設定変更はしない。

@@ -1,6 +1,0 @@
-mkdir -p "build-unit5-satellite-geometry-san"
-mkdir -p "build-unit5-satellite-geometry-san"
-mkdir -p "build-unit5-satellite-geometry-san"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit5-satellite-geometry-san/AppPlusSmokeTests.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit5-satellite-geometry-san/AppScripting.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit5-satellite-geometry-san/AppScriptSmokeTests.o"

@@ -1,7 +1,0 @@
-without-screen-clip exit 1
-enabled solar grid or distance scale drew no lines
-
-without-pole-handling exit 1
-horizontal meridian veered away from its azimuth near the zenith or nadir
-
-Both isolated pre-fix variants failed; working tree was not changed.

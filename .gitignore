@@ -2,7 +2,6 @@
 build/
 build-*/
 *.log
-!/verification/*.log
 .env
 .env.*
 !.env.example
@@ -16,3 +15,5 @@ build-*/
 *.pem
 *.key
 local/
+/temp_gates/*
+!/temp_gates/.gitkeep

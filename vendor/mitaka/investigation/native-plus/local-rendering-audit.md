@@ -6,9 +6,9 @@
 
 | 略記 | 絶対パス |
 | --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `REGULAR` | `/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source` |
+| `PLUS` | `PLUS_ROOT` |
+| `REGULAR` | `MITAKA_ROOT` |
+| `OFFICIAL` | `vendor/mitaka/sources/official/mitaka_source` |
 
 対象 Plus は Windows 1.5.4 build101013、同梱 API 文書は 1.3.0 表示、公式ソースは Mitaka 1.3.1。Plus 文書のプロパティ契約と、標準版の科学計算・描画方法を同一版の証拠として扱わない。天の川・星座絵・風景の調査は [local-assets-audit.md](local-assets-audit.md) に分離している。
 

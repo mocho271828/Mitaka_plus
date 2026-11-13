@@ -1,6 +1,6 @@
 # 個別小惑星・TNO 形式の根拠監査
 
-追試（2026-11-12）：[PR #8・旧 Plus 1.5.4 の実データと実画面](orbit-window-validation.md)。以下は元の監査時点の記録。
+追試（2026-11-12）：[ネイティブ版と旧 Plus 1.5.4 の実データと実画面](orbit-window-validation.md)。以下は元の監査時点の記録。
 
 確認日: 2026-11-07。初回監査基点は `84a6867884314f8eeeabe7b29b066e44c135e0d7`。
 対象は同梱 `resources/data/orbits/asteroids/*.dat` の全 57 本である。
@@ -11,7 +11,7 @@
 
 既存 native loader は個別 57 本を読み込み、原 bytes・全キー・名称・元番号と軌道要素候補を保持できる。
 初回時点で未対応だったのは「個別ファイルを読むこと」ではなく、旧 Plus の個別 reader から evaluator までの契約、表示項目の適用、出典間の採用規則である。
-初回の同梱資料だけでは位置評価の根拠が不足していた。その後、別 PC の原本静的解析で個別 reader と共通 evaluator の接続を確認し、a 指定の楕円に限定して native 位置・一周期軌道へ接続した。採用範囲と旧版との差は追加証拠節に記す。
+初回の同梱資料だけでは位置評価の根拠が不足していた。その後、旧版バイナリの静的解析で個別 reader と共通 evaluator の接続を確認し、a 指定の楕円に限定して native 位置・一周期軌道へ接続した。採用範囲と旧版との差は追加証拠節に記す。
 
 36 byte の対応記録と数値が整合しても、個別ファイルをその記録へ置換したり、参照面・物理時系・優先順位を引き継いだりしない。
 37 byte 形式の旧 Plus での使用・追加 byte の意味は [別の監査](minor-planet-37-byte-audit.md) の保留事項であり、本書で確定しない。
@@ -121,11 +121,11 @@ Asteroid の各 `No` は `mp.dat` と `mp2.dat` の双方、TNObject の各 `No`
 - [旧 Plus 位置契約監査](../../vendor/mitaka/investigation/native-plus/unit5/minor-planet-position-contracts.md):28–114 は packed 36 reader/evaluator の追跡である。同文書 155–172, 180–187 は公式別版との差と個別形式の保留を明示する。
 - 同梱 [公式 Mitaka 1.3.1 mtk_minor_planets.cpp](../../vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_minor_planets.cpp):200–240 は `key_data` の数値列を読む別形式である。`No, Epoch, M0, w, node, i, e, n, type, dp_flg` の順と平均運動式は確認できるが、Plus の `Name:` / `a:` 形式を読む証拠ではない。float の保存精度や `dp_flg` の意味を転用しない。
 - [現行 provenance](../../vendor/mitaka/native/core/SMALL_BODY_PROVENANCE.md) の「出典と識別子」「バイナリと個別要素の解釈」は、原値・候補値・未確定の表示仕様を分けている。
-- この PC では過去の監査に記録された旧 Plus executable の原本パスを確認できず、旧 executable の新規静的解析・実行観測は本書の初回監査に含めていない。別 PC の静的監査で得られた根拠は次節へ追記する。
+- 初回の調査対象は同梱データと文書である。追加で実施した旧版実行ファイルの静的解析結果を次節に記載する。
 
 ## 旧 reader / evaluator の追加証拠と採用範囲
 
-2026-11-07、原本を保持する別 PC の[調整先セッション](codex://threads/01a1b078-eedd-7721-93cc-cbb56c26834a?hostId=remote-control%3Aenv_e_6a069ca0ce6083298f8a06c70a64b96e)が、`reverse-engineer-anything` による静的解析結果を共有した。この PC で原本 executable を再解析した証拠ではない。対象は Plus 1.5.4 build101013 の `mitakaPlus.exe`、SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。旧アプリは今回実行していない。
+2026-11-07、旧版を保有する別環境で得た静的解析の報告を照合した。対象は Plus 1.5.4 build101013 の `mitakaPlus.exe`、SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。旧アプリは今回実行していない。
 
 | 静的根拠 | 確認内容 |
 | --- | --- |

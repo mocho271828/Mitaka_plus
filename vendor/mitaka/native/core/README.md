@@ -2,7 +2,7 @@
 
 公式 Mitaka 1.3.1 から天文計算とデータ読み込みを分離した、開発中の C++17 静的ライブラリ。
 macOS の UI や描画機能とは独立してビルド・テストできる。
-既存の `mitaka/`、`mitaka_plus/`、公式 ZIP と展開原本は、そのまま保持している。
+比較用の公式 1.3.1 は [同梱ソース](../../sources/README.md) に収録する。
 既存データへの書き込み、移行、重複削除は行わない。
 
 ## ビルドと通常テスト
@@ -31,7 +31,7 @@ xcrun lipo -info build/universal/libmitaka_core.a
 
 コンパイラ・アーキテクチャ・計測オプションを変更するときは、別の `BUILD_DIR` を指定する。
 Universal 出力は `build/universal/`。Intel 向けのコンパイル成功と、Intel Mac 上での実行確認は区別する。
-最小対応 macOS バージョンと配布用署名は、アプリ層を作る段階で決める。
+アプリの deployment target と動作環境は [GUI 操作ガイド](../gui/README.md) を参照。
 
 ## 既存データの読み取りテスト
 
@@ -114,7 +114,7 @@ CF96 は地球月重心を含む生の位置・速度を保持する。
 月は独立した `lunar_position` と `lunar_orientation` で扱う。
 両 API の入力範囲は `lunar_minimum_jd=2415020.5` から `lunar_maximum_jd=2487980.5` まで、両端を含む。
 暦表記では 1900-01-01 00:00 から 2099-10-04 00:00 で、CF96 と併用するときは `time_range()` との共通部分を使う。
-この範囲は今回の数値契約であり、モデルの観測精度を保証する年代ではない。
+この範囲はこのライブラリの入力範囲であり、モデルの観測精度を保証する年代ではない。
 位置は公式の有限項級数と歳差変換、姿勢は公式の RA・DEC・W と周期項を使う。
 同じ JD の位置と姿勢を合成すると、地心から見た月面の秤動を表せる。
 時系変換・光行時間・測心視差は補正しない。式・単位・限界は [LUNAR_PROVENANCE.md](LUNAR_PROVENANCE.md) に記載した。
@@ -140,7 +140,7 @@ make reference-test
 
 このターゲットだけが、未変更の公式 `common/astro/cf96.cpp` を比較用にコンパイルする。
 原本には固定配列を無検査で読み込む処理があるため、比較テストの入力は検証済みの CF96 ファイルに制限する。
-対象は 461,300 bytes、SHA-256 `22edc2b9e4a0170bb805b2d564dbe90afb1ef7a17370db457887d28d0135dfb4` のファイル（今回の両 bundle で一致）。
+対象は 461,300 bytes、SHA-256 `22edc2b9e4a0170bb805b2d564dbe90afb1ef7a17370db457887d28d0135dfb4` のファイル。
 ハッシュ計算には macOS SDK の CommonCrypto を比較テストだけで使用し、検証したバイト列の一時コピーを両ローダーへ渡す。
 この制限と依存は比較用プログラムに閉じ、新しいコアのローダーには課さない。
 9 惑星・201 時刻・3 軸で位置と速度を比較する。
@@ -175,7 +175,7 @@ make BUILD_DIR=build/sanitize SANITIZE=address,undefined lunar-reference-test
 天文計算の原本回帰値を再生成する手順は [ASTRONOMY_PROVENANCE.md](ASTRONOMY_PROVENANCE.md) に記載した。
 合成データのテストには日付の既知値、軌道エネルギー、解析的速度と有限差分、補間多項式の再現、切断・不正入力を含む。
 
-## 由来・保全・次の範囲
+## ソースの由来
 
 公式 1.3.1 の ZIP・展開原本は `sources/official/` に保持する。
 改変ソースには原著作権表示と MIT 許諾文を残した。
@@ -187,13 +187,4 @@ make BUILD_DIR=build/sanitize SANITIZE=address,undefined lunar-reference-test
 - [ROTATION_PROVENANCE.md](ROTATION_PROVENANCE.md)
 - [LUNAR_PROVENANCE.md](LUNAR_PROVENANCE.md)
 
-非公式 macOS 移植は [既存調査](../../MITAKA_131_PORTING_AUDIT.md) の参照対象として保持した。
-今回のコアにそのコードはコピーしていない。
-天文データ自体は配布物へ同梱せず、コードの MIT 許諾をデータの再配布許可として扱わない。
-
-コアを利用する最小の AppKit GUI は [native/gui/README.md](../gui/README.md) に追加した。HIP の星と CF96 の惑星を全天図に表示する。GUI は独立したビルド対象であり、コアのビルドには不要。
-引き続き未対応のものは、Mitaka 本来の 3D 描画・音声、Swift 接続、現行 JSON 星座、旧 `.pth`、銀河・系外惑星など他のカタログ、月の観測精度の検証・他の衛星計算と時系変換。
-独自データはすべて保全するが、全形式の読み込みを実装した段階ではない。
-
-保全記録は [PRESERVATION.md](../../investigation/native-core/PRESERVATION.md)、実行結果は [VALIDATION.md](../../investigation/native-core/VALIDATION.md)。
-今後の実装判断は [IMPLEMENTATION_POLICY.md](../../IMPLEMENTATION_POLICY.md) と各 policy gate に従う。
+非公式の macOS 移植との比較は [Mitaka 1.3.1 移植調査](../../MITAKA_131_PORTING_AUDIT.md) に記録している。描画・操作を確認するには [GUI 操作ガイド](../gui/README.md)、対応する旧 Plus の機能と形式を調べるには [機能対応表](../../PLUS_FEATURE_MATRIX.md) を参照。

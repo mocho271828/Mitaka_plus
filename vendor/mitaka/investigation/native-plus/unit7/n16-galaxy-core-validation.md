@@ -1,27 +1,12 @@
-# N16 銀河・星団の原値保持 reader と pc 座標契約
-
-記録日: 2026-10-30。UNIT7 の独立 core 実装と純粋試験の記録である。3D 描画、カメラ、Lua、名前解決、保存状態への接続は含まない。
-先行する [原典監査](n16-galaxy-catalog-contracts.md) は静的解析前の調査結果であり、そこで未確定とした GC/NBG のレコード形式について、以下の追加証拠を得た。
-SDSS/QSO は別の [N16a 検証記録](n16-sdss-spatial-validation.md) を参照する。最初の分割案の N16d と N16e の読取部分を今回追加し、N16b の pc カメラは実装していない。
-
-## 原典と方法
-
-- P: `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。Mitaka_plus 1.5.4 build 101013。同梱 API 文書の表記は 1.3.0 であり、製品版と区別する。
-- R: `/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。利用者が保持する通常版データ。
-- O: `sources/official/mitaka_source/`。公式 Mitaka 1.3.1 ソース。形式と式の参照だけに使用し、P/R の置換元にしない。
-
-P `mitakaPlus.exe` の SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`、PE32 の ImageBase は `0x400000`。
-今回の証拠は Apple LLVM 21 の `/usr/bin/objdump` による範囲を限定した静的解析と、原本 bytes の読取結果である。
-REA の詳細解析 provider が利用できなかったため native shell を使用した。REA の解析結果とは扱わない。provider の導入や設定変更、旧実行ファイルの起動はしていない。
-解析範囲、VA と file offset の対応、定数、原本・公式ソースのハッシュは [static-evidence-metadata.txt](logs/n16-galaxy-core/static-evidence-metadata.txt) に記録した。
+# 球状星団・近傍銀河のレコードとpc座標
 
 ## 確定した読取形式
 
-| 入力 | 根拠 | 今回の読取契約 |
+| 入力 | 根拠 | 読取規則 |
 | --- | --- | --- |
-| P `data/globular_cluster.dat` | ファイル名 VA `0xc2f288` を `0x4f2a5b` で渡し、`0x4f2a7e` 以降で 12 bytes と 7 個の 4 bytes を読む。[GC 抜粋](logs/n16-galaxy-core/plus-gc-loader.txt)。全 5,560 bytes は 139 行に一致。 | 12 byte 名、float32 の RA 度・Dec 度・距離 pc・core radius pc・half-light radius pc・B−V・V−R。little-endian、40 bytes/行。 |
-| P `data/NBG.dat` | ファイル名 VA `0xc2eea8` を `0x4da6aa` で渡す。[open](logs/n16-galaxy-core/plus-nbg-open.txt) → [dispatch](logs/n16-galaxy-core/plus-nbg-dispatch.txt) → `0x4db868` の [reader](logs/n16-galaxy-core/plus-nbg-record.txt)。5 個の 4 bytes、3 個の 1 byte、1 個の 4 bytes を読む。全 64,017 bytes は 2,371 行に一致。 | float32 の RA 度・Dec 度・距離 pc・角直径 arcmin・短長軸比、3 個の raw code、int32 catalog number。little-endian、27 bytes/行。 |
-| P/R `data/ourgalaxy_model.dat` | P ファイル名 VA `0xc31b80`、reader `0x51ef30`。[OurGalaxy 抜粋](logs/n16-galaxy-core/plus-ourgalaxy-loader.txt)。O `Mitaka/mtk_our_galaxy_rt.cpp:115–169` と全 bytes を照合。 | 2 枚の map は int32 width/height と float32 列。その後 4 群に各 int32 count と xyz float32 列。全体 little-endian。 |
+| P `data/globular_cluster.dat` | ファイル名 VA `0xc2f288` を `0x4f2a5b` で渡し、`0x4f2a7e` 以降で 12 bytes と 7 個の 4 bytes を読む。全 5,560 bytes は 139 行に一致。 | 12 byte 名、float32 の RA 度・Dec 度・距離 pc・core radius pc・half-light radius pc・B−V・V−R。little-endian、40 bytes/行。 |
+| P `data/NBG.dat` | ファイル名 VA `0xc2eea8` を `0x4da6aa` で渡す。open と dispatch から `0x4db868` の reader を呼ぶ。5 個の 4 bytes、3 個の 1 byte、1 個の 4 bytes を読む。全 64,017 bytes は 2,371 行に一致。 | float32 の RA 度・Dec 度・距離 pc・角直径 arcmin・短長軸比、3 個の raw code、int32 catalog number。little-endian、27 bytes/行。 |
+| P/R `data/ourgalaxy_model.dat` | P ファイル名 VA `0xc31b80`、reader `0x51ef30`。O `Mitaka/mtk_our_galaxy_rt.cpp:115–169` と全 bytes を照合。 | 2 枚の map は int32 width/height と float32 列。その後 4 群に各 int32 count と xyz float32 列。全体 little-endian。 |
 | P 名前 table 3 個 | P の `nearby_galaxy_names.dat` 文字列 VA `0xc2eeb0` は `0x4da6eb` から参照される。他 2 名の exact string は確認できず、locale 変換の有無は未確定。 | 3 ファイルとも別の原本として物理行・bytes を保持する native reader。原版の名前解決や優先順位の再現ではない。 |
 
 GC の 12 byte 名には NUL 後の非ゼロ bytes がある。先頭行は `NGC 104` の後にも値を持つため C string に切り詰めない。
@@ -33,7 +18,7 @@ RA/Dec に使う VA `0xc2ea70` は `π/180` である。O `Mitaka/mtk_nearby_gal
 ただし P の code と通常版の morphology/bar は一致しない。`render_class_code`・`auxiliary_code`・`catalog_code` は raw 値の保持名であり、未知 code を既知の形態へ読み替えない。
 
 P `gc.dat` は 4,170 bytes、`NBG2.dat` は 59,275 bytes だが、サイズの割り切れだけでは形式を確定できない。両ファイルの parser は未実装。
-P の binary `NBG.dat` と R の text `NBG.dat` は同名でも別形式である。今回の Plus reader は形式を指定する API であり、任意ファイルの形式を自動判定する API ではない。
+P の binary `NBG.dat` と R の text `NBG.dat` は同名でも別形式である。Plus の reader は形式を指定する API であり、任意ファイルの形式を自動判定する API ではない。
 バイト数が偶然レコード幅で割り切れる別形式を見破る契約もない。後続 loader は出典ごとの形式選択を省略してはいけない。
 
 ## 所有・検証・診断
@@ -82,12 +67,6 @@ key 後の空白と任意の `*` を識別し、残りは未正規化 payload �
 非 comment 行の NUL と欠損 payload は raw 行を残して unresolved と診断する。英名・日本語名・ルビの境界は推測しない。
 全 raw source から改行も復元できるが、ファイルへ書き戻す機能はない。
 
-## 試験と結果
-
-`-std=c++17 -Wall -Wextra -Wpedantic -Werror`、macOS target 13.0 で独立 build directory を使用した。
-通常 arm64 は `-O2`、ASan+UBSan arm64 は `-O1 -fno-omit-frame-pointer -fsanitize=address,undefined`、x86_64 は `-O2 -arch x86_64`。
-x86_64 は Apple Silicon 上で Rosetta を使用した。GUI/window や旧 executable は起動していない。
-
 | 試験 | 通常 | ASan+UBSan | x86_64 |
 | --- | --- | --- | --- |
 | GC/NBG/name 合成境界 | 1,275 checks PASS | 1,275 checks PASS | 1,275 checks PASS |
@@ -99,20 +78,3 @@ GC/NBG は全列の little-endian bits、12 byte 名の NUL 後、未知 code、
 名前 table は blank/comment を含む全物理行の復元、CRLF、CP932、NUL、欠損 payload、重複、行数制限を確認した。
 pc 位置は軸・極・RA 継ぎ目・±0・float 最大有限距離を含む 125 組と複合不正理由を検査し、production の変換関数を使わない long double の独立式と照合した。
 OurGalaxy は合成ファイルの全 byte 切断、負/過大 count、dimension 積、累積上限、余剰末尾、非有限・範囲外・signed zero を検査した。
-P/R の全 524,288 map samples と 102,000×3 座標の各 bits・群順・EOF・元 bytes を別読取で照合した。
-
-全構成の command と出力は [logs/n16-galaxy-core/](logs/n16-galaxy-core/) に保存した。
-入力ハッシュは static evidence metadata、実装ハッシュは [implementation-sha256.txt](logs/n16-galaxy-core/implementation-sha256.txt)、ログのハッシュは [SHA256SUMS](logs/n16-galaxy-core/SHA256SUMS) を参照する。
-独立読取レビューを `time_features` が実施し、必須修正なしと判定した。全 bytes / 原行保持、未確定座標系の型分離、allocation 前の残 bytes / 累積 count 検証、trailing 拒否、不正値の保持と位置診断の分離、既存天文変換の再利用、独立 oracle と全切断長の回帰を確認した。レビュー担当は追加実行・編集を行っていない。親担当の core 全 test 成功報告は受領したが、上表は担当自身が実行した独立試験だけを示す。
-
-## 残件と変更管理
-
-pc camera・空間索引・3D 描画・表示フラグ・選択・Lua・JSON・アプリからの load は次単位である。
-通常版 GC/NBG text、未知 `gc.dat/NBG2.dat`、名前解決、OurGalaxy 原点/参照面/描画式、Plus の画素互換は未対応として残す。
-後続の案は [n16-parsec-rendering-seam.md](n16-parsec-rendering-seam.md) に分け、実装完了の項目と混在させない。
-
-この担当は新規 7 ソース・test ファイルと UNIT7 文書・ログだけを追加した。Makefile への登録は親担当が実施した。
-既存依存を再利用し、新規外部依存はない。各製品ファイルは 139 行以下であり、固定形式 input のみ private helper に分離した。
-Git の status・対象ファイル・差分量を確認済み。対象 7 ファイルは合計 750 行で、親担当が作業単位を commit する指示のため、この担当は stage/commit を行っていない。
-`/simplifier-lai` はこの担当では実行していない。自己レビューと別担当による独立レビューで確認する。
-機能範囲に閉じた追加のため、この担当による `IMPLEMENTATION_POLICY.md` と policy gates の変更はない。

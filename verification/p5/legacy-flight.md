@@ -6,7 +6,7 @@
 
 - 旧版の S キーを OS のキーボードイベントで入力した。キーもメニューの Landing/Takeoff も同じ `Camera:toggleModeTo()` を実行する。離陸・帰還の両方で WindowServer の所有 PID とウィンドウ番号を照合し、通常ウィンドウを各46回撮影。離陸43枚、帰還44枚を取得できた。ウィンドウ画像を取得できなかった離陸3回・帰還2回も時刻と失敗状態を記録した。[Sキーの割当](../../resources/scripts/shortcuts.lua)・[メニューの割当](../../resources/scripts/gui.lua)・[連写記録](legacy-keyboard-frames.tsv)
 - 別起動では、旧版のスクリプトエディタから `Camera:setModeTo(mode, seconds)` と `waitTime` を実行。出発、命令と同じコールバック内、複数の移動中、到着後に `Camera.mode` を直接読んだ。値を一時的な真偽フラグに写して `State:storeAsInit()` で保存し、直後にフラグを戻した。各状態の保存時刻をホストの単調時計で観測し、画像を撮影した。撮影後も同じ検証地点の番号であることを再確認。英語の地上HUDと宇宙HUDは表示項目が異なる。移動中の数値は保存した状態と、少し後に WindowServer が公開した実画面という時差を含む。各行に画像取得終了までの時間を記載した。[旧版77組のカメラ値と画像のハッシュ](legacy-flight-states.tsv)
-- `modeDuration`・`takeoffScale` の getter を状態へ直接退避した独立実行でも、同梱設定の **7.1秒・7.5倍** を読み戻した。追加の12秒離陸中に強制帰還する試行と、地球を1 AU離れて通常帰還を指示する試行も行った。画像原本と計測コードは検証 Mac の `local/verification/p5-legacy/` にある。
+- `modeDuration`・`takeoffScale` の getter を状態へ直接退避した独立実行でも、同梱設定の **7.1秒・7.5倍** を読み戻した。追加の12秒離陸中に強制帰還する試行と、地球を1 AU離れて通常帰還を指示する試行も行った。
 
 ## 地平図と宇宙モード
 

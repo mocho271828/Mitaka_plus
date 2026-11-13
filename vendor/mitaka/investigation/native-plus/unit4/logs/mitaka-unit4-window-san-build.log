@@ -1,3 +1,0 @@
-mkdir -p "build-unit4-window-san"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc -MMD -MP -c src/WindowPresentationController.mm -o "build-unit4-window-san/WindowPresentationController.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fobjc-arc tests/test_window_presentation.mm build-unit4-window-san/WindowPresentationController.o -fsanitize=address,undefined -framework AppKit -o "build-unit4-window-san/test_window_presentation"

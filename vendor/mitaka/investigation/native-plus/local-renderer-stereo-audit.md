@@ -6,8 +6,8 @@
 
 | 略記 | 絶対パス |
 | --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source` |
+| `PLUS` | `PLUS_ROOT` |
+| `OFFICIAL` | `vendor/mitaka/sources/official/mitaka_source` |
 | `SDK` | `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk` |
 
 対象は Plus 1.5.4 build101013。同梱 API 文書の表示は 1.3.0、公式公開ソースは通常版 Mitaka 1.3.1 である。Plus のスクリプト契約、通常版の描画実装、macOS の移植先 API は別の証拠として記録する。行番号は原典を CP932 で読み取った位置。
@@ -142,7 +142,7 @@ API 文書のオブジェクト名は `Renderer`、保存済みスクリプト�
 - stereo の合成関数は左右の単色・異なるパターン、白黒係数、寸法不一致を確認する。幾何は視差ゼロの距離、前後関係、左右交換、画面端、選択・投影の基準を別に検証する。
 - CAB は全 89 ファイル、空・切断・巨大件数・非有限値・範囲外添字を検証し、未参照の点を捨てない。構造検証と星空上の位置検証を別の結果にする。
 - 景観は既存独自追加を残したまま、経度の継ぎ目、透明度、地平線、極方向、画像欠損を検証する。offset の意味が未確定の段階では視野合成の完了を宣言しない。
-- この調査では旧 Windows アプリの起動、Plus バイナリの逆アセンブル、ネットワーク取得、画像の再保存、新しい GUI 試験を実施していない。第 2 単位の controller / sanitizer / CUA 結果は親担当の統合記録を参照する。
+- この調査では旧 Windows アプリの起動、Plus バイナリの逆アセンブル、ネットワーク取得、画像の再保存、新しい GUI 試験を実施していない。現在の対応範囲は[機能対応表](../../PLUS_FEATURE_MATRIX.md)を参照する。
 
 品質設定の限定実装は上記の差を記録したうえで開始できる。厳密な Plus stereo / CAB / 景観の再現に進む場合は、追加の静的実装根拠を優先する。旧版の実行比較が必要になった場合は、既存環境を変えずにどう観測するかを別途決める。未確定の値を埋めるために公開データや別製品の仕様で置換しない。
 

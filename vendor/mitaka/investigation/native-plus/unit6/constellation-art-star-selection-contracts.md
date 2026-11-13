@@ -1,22 +1,10 @@
-# N09 星座絵・N10 恒星名選択集合の原典監査
+# CAB星座絵の投影と恒星名の選択
 
-調査日: 2026-10-29。UNIT4 の `002adcf663fd5005e14ac86c343a3ec7e56fa706` を基点とする UNIT5 作業ツリーを読み取った。[次の実装単位](../unit4/next-feature-units.md) の N09 / CONST-02 と N10 / STAR-02・STAR-03 を対象とする。初回は読取専用調査として記録した。UNIT6 で loader→projection→draw と名前初期化の追加追跡を行い、根拠が揃った Sky/Horizon 用 helper と独立試験を実装した。旧アプリ・原データ・設定は変更していない。App/Lua/状態復元の統合結果は別の UNIT6 検証記録を参照する。
+旧 Plus 1.5.4 build101013（PE32 x86、ImageBase 0x400000）を対象とする。[CAB の測定値](constellation-measurements/cab-structure.tsv)・[CDF の対応](constellation-measurements/cdf-associations.tsv)・[行列の検算](constellation-measurements/cab-independent-review.md)
 
-## 原典と調査方法
+以下のアドレスは対象バイナリの image base `0x400000` に対する VA。登録→Lua wrapper→内部 adapter→容器を追い、インポート名は PE import table と照合した。全 CAB / CDF の[検算表と原本ハッシュ](constellation-measurements/)を掲載する。読み取った原本 188 ファイルの bytes は、検算前後ですべて一致した。旧アプリを起動した動作比較や画素一致の証拠ではない。
 
-| 略記 | 絶対パス |
-| --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source` |
-| native / investigation | `/Users/kota/mitaka/repositories/Mitaka` を基準とする |
-
-Plus の対象は Windows 1.5.4 build101013、同梱文書の表示版は 1.3.0、公式参照ソースは通常 Mitaka 1.3.1。CP932 は読み取り時だけデコードした。原本・画像・実行ファイルの複製、変換、実行は行っていない。既存調査は [星座契約](../local-constels-contract-audit.md)、[恒星制御](../local-star-controls-audit.md)、[資産](../local-assets-audit.md)、[Lua](../local-lua-unit4-audit.md)。本書の静的追跡結果は、これらの未確定事項の一部を更新する。
-
-`PLUS/mitakaPlus.exe` は PE32 x86、12,288,000 bytes、SHA-256 `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。reverse-engineer-anything skill の手順で REA を使用したが、文字列検索に必要な解析 provider は利用できなかった。REA の section header 確認は成功し、前後の SHA は一致した（evidence `ev_0c497604fcf1a0daf136edd25f524077a1e65ee7c66fa289d966b8054bcab030`）。その後は既存 `/usr/bin/objdump` と標準ライブラリによる限定的な静的確認だけを行い、REA の対象を閉じた。解析環境の追加導入・設定変更はない。
-
-以下のアドレスはこの SHA の image base `0x400000` に対する VA。登録→Lua wrapper→内部 adapter→容器を追い、インポート名は PE import table と照合した。逆アセンブルの最小抜粋、全 CAB / CDF の検算表、対象原本の SHA は [logs/n09-n10](logs/n09-n10/) に保存した。読み取った原本 188 ファイルの bytes は、検算前後ですべて一致した。旧アプリを起動した動作比較や画素一致の証拠ではない。
-
-## N09: 確認できた資産と物理形式
+## 確認できた資産と物理形式
 
 `PLUS/doc/script_jp/constels.html:32–39` は `Constels.illusts` と `Constels:toggleIllusts()`、`ui/scripts/12constels.lua:1–5` は星座絵を有効にして黄道 12 星座を表示する例を持つ。文書 33 行の説明は「星座線」となっているが、38 行は「星座絵」である。例文だけから線と絵を同じスイッチにしない。
 
@@ -66,11 +54,11 @@ local draw direction = normalize(Rx(-23.399999618530273 degrees)*w)
 
 `ConstellationArtRenderer` は既存 line quality scope と clip を使う。線、境界、名称と独立の `illustrations` と、既存 defaultVisible / exceptions の論理積で描く。native 色と太さを使い、旧 OpenGL の画素一致は保証しない。Sky/Horizon だけが対象であり、3D art の完成とは扱わない。通常版公式 `cnst_illust.dat` は別形式なので自動代用しない。
 
-## N10: 文書とローカル初期集合
+## 文書とローカル初期集合
 
 `PLUS/doc/script_jp/stars.html:28–35,88–99` は `selectedLabels`、HIP 番号を空白で区切った `select` / `deselect`、単一 HIP 文字列の `isSelected` を記載する。`selectedLabels` は `labels` が true の場合に有効。`scripts/gui.lua:143` は `Selected Proper Names Only` と表示する。`isSelected` の例文 98 行は `isSelect` と誤記しているが、下記の実登録は `isSelected` であり、別名を追加する根拠にはしない。
 
-手元の `star_names.dat`、`star_names_HIP.dat`、`star_names_jp.dat` は、コメントを除くとそれぞれ 174 行である。先頭 6 columns が HIP、第 7 column が `*` または空白。3 ファイルの `*` は同じ 24 HIP で、`selection.dat:63–86` の `HIP_n: 1` の 24 HIP と集合が一致した。
+入力に使用した `star_names.dat`、`star_names_HIP.dat`、`star_names_jp.dat` は、コメントを除くとそれぞれ 174 行である。先頭 6 columns が HIP、第 7 column が `*` または空白。3 ファイルの `*` は同じ 24 HIP で、`selection.dat:63–86` の `HIP_n: 1` の 24 HIP と集合が一致した。
 
 `selection.dat` 全体は 84 有効行（SUN 1、PLN 9、SAT 23、MP 5、HIP 24、GC 2、LGG 14、NBG 2、CNST 4）で、観測された値はすべて 1。これは現在のローカル fixture の一致であり、読み込み順・重複・値 0 の意味を証明しない。公式 `mtk_selection.cpp:59–79,103–106` はコメントを除いた行全体の完全一致を使う別形式なので、Plus の `: 1` 行へそのまま流用しない。
 
@@ -103,32 +91,3 @@ local draw direction = normalize(Rx(-23.399999618530273 degrees)*w)
 言語 resolver `0x41c149–0x41c205` / `0x41c379` は English（2）で基底名、Japanese（1）と JapaneseRuby（0）で `_jp` の存在時はそれを選び、なければ基底名を使う。複数ファイルの合算ではない。設定読込 `0x4f6f87–0x4f7046` と GetLocaleInfoA の 0411 判定も照合した。native が採用するローカルカタログ選択は App の明示した契約を維持する。
 
 `selection.dat` による後段上書き、値 0、重複、reload と `star_names_HIP.dat` を startup fallback とする根拠は未確定。名前ファイルの初期印の確定と、全起動完了時の集合が完全一致する保証を区別する。native `StarNameSelection` は採用済み名前レコードの `is_featured` を初期値とし、未知の優先順位を追加しない。
-
-## N10 の native 接続契約
-
-現行 `native/core/src/extended_catalog.cpp:190–212` は `StarNameRecord{hip,is_featured,name_bytes,localized_name_bytes}` を返し、重複 HIP はファイル全体エラーにする。`native/gui/src/extended_catalogs.cpp:42–46` は明示 `options.star_names`、存在する日本語ファイル、英語ファイルの順で一つを読む。これは現在の native 契約であり、旧起動順の再現ではない。
-
-`StarRenderer.mm` は固有名をローカル名優先で取得し、Bayer / Flamsteed / HIP の designation と合成する。UNIT6 で `StarDisplayOptions.selected_proper_names_only` と renderer への選択 HIP 集合の setter を追加した。全天 / 地平図は renderer を共有し、既存の座標・恒星カタログ・等級制限を再利用する。
-
-1. 名前カタログに存在する HIP を対象とする型付き `StarNameSelection` を設けた。単一クリック対象と独立させ、追加・削除・全選択・全解除・照会を提供する。初期値は既存 `is_featured` とする。これは **native の明示契約**であり、旧 `selection.dat` の読込を再現したとは説明しない。
-2. `selected_proper_names_only` を `proper_names` から独立させる。固有名だけに `proper_names && (!selected_proper_names_only || membership)` を適用する。既存の可視・等級・投影条件はその外側に残す。Bayer / Flamsteed / HIP 表示と星の点・マーク・クリック対象は変えない。公式 `mtk_stars.cpp:160–161` の固有名 / 小名称の分離もこの設計を支持するが、Plus の画素一致の証拠にはしない。
-3. native の型付き batch は全件検証後に更新し、未知 HIP を原子的に拒否する。Lua 旧操作では未知 token が無変更となる証拠があるので、同じ未知エラーをそのまま公開しない。旧 `atoi` の寛容入力を再現するか、厳密な十進入力だけを新契約として認めるかは Lua 境界で別途明示する。型 / arity を推測した wrapper を追加しない。
-4. モデル交換時は同じ HIP の membership を維持し、消失 HIP は報告して除去、新規 HIP は初期規則に従う。これは旧 reload の未確定挙動とは別である。手動 JSON 復元は App の境界で未知 HIP を含む全体を拒否し、状態を部分適用しない。codec は正の int32 と配列内重複までを検証する。
-5. App 統合では共通 setter から隠れている側も含む Sky / Horizon、ブラウザ、Lua snapshot、保存状態へ同じ集合を渡す。既存 catalog browser の名前がある HIP の checkbox と、検索に依存しない全選択 / 全解除を使用する。選択行の移動や等級変更を membership 操作へ混ぜない。これらの App 統合結果は root の UNIT6 記録で確定する。
-
-必要な依存は既存 C++17 containers、AppKit、Lua、JSON 検証境界で足りる。別のカタログ・UI・parser 基盤は追加しない。N11 の brightness・fadeLabels・文字の距離減衰は [別の契約](star-brightness-fade-contracts.md) で扱う。Solar の 3D 恒星描画は現在未実装であり、Sky / Horizon の接続だけで全空間の名称表示が完了したとは扱わない。
-
-## 受入条件
-
-| 対象 | 必要な確認 |
-| --- | --- |
-| CAB 構造 | 全ローカル 89 件の原順・byte 数・値・未参照要素を保持。切断、余剰、overflow、巨大 count、非有限、範囲外 index は拒否。欠損を別資産で代用しない |
-| CAB 描画 | 変換の根拠が揃ってから、非対称図形・Ser 二図形・RA seam・極・地平線・異なる日時/地点を検証。画素試験と旧版比較の範囲を区別 |
-| 固有名集合 | 初期値、追加 / 削除の非置換、All、繰返し、未存在、空入力、型不正、後半 invalid による部分更新防止。Lua と native の異なる入力境界を明示 |
-| 独立性 | labels / selected-only / visible が false でも membership getter と編集は保たれる。単一選択・等級・Bayer / Flamsteed / HIP は変わらない |
-| 実描画 | Sky / Horizon とも選択固有名だけが変化し、非表示中の更新後も同期する。名前なし / 任意カタログなしを含める |
-| ローカル保持 | 現在の 174 行 / 24 初期印を照合するが、この件数を製品上限にしない。独自追加された有効行を全件保持し、元ファイルへ書き戻さない |
-| モデル / JSON | reload の継承・消失報告・新規初期値、全体復元、未知 HIP の原子的拒否、再生停止を既存境界で確認 |
-| 検証構成 | 通常、ASan+UBSan、Rosetta x86_64 の適切な model / renderer / controller / App 試験。GUI は他の実行と直列化 |
-
-追加追跡と helper 実装の検証結果は `n09-n10-validation.md` に分ける。App/Lua/session の統合試験は root の UNIT6 記録で確定し、局所試験だけで機能全体の完成とは扱わない。stage / commit は root が一括して行う。

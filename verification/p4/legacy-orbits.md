@@ -1,6 +1,6 @@
 # Windows Plus 1.5.4 の小天体軌道
 
-2026-11-12、Apple M4 / macOS 26.6.2 上で作者配布の Windows Plus 1.5.4 build101013 のコピーを起動した。実行ファイルの SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。Boxedwine 26R1、Wine 11、OSMesa の softpipe で、実ウィンドウの所有 PID とウィンドウ番号を照合して撮影した。保存した旧版状態とウィンドウ PNG の SHA-256 は[フレーム表](legacy-orbits-frames.tsv)で照合できる。検証 Mac での原画像、実行用 Lua と集計は `local/verification/p4-legacy-orbits/` にある。
+2026-11-12、Apple M4 / macOS 26.6.2 上で作者配布の Windows Plus 1.5.4 build101013 のコピーを起動した。実行ファイルの SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。Boxedwine 26R1、Wine 11、OSMesa の softpipe で、実ウィンドウの所有 PID とウィンドウ番号を照合して撮影した。保存した旧版状態とウィンドウ PNG の SHA-256 は[フレーム表](legacy-orbits-frames.tsv)で照合できる。
 
 ## 同梱データでの軌道表示
 
@@ -42,4 +42,4 @@
 
 - e=1.2 ではさらに、aのみ（番号980007）・nのみ（980008）の2通りを別起動で直接選んだ。両方の日付でカメラの保存方位・高度は全桁一致した（生の保存値136.875° / −67.9355°、243.213° / 33.0494°）。
 
-実ウィンドウ比較図は検証 Mac の `local/verification/p4-legacy-orbits/legacy-orbit-windows.jpg`。Windows 実機や他の版はこの比較の対象外である。
+Windows 実機や他の版はこの比較の対象外である。

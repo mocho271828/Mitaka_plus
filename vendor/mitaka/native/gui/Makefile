@@ -55,6 +55,7 @@ all: core $(OBJECTS) $(SCRIPT_HELPER)
 	cp "$(SCRIPT_HELPER)" "$(APP)/Contents/MacOS/MitakaScript"
 	cp Info.plist "$(APP)/Contents/Info.plist"
 	mkdir -p "$(APP)/Contents/Resources"
+	cp ../../../../LICENSE "$(APP)/Contents/Resources/LICENSE"
 	cp THIRD_PARTY_NOTICES.txt "$(APP)/Contents/Resources/THIRD_PARTY_NOTICES.txt"
 	cp LUA_LICENSE.txt "$(APP)/Contents/Resources/LUA_LICENSE.txt"
 

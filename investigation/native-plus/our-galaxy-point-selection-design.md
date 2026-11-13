@@ -41,9 +41,8 @@
 
 回帰試験には、preview の間引き点が complete では選べる場合、非有限・範囲外・近接面・画面外、変換、減光、alpha 0、点画像の生成失敗、重複座標と優先順位、カメラ・表示・モデル変更および preview から complete への移行中の古い pick、楕円 fallback、focus と session 復元を含める。`test_galaxy_overlay.mm` の不正な放射モデルでも preview と他のレイヤーを表示・選択できる既存の保証を維持する。
 
-
 ## 同一レイヤーの重なりの検証（2026-11-07）
 
 - preview と complete の形状内外、異なる投影位置、群・原順、透明と候補の fallback を単体試験で確認した。overlay の非同期選択も preview と complete で確認した。実 `ourgalaxy_model.dat` を指定した renderer 試験は 66 checks 成功。
-- `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功。初回 smoke は隔離 worktree に地形 LFS ポインタしかなかったため失敗し、ローカル LFS 本体を復元、SHA-256 を照合した後に成功した。
+- `make build`、`make test`、`make data-test`、`make reference-test`、`make smoke` は成功。地形を使う試験は LFS ポインタだけでは失敗し、SHA-256 を照合したデータ本体で成功した。
 - 加算合成時の後描き優先は現行実装上の仮定。画素の量子化・アンチエイリアス端の厳密判定、旧 Plus との比較、およびこの重なり操作の実画面確認は未実施。

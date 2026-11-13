@@ -82,6 +82,4 @@ build/test_minor_planet_position "$DATA_ROOT"
 いずれも **253,211 checks PASS**。sanitizer の検出はない。
 Plus の観測値は全 19,475 行、packed 36 byte 8,451 行の位置評価成功、他の 11,024 行を保持。
 通常版はこの loader の対象小天体 source がなく、0 行と欠損診断になる。
-別担当が header / 実装 / 監査文書 / packed parser / orbital_state を独立に照合し、修正必須の指摘はなかった。
-独立レビューでは試験を再実行していない。
 GUI 接続、原版の実行比較、画素一致、物理時系と天文学的精度の確定はこの単体検証に含まない。

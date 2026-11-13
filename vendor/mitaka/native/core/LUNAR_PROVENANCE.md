@@ -164,7 +164,3 @@ xcrun clang++ -Iinclude \
 
 最終結果は通常 / ASan+UBSan の月試験が各 14,172 checks PASS、
 `make BUILD_DIR=build-unit4-root-x86 ARCH=x86_64 test` は月を含む全 16 テストが PASS。
-調査ログは `/tmp/mitaka-unit4-lunar-fma-diagnosis.log`、
-原本比較と採取値は `/tmp/mitaka-unit4-lunar-investigate-*.log`、
-旧テスト再現は `/tmp/mitaka-unit4-lunar-before-profile.log`、
-修正後試験は `/tmp/mitaka-unit4-lunar-profile-*.log` に記録した。

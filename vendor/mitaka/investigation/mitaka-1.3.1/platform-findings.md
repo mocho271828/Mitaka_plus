@@ -1,13 +1,13 @@
 # Mitaka 1.3.1 の macOS 移植: プラットフォーム境界調査
 
-対象原本: `/Users/kota/mitaka/sources/official/mitaka_source`.
+対象原本: `vendor/mitaka/sources/official/mitaka_source`.
 調査方法: ソースと付属文書の静的読取り. 原本は変更せず, アプリ実行・ビルド・通信は行っていない. 以下の相対パスと行番号はこの原本を基準とする. CP932 をデコードして読んだ場合も改行数を維持した.
 
 ## 結論
 
 この配布物は Win32/DirectInput/DirectShow/Winsock を使う C++ ソースである. 数値計算を残しつつ, ウィンドウ・入力・ファイルパス・メディア・同期・通信の OS 境界を交換する必要がある. Windows API を置き換えるだけでは不十分で, `long` の幅に依存する既存ファイル形式, UTF-16 を `wchar_t` に格納する文字列処理, Windows のテキストモードによる CRLF 変換も変更対象になる.
 
-本報告は本家 1.3.1 のコードに対する所見であり, 手元の Mitaka/Plus バイナリの全機能や現行本家の実装へそのまま一般化しない. 描画方式の詳細と Clang 構文検証は親の別調査に委ねる.
+本報告は本家 1.3.1 のコードに対する所見であり, 手元の Mitaka/Plus バイナリの全機能や現行本家の実装へそのまま一般化しない. 描画方式は[描画の調査](render-findings.md), Clang の結果は[構文検証](VALIDATION.md)を参照.
 
 ## 1. ビルドと依存関係: 確認事実
 
@@ -86,7 +86,7 @@
 - **CRLF の具体的影響**: `Mitaka/mtk_languages.cpp:153` `load_language_files()` は `languages.dat` を `"rt"` で開く `:160`, `fgets` `:167` の末尾 `\n` だけを除去 `:171–173`, その文字列を設定ファイル名として渡す `:176`. macOS の通常の stdio で CRLF ファイルを読むと末尾 `\r` が残り, 別ファイル名になる.
 - `common/text/key_value_file.cpp:62` `load_key_value()` の trim は `" \t\n"` `:77`, `:92–93` であり `\r` を含まない. 文字コード変換とは別に改行正規化が必要.
 - `mtk_languages.cpp:198` `select_language()` は `SHGetFolderPath(..., CSIDL_FONTS)` `:217`. `Mitaka/mtk_font.cpp:110` `init_font_face_sub()` は指定フォントを `FT_New_Face` `:116` で開き, 失敗時に Windows フォントディレクトリと backslash で結合 `:119–120`. `mtk_languages.cpp:142` には `arialuni.ttf` のフォールバック指定.
-- MS CRT 固有の `stricmp` / `_stricmp` / `_snprintf` 等が使われる. 親の構文プローブが具体的な停止箇所を別途記録する.
+- MS CRT 固有の `stricmp` / `_stricmp` / `_snprintf` 等が使われる. [構文検証の結果](VALIDATION.md)に停止箇所を記載した.
 
 変更候補: 既存データの CP932/UTF-8/BOM/CRLF を一括に決めつけず, ファイル種類ごとに読み込み契約を決める. OS パスは独立した変換境界で扱い, 読取専用アプリ資源・利用者設定・画像保存先を CWD 依存から分離する. INI を置き換える場合は既存のキー, 既定値, 数値変換, ホスト名別フォールバックの挙動を比較する. フォントは実在ファイルとライセンスを確認して同梱または OS フォント解決する.
 
@@ -146,10 +146,10 @@
 
 提案のみで今回未実行:
 
-1. ターゲット間の packet `sizeof` / `alignof` / `offsetof`, `long` / `wchar_t` 等の幅を比較. 親の実施済み型幅・構文プローブと統合する.
+1. ターゲット間の packet `sizeof` / `alignof` / `offsetof`, `long` / `wchar_t` 等の幅を比較. [型のサイズと構文検証](VALIDATION.md)を参照.
 2. 既存 `hip.dat` / `constellation_HIP.dat` の 1 レコード消費 byte 数, BMP 読書き, 3DS smooth group を fixture で比較.
 3. LF / CRLF, BOM 有無, CP932 / UTF-8, 非 ASCII パス, BMP 外文字を含む文字列を分けて検証.
 4. 入力軸・キー優先・ウィンドウフォーカス, 動画の再生・pause・seek・ネットワーク同期を実機比較.
 5. SSE を使わない数値計算経路の結果を基準化し, ARM の最適化と並列化は後で同じ結果へ照合.
 
-本調査はソースの構造と API の使用箇所の確認であり, 完全な移植工数見積り, 現行 macOS API の選定, 実行時 codec / データ互換性, すべての到達可能コードの証明は含まない. 報告ファイルだけを `/tmp` に作成し, `IMPLEMENTATION_POLICY.md` / policy gates / 原本を変更していない. テスト・lint・構文プローブ・commit は本子タスクでは実施していない. 親の別プローブ結果は親レポートへ統合する.
+本調査はソースの構造と API の使用箇所の確認であり, 完全な移植工数見積り, 現行 macOS API の選定, 実行時 codec / データ互換性, すべての到達可能コードの証明は含まない.

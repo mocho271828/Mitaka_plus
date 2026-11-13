@@ -2,7 +2,7 @@
 
 調査日: 2026-10-29。調査時の HEAD は `ae300e1`。第 3 単位の統合試験中に、次の接続候補を読み取り専用で確認した。この文書の追加以外に、第 4 単位の製品コードは変更していない。
 
-原典は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`（以下 `PLUS`）。対象は Plus 1.5.4 build101013、同梱 API 文書の表示は 1.3.0。HTML の行番号は CP932 から読み取った原本の行番号を指す。旧アプリの実行結果は今回確認していない。
+原典は `PLUS_ROOT`（以下 `PLUS`）。対象は Plus 1.5.4 build101013、同梱 API 文書の表示は 1.3.0。HTML の行番号は CP932 から読み取った原本の行番号を指す。旧アプリの実行結果は今回確認していない。
 
 ## 先に接続できる描画品質の 4 項目
 
@@ -23,10 +23,10 @@ Lua 接続は第 3 単位の表示フラグと同じ構造を使える。以下�
 
 1. `ScriptSnapshot` に `RendererDisplayOptions` を持たせ、host が現在の共通設定を返す。
 2. `ScriptActionKind` に 4 個の設定操作を追加し、`ScriptWorker` の `BooleanBinding` で上表だけを登録する。
-3. AppController の共通 getter / setter を通し、ビュー、メニュー、保存状態と同じ値へ反映する。メソッド名は `rendererDisplayOptions` / `setRendererDisplayOptions:` を統合担当へ提案済み。
+3. AppController の共通 getter / setter を通し、ビュー、メニュー、保存状態と同じ値へ反映する。メソッド名は `rendererDisplayOptions` / `setRendererDisplayOptions:` を提案する。
 4. Getter と toggle は毎回 snapshot を読み、GUI 操作後の値を反映する。Lua の数値や文字列を boolean に暗黙変換しない。失敗した host 操作を成功扱いにしない。
 
-品質 helper だけが存在する段階では、Lua から設定値だけを変更して実装完了としない。全ビューの描画群への接続と、その値を引き継ぐ静止画・投影出力を統合担当と確認する。
+品質 helper だけが存在する段階では、Lua から設定値だけを変更して実装完了としない。全ビューの描画群への接続と、その値を引き継ぐ静止画・投影出力を確認する。
 
 ### 名前を追加しない範囲
 
@@ -91,4 +91,4 @@ Lua 接続は第 3 単位の表示フラグと同じ構造を使える。以下�
 3. 恒星輝度のプロパティと標準値への復帰。描画側の独立設定が前提で、増減幅・アニメーションは同じ単位に混ぜない。
 4. 月・年の Lua 時刻操作、恒星等の `Camera.target`。既存 native 機能の一部を利用できるが、連続速度・3D 視点との対応が未確定。
 
-今回の成果物は本監査文書のみで、依存・公開 API・方針 gate を変更していない。原典の読取と既存コード照合を行い、新しい実行試験は行っていない。第 3 単位の controller 試験と独立レビューは [local-lua-next-audit.md](local-lua-next-audit.md) を参照する。
+原典の読取と既存コード照合を行い、新しい実行試験は行っていない。第 3 単位の controller 試験と独立レビューは [local-lua-next-audit.md](local-lua-next-audit.md) を参照する。

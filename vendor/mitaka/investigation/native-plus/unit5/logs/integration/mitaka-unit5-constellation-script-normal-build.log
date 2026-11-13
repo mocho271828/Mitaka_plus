@@ -1,6 +1,0 @@
-mkdir -p "build-unit5-script"
-mkdir -p "build-unit5-script"
-mkdir -p "build-unit5-script"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScriptSmokeTests.mm -o "build-unit5-script/AppScriptSmokeTests.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppPlusSmokeTests.mm -o "build-unit5-script/AppPlusSmokeTests.o"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/AppScripting.mm -o "build-unit5-script/AppScripting.o"

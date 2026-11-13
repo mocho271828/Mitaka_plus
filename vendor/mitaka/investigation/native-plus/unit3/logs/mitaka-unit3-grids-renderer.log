@@ -1,6 +1,0 @@
-mkdir -p "build-unit3-grids"
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc -MMD -MP -c src/GridRenderer.mm -o "build-unit3-grids/GridRenderer.o"
-/Applications/Xcode.app/Contents/Developer/usr/bin/make -C ../core BUILD_DIR="/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-grids/core" ARCH="" SANITIZE="" CXXFLAGS="-O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0" "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-grids/core/libmitaka_core.a"
-make[1]: `/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-grids/core/libmitaka_core.a' is up to date.
-xcrun clang++ -Iinclude -I../core/include -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -mmacosx-version-min=13.0 -fobjc-arc tests/test_grid_renderer.mm build-unit3-grids/GridRenderer.o build-unit3-grids/grid_geometry.o build-unit3-grids/distance_scales.o build-unit3-grids/sky_model.o build-unit3-grids/solar_camera.o "/Users/kota/mitaka/repositories/Mitaka/native/gui/build-unit3-grids/core/libmitaka_core.a"  -framework AppKit -o "build-unit3-grids/test_grid_renderer"
-grid renderer tests passed (87 checks)

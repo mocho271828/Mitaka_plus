@@ -1,4 +1,0 @@
-public.jpeg reader=YES writer=YES
-public.png reader=YES writer=YES
-com.microsoft.bmp reader=YES writer=YES
-com.truevision.tga-image reader=YES writer=YES

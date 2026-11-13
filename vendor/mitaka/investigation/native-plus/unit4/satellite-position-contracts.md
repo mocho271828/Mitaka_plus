@@ -1,29 +1,11 @@
-# Plus 衛星位置の限定静的監査
+# 旧Plusの衛星軌道・親天体・時刻
 
-調査日: 2026-10-29。対象は Plus 1.5.4 build101013 のローカル原版である。
-この文書は[前回の軌道監査](../orbit-contracts-audit.md)の残件を補足する。
-この静的監査では原本および実装コードを変更していない。単位 3 の実装変更とは分離した調査である。
+対象は Windows 版 Mitaka Plus 1.5.4 build101013。命令アドレスは配布バイナリを静的に読んだ結果で、式と係数の根拠を示す。
 
-## 対象と証拠の区別
-
-- `P` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。
+- `P` は Windows 版 Plus の配布フォルダ。
 - `X` は `P/mitakaPlus.exe`、PE32 x86、ImageBase `0x400000`、12,288,000 bytes。
 - `X` の SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。
-- `S` は `/Users/kota/mitaka/sources/official/mitaka_source`。これは公式 1.3.1 であり、Plus のソースではない。
-
-`reverse-engineer-anything` skill に従い REA で対象を開いて確認した。
-利用可能な深い解析 provider はなく、`analysis_provider_binding` は `null` だった。
-以下の命令アドレスと数式は、既存 `/usr/bin/objdump` の Intel 構文逆アセンブルと、PE の section / import table / 定数の読み取りから得た**手動の静的観測**である。
-REA provider が生成した Evidence オブジェクトによる関数・データフロー証明ではない。
-旧アプリの実行、DLL のロード、依存の追加、原ファイルの書換えは行っていない。
-
-再確認には、例えば次の読み取り専用コマンドを使える。`X` は上記の絶対パスに置き換える。
-
-```sh
-/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=0x5558e0 --stop-address=0x555bf6 "$X"
-```
-
-## 解消できた残件と残る境界
+- `S` は `vendor/mitaka/sources/official/mitaka_source`。これは公式 1.3.1 であり、Plus のソースではない。
 
 | 項目 | 確認できたこと | 接続上の制限 |
 | --- | --- | --- |
@@ -35,12 +17,9 @@ REA provider が生成した Evidence オブジェクトによる関数・デー
 | Q の index | 成功して登録された Planet の順番が内部 index になる | 任意ファイルの名前だけで固定の惑星番号を割り当てない |
 | 月 | 名前 `Moon` で別の解析位置計算に入る | 通常衛星の Kepler に流さない。旧表示設定による倍率も別途ある |
 
-下記の追加監査で CF96 分岐の出力軸は既存 GUI の J2000 黄道方向へ対応づけられた。任意の登録順、別の暦表分岐、物理的な時系まで無条件に変換できるとの主張ではない。
-特に L/I の固定角 `23.43870583°` と Q の `23.439291111111114°` は異なり、前回監査どおり別々に保持する。
-
 ## 位置評価への入力
 
-通常衛星の要素は、前回監査のローダーにより次の位置へ格納される。
+通常衛星の要素は、旧版のローダーにより次の位置へ格納される。
 
 | メンバー offset | 内容 |
 | --- | --- |
@@ -138,13 +117,13 @@ native の既存地球・月補正とこの後処理も重ねず、どの処理�
 `0x5558f1–0x55590b` は名前 `Moon` を比較し、一致すると `0x555911–0x5559be` の専用経路へ入る。
 この経路は Earth を名前解決し、Earth の保存位置に `0x4fd8f0` の月解析ベクトルを加える。
 倍率は `double(km_to_pc_float) × settings_value` で、`settings_value` は `0x548550` で得る設定領域の offset `0x10` から読む。
-この値の UI 名、既定値、可変範囲は今回追跡していない。
+この値の UI 名、既定値、可変範囲は確定していない。
 Moon の Orbit ファイルを読み込めることと、その要素を通常の Kepler で評価してよいことは別である。
 
 ## Q の親 index と極の式
 
-親の極の式は[前回監査の表](../orbit-contracts-audit.md)に記載済みである。
-今回は名前→index の残件を次の経路で確認した。
+親の極の式は[衛星の極の係数表](../orbit-contracts-audit.md)に記載済みである。
+名前から index への対応は次の経路で決まる。
 
 - `0x57436d–0x57439f` は `Planet`（文字列 VA `0xc31f14`）ブロックを認識する。
 - `0x5743d3–0x5743e1` は惑星 container `0x11070e0` の現在件数を取り、constructor `0x537540` へ渡す。
@@ -154,7 +133,7 @@ Moon の Orbit ファイルを読み込めることと、その要素を通常�
 - 名前検索 `0x53db20` は container を順番に調べる。極の式 `0x53ef00` は天体の `self+0` を読み、`0x53efff` で index 0…8 に分岐する。
 
 従ってこの index は**成功して登録された Planet の順番**であり、名前をハードコードした enum ではない。
-ローカル `ssystem.dat / ssystem_jp.dat` の Planet 順は Mercury、Venus、Earth、Mars、Jupiter、Saturn、Uranus、Neptune、Pluto であり、全 9 定義が成功した場合は前回の極の係数表と対応する。
+ローカル `ssystem.dat / ssystem_jp.dat` の Planet 順は Mercury、Venus、Earth、Mars、Jupiter、Saturn、Uranus、Neptune、Pluto であり、全 9 定義が成功した場合は極の係数表と対応する。
 名前だけを見て任意の並べ替え済み定義へこの表を適用したり、失敗した先行 Planet を数に含めたりしない。
 任意の入力への adapter は、登録順の証拠がなければ呼出側の明示した親極を要求できる。
 
@@ -166,28 +145,10 @@ Moon の Orbit ファイルを読み込めることと、その要素を通常�
 歳差・Kepler はこれと元の `epoch` の差を日数として使う。
 
 この境界は `legacy numeric JD` として表現できる。
-今回追跡した経路に UTC / UT1 / TT / TDB の変換は見つかっていないが、これは入力時刻の物理的な時系を証明したことにはならない。
+対象の経路に UTC / UT1 / TT / TDB の変換は見つかっていないが、これは入力時刻の物理的な時系を証明したことにはならない。
 そのため `JulianDateTdb` などへの暗黙キャスト、未検証の ΔT、精度期間の推定を追加しない。
 
-## 次の実装へ渡せる範囲
-
-1. 全定義・全軌道ファイル・全フィールド・出典・順序を保持する loader は、位置の未知事項から独立して実装できる。
-2. L/I/E/C、明示した親極を受ける Q、Moon 専用回転は独立した数値回転境界にできる。Mars node 補正は名前だけで自動適用せず、下記の読み込み時点条件を使う。既存の自転込み `BodyOrientation` を Q の代わりに使わない。
-3. 通常衛星の相対位置は、同一 `legacy numeric JD`、検証済みの要素、確定した回転を受け、既存 Kepler を用いて評価できる。月は除外し、親の絶対位置や物理的な時系まで確定したとは表示しない。
-4. 絶対位置への接続は、親スナップショットの座標尺度・面・補正前後の段階を明示してから行う。地球・月と Pluto / Charon / Nix / Hydra の補正を一般の `parent + relative` に隠さない。
-
-`.pth` の原点・時系・同時刻標本規則、mp/TNO の最終位置経路と物理的時系、40 バイト形式の追加項目は、この追跡では解消していない。
-未確定の記録も全件保持し、計算できない理由と計算可能件数を保持件数から分けて報告する。
-新しい公開 API や旧 Lua 名の規則を、静的観測から推測して追加しない。
-
-## 検証と未実施事項
-
-根拠となる命令列、定数、import thunk、ローカル定義順と公式ソースの該当箇所を読み取った。
-新しい計算コードは書いていないため、この監査に対する数値実装テストは行っていない。
-旧 Plus の実行比較、全画面・全モードの座標同一性、入力時刻の物理的な時系、天文学的な誤差評価は未実施である。
-通常の三角関数実装の差まで含む bit 一致は確認していない。
-
-## 追加監査: 識別子、親参照、登録の成否
+## 識別子、親参照、登録の成否
 
 以下も同じ `X` の限定した静的観測である。
 
@@ -207,19 +168,19 @@ Satellite は constructor の `0x552858` で available を false にし、Orbit 
 
 Satellite の読み込みと登録は Planet の内部で先に起きる。`0x5381d0` の constructor、`0x5381eb` の Read、`0x5381f2` の available 確認の後、成功時は `0x5383b0` で global Satellite container へ追加する。Planet 自身はブロック全体の Read が戻った後、`0x574403` で available を確認し、`0x574427` で登録する。
 
-このため親 Orbit が失敗して Planet が登録されなくても、内部の Satellite が先に登録され得る。失敗した親の index は次の成功 Planet に再利用される可能性がある。native はこの状態を安全な構造親参照と混同せず、全定義を残して numeric parent の衝突を診断する。登録 container の初期化・再読込での clear、および言語別ファイル選択の全呼出経路は今回追跡していない。言語別 source を連結して 1 個の登録列と扱わず、既知の入力 source と登録開始状態を契約に含める。
+このため親 Orbit が失敗して Planet が登録されなくても、内部の Satellite が先に登録され得る。失敗した親の index は次の成功 Planet に再利用される可能性がある。native はこの状態を安全な構造親参照と混同せず、全定義を残して numeric parent の衝突を診断する。登録 container の初期化・再読込での clear、および言語別ファイル選択の全呼出経路は確定していない。言語別 source を連結して 1 個の登録列と扱わず、既知の入力 source と登録開始状態を契約に含める。
 
-## 追加監査: Mars node 補正が成立する時点
+## Mars node 補正が成立する時点
 
-前回監査の `node += 43°` は、原版に分岐が存在することと、通常の初回読み込みで実行されることを分ける必要がある。
+旧版にある `node += 43°` は、原版に分岐が存在することと、通常の初回読み込みで実行されることを分ける必要がある。
 
 `0x553a03–0x553a41` の補正条件は、global Planet container で `Mars` を名前検索した結果と、衛星に保存した親 index の一致である。新しい Planet ブロックの読み込みでは、constructor に渡す index を `N = 現在の登録件数` とすると、内部衛星を読む時点で親はまだ container に追加されていない。検索が返せる値は `−1` または `0 … N−1` であり、`N` とは一致しない。
 
-したがって今回確認した **新規 ssystem ブロックの読み込み経路では補正は実行されない**。この結論は読み込み前の container が空かどうかに依存しない。既存の登録済み衛星の Orbit を後から再読込する別経路なら条件を満たし得るが、その呼出経路は未確認である。
+したがって該当する **新規 ssystem ブロックの読み込み経路では補正は実行されない**。この結論は読み込み前の container が空かどうかに依存しない。既存の登録済み衛星の Orbit を後から再読込する別経路なら条件を満たし得るが、その呼出経路は未確認である。
 
 新規 source を読む native model は `apply_mars_node_correction=false` とし、回転 API の明示フラグは別の確認済み読み込み経路にのみ使う。親名 `Mars` だけから true を自動生成しない。
 
-## 追加監査: CF96 親スナップショットと J2000 黄道方向
+## CF96 親スナップショットと J2000 黄道方向
 
 Plus の `0x574d50` にある CF96 期間内の分岐は、次の式で親の保存位置を更新する。
 
@@ -235,7 +196,7 @@ parent_pre_legacy_pc = double(legacy_AU_to_pc_float)
 - 評価関数 `0x42be80` は、読み込み flag と index 範囲を確認し、惑星ごとの `t0,dt`、区間正規化 `2(t−block_start)/dt−1`、ブロック評価を使い、`0x42bfd2–0x42bff3` で定数 `0xc29e78 = 1e−10` を掛ける。これは公式 `S/common/astro/cf96.cpp` の `CF96_planets::eval_pos` / `CF96_planet::eval_pos` と同じ CF96 の構造・評価尺度である。
 - 公式 `S/Mitaka/mtk_planet_position.cpp` の `update_planets_position` も `AU_to_pc × Rx(−epsJ2000)` で CF96 の赤道出力を黄道へ変換する。ただし、その版の太陽位置加算や Venus / Pluto の別 trajectory 分岐は、Plus の上記経路へ持ち込まない。
 
-既存 core の `Cf96Ephemeris::state` は太陽中心 J2000 赤道の AU を返す。Plus の親と衛星はこの同じ保存空間で足し合わせるので、今回確認した経路の衛星回転後の方向軸は native の J2000 黄道方向に対応する。L/I 内部の `+23.43870583°` は原版の数式として残し、最後にさらに赤道→黄道の回転を重ねない。これは方向基底の対応であり、旧 float 丸めや libm の差まで含めた bit 一致ではない。
+既存 core の `Cf96Ephemeris::state` は太陽中心 J2000 赤道の AU を返す。Plus の親と衛星はこの同じ保存空間で足し合わせるので、上記の経路の衛星回転後の方向軸は native の J2000 黄道方向に対応する。L/I 内部の `+23.43870583°` は原版の数式として残し、最後にさらに赤道→黄道の回転を重ねない。これは方向基底の対応であり、旧 float 丸めや libm の差まで含めた bit 一致ではない。
 
 GUI 接続は次の条件へ限定できる。
 
@@ -244,5 +205,3 @@ GUI 接続は次の条件へ限定できる。
 3. raw CF96 の赤道 AU を既存 `j2000_equatorial_to_ecliptic` で変換し、補正前の親 snapshot とする。相対 km は明示した km→AU 尺度で加える。
 4. `SkyModel::solar_bodies` の Earth は地月補正済みなので、この snapshot の代わりにしない。Pluto / Charon の後補正も一度だけ扱い、Nix / Hydra を補正後 Pluto へ付け替えない。
 5. 月の旧解析ベクトルと設定倍率、CF96 範囲外の親計算、未解決の登録・参照は別の診断を保持する。通常衛星の確定した subset を、それらとまとめて評価不能にしない。
-
-以上はローカル原版と既存 core の契約を接続する限定した証拠である。全旧表示モードのフレーム変換や天文学的な精度を検証したものではない。

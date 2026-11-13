@@ -1,4 +1,0 @@
-Plus AppKit smoke failed: missing or duplicate Plus menu command
-Script AppKit smoke passed: legacy targets,date,speed,realtime,time-info,camera,invalid-zoom,azimuth,display-options,small-body-satellite-flags,renderer,fullscreen-state,markings,milky-way,window-state,image-dialog,relative-data,log-lines,unsupported-API; orbit-budget=rejection-tested
-Small-body AppKit smoke passed: 18 checks; source_rows=19475 evaluable=10839 focus=tested diagnosis=tested
-Satellite AppKit smoke passed: 30 checks; source_rows=340 positioned=330 focus=tested diagnosis=tested distinct-source=tested

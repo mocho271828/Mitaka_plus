@@ -1,3 +1,0 @@
-xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_upstream.cpp build/reference_cf96.o build/libmitaka_core.a  -o build/test_upstream
-build/test_upstream "${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
-upstream CF96: 5427 component comparisons passed; max position error=7.10543e-14 AU, max velocity error=6.93889e-18 AU/day

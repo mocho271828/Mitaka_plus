@@ -1,26 +1,20 @@
-# N07 地上ラベルの描画経路の追加監査
+# 旧Plusの地上ラベルの描画式
 
-2026-10-30。UNIT6 の [原版契約](../unit6/places-binary-contracts.md) と UNIT7 の [表示モデル](places-display-contracts.md) に対する追加証拠である。局所座標、group fallback、距離・fade、billboard、planet caller を静的に確認した。GUI 接続や原版画面との一致確認は行っていない。
+Windows 版 Mitaka Plus 1.5.4 の対象選択・座標・距離フェード・文字倍率を示す。ネイティブ版の地名ラベル表示は未対応。[地点仕様](../unit6/places-binary-contracts.md)・[ラベルの読取手順](probes/extract-labels.sh)
 
-## 原典と記録
+| 命令範囲・確認対象 |
+| --- |
+| `0x54a000–0x54e180`、直接 caller と planet / Earth / Mars 分岐 |
+| `0x5279c0–0x528210`、ラベル用行列 |
+| `0x457f40–0x458230`、地形位置 helper 全体と次関数先頭 |
+| `0x49a740` / `0x49a770` の実体 |
+| `0x53ac70` の行列コピー |
+| `0x5ac110–0x5ac166` の画面倍率値 setter / getter |
+| 上記 setter / getter を呼ぶ wrapper。登録名は未確定 |
+| 三角関数 IAT への thunk |
+| 原本 hash、PE section mapping、浮動小数点定数の原 bytes |
 
-対象はローカル `mitakaPlus.exe`、SHA-256 `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。原本は読み取り専用で参照した。住所、名称、地形、画像などのローカルデータを公開データへ置き換えていない。
-
-既存 `unit6/logs/n07/binary/places-class.txt`、`labels-caller.txt`、`imports.txt` を優先した。不足する helper / caller の逆アセンブルは `/usr/bin/objdump -d --x86-asm-syntax=intel --start-address=... --stop-address=...` で取得した。REA の xrefs / read_bytes provider が利用不可という親の確認を受け、同じ失敗要求を再試行していない。以下のアドレスは PE の仮想アドレスであり、ファイル offset と混同しない。
-
-| 新規証拠 | 範囲・目的 |
-| --- | --- |
-| [callers.txt](logs/n07-label-runtime/callers.txt) | `0x54a000–0x54e180`、直接 caller と planet / Earth / Mars 分岐 |
-| [billboard.txt](logs/n07-label-runtime/billboard.txt) | `0x5279c0–0x528210`、ラベル用行列 |
-| [surface-position.txt](logs/n07-label-runtime/surface-position.txt) | `0x457f40–0x458230`、地形位置 helper 全体と次関数先頭 |
-| [camera-accessors.txt](logs/n07-label-runtime/camera-accessors.txt) | `0x49a740` / `0x49a770` の実体 |
-| [body-orientation.txt](logs/n07-label-runtime/body-orientation.txt) | `0x53ac70` の行列コピー |
-| [screen-values.txt](logs/n07-label-runtime/screen-values.txt) | `0x5ac110–0x5ac166` の画面倍率値 setter / getter |
-| [screen-wrappers.txt](logs/n07-label-runtime/screen-wrappers.txt) | 上記 setter / getter を呼ぶ wrapper。登録名は未確定 |
-| [math-thunks.txt](logs/n07-label-runtime/math-thunks.txt) | 三角関数 IAT への thunk |
-| [identity-and-constants.txt](logs/n07-label-runtime/identity-and-constants.txt) | 原本 hash、PE section mapping、浮動小数点定数の原 bytes |
-
-指定範囲は対象関数の前後を含む。一部の range の先頭は前関数の途中なので、先頭数命令の表示を関数境界の証拠には使っていない。主要 renderer の命令列は既存 `places-class.txt` の `0x532470–0x533390` を参照する。
+指定範囲は対象関数の前後を含む。一部の range の先頭は前関数の途中なので、先頭数命令の表示を関数境界の証拠には使っていない。主要 renderer の命令列は `0x532470–0x533390` を参照する。
 
 ## renderer の引数と対象判定
 
@@ -101,7 +95,7 @@ glLoadMatrixd(M)
 return L
 ```
 
-`0x49a740` は global doubles `0x102aac0 / 0x102aac8 / 0x102aad0`、`0x49a770` は `0x102ab00 / 0x102ab08 / 0x102ab10` の符号反転を返す。これらを作る camera matrix の producer と native camera の対応は今回未確定である。
+`0x49a740` は global doubles `0x102aac0 / 0x102aac8 / 0x102aad0`、`0x49a770` は `0x102ab00 / 0x102ab08 / 0x102ab10` の符号反転を返す。これらを作る camera matrix の producer と native camera の対応は未確定である。
 
 helper 後に renderer は Y 軸 180° 回転を合成し、次の uniform scale を使う。
 
@@ -137,17 +131,3 @@ Mars / Earth の surface helper も経度 +180° を使うため、この Z 回�
 ローカル `sources/official/mitaka_source/Mitaka/mtk_draw_places.cpp` を CP932 として読み取った。通常版の `get_pos_from_lon_lat` は経度への 180° 加算を持たない。また通常版は距離計算前に base origin を引き、水平モードや近距離姿勢補間、左右 alignment を扱う。Plus への移植でこれらを無条件に混ぜない。
 
 通常版の `screen_w` / `screen_z` の式は Plus の A / B 式と形が一致するが、式の一致だけでは Plus wrapper の登録名や native camera の対応は確定しない。近距離 fade の `t / 0.0001` は通常版にも見られるため、逆アセンブルで読み違えた値ではない。
-
-## 接続案と残る条件
-
-今回の確定事項だけなら、group runtime lookup、null / surface の局所位置、原版 modelview を入力とする fade・billboard 計算を、OpenGL と独立した純関数へ分けられる。その際、全原行・raw bytes を保持する現在のモデルと runtime の組込群・選択状態を混ぜない。
-
-現行 `surface_navigation.cpp` は conventional な東経 XYZ と `BodyOrientation` の基底を使用する。planet の局所 +180° と caller Rz180 の相殺はこの境界へ対応させられるが、次の条件を埋めるまで原版互換 GUI として接続しない。
-
-1. body pose / camera origin / camera up を生成する原版側と native 側の対応。
-2. A / B の設定名・単位・projection 対応。フォント helper の glyph metrics と scale 対応。
-3. Earth / Mars の terrain の半径・高さ倍率・LOD・丸めを供給する契約。
-4. 原版 caller の depth、文字・地形描画順、clip、衛星側の外側行列。
-5. 組込 group の palette 値・初期化順・設定更新を含む runtime fallback。
-
-root / parent へこの限定点を引き継いだ。製品コード、既存資料、Makefile、policy、gate、原データは変更していない。GUI 実行、アプリ統合テスト、policy gate 判定、stage / commit / push は行っていない。今回の成果物は新規監査文書と静的証拠のみであり、純関数の追加実装や再テストはこの監査単位には含まれない。

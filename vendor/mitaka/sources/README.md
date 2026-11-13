@@ -13,6 +13,5 @@
 - 展開後 310 ファイルは ZIP の内容と一致し、文字コードと改行を保持。
 
 非公式移植 [yoshikaz1228/Mitaka-macOS](https://github.com/yoshikaz1228/Mitaka-macOS) は、コミット `ab63d81723a9261b663c8ab1283de2e7607f1094` を調査に使用しました。
-参照 checkout は元のワークスペースに保持し、このリポジトリには含めません。
-ビルド時の依存でもありません。
+この参照版はビルド時には使用しません。
 出典と利用条件の調査は [SOURCE_AVAILABILITY.md](../SOURCE_AVAILABILITY.md) と [MITAKA_131_PORTING_AUDIT.md](../MITAKA_131_PORTING_AUDIT.md) を参照してください。

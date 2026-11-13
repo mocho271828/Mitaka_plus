@@ -49,7 +49,7 @@ API は [satellite_model.hpp](include/mitaka/satellite_model.hpp) にある。
 - `L` / `I` / `E` は必要要素と構造親が解決すれば相対評価できる。`L` の極 RA / Decl の欠損を埋めない。
 - `Q` は明示した同日・一意の親極を優先する。なければ検証済みの成功 Planet index に対応する原版係数を用いる。範囲外 index、重複極、時刻不一致は診断し、別の極へ代用しない。
 - `C` は同一 source の検証済み成功順で最初の `Charon` に接続する。循環と範囲外は回転側で診断する。
-- `Moon` は通常の Kepler 経路へ流さず、専用解析未接続として位置を返さない。別担当の絶対位置境界で、根拠付きの明示入力を扱う。
+- `Moon` は通常の Kepler 経路へ流さず、この登録モデルからは位置を返さない。月専用の入力は [絶対位置モデル](SATELLITE_ABSOLUTE_PROVENANCE.md) が扱う。
 
 必須の数値は有限かつ一意でなければ使わない。Orbit 内の親 metadata と構造親の ID が異なる場合は、その差を診断しつつ構造親を使う。
 相対モデルは絶対位置、Earth/Moon・Pluto/Charon の後補正、物理時系変換を実行しない。精度保証期間も定義しない。
@@ -75,4 +75,4 @@ fixture は全行保持、CP932、Name token、失敗親の子、登録証拠の
 実測値は Plus の全340行保持、328行で相対位置を計算、Moon 2行と L 極欠損10行は未解決、同名 ID の後続4行である。
 L 極欠損は `s2002_n1.dat`、`s2002_n2.dat`、`s2002_n3.dat`、`s2002_n4.dat`、`s2003_n1.dat` の各言語定義に対応する。通常版にはこの形式の衛星定義がなく0行となる。
 Plus は2,158 checks、通常版は106 checks が PASS。AddressSanitizer / UndefinedBehaviorSanitizer の異常はない。
-登録・親参照の独立読取レビューと、位置式 adapter の独立読取レビューはいずれも修正必須の指摘なし。絶対位置・GUI 接続の検証はこの単独試験に含まない。
+絶対位置・GUI 接続の検証はこの単独試験に含まない。

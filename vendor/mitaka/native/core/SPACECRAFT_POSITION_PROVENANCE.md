@@ -61,9 +61,9 @@ GUI はこの評価結果と `sampling` を表示し、位置契約を認定す�
 
 ## 配布版ごとの実データと実画面（2026-11-12）
 
-Plus 1.5.4 の実データは PTH 7軌跡・14定義で、PPI は収録されていない。PR #8 の実画面では Voyager I の補間時・端点固定時とも表示切替で中央504画素が変化した。
+Plus 1.5.4 の実データは PTH 7軌跡・14定義で、PPI は収録されていない。ネイティブ版の画面比較では Voyager I の補間時・端点固定時とも表示切替で中央504画素が変化した。
 
-比較用には公式通常版 1.7.4a のデータを別ディレクトリに展開し、PR #8 のネイティブアプリへ指定した。13個の探査機定義に記載された原点は、太陽系重心10機、地球2機、太陽1機。JPL の同一中心・J2000 黄道・TDB の幾何座標と12機36標本を照合し、8機18標本の位置差は1 m未満だった。あかつきの2010〜2011年の478標本は JAXA の日心J2000赤道座標を黄道に回転した位置と1 cm以内で一致し、その数値 JD と元の UTC 表記の差は66.184秒だった。他の標本には大きな差があり、これらの照合で全ファイルの座標・物理時系・精度を一括して認定することはできない。統合版で13定義を実際に列挙し、未認定の Voyager I の PPI は地図の表示切替で変化0画素、表示位置なしの診断となることを確認した。[配布物・提供元・実画面の測定記録](../../../../verification/p4/spacecraft.md)
+比較には公式通常版 Mitaka 1.7.4a のデータも使用した。13個の探査機定義に記載された原点は、太陽系重心10機、地球2機、太陽1機。JPL の同一中心・J2000 黄道・TDB の幾何座標と12機36標本を照合し、8機18標本の位置差は1 m未満だった。あかつきの2010〜2011年の478標本は JAXA の日心J2000赤道座標を黄道に回転した位置と1 cm以内で一致し、その数値 JD と元の UTC 表記の差は66.184秒だった。他の標本には大きな差があり、これらの照合で全ファイルの座標・物理時系・精度を一括して認定することはできない。統合版で13定義を実際に列挙し、未認定の Voyager I の PPI は地図の表示切替で変化0画素、表示位置なしの診断となることを確認した。[配布物・提供元・実画面の測定記録](../../../../verification/p4/spacecraft.md)
 
 ## 単位 5 時点の検証
 
@@ -80,11 +80,10 @@ fixture でのみロード後にファイルを差し替え、モデルの bytes
 すべての PTH 行を原 binary64 bytes に戻して照合し、各原時刻を評価する。
 PPI の native km 評価が独立して残り、表示位置は返さないことも確認する。
 
-UNIT4 freeze 中は既存 Makefile を変更せず、新規ファイルを個別コンパイルして検証した。
 コンパイルは Apple clang 21.0.0 (`clang-2100.3.34.2`)、C++17、
 `-Wall -Wextra -Wpedantic -Werror`。
 通常 ARM64、ASan/UBSan、x86_64 の各構成でローカル Plus/通常版データを使用する。
-再現コマンドの通常版は次のとおり。sanitizer では `-O1 -fno-omit-frame-pointer
+次のコマンドは `vendor/mitaka` から実行する。`MITAKA_DATA_ROOT` には比較に使う通常版の `data` の絶対パスを指定する。sanitizer では `-O1 -fno-omit-frame-pointer
 -fsanitize=address,undefined` と対応する core library、x86_64 では `-arch x86_64`
 と対応する library を使う。
 
@@ -95,8 +94,8 @@ xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror \
   src/spacecraft_position.cpp tests/test_spacecraft_position.cpp build/libmitaka_core.a \
   -o build-unit5-position/test_spacecraft_position
 build-unit5-position/test_spacecraft_position \
-  '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data' \
-  '/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data'
+  "../../../../resources/data" \
+  "$MITAKA_DATA_ROOT"
 ```
 
 通常 ARM64、ASan/UBSan、x86_64 の全構成で、Plus と通常版の実データを合わせて
@@ -114,8 +113,4 @@ fixture の原 bytes 生成後に開始し、所有権移動と全原行の検�
 | ARM64、ASan/UBSan、`-O1` | 0.733125 ms | 23.7706 ms | PASS |
 | x86_64、`-O2` | 0.137166 ms | 5.28688 ms | PASS |
 
-ビルドと実行の証跡は `/tmp/mitaka-unit5-spacecraft-position-{normal,sanitize,x86}-build.log`
-および `/tmp/mitaka-unit5-spacecraft-position-{normal,sanitize,x86}.log`。
-独立した読取レビューでも監査契約との逸脱や必須修正は指摘されなかった。
-レビュー担当は追加試験を実行しておらず、上記の実行結果とは区別する。
 新規外部依存はなく、既存の原文 loader と PPI evaluator を再利用する。

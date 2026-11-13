@@ -6,7 +6,6 @@
 太陽系の表面画像は ImageIO / Core Graphics で読み込み、球面に貼り付けて表示する。
 Wine の起動や Windows の実行ファイルを必要としない。
 
-`mitaka/`、`mitaka_plus/` の既存データと、`sources/official/` の公式 Mitaka 1.3.1 原本はそのまま保持する。
 アプリは指定された `hip.dat`、`cf96.dat`、対応する追加カタログと、隣の `textures` にある表面画像を読み取り専用で参照し、既存ファイルの変換・移動・更新を行わない。
 表示用の縮小画像はメモリ上だけに作り、元画像をコピー・再保存したり、データや画像を `.app` に同梱したりしない。
 ユーザーのローカル独自データを優先する。公開配布物は形式の参照に使い、ローカルファイルの置換や公開版と件数を揃える処理には使わない。
@@ -16,10 +15,10 @@ Wine の起動や Windows の実行ファイルを必要としない。
 
 ## ビルドと起動
 
-Xcode または Command Line Tools の Apple Clang、`make`、macOS SDK を使用する。
+初回の取得と起動は [プロジェクトの README](../../../../README.md) を参照。以下は GUI ディレクトリで開発する場合の手順。Xcode または Command Line Tools の Apple Clang、`make`、macOS SDK を使用する。
 Lua 用ヘルパーには同梱の公式 Lua 5.4.9 を使う。SHA-256 `2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6` を確認してからビルドし、ネットワーク接続を必要としない。
 Lua は macOS 13.0 を対象に arm64 / x86_64 向けにソースから静的ビルドし、独立したヘルパーへリンクする。Homebrew や外部 Lua dylib の実行時インストールは不要で、天文計算コアには Lua 依存を追加しない。取得・ビルド条件は [SCRIPTING.md](SCRIPTING.md) を参照。
-アプリの deployment target は macOS 13.0。実行確認環境は macOS 26.6.2 / arm64 と、同機の Rosetta 上の x86_64 である。単位7の通常・ASan/UBSan・Rosetta x86_64 の統合結果は [検証記録](../../investigation/native-plus/unit7/README.md) にまとめる。最新の判定は [機能表](../../PLUS_FEATURE_MATRIX.md) を参照。macOS 13 実機、Intel Mac 実機、物理的な複数ディスプレイでの動作確認は含まない。
+アプリの deployment target は macOS 13.0。実行確認環境は macOS 26.6.2 / arm64 と、同機の Rosetta 上の x86_64 である。macOS 13 実機、Intel Mac 実機、物理的な複数ディスプレイでの動作確認は含まない。
 
 ```sh
 # Plus リポジトリのルートから実行
@@ -125,7 +124,7 @@ CF96 と月計算の共通有効範囲の先頭・終端では境界 JD を表�
 
 Lua の `Time.step` は原版の 12 enum を持ち、`Time.stepValue` は日単位の有限値、`Time.speed` は符号付き 32 bit 整数として扱う。同梱文書の秒単位という説明とは異なり、実行ファイルで確認した演算を使う。step の直接設定は既定の日数へ戻すが、`prevStep()` / `nextStep()` は日数を保持して enum だけを変える。`nextStep()` の上限は 10 年である。
 
-`forward()` / `rewind()` の月・年ステップは UTC の年月を加減し、存在しない日は翌月へ繰り越す。たとえば 2024-01-31 の 1 か月後は 2024-03-02 になる。`setTime()` と年月日時分秒の設定も原版の整数境界を確認してから繰り越し、暦表範囲外は適用しない。連続再生は日単位の値 × speed を既存の単調時計へ渡す。負値・0 も保持し、手動日時・通常再生への切替・非表示・スリープ・範囲端・中断時は speed を 0 にする。単位8では旧 Plus の日時文字列と地方時の取得・設定、日時補間の接続を追加した。地方時差は「時刻」→「旧 Plus 地方時の時差…」で UTC より西を正とする整数秒を明示設定し、未設定と UTC の 0 秒を区別する。日本標準時は −32400 秒。未設定では地方時 API はエラーになり、GUI の固定 UTC 時差や OS から補完しない。夏時間・時系変換は扱わない。`setJDTo` / `setTimeTo` / `setLocalTimeTo` は時間指定で半余弦または線形補間を要求できる。統合動作と原版一致は未検証。原典との差は [単位7の時間契約](../../investigation/native-plus/unit7/n23-time-contract-audit.md) と 同梱元 Mitaka の `investigation/native-plus/unit8/time-calendar-contract-audit.md` を参照。
+`forward()` / `rewind()` の月・年ステップは UTC の年月を加減し、存在しない日は翌月へ繰り越す。たとえば 2024-01-31 の 1 か月後は 2024-03-02 になる。`setTime()` と年月日時分秒の設定も原版の整数境界を確認してから繰り越し、暦表範囲外は適用しない。連続再生は日単位の値 × speed を既存の単調時計へ渡す。負値・0 も保持し、手動日時・通常再生への切替・非表示・スリープ・範囲端・中断時は speed を 0 にする。日時は旧 Plus 形式の文字列と地方時で取得・設定でき、日時補間にも対応する。地方時差は「時刻」→「旧 Plus 地方時の時差…」で UTC より西を正とする整数秒を明示設定し、未設定と UTC の 0 秒を区別する。日本標準時は −32400 秒。未設定では地方時 API はエラーになり、GUI の固定 UTC 時差や OS から補完しない。夏時間・時系変換は扱わない。`setJDTo` / `setTimeTo` / `setLocalTimeTo` は時間指定で半余弦または線形補間を要求できる。統合動作と原版一致は未検証。原典との差は [単位7の時間契約](../../investigation/native-plus/unit7/n23-time-contract-audit.md) と 同梱元 Mitaka の `investigation/native-plus/unit8/time-calendar-contract-audit.md` を参照。
 
 ### 現在 UTC への継続追従
 
@@ -442,7 +441,7 @@ Lua 5.4.9 と旧 Lua 5.1 の言語差、対応プロパティ名、未対応 API
 地球中心から見た幾何方向の近似であり、地表の観測地点への補正、光行差、光行時間、歳差章動を含まない。
 全天図は赤経・赤緯を矩形に配置する投影で、極付近ほど形や角距離が歪む。
 
-旧版の音声・動画合成と frame API、動画書き出し、旧版のカスタム GUI、3D 空間の星座絵、銀河系モデルの 3D 表示などは未実装。原版の全表示設定やカメラ API を対応済みとは扱わない。
+旧版の音声・動画合成と frame API、動画書き出し、旧版のカスタム GUI、3D 空間の星座絵などは未実装。原版の全表示設定やカメラ API を対応済みとは扱わない。
 表面表示では、鏡面反射、土星や天王星の環などの追加画像を使わない。
 
 独自追加データを保持し、対応が確認できた契約だけを評価する。37 byte 小天体、未確定の個別軌道、PPI の表示位置など、契約を確認できていない範囲は自動変換しない。GC の 40 byte 行、NBG の 27 byte 行、銀河系モデルの 2 map・4 点群、銀河名テーブルはコアで原 bytes と全行を保持する。GC・NBG・SDSS の確定した位置は pc を明示したモデルで計算し、独立した銀河 3D 画面へ接続した。標準読込は既読込 SDSS を使い、GC/NBG の Plus binary はメニューで明示した時だけ選択 data root から読む。ドラッグ・平行移動・拡縮・選択ができ、取消・読込失敗では直前モデルを保持し、古い世代の結果を採用しない。原版のカメラ・形状・測光や操作の一致、全体統合は未検証。銀河系点群の参照面・原点や名前との対応、別形式 GC4170 / NBG2 は推定しない。
@@ -474,14 +473,9 @@ make smoke
 連続飛行では 10 天体への到着、4・20・24 秒の段階境界、移動・自転する端点、停止と再航行、異常入力時の状態保持、太陽を避ける経路と障害物による停止を検証する。
 複数球面の描画では、配列順によらず最も近い面を描くこと、画面外や背面に中心がある球の縁、太陽の発光、空の描画対象と不正入力を確認する。
 追加カタログ、ブラウザ検索、全天図のカタログ索引、状態 JSON の正常系・異常系も対象に含む。個々の試験対象と統合確認の完了は区別する。
-追加衛星は出典別登録、全行保持、親天体との対応、重心補正の二重適用防止、同一 JD の評価、表示集合と瞬間楕円を対象にする。描画品質は 4 設定の有効条件と描画結果を確認する。JSON v9 は往復、不正な型・旧版・未知 ID / HIP・原 bytes 不一致・軌道予算超過・観測地 ID と座標の不一致の拒否と、データ接続後の設定復帰を検証対象とする。単位5の局所・統合結果は [検証記録](../../investigation/native-plus/unit5/README.md) を参照。
+追加衛星は出典別登録、全行保持、親天体との対応、重心補正の二重適用防止、同一 JD の評価、表示集合と瞬間楕円を対象にする。描画品質は 4 設定の有効条件と描画結果を確認する。JSON v9 は往復、不正な型・旧版・未知 ID / HIP・原 bytes 不一致・軌道予算超過・観測地 ID と座標の不一致の拒否と、データ接続後の設定復帰を検証対象とする。
 
-単位6の局所試験は [Lua・明るさ](../../investigation/native-plus/unit6/lua-display-contracts.md)、[星座絵・名称集合](../../investigation/native-plus/unit6/n09-n10-validation.md)、[状態 codec](../../investigation/native-plus/unit6/session-v6-validation.md)、上記の各描画資料に記録した。通常・sanitizer・x86_64 の局所成功と、全体アプリ・新規 clone・原本保全の [統合結果](../../investigation/native-plus/unit6/README.md) は区別する。
-
-単位7の局所結果は [風景](../../investigation/native-plus/unit7/earth-landscape-runtime-contracts.md)、[Plus 時間](../../investigation/native-plus/unit7/n23-time-contract-audit.md)、[地形](../core/TERRAIN_PROVENANCE.md)、[SDSS pc モデル](../../investigation/native-plus/unit7/n16-sdss-spatial-validation.md)、[GC・NBG・銀河系モデル](../../investigation/native-plus/unit7/n16-galaxy-core-validation.md) に記す。風景実データ 2,611 checks、時間 step 167 / clock 10,146 checks と controller、地形 471 / 実データ 798,907 checks、銀河各モデルは三構成の局所検証を通過した。食は surface 1,021 / display 92 / cone 28,293 / scene 21 checks、状態は既存 1,595 と Plus 836 checks を三構成で検証する。全体ビルド・アプリ・保存復元と各試験の最終結果、実行環境と限界は [単位7の検証記録](../../investigation/native-plus/unit7/README.md) に分けて記録する。この単位の時点では地形・銀河の 3D 描画と半径表示倍率の画面接続は後続単位だった。
-
-
-単位8の地形・銀河・時間の部品試験は 同梱元 Mitaka の `investigation/native-plus/unit8/terrain-surface-validation.md`、`n16-galaxy-ui-seam.md` と同ディレクトリの各記録を参照。これらは現行差分の全体ビルド・アプリ統合・原版一致を保証しない。表示半径の4倍率は設定画面・Lua・描画・状態保存へ接続した。宇宙通常表示の模式円と月の表示位置・軌道線、全天図・地平図の模式円に反映する。天球図の円は物理角直径ではなく、惑星 response は原出典からの取得が未確定のため 1 を暫定使用する。地表・飛行・地球月の物理幾何は変更しない。`KEEP_RADIUS` で宇宙倍率を変更する要求はカメラ補正が未対応のため拒否し、倍率補間と旧 Plus の画素一致は未対応。統合検証の結果は別途記録する。
+表示半径の4倍率は設定画面・Lua・描画・状態保存へ接続した。宇宙通常表示の模式円と月の表示位置・軌道線、全天図・地平図の模式円に反映する。天球図の円は物理角直径ではなく、惑星 response は原出典からの取得が未確定のため 1 を暫定使用する。地表・飛行・地球月の物理幾何は変更しない。`KEEP_RADIUS` で宇宙倍率を変更する要求はカメラ補正が未対応のため拒否し、倍率補間と旧 Plus の画素一致は未対応。
 
 `make controller-test` はヘッドレスの `make test` と分けた AppKit 単体テストで、GUI セッションを必要とする。
 `NSApplication` とメイン run loop を使い、実際のタイマー、再生ボタンと速度ポップアップの action、停止・再開、速度・方向切替、境界での停止を確認する。
@@ -533,12 +527,7 @@ make BUILD_DIR=build/sanitize SANITIZE=address,undefined smoke
 
 アーキテクチャやコンパイル設定を変更する場合も、別の `BUILD_DIR` を使う。
 上記は実行手順とテスト内容であり、すべての環境での動作確認を示すものではない。
-今回の Plus 互換追加については [機能表の検証記録](../../PLUS_FEATURE_MATRIX.md) を参照。個別テストの成功だけでアプリ全体や原版の全機能の互換性を確認済みとは扱わない。
-連続再生を追加した変更の実行済みの範囲と結果は [連続再生の検証記録](../../investigation/native-playback/VALIDATION.md)、原本・既存データの保全は [保全記録](../../investigation/native-playback/PRESERVATION.md) を参照。
-以前の自転・自転軸の検証と保全記録は [native-rotation/VALIDATION.md](../../investigation/native-rotation/VALIDATION.md) と [native-rotation/PRESERVATION.md](../../investigation/native-rotation/PRESERVATION.md) に記録している。
-以前のテクスチャ追加時の記録は [native-textures/VALIDATION.md](../../investigation/native-textures/VALIDATION.md) と [native-textures/PRESERVATION.md](../../investigation/native-textures/PRESERVATION.md) に記録している。
-以前の太陽系 3D の検証と保全記録は [native-solar/VALIDATION.md](../../investigation/native-solar/VALIDATION.md) と [native-solar/PRESERVATION.md](../../investigation/native-solar/PRESERVATION.md) に記録している。
-以前の全天図の検証と保全記録は [native-gui/VALIDATION.md](../../investigation/native-gui/VALIDATION.md) と [native-gui/PRESERVATION.md](../../investigation/native-gui/PRESERVATION.md) に記録している。
+旧 Plus との対応状況と未検証の操作は [機能対応表](../../PLUS_FEATURE_MATRIX.md) に記載する。
 
 ## 構成と配布
 
@@ -562,6 +551,3 @@ make BUILD_DIR=build/sanitize SANITIZE=address,undefined smoke
 コアの原著作権表示と許諾は [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) に記録し、ビルド時に `.app` 内へコピーする。
 Lua の MIT 許諾は [LUA_LICENSE.txt](LUA_LICENSE.txt) に分離し、同じく `.app` 内へ同梱する。
 コードの許諾と天文データ・表面画像の再配布条件は別に扱い、データや画像を配布物へ自動コピーしない。
-
-連続飛行の設計と検証は [設計記録](../../investigation/native-continuous-flight/DESIGN.md)、[検証記録](../../investigation/native-continuous-flight/VALIDATION.md)、[保全記録](../../investigation/native-continuous-flight/PRESERVATION.md) を参照。
-月・単独の離着陸を追加した際の記録は [設計記録](../../investigation/native-moon-travel/DESIGN.md)、[検証記録](../../investigation/native-moon-travel/VALIDATION.md)、[保全記録](../../investigation/native-moon-travel/PRESERVATION.md) を参照。

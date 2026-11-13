@@ -4,7 +4,7 @@
 
 既存の macOS ネイティブ GUI に、地球または現在の地表地点から月・惑星へ移動して着陸する操作を追加する。
 既存コアの位置・姿勢計算と既存の表面画像を使い、Wine や Mitaka_plus の実行環境には依存しない。
-プロジェクト状態は [IMPLEMENTATION_POLICY.md](../../IMPLEMENTATION_POLICY.md) に記録済みの「本番投入前の新規プロジェクト」とする。
+プロジェクト状態は [IMPLEMENTATION_POLICY.md](../../../../IMPLEMENTATION_POLICY.md) に記録済みの「本番投入前の新規プロジェクト」とする。
 
 飛行は実時間約 24 秒の幾何的な視点移動で、宇宙船の運動方程式を解くものではない。
 重力、推進力、燃料、速度上限、地形、大気、惑星の環は対象外。
@@ -156,5 +156,3 @@ GUI の出力画像は長辺 800 px 以下とし、CPU 描画の処理量を抑�
 
 検証では、モデルの境界・停止条件、実データの同一 JD の天体位置・姿勢、AppKit の操作・実タイマー、複数球面の深度を分けて確認する。
 試験の成功、未確認環境、原本保全のハッシュ比較は、この設計文書で実施済みとは扱わない。
-実行結果は [VALIDATION.md](VALIDATION.md)、保全結果は [PRESERVATION.md](PRESERVATION.md) に記録する。
-実装の判定条件は [continuous_flight.md](../../policy_gates/continuous_flight.md) を参照。

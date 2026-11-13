@@ -10,8 +10,8 @@
 
 | 略号 | ローカルの対象 | 版の根拠 |
 | --- | --- | --- |
-| `P` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` | `ReadmeWin_J.txt:3` は Plus 1.5.4 build101013。`Readme1st_J.txt:2` は本体 1.2.1a |
-| `B` | `/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` | `Readme1st_J.txt:2` は本体 1.7.4a |
+| `P` | `PLUS_ROOT` | `ReadmeWin_J.txt:3` は Plus 1.5.4 build101013。`Readme1st_J.txt:2` は本体 1.2.1a |
+| `B` | `MITAKA_ROOT` | `Readme1st_J.txt:2` は本体 1.7.4a |
 | `S` | リポジトリの `sources/official/mitaka_source` | 公開された公式 Mitaka 1.3.1 の参照ソース |
 
 `S` は対象 Plus のソースでも、`B` と同じ版のソースでもない。
@@ -201,12 +201,9 @@ SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`�
 以下のアドレスは ImageBase `0x400000` に対する VA であり、ソース行番号ではない。
 同梱する別名の実行ファイルや他版へ同じアドレス・挙動を一般化しない。
 
-[reverse-engineer-anything](/Users/kota/.agents/skills/reverse-engineer-anything/SKILL.md) に従い、REA で対象を開き、既存プロバイダーの利用可能範囲を確認した。
-PE セクションの REA Evidence ID は `ev_0c497604fcf1a0daf136edd25f524077a1e65ee7c66fa289d966b8054bcab030`。
-Ghidra / Hopper / IDA / Kuna による高水準解析は利用できなかった。依存の追加や設定変更は行っていない。
 数式の根拠は、既存 `/usr/bin/objdump`（Apple LLVM）の限定した範囲の逆アセンブルと、標準ライブラリによる PE の読み取り・定数の復号である。
-これら手動の静的観測は REA が返した Evidence と区別する。動作を実行観測したものでも、元の C++ ソースを復元したものでもない。
-REA Evidence は `/tmp/mitaka-plus-orbits-static-evidence.json` に保存する。再検証には上記の対象ハッシュと下記 VA を使用する。
+動作の実行観測はこの調査の範囲外である。
+再検証には上記の対象ハッシュと下記 VA を使用する。
 
 ### 回転の記法と入力
 

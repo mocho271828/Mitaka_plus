@@ -1,10 +1,6 @@
-# N23: Plus Time の原典契約と native 接続
+# Plusの時刻ステップ・暦・再生速度
 
-2026-10-30。対象はローカルの Plus 1.5.4 build101013。説明書と実装が食い違う箇所は、登録関数から実際の状態更新・時計消費までの静的追跡を根拠にする。旧 EXE の実行結果との比較は未実施であり、全 Time API の完全互換を宣言する記録ではない。
-
-## 対象と再現資料
-
-原本は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/` 以下の読み取り専用ファイル。
+Windows 版 Plus 1.5.4 build101013 が使う時刻の単位と計算を示す。ネイティブ版での UTC と地方時は [Lua ガイド](../../../native/gui/SCRIPTING.md) を参照。[定数の読取手順](probes/extract-time.sh)
 
 | 原典 | SHA-256 | 用途 |
 | --- | --- | --- |
@@ -13,7 +9,7 @@
 | `scripts/gui.lua` | `49abcc449bb0925ca4bce492767159a7ff972e7ae4c924321d5c850a1038c2f5` | 同梱 UI の API 使用 |
 | `scripts/shortcuts.lua` | `64a0592f69d834a6884e0010e663e28a482d7506a18d10a87214342d5d0132f2` | 同梱ショートカットの使用 |
 
-アドレスは VA。局所逆アセンブルは [logs/n23/binary](logs/n23/binary)、生成コマンドは [commands.sh](logs/n23/binary/commands.sh)。対象 EXE やデータのコピー・改変は行っていない。
+アドレスは VA。対象 EXE やデータのコピー・改変は行っていない。
 
 ## 登録された step と日数状態
 
@@ -68,14 +64,4 @@ native の型は `PlusTimeState { PlusTimeStepState step; int32_t speed; }`。fi
 
 手動日時変更、停止、native GUI 再生への移行、範囲端、1 秒を超える割込み、sleep/hidden、invalidate で speed を 0 にし、自動再開しない。通常の steady clock、範囲端停止、1 秒中断条件は維持する。realtime は別の実時計追従状態で、sleep 復帰時は最新 UTC に合わせる。Session7 は enum と日数・速度を保存するが、復元は検証後に speed 0 とする。
 
-## local time と未実装範囲
-
 local getter `0x5eb490` は `JD - __timezone / 24 / 3600`、setter `0x5eb3f0` は暦 JD に同じ値を加える。currentLocal adapter `0x5ea9f0` も UTC JD から減算する。IAT `0xc25670` は `_time64`、`0xc256dc` は `_gmtime64`、`0xc256e0` は `__timezone`。日付ごとの DST 計算はこの経路にはない。
-
-CRT `__timezone` の起動時初期化・環境設定・ユーザー設定との関係は未確定。native UI の固定 UTC offset と同一視できないため、`setLocalTime` / `getLocalTime` / `localYear` 等は今回登録しない。`setTimeString/getTimeString` の grammar、`*To` の curve・取消・非正 duration・userdata overload も未確定で未実装。realtime/timeInfo の既存 bool 接続は維持した。
-
-## 検証
-
-通常 / ASan+UBSan / x86_64 Rosetta で、pure step（167 checks）、既存時計（10,146 checks）、無窓 PlaybackController、別プロセス Lua worker/controller が全て exit 0。AppScripting の strict compile も 3 構成で成功した。記録は [logs/n23](logs/n23)。全 App の GUI smoke は root の統合検証に委ね、この局所記録で実行済みとはしない。
-
-回帰は 12 enum、日数表、prev/next の日数維持、負/0 custom、月末/閏年 overflow、signed byte と int32 境界、失敗時の原子性、host 拒否、worker 間状態保持、speed の切捨て、zero-rate active、native rate 復帰、上下端・sleep/hidden・invalidate 停止を含む。製品側の 1 秒中断閾値を緩めていない。

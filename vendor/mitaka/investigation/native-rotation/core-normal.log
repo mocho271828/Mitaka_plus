@@ -1,8 +1,0 @@
-make: Nothing to be done for `all'.
-xcrun clang++ -Iinclude -I../../sources/official/mitaka_source/common/math -I../../sources/official/mitaka_source/common/astro -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types tests/test_rotation_upstream.cpp build/reference_rotation.cpp build/libmitaka_core.a  -o build/test_rotation_upstream
-astronomy: 1275 checks passed
-Catalog tests passed
-ephemeris tests passed
-rotation: 11033 checks passed
-build/test_rotation_upstream
-rotation reference: 33129 components passed; maximum differences: J2000=4.4408920985e-16, 1700..2100=1.32350463922e-10, supported range=4.32943121631e-09

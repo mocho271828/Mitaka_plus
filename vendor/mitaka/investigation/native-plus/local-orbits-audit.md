@@ -12,8 +12,8 @@
 
 ## 調査対象と根拠の区別
 
-- `P`: `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。
-- `R`: `/Users/kota/mitaka/repositories/Mitaka`。調査開始時 HEAD は `94c9af3`。GUI 拡張の統合作業中の checkout も参照した。
+- `P`: `PLUS_ROOT`。
+- `R`: `vendor/mitaka`。調査開始時 HEAD は `94c9af3`。GUI 拡張の統合作業中の checkout も参照した。
 - `S`: `R/sources/official/mitaka_source`。公式 Mitaka 1.3.1 の参照ソースであり、対象 Plus のソースではない。
 - ローカルデータはバイト数、構造、全件の値域、重複、対応する個別テキストとの一致を読み取り専用で確認した。
 - `P/doc/script_jp/` は同梱 1.3.0 表記の API 説明書である。1.5.4 の実動作と一致すると断定しない。
@@ -167,7 +167,7 @@ Nix と Hydra が `C`、Charon が `I` を使う。
 
 ## 全件保持と位置計算の契約案
 
-これは既存の[ローカルデータ保全方針](../../IMPLEMENTATION_POLICY.md)を次の機能へ適用する案である。
+これは既存の[ローカルデータ保全方針](../../../../IMPLEMENTATION_POLICY.md)を次の機能へ適用する案である。
 
 1. 各レコードに出典ファイルの識別子とレコード順を持たせる。元番号、元名称、元期、生フラグ、言語別定義を別々に保存する。
 2. 同一番号、同一名称、同一元期、同一日時でも削除しない。番号 `-1` を一つの天体へ集約しない。物理的な同一天体との関連づけと出典の保持を分ける。

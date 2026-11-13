@@ -1,6 +1,6 @@
 # 地形メッシュと描画標本
 
-UNIT8 の `terrain_mesh` / `terrain_surface` は、選択された同一出典の `TerrainFile` を使う CPU モデルである。地球・月・水星・火星の非同期読込と地形交点による表面描画を GUI へ接続した。地形倍率は画面・Lua・描画・状態保存へコード上で接続し、全体統合と旧版一致は未検証。原本は変更しない。ユーザー承認による公式別配布 Earth / Mars の明示的な限定採用、ハッシュと利用条件は [地形の出典記録](../core/TERRAIN_PROVENANCE.md) を参照。Moon / Mercury を別版から補完しない。
+`terrain_mesh` / `terrain_surface` は、選択された同一出典の `TerrainFile` を使う CPU モデルである。地球・月・水星・火星の非同期読込と地形交点による表面描画を GUI へ接続した。地形倍率は画面・Lua・描画・状態保存へコード上で接続し、全体統合と旧版一致は未検証。原本は変更しない。同梱する Earth / Mars の地形ファイルの取得元、ハッシュと利用条件は [地形の出典記録](../core/TERRAIN_PROVENANCE.md) を参照。Moon / Mercury を別版から補完しない。
 
 ## 根拠と計算
 
@@ -42,4 +42,4 @@ P1-3 では同じ日時の視点入力変更で計算中の scene を取り消�
 
 通常、ASan+UBSan、x86_64 で pure 13,197 checks と、通常版の明示された Earth/Moon/Mercury/Mars 4 ファイルを用いる 31,929 checks がそれぞれ通過した。独立 Möller–Trumbore 交点との全画素照合、near 横断、負標高、patch 順序、回転・表示倍率、4 種上限と失敗の原子性を含む。詳しい実行結果・制約は 同梱元 Mitaka の `investigation/native-plus/unit8/terrain-surface-validation.md` を参照。
 
-既存 `TerrainFile`、`SolarCamera`、`BodyOrientation` と C++17 標準ライブラリを再利用した。新規依存なし。独立読み取りレビューでは最終 ray-plane / barycentric / finite guard を含め修正必須指摘なし。責務を原格子読取、1 patch メッシュ、frame 標本化に分けて手動品質レビューを実施した。`/simplifier-lai` は利用不可、近似名 `simplify-lai` は LobbyAI 限定のため適用していない。
+既存 `TerrainFile`、`SolarCamera`、`BodyOrientation` と C++17 標準ライブラリを再利用した。新規依存なし。

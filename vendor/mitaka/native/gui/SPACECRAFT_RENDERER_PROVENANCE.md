@@ -53,8 +53,6 @@ snapshot の位置と評価結果の位置が各成分で一致した場合だ�
 
 Apple clang 21.0.0、C++17、`-Wall -Wextra -Wpedantic -Werror`、macOS 13.0 deployment target で
 通常 ARM64、ASan/UBSan、x86_64 を個別ビルドした。
-既存 Makefile を変更しない UNIT4 freeze 中の検証として、必要な既存ソースも同じ flags で
-個別リンクし、異なる deployment target で作られた作業中 archive には依存しなかった。
 
 ```sh
 cd native/gui
@@ -67,7 +65,7 @@ xcrun clang++ -std=c++17 -Wall -Wextra -Wpedantic -Werror \
   ../core/src/catalog.cpp ../core/src/ephemeris.cpp -framework AppKit \
   -o build-unit5-spacecraft-renderer/test_spacecraft_renderer
 build-unit5-spacecraft-renderer/test_spacecraft_renderer \
-  '/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data'
+  "../../../../resources/data"
 ```
 
 ASan/UBSan は `-O1 -fno-omit-frame-pointer -fsanitize=address,undefined`、
@@ -80,11 +78,8 @@ x86_64 は `-O2 -arch x86_64` と専用出力ディレクトリを使用する�
 全線分 visitor の実測は ARM64 1.99542 ms、ASan/UBSan 7.71192 ms、x86_64 3.29108 ms。
 この時間は投影・visitor・隣接 index の検査を含み、stroke や文字描画は含まない。
 機種と負荷に依存するため合格閾値にはしていない。
-ログは `/tmp/mitaka-unit5-spacecraft-renderer-{normal,sanitize,x86}-{build,test}.log`。
 原アプリ・データへの書込み、新規外部依存、実 UI ウィンドウを使う試験はない。
 
 最終レビュー後、null CGContext を入口で拒否する guard と回帰を追加した。
 有効な NSGraphicsContext が current の状態でも null 引数では名称を含めて画像を変えない。
 追加後の三構成は Plus **107,996 checks PASS**、通常版 **28,812 checks PASS**。
-ログは `/tmp/mitaka-unit5-spacecraft-renderer-null-context-{normal,sanitize,x86}-{build,test}.log`。
-修正前後のログは [UNIT5 の保存先](../../investigation/native-plus/unit5/logs/n03-n04/) に保持する。

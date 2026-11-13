@@ -6,8 +6,8 @@
 
 原典は、手元の `mitaka_plus` に同梱された日本語スクリプトマニュアルと Lua ファイル。原本を変更せず、HTML は Windows-31J から UTF-8 へメモリ上で変換して読んだ。本文の参照は次の基準ディレクトリからのファイル名と行番号を示す。
 
-- `D`: [doc/script_jp](</Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/doc/script_jp>)。
-- `L`: [scripts](</Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/scripts>)。
+- `D`: `PLUS_ROOT/doc/script_jp`。
+- `L`: `PLUS_ROOT/scripts`。
 - ネイティブ側: [ScriptWorker.mm](../../native/gui/src/ScriptWorker.mm)、[AppScripting.mm](../../native/gui/src/AppScripting.mm)、[ScriptController.h](../../native/gui/include/ScriptController.h)、[SCRIPTING.md](../../native/gui/SCRIPTING.md)。
 
 マニュアルは古い版の記述を含み、同梱 GUI スクリプトにはマニュアル未掲載の API がある。「マニュアルで契約を確認」「同梱スクリプトで使用を確認」「意味・引数が未確定」を区別する。通常版 Mitaka の C++ ソースを、Plus の Lua バインディングの証拠として代用しない。
@@ -49,7 +49,7 @@
 | `Time:setLocalTime(year, month, day, hour, min, sec)`、全6引数 integer / `Time:getLocalTime()` | setter は未記載、getter は6 integer | `D/time.html:46–50` | 未接続。ローカル時刻との変換が必要。既存日時 UI はローカル時刻 UI ではない。 |
 | `Time.localYear` / `localMonth` / `localDay` / `localHour` / `localMinute` / `localSecond`: integer、`localMin` / `localSec` alias | プロパティ | `D/time.html:55–71` | 未接続。同じ JD の暦表現を変換する契約。 |
 | `Time.step`、`Time.stepValue: integer` | プロパティ | `D/time.html:73–79` | `STEP_10SEC, MIN, 10MIN, HOUR, DAY, WEEK, MONTH, YEAR, 10YEAR, 100YEAR, VALUE`。`stepValue` は VALUE 時の秒数。月・年を固定秒数として代用しない。 |
-| `Time:prevStep()` / `nextStep()` | 未記載 | `D/time.html:81–87` | 現行は固定6ステップ内のみ。月・年を含む列への対応は日時担当と調整。 |
+| `Time:prevStep()` / `nextStep()` | 未記載 | `D/time.html:81–87` | 現行は固定6ステップ内のみ。月・年を含む旧版の列との対応は未確定。 |
 | `Time:forward()` / `backward()` | 未記載 | `D/time.html:89–95` | **1ステップの移動**。連続再生の開始ではない。現行の意味は一致。 |
 | `Time.speed: number`、`Time:stop()` | stop は未記載 | `D/time.html:97–101`、`L/gui.lua:214–216` | `speed` は実時間1秒あたりのステップ数。負数が逆再生、0が停止。既存 native の signed rate に接続済み。 |
 | `Time:setCurrent()` | 未記載 | `D/time.html:103–104` | 現在時刻への一回の移動。接続済み。 |

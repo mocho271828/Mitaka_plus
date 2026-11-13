@@ -1,2 +1,0 @@
-2026-10-30 00:54:54.048 test_playback_controller[24488:10264262] 再生速度を変更できません: playback: rate magnitude must be in [1,2592000] seconds per second
-PlaybackController AppKit tests passed: timer, UI actions, pause/resume, rates, forward/reverse, lower/upper boundaries, realtime, disabled, failure, interrupt, invalidate, UTC tracking, clock correction, sleep/hidden recovery, tracking failure

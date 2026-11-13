@@ -1,2 +1,0 @@
-AppKit smoke passed: HIP=117956 visible=7983 bodies=9 lit_samples=12039 render=2000x1036
-Solar AppKit smoke passed: bodies=10 camera=orbit,pan,zoom,focus,date-tracking lit_samples=1194

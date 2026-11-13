@@ -6,9 +6,7 @@
 
 ## 参照資料
 
-旧Plusのルートは
-`/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。
-次の資料と実データを照合した。
+以下は旧 Plus 1.5.4 のアプリフォルダを起点とする相対パス。記載の資料と実データを照合した。
 
 | 相対パス | 根拠となる箇所 | SHA-256 |
 | --- | --- | --- |

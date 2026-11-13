@@ -92,12 +92,6 @@ loopback server で remote stylesheet、image、CSS `@import`、CSS background�
 
 読み取りレビューでは snapshot と表示 bytes の結合、世代・view・world・frame の検査、復号、通常リンク取消、破棄済み view の delegate 拒否、一時ディレクトリ所有権を確認し、必須修正の残件はなかった。compile callback 保留中の連続 open / close と保持された旧 view への直接 navigation はコードレビューで確認し、専用の実行回帰は追加していない。fixture は一時ディレクトリだけに作成し、終了時に削除した。Plus 原本への書込みや旧アプリ起動は行っていない。
 
-最終ログは `native/gui/` を基準に次のとおり。
-
-- policy: `build-unit4-html-policy/test.log`、同ディレクトリの `test-policy-san-final.log`、`test-policy-x86-final.log`
-- 製品 HTML: `build-unit4-html-policy/test-browser-integration.log`、`build-unit4-html-san/test-browser-integration.log`、`build-unit4-html-x86/test-browser-integration.log`
-- Lua controller（source staging と cleanup の回帰を含む）: `build-unit4-script/script-test.log`
-
 再実行は `make -C native/gui BUILD_DIR=<専用ディレクトリ> html-browser-test`。sanitizer は `SANITIZE=address,undefined`（実行時 `ASAN_OPTIONS=detect_leaks=0`）、Intel は `ARCH=x86_64` を指定する。この target は選択構成の helper をビルドして渡す。上記の今回の試験では、test 実行ファイルへ通常 arm64 helper の絶対パスを直接渡した。
 
 ## 独立 WebKit probe の結果
@@ -119,4 +113,4 @@ xcrun clang++ -std=c++17 -O2 -g -Wall -Wextra -Wpedantic -Werror -mmacosx-versio
 build-unit4-html-policy/probe_html_webkit
 ```
 
-ログは `native/gui/build-unit4-html-policy/build-webkit-probe.log` と `test-webkit-probe.log`。製品接続後の独立レビュー結果は前節に記録した。
+製品接続後の独立レビュー結果は前節に記録した。

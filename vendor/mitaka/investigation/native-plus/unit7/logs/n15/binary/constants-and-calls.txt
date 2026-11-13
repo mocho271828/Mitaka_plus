@@ -1,6 +1,0 @@
-binary=/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
-SHA256=48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
-table VA=0xc32d48 LE float32=(1.0, 2.0, 5.0, 10.0, 20.0)
-raw=0000803f000000400000a040000020410000a041
-raw E8 candidate calls 0x485690: ['0x5cbcb3']
-raw E8 candidate calls 0x548600: ['0x485696']

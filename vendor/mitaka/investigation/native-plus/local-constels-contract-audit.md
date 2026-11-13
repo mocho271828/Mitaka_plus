@@ -2,7 +2,7 @@
 
 対象は手元の Mitaka Plus 1.5.4 build 101013。原本を読み取り専用で確認し、旧 Windows アプリの起動、媒体の再保存・変換、ネットワーク取得は行っていない。API 文書は同梱の 1.3.0 世代である。新しい製品コードは、この監査では追加していない。
 
-`PLUS` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` を指す。
+`PLUS` は `PLUS_ROOT` を指す。
 
 ## 判断
 

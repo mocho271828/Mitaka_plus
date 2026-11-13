@@ -1,3 +1,0 @@
-Local landscapes: "/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", definitions=2, warnings=0
-Local landscapes: "/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data", definitions=0, warnings=0
-Earth landscape checks passed: 2611

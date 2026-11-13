@@ -47,7 +47,7 @@ source identity は開いた descriptor の device / inode / byte 数 / mtime / 
 
 ## ローカル原本の実測
 
-当時の読み取り対象の明示 root は `/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/data`。全て 180 × 90 = 16,200 patches。旧 Plus 配下には該当する `*topo*.dat` を確認できなかったため、当時は Plus 選択時に採用していない。現在は下記の明示的な限定例外を適用する。
+初期検証の対象は通常版 Mitaka の `data/` に含まれる 4 ファイル。全て 180 × 90 = 16,200 patches。旧 Plus 配下には該当する `*topo*.dat` を確認できなかったため、当時は Plus 選択時に採用していない。現在は下記の明示的な限定例外を適用する。
 
 |相対 path|原本 bytes|標高単位 m|基準半径 m|grids|索引 bytes|最大 payload bytes|
 |---|---:|---:|---:|---:|---:|---:|
@@ -65,7 +65,7 @@ source identity は開いた descriptor の device / inode / byte 数 / mtime / 
 
 ## 公式別配布 Earth / Mars の限定採用（2026-11-05）
 
-ユーザーの承認により、国立天文台の[公式ダウンロードページ](https://4d2u.nao.ac.jp/mitaka/download/)から別配布された Earth / Mars だけを `resources/data/` に同梱する。これは旧 Plus 原本の欠損を補う明示的な例外であり、旧 Plus 原本との一致は確認されていない。Moon / Mercury は追加しない。native GUI は下記のサブディレクトリを参照するが、公式 ZIP の Readme は各 dat を `data` 直下に置くよう記載しており、旧 Plus の探索先は未検証である。
+国立天文台の[公式ダウンロードページ](https://4d2u.nao.ac.jp/mitaka/download/)から別配布された Earth / Mars だけを `resources/data/` に同梱する。これは旧 Plus 原本の欠損を補う明示的な例外であり、旧 Plus 原本との一致は確認されていない。Moon / Mercury は追加しない。native GUI は下記のサブディレクトリを参照するが、公式 ZIP の Readme は各 dat を `data` 直下に置くよう記載しており、旧 Plus の探索先は未検証である。
 
 2026-11-05 に公式 ZIP を一時領域へ取得・展開し、下記の展開 dat のサイズ・SHA-256 が通常版アプリと通常版リポジトリ内の同名データにも一致することを確認した。原 bytes は変更していない。ZIP 自体は同梱しない。
 
@@ -74,18 +74,14 @@ source identity は開いた descriptor の device / inode / byte 数 / mtime / 
 | [earth_topo.zip](https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/earth_topo.zip) | 33,385,825 / `7c9164028d4a57bb8a2ea63f70b59be704d4dcbd83086d6814dbc3008d9a380e` | `resources/data/earth_topo/earth_topo.dat` / 81,822,538 / `a9082001c38ca0b3111d5f3dd7cf8abfb0b18cf581d4c1eb89589ea932030190` |
 | [mars_topo.zip](https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/mars_topo.zip) | 130,911,334 / `73f7a8a35752f0dae13571903760f753b579b8db87e8135d8227299eba6f6676` | `resources/data/mars_topo/mars_topo.dat` / 213,945,124 / `0e65c81ee8ba0d59312b28e4928ce95c45d389fe024cfc37685b1842d4db907e` |
 
-[国立天文台の利用規定](https://4d2u.nao.ac.jp/policy/)は非営利利用等の条件を定め、第三者への再配布や改変には制限がある。ユーザーのローカル利用承認は第三者への再配布許可ではない。リポジトリは非公開で、公開範囲は変更しない。データの権利・利用条件をコードのライセンスから推定しない。[公式クレジット](https://4d2u.nao.ac.jp/mitaka/credit/)は元データとして Earth の USGS GTOPO30 と Mars の NASA PDS MGS MOLA MEGDR を挙げているが、これだけでは加工済み dat の再配布権は導けない。
+[国立天文台の利用規定](https://4d2u.nao.ac.jp/policy/)は非営利利用等の条件を定め、第三者への再配布や改変には制限がある。データの権利・利用条件をコードのライセンスから推定しない。[公式クレジット](https://4d2u.nao.ac.jp/mitaka/credit/)は元データとして Earth の USGS GTOPO30 と Mars の NASA PDS MGS MOLA MEGDR を挙げているが、これだけでは加工済み dat の再配布権は導けない。
 
 ## 検証
 
-[コマンド・全ログ・hash](../../investigation/native-plus/unit7/logs/n15/README.md)。通常 / ASan+UBSan / x86_64 それぞれで pure 471 checks、4 原本の全格子照合 798,907 checks が成功した。`-Wall -Wextra -Wpedantic -Werror`。
+通常 / ASan+UBSan / x86_64 それぞれで pure 471 checks、4 原本の全格子照合 798,907 checks が成功した。`-Wall -Wextra -Wpedantic -Werror`。
 
 fixture は原 header/payload、signed extrema、halo、非 2 倍解像度、保存 level 生値、移動所有、境界補間・軸・倍率、全 prefix truncation、不正 header・余剰 bytes、資源上限ちょうどと 1 byte 未満、同サイズ rewrite・append による失効、明示 path 欠損・directory・FIFO・NUL を含む。
 
 実データ試験は全 payload を別の `ifstream` で読み、保持 bytes と比較した。ただし検証側も production の descriptor offset を使うため、独立した全ファイル索引 parser との照合ではない。fixture の layout と公式 reader の読取レビューで索引の契約を別途確認している。テスト用ファイル以外の原本を書き換えていない。
 
-親担当による独立読取レビューで、FD・FIFO・offset・2-pass 索引・容量制限・変更検出・LE16・境界補間に必須指摘なし。patch/grid の対応は caller 責任というコメントを追加した。
-
-## 接続に必要な範囲
-
-core source は `terrain.cpp` と `terrain_sampling.cpp`、test は `tests/test_terrain.cpp`。親担当が `native/core/Makefile` へ接続する。GUI は明示 source と天体の対応、bounded な LOD / mesh 所有、同一 frame の地形深度と大気・雲の遮蔽の接点が必要である。[読み取り設計](../../investigation/native-plus/unit7/terrain-rendering-design.md)に実装候補と未確定境界を分けて記録する。
+GUI の地形処理は [地形表示の仕様](../gui/TERRAIN_SURFACE_PROVENANCE.md) に記載する。

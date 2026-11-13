@@ -7,7 +7,7 @@
 
 ## 出典と確度
 
-原典の基点 `P` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/`。
+原典の基点 `P` は `PLUS_ROOT/`。
 日本語 HTML と Lua は CP932 として読み、行番号は整形前のファイルの 1 始まりとする。
 `P/ReadmeWin_J.txt:3` は Windows 1.5.4 build101013、`P/doc/script_jp/contents.html:17` は説明書 1.3.0 / 2007-12-23 と記載する。
 説明書と同梱スクリプトの一致は利用意図の根拠になるが、1.5.4 本体の境界動作を実行確認したことにはならない。
@@ -212,6 +212,6 @@ CAM-02 と ANIM-01 の公開 API を追加する前にこれらを解決し、�
 
 純粋暦モデルの 67 検査と AppKit の再生コントローラ試験は、通常ビルドおよび AddressSanitizer / UndefinedBehaviorSanitizer で通過した。暦モデルは月末、閏年、年 0、各方向、秒以下、固定時差、日付と設定の境界・不正入力を検査する。コントローラは注入した日時で前後補正、失敗時の保持、手動解除、スリープと最小化の重なり、復帰時同期を検査する。OS の日時は変更していない。
 
-サニタイザの担当範囲のログは `/tmp/mitaka-calendar-time-san.log` と `/tmp/mitaka-playback-controller-san.log`。`AppTimeCommands.mm` と `AppPlusSmokeTests.mm` は警告をエラー扱いにしたコンパイルを通過した。追加した AppKit 統合試験は、時間メニュー、固定時差、月末ステップ、追従の開始と状態復元による解除を対象とする。アプリ全体の実行結果は担当単位の成功と分け、[機能表](../../PLUS_FEATURE_MATRIX.md) の統合記録で判断する。
+`AppTimeCommands.mm` と `AppPlusSmokeTests.mm` は警告をエラー扱いにしたコンパイルを通過した。追加した AppKit 統合試験は、時間メニュー、固定時差、月末ステップ、追従の開始と状態復元による解除を対象とする。アプリ全体の実行結果は担当単位の成功と分け、[機能表](../../PLUS_FEATURE_MATRIX.md) の統合記録で判断する。
 
 Lua の原版 STEP 定数の数値、月・年単位の連続 `speed` の補間、地方時の規則、`*To` アニメーションはこの実装で解決していない。GUI の列挙値を旧公開 API の数値だと扱わず、Lua の固定秒ステップや既存の対応範囲とも分ける。

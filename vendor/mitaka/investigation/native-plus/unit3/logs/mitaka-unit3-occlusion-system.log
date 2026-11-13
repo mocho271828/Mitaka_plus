@@ -1,2 +1,0 @@
-System occlusion unavailable: projection={{315, 240}, {1024, 752}}, cover={{251, 176}, {1152, 880}}, backingScale=2, occlusion=8194
-DisplayOutputController test failed: test projection did not become occluded

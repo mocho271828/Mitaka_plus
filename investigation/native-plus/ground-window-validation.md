@@ -1,6 +1,6 @@
 # 優先順位3：地平図の移動天体と地球・火星の着地
 
-2026-11-12。PR #8 の `ffc142a` を修正前として同じ Mac（Apple M4 / macOS 26.6.2、Retina 2倍）で比較した。
+2026-11-12。ネイティブ版 `ffc142a` を比較対象に同じ Mac（Apple M4 / macOS 26.6.2、Retina 2倍）で比較した。
 
 ## 地平図：同じ地点・日時での旧 Plus との比較
 
@@ -43,7 +43,7 @@
 
 日時試験では同一地点から方位45°・高度−4°を向き、3時間進め、そこからさらに1分ずつ6回進めた。単発・連続とも変更直後に新 JD の基準球となり、停止後にその JD の地形が復帰した。火星は負標高のため、基準球内の待機中は HUD を除く地図中央が黒くなる。最終 JD から別プロセスで直接着地した画面と復帰画面は、両天体とも地図全体1,928×1,058 px（2,039,824画素）の RGB 差が0だった。速い日時再生中の地形常時表示や、他の端末での遅延は保証しない。最終版では[各地点の撮影・別起動・計時10試行](../../verification/p1-ground/terrain-attempts.tsv)すべてで2 mへの着地が完了した。日時変更の受付前にかかった時間を含めず、画面の描画完了を終点とする。
 
-[撮影52枚の条件・SHA-256](../../verification/p1-ground/terrain-frames.tsv)／[個別の実測時間](../../verification/p1-ground/terrain-timing.tsv)／[直接着地との画素比較](../../verification/p1-ground/terrain-recovery.tsv)。撮影した Mac の原画像・比較図：`local/verification/p1-2-terrain/`。この比較は今回のネイティブ実装に対するもの。旧 Plus と地形データ・画素が同じであることは意味しない。
+[撮影52枚の条件・SHA-256](../../verification/p1-ground/terrain-frames.tsv)／[個別の実測時間](../../verification/p1-ground/terrain-timing.tsv)／[直接着地との画素比較](../../verification/p1-ground/terrain-recovery.tsv)。この比較は今回のネイティブ実装に対するもの。旧 Plus と地形データ・画素が同じであることは意味しない。
 
 ### 火星で倍率を20倍にした場合
 

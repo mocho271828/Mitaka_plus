@@ -1,6 +1,6 @@
 # 公式 Mitaka 1.3.1: 描画・計算・データ読込の静的調査
 
-調査対象: `/Users/kota/mitaka/sources/official/mitaka_source`.
+調査対象: `vendor/mitaka/sources/official/mitaka_source`.
 以下のソースパスはこのディレクトリからの相対パス. 行番号は原本を CP932 として読み取った位置であり, 変換後の別ファイルの行番号ではない. 原本の編集, ビルド, 実行は行っていない. 本文の「確認」はソースまたは Apple 一次資料の確認を指し, 動作確認を意味しない.
 
 ## 結論

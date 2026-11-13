@@ -66,6 +66,4 @@ native は既存 GUI と同じ AU 定数と double 計算を使い、旧版の�
 
 `test_satellite_scene` は出典選択、9 ID の対応、配列順の独立性、月の先頭一致、欠損の保持、時刻・登録根拠の不一致、非有限値と変換 overflow、再適用時の不変性を確認する。上記の3構成すべてで Plus **770 checks PASS**、通常版 **713 checks PASS**。
 
-絶対位置の独立レビューでは補正不能時の最終位置抑止と登録根拠の所有コピーを追加し、再レビューで修正必須の指摘はなかった。GUI の追加 overflow 回帰では既存座標変換の `out_of_range` が伝播したため、その限定例外で入力を維持するよう修正した。元ファイルへの書込みはなく、試験 fixture は一時ディレクトリだけに作成する。
-
-実行ログは `/tmp/mitaka-unit4-satellite-absolute-final-{normal,sanitize,x86}*.log` と、GUI の `/tmp/mitaka-unit4-satellite-parent-{normal,sanitize,x86}*.log`。継続保存する証跡の収録とリポジトリ全体の policy gate 判定は親の統合作業で行う。
+登録根拠はコピーで保持する。補正不能時は最終位置を表示せず、座標変換の `out_of_range` で既存入力を変更しない。

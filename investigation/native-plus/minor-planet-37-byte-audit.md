@@ -1,6 +1,6 @@
 # 小惑星・外縁天体 37 byte 形式の追加監査
 
-追試（2026-11-12）：[PR #8・旧 Plus 1.5.4 の実データと実画面](orbit-window-validation.md)。以下は元の監査時点の記録。
+追試（2026-11-12）：[ネイティブ版と旧 Plus 1.5.4 の実データと実画面](orbit-window-validation.md)。以下は元の監査時点の記録。
 
 調査日: 2026-11-05。対象はローカルの旧 Windows Plus 環境。これは静的解析とデータの比較であり、実行時の読み込みや画面表示の検証ではない。元の実行ファイル、データ、Wine prefix は変更していない。
 
@@ -13,7 +13,7 @@
 
 ## 対象と識別
 
-`P` は `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` とする。原本は読み取り専用で調査した。
+`P` は Windows 版 Mitaka Plus の実行ファイルと `data/` が並ぶディレクトリとする。原本は読み取り専用で調査した。
 
 | ファイル | SHA-256 |
 |---|---|
@@ -56,10 +56,10 @@
 
 ## 再現手順
 
-以下は `/Users/kota/mitaka` で実行する読み取り専用コマンド。`objdump` のアドレスは上表の `mitaka_pp_VC.exe` の SHA-256 にのみ対応する。ファイル名に空白があるため変数は必ず引用する。
+`P` に手元の旧 Plus の場所を指定して実行する。`objdump` のアドレスは上表の `mitaka_pp_VC.exe` の SHA-256 にのみ対応する。ファイル名に空白があるため変数は必ず引用する。
 
 ```sh
-P='/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka'
+export P='/path/to/Mitaka Plus'
 shasum -a 256 "$P/mitakaPlus.exe" "$P/mitaka_pp.exe" "$P/mitaka_pp_VC.exe" "$P/data/mp2.dat" "$P/data/TNO2.dat"
 /usr/bin/objdump -d --start-address=0x412b3a --stop-address=0x412ca5 "$P/mitaka_pp_VC.exe"
 /usr/bin/objdump -d --start-address=0x44ef60 --stop-address=0x44f270 "$P/mitaka_pp_VC.exe"
@@ -69,10 +69,11 @@ shasum -a 256 "$P/mitakaPlus.exe" "$P/mitaka_pp.exe" "$P/mitaka_pp_VC.exe" "$P/d
 
 ```sh
 python3 - <<'PY'
+from os import environ
 from pathlib import Path
 from struct import iter_unpack
 
-p = Path('/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka')
+p = Path(environ['P'])
 for name in ('mitakaPlus.exe', 'mitaka_pp.exe', 'mitaka_pp_VC.exe'):
     content = (p / name).read_bytes()
     for filename in ('mp2.dat', 'TNO2.dat'):

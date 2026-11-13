@@ -1,9 +1,0 @@
-path: /Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka/mitakaPlus.exe
-SHA256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
-PE image base: 0x400000
-VA 0xd71e28 initial byte: 01
-VA 0xc33048 ASCII: Io
-VA 0xc3304c ASCII: Europa
-VA 0xc33054 ASCII: Ganymede
-VA 0xc33060 ASCII: Calliso
-VA 0xc33068 ASCII: Jupiter

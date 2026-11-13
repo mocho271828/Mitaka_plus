@@ -26,7 +26,7 @@
 - `planet_textures.mm`: 選択した `data` の兄弟 `textures` から既存 `load_local_image` で読む。既存の画像内容・寸法・メモリ上限を共用する。欠損・不正は層別診断に残し、データフォルダ変更後に前回の画像を流用しない。
 - `planet_surface.cpp`: 既存の UV・bilinear sampling・自転姿勢・球交点を共用する。地球の経度 offset 0.5 に 180 度回転を追加しない。夜景を地表へ加算し、雲は独立した加算画像へ出力する。入力エラーでは出力先を変更しない。
 - `SolarSceneRenderer.mm`: 同じ `EarthLayerOptions` を模式球、地表透視、複数球の物理透視へ渡す。base/night → atmosphere → cloud の順に合成する。EarthMoon も同一の最近接不透明深度を使う。雲・夜景は地球だけに結びつけ、元の表面画像が欠損しても独立して利用する。
-- `SolarSystemView`: `earthLayerOptions` と `atmosphereDisplayOptions` を保持する。大気の不正な mode/intensity は代入前に拒否する。App / menu / Lua / session の統合は別担当の検証対象。
+- `SolarSystemView`: `earthLayerOptions` と `atmosphereDisplayOptions` を保持する。大気の不正な mode/intensity は代入前に拒否する。
 
 雲は不透明球に追加せず、最も近い不透明交点より手前の雲殻だけを RGB 加算する。雲自身は不透明深度を更新しない。公式 LOD 球の扱いに合わせて、カメラが雲殻上または内部なら雲を描かない。地表にいること自体は拒否しない。模式球では元の見かけ半径を保つよう画像と描画矩形を同じ殻倍率で広げるが、複数天体の物理的な遮蔽精度とは区別する。
 
@@ -36,14 +36,11 @@
 
 ## 検証
 
-証跡は [unit6/logs/n08](../../investigation/native-plus/unit6/logs/n08/) に保存する。
-
 - `test_earth_layers`: 通常 / ASan+UBSan / x86_64、各 63 checks。昼夜・terminator、両 gain、飽和、NaN・不正方向、殻の内外と `nextafter`、UV・自転、深度順序、原子的な出力拒否。
 - `test_planet_surface` と `test_planet_textures`: 同3構成で成功。任意画像の欠損・破損・修復・削除・フォルダ交換、原 bytes / mtime 保持、emmap の無効→有効→欠損も確認。
 - `test_earth_layer_scene`: offscreen AppKit bitmap、通常 / ASan+UBSan / x86_64。各描画経路の独立 toggle、EarthMoon 遮蔽と pick の整合、地球 multiple の map 結合、火星 single、非 Earth への層漏れ、模式球への大気漏れを検証。各 50 checks、通常構成は任意 benchmark 3 checks を含む 53 checks。
 - 原 Plus / 通常版のローカル画像も読込確認。原本を変更せず、公開件数で切り詰めていない。
-- `earth_layers` / `planet_surface` / `planet_textures` は独立読取レビュー済み、必須修正指摘なし。Solar 統合の別レビューでは空画像を AppKit へ渡さない guard を追加した。
 
-通常 arm64 の人工シーン 800×800 を各1回測定した値は、大気なし 225.34 ms / single 801.21 ms / multiple 991.45 ms。これは並行作業中の局所測定であり、フレームレート保証ではない。CPU の大気描画コストは残る。既存の模式球 512px・透視長辺 800px 上限を維持し、Retina 倍率で透視 CPU 解像度を増やさない。
+通常 arm64 の人工シーン 800×800 を各1回測定した値は、大気なし 225.34 ms / single 801.21 ms / multiple 991.45 ms。計測対象はこのシーンのみ。CPU の大気描画コストは残る。既存の模式球 512px・透視長辺 800px 上限を維持し、Retina 倍率で透視 CPU 解像度を増やさない。
 
-App / Lua / session の往復と実画面の確認は、root の UNIT6 統合記録に従う。この局所結果だけで N08/N12 全体の完了や原版との完全互換を主張しない。
+アプリでの操作方法は [GUI ガイド](README.md) を参照。

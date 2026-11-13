@@ -25,7 +25,7 @@ N12 の `render_atmosphere_scene` は、既存 `SurfaceSphere` と `SolarCamera`
 
 出力は左上原点の RGBA、寸法は各 1–1024。層ごとの RGB を加算し、最後に [0,1] に clamp、255 倍して丸める。非ゼロ RGB の alpha は 255、黒は 0。これは `PlusLighter` 合成で RGB の二重減衰を避けるためで、透過率ではない。core の alpha を RGB に掛けない。
 
-SolarSceneRenderer の物理 1 天体、共通の地球・月、全 11 天体の経路は、共通の不透明球を使って **base/night → atmosphere → cloud** の順に描く。雲は不透明 depth を更新しない。模式的な最小サイズの天体マーカーには適用しない。この Solar 接続とテクスチャ保持の変更は N08 担当が実装・検証した。
+SolarSceneRenderer の物理 1 天体、共通の地球・月、全 11 天体の経路は、共通の不透明球を使って **base/night → atmosphere → cloud** の順に描く。雲は不透明 depth を更新しない。模式的な最小サイズの天体マーカーには適用しない。
 
 ## 検証
 
@@ -37,7 +37,7 @@ SolarSceneRenderer の物理 1 天体、共通の地球・月、全 11 天体の
 - 近い遮蔽物、球の順番の入れ替え、遠い遮蔽物、夜側、地表・内部視点、大気に届かない視線を確認。
 - 表示球半径とカメラ距離を同倍率にした場合の描画一致、不正寸法・強度・幾何・添字・重複・発光球・太陽原点の拒否を確認。
 
-[局所ログと再実行コマンド](../../investigation/native-plus/unit6/logs/n12/COMMANDS.md)を保存した。これとは別に [N08 の最終検証](EARTH_LAYERS_PROVENANCE.md)では Solar 接続の回帰 50 checks が通常 / SAN / x86 の各構成で通過した。通常構成は任意 benchmark 3 checks を含む 53 checks。Earth map の効果、Mars に map を使わないこと、none / 強度 0 / 非表示、物理 3 経路、模式表示への不適用に加え、空画像の AppKit guard と非 Earth での toggle 不変を検証している。アプリ全体の最終試験・状態保存・メニューの結果は UNIT6 統合記録で判定する。
+[N08 の最終検証](EARTH_LAYERS_PROVENANCE.md)では Solar 接続の回帰 50 checks が通常 / SAN / x86 の各構成で通過した。通常構成は任意 benchmark 3 checks を含む 53 checks。Earth map の効果、Mars に map を使わないこと、none / 強度 0 / 非表示、物理 3 経路、模式表示への不適用に加え、空画像の AppKit guard と非 Earth での toggle 不変を検証している。アプリ全体の最終試験・状態保存・メニューの結果は UNIT6 統合記録で判定する。
 
 ## 原版と区別する範囲
 

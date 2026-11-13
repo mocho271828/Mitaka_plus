@@ -1,23 +1,4 @@
-# N11 恒星の明るさ・名称フェードの契約調査
-
-調査日: 2026-10-29。初稿は UNIT5 凍結中の読み取り調査。UNIT6 で時間補間の追加追跡と実装結果を追記した。ローカル配布物の原本は変更していない。
-
-今回の追加証拠では、旧 `Stars.brightness` は **`L_ref` 自体**であり、描画では分母に使われる。`brighten()` は値を `10^-0.2` 倍、`darken()` は `10^+0.2` 倍にする。以前の [恒星制御調査](../local-star-controls-audit.md) で未確定としていた公開値と `L_ref` の対応を、この実行ファイルについて更新する。
-
-`fadeLabels` の bool と名称描画の距離依存分岐も確認できた。ただし現行の Sky/Horizon は旧 3D カメラ・縮尺を入力に持たないため、等級による名称間引きへ置き換えて旧機能と称することはできない。
-
-## 対象と証拠の扱い
-
-| 略記 | 対象 |
-| --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。Plus 1.5.4 build101013。同梱 API 文書の表示は 1.3.0 |
-| `EXE` | `PLUS/mitakaPlus.exe`、12,288,000 bytes、SHA-256 `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457` |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source`。公式標準版 1.3.1 |
-| `NATIVE` | `/Users/kota/mitaka/repositories/Mitaka/native/gui`。UNIT5 の作業ツリー |
-
-文書・Lua・公式ソースはローカル原本を優先し、CP932 の内容は読み取り時だけデコードした。実行ファイルの記載は `/usr/bin/objdump` による範囲指定の逆アセンブルと PE import / 定数の手動照合である。REA のデータフロー証明や旧アプリの実行比較ではない。原版を起動して invalid input、画面、補間時間を観測する検証は行っていない。
-
-以下のアドレスはこの `EXE` の preferred VA。今回使う `.text` / `.rdata` 範囲では file offset は `VA - 0x400000`。別の配布版へアドレスを流用しない。
+# 恒星の明るさと名称フェードの式
 
 ## 公開名・型・戻り値
 
@@ -33,7 +14,7 @@
 
 `stars.html:74` の例は `Stars:setBrightness(...)` と書かれているが、見出しは `setBrightnessTo`。登録も `setBrightnessTo` を確認しているため、この例だけから `setBrightness` alias を追加しない。
 
-同梱テキストから `contrast` / `magnify` / `namelevel` の公開名は確認できていない。`mitaka.ini:114–115` の `[Star] ImagePowIndex=0.38` は実在するが、それらの API と同一視しない。全テキスト検索の範囲と公式指数の説明は [前回調査](../local-star-controls-audit.md) にある。
+同梱テキストから `contrast` / `magnify` / `namelevel` の公開名は確認できていない。`mitaka.ini:114–115` の `[Star] ImagePowIndex=0.38` は実在するが、それらの API と同一視しない。全テキスト検索の範囲と公式指数の説明は [恒星の表示設定](../local-star-controls-audit.md) にある。
 
 ## `brightness` の値から描画まで
 
@@ -106,7 +87,7 @@ F(r1, r2, r, fac):
 
 このため、公式標準版で別途見つかった `Dth / 7°` の 4 乗式を、この Plus の `fadeLabels` の確定式として採用しない。また「近くの恒星名」は等級の明るい星だけという意味ではない。固有名 / Bayer 等の個々の枝への適用範囲、`P`・`C`・`S` の生成と単位、他モードの名称関数、初期値は引き続き確認対象となる。
 
-## 時間付き変更の追加追跡（UNIT6）
+## 時間指定による補間
 
 `setBrightnessTo` は `0x663124–0x66313a` で同名の wrapper `0x661f00` / `0x661fa0` が登録される。numeric 経路は Lua 第 2 引数を float、3 引数を double にして `0x5e6020` へ渡す。さらに第 4 引数を default true の bool として読み、二つの補間 constructor (`0x7bfa90` / `0x7bfc50`) を選ぶ経路がある。
 
@@ -129,33 +110,3 @@ cosine vtable `0x137f9fc` は delete/update/finish/start=`0x7bfa40/0x7bfae0/0x7b
 時刻は manager `0x7be6a0` に与える cached double。main routine `0x5bedd0` の `0x5bee0d → 0x75e6b0 → 0x753be0` が clock を更新した後、`0x5bf055–0x5bf070` が singleton `0x1195928` の getter `0x753da0` を読んで manager を更新する。型名は `orhAnimation::GlobalTime`。通常分岐は `WINMM.dll!timeGetTime / 1000 - offset`、別分岐は固定 `1/fps` で進む。停止 flag は値を保持する。これらの flag を操作する公開 API や export / minimize 時の意味までは未確認。天体の JD とは別の時計である。
 
 負・非有限 duration の安全な旧仕様、Lua 終了・取消時の遷移寿命、保存対象、全中断状態の時間進行は未確定。native の明示契約は [実装仕様](../../../native/gui/STAR_BRIGHTNESS.md) を参照する。
-
-## UNIT5 時点の native との差と実装順候補
-
-`NATIVE/include/display_options.hpp:16–23` の `StarDisplayOptions` は表示・名称・marking を持ち、明るさ・名称距離を持たない。`StarRenderer.mm:34–71` は Sky/Horizon 共通で、等級上限と RA/Dec の投影を入力とする。点半径は `clamp(2.8-0.32m,0.55,3.6)`、alpha は `clamp(1.2-0.07m,0.3,1)` に投影 alpha を掛けた値。名称 alpha は投影 alpha の 0.9 倍で、星と視点の 3D 距離は入力にない。SolarScene には恒星 renderer 自体がない。
-
-次の順が実装の候補になる。以下は採用済みの仕様ではない。
-
-1. `brightness`、`brighten`、`darken`、`defaultBrightness` は名前・値の方向・増減幅が確定した。共通設定と純粋な描画計算を用意し、等級上限・カタログ件数・名称集合・単一クリック選択と独立に変更する。正の有限値だけを許す場合、その入力域や上下限は安全な native 契約として明示し、旧版の範囲と同じとは称さない。float への丸め、繰返し操作の overflow / underflow 時に全変更を拒否する境界も必要になる。
-2. renderer の明るさを分母へ接続しても、旧テクスチャ描画の係数やモード条件を再現したことにはならない。現在の点径・alpha のどこへ反映するか、基準値 1 の画面、明示等級上限、ヒット判定、マーク・ラベルへの効果は別途具体化する。全原本行を保持し、旧視差誤差フィルタによる削除を持ち込まない。
-3. `setBrightnessTo` は時間付き状態を持つため、旧補間契約の追加追跡または明示した native 動作の決定が必要。Lua 実行終了で UI の遷移をどうするかも、通常の bool action と同じ扱いにはしない。
-4. `fadeLabels` の bool だけを保存して無効果にする段階は設けない。3D の必要入力と対象ラベルを確定してから描画へ接続する。等級上限や旧 `selectedLabels` で代用しない。N10 の名称集合は別担当の [星座絵・恒星選択調査](constellation-art-star-selection-contracts.md) を参照する。
-
-実装時の回帰には、明るさの getter / setter と 10 の ±0.2 乗の増減、1.0 への復帰、不正値での状態保持、表示とヒットの一致、GUI / Lua / 保存状態の同期を含める。フェードは距離・縮尺の単位を確定後に、端点・減衰域・フラグ無効時・ラベル種類を検証する。遷移は再要求・停止・失敗時・時間源を独立して試す。
-
-## 再現用証跡と検証範囲
-
-ローカル一時証跡は次に保存した。恒久的な参照は上の SHA-256 と VA 範囲であり、一時ファイルの存続に依存しない。
-
-- `/tmp/mitaka-unit6-star-bindings.asm`: `0x662e00–0x663340` の登録。
-- `/tmp/mitaka-unit6-star-api-evidence.asm`: property wrapper、adapter、保存先、`L_ref` 文字列出力、alpha helper、import thunk の範囲。
-- `/tmp/mitaka-unit6-star-brightness-draw.asm`: `0x582ce0–0x583d80` の描画。
-- `/tmp/mitaka-unit6-star-fade.asm`: `0x587c60–0x588180`。先頭は前関数の末尾を含み、対象関数は `0x587d00` から。
-
-採取は `/usr/bin/objdump --disassemble --x86-asm-syntax=intel --start-address=<VA> --stop-address=<VA> <EXE>`。定数は PE section に基づく file offset から little-endian float / double として読み、累乗呼出先は PE import table で照合した。
-
-初稿時点では監査文書のみだった。UNIT6 は brightness と 4 メソッドを実装し、独立モデル・controller・Lua・画素試験を追加した。旧アプリの実行比較は行っていない。新規依存と元データへの書戻しはない。fadeLabels は必要な 3D 恒星位置・カメラ位置・縮尺を現行の角度投影が持たず、旧描画の親条件にも未確定部分があるため未接続を維持する。
-
-追加の再現用一時証跡は `/tmp/mitaka-unit6-star-interpolators.asm`（`0x7bf840–0x7c0300`）、`star-interp-base.asm`（`0x7c18e0–0x7c1b40`）、`star-interp-manager.asm`（`0x7bd800–0x7be9d0`）、`star-callback.asm`（`0x5e3dc0–0x5e3ef0`）、`star-clock-source.asm`（`0x753730–0x753e30`）、`star-clock-loop.asm`（`0x5bed60–0x5bef80`）。後半の短い名前にも同じ `/tmp/mitaka-unit6-` prefix が付く。E8 の raw scan は候補抽出だけに用い、上記 call は命令列の文脈で確認した。
-
-以上の主要な静的抜粋と、通常・ASan/UBSan・x86_64 の既存局所試験ログを [logs/n11](logs/n11/) に保存した。[commands.md](logs/n11/commands.md) に採取元と再現コマンド、[SHA256SUMS](logs/n11/SHA256SUMS) に保存ファイルのハッシュを記録する。局所結果は [Lua 表示 API の検証](lua-display-contracts.md)、全体アプリ・新規 clone・原本保全は [単位6の統合記録](README.md) に分けた。

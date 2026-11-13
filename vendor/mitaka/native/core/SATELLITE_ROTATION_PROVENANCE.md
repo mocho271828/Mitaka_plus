@@ -89,5 +89,4 @@ C の多段合成、二万件の深い依存と循環、参照先の失敗の伝
 親極は三つの日付の固定値と Q への接続、極を越える原版の式、未知 index、非有限時刻、有限値の数値限界を検査する。
 
 Apple clang、C++17、`-Wall -Wextra -Wpedantic -Werror` による通常実行、ASan / UBSan、x86_64 のコンパイル・リンク・実行で、各 859 checks が通過した。
-ログは `/tmp/mitaka-unit4-satellite-rotation.log`、`/tmp/mitaka-unit4-satellite-rotation-sanitize.log`、`/tmp/mitaka-unit4-satellite-rotation-x86.log`。
 旧 Plus の実行比較、観測データとの誤差比較、GUI の衛星描画はこの単体検証に含めていない。

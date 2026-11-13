@@ -1,9 +1,0 @@
-Binary SHA256: 48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457
-Method: static byte reads only; no binary execution. Ideal double arithmetic verification of recovered float operations, not an SSE emulator or render comparison.
-CAB count: 89
-Quaternion threshold: 0.9999899864196777
-Normalized header z range: -0.9931706558140089 0.9727758721125371
-Quaternion branches: {'general': 89, 'north': 0, 'south': 0}
-Max reconstructed column-major matrix vs active R(q) difference: 0.0
-Max R(q)*(0,0,1) vs normalized header difference: 5.551115123125783e-16
-Max normalized full chain vs distance-cancelled candidate difference: 2.220446049250313e-16

@@ -1,9 +1,8 @@
-# 調査と検証記録
+# 移植に用いた調査資料
 
-機能追加時の設計・検証文書、ログ、結果 JSON を保存しています。
-過去の絶対パスと「ルートは Git ではない」という記述は、リポジトリ分離前の実行環境を示します。
-現在の構成は [ルート README](../README.md) と [実装方針](../IMPLEMENTATION_POLICY.md) を参照してください。
+- [Mitaka 1.3.1 のプラットフォーム依存](mitaka-1.3.1/platform-findings.md)と[構文・ビルドの検証](mitaka-1.3.1/VALIDATION.md)
+- [惑星の自転モデル](native-rotation/ROTATION_MODEL.md)と[テクスチャの座標・出典](native-textures/TEXTURE_SOURCES.md)
+- [時刻再生の設計](native-playback/PLAYBACK_DESIGN.md)、[月と地表移動](native-moon-travel/DESIGN.md)、[天体間飛行](native-continuous-flight/DESIGN.md)
+- [旧 Plus の互換性調査](native-plus/README.md)
 
-旧アプリ内の全ファイル名を含む `native-core/baseline-manifest.json`、過去の `before/` スナップショット、画面画像は GitHub に含めず、元のローカルワークスペースで保持します。
-過去文書からそれらへのリンクは、このリポジトリだけでは参照できません。
-今回のソース移行と検証は `repository-organization/` に記録します。
+旧版の実測には、調査者が用意した Windows 版 Mitaka Plus と通常版 Mitaka を使用しています。記録中の `PLUS_ROOT` と `MITAKA_ROOT` はそれぞれの実行ファイルが置かれたディレクトリを指します。現在の起動・試験手順は[リポジトリの README](../../../README.md)を参照してください。

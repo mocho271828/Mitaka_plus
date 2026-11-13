@@ -6,9 +6,9 @@
 
 | 略記 | 絶対パス |
 | --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `REGULAR` | `/Users/kota/mitaka/mitaka/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka` |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source` |
+| `PLUS` | `PLUS_ROOT` |
+| `REGULAR` | `MITAKA_ROOT` |
+| `OFFICIAL` | `vendor/mitaka/sources/official/mitaka_source` |
 
 対象 Plus は Windows 1.5.4 build101013、同梱 API 文書の表示は 1.3.0、参照可能な公式ソースは Mitaka 1.3.1。これらの版は区別する。`PLUS/mitakaPlus.exe` は x86 PE で、SHA-256 は `48961f09019e0e43f23f2537752978dc16c563c807f5b048ba5b0448c0d2b457`。
 

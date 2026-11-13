@@ -6,9 +6,9 @@
 
 | 略記 | 絶対パスと版 |
 | --- | --- |
-| `PLUS` | `/Users/kota/mitaka/mitaka_plus/Contents/SharedSupport/prefix/drive_c/Program Files/mitaka`。Windows Plus 1.5.4 build101013。同梱 API 文書は 1.3.0 表示 |
-| `OFFICIAL` | `/Users/kota/mitaka/repositories/Mitaka/sources/official/mitaka_source`。公式 Mitaka 1.3.1 ソース |
-| `NATIVE` | `/Users/kota/mitaka/repositories/Mitaka/native/gui`。第 3 単位の作業ツリー |
+| `PLUS` | `PLUS_ROOT`。Windows Plus 1.5.4 build101013。同梱 API 文書は 1.3.0 表示 |
+| `OFFICIAL` | `vendor/mitaka/sources/official/mitaka_source`。公式 Mitaka 1.3.1 ソース |
+| `NATIVE` | `vendor/mitaka/native/gui`。第 3 単位の作業ツリー |
 
 行番号は原本の行番号であり、CP932 の文書・ソースは読取時だけデコードした。公式標準版の式は、Plus の同一版実装や旧アプリとの画素一致を証明しない。旧アプリを実行した比較は今回行っていない。
 

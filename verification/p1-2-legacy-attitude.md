@@ -1,6 +1,6 @@
 # 地平図の高度差と旧 Plus の地球姿勢
 
-PR #8 と Windows 版 Mitaka Plus 1.5.4 build101013 のセレス・Voyager I・はやぶさを、同じ観測地点・数値 JD で比較した。[10 組の対照表](p1-2-legacy-attitude.tsv)には、現行地平図に描いた対象の方位・高度、旧版の注視命令後に保存したカメラの向き、旧式の地球姿勢を使った独立計算を併記した。
+ネイティブ版と Windows 版 Mitaka Plus 1.5.4 build101013 のセレス・Voyager I・はやぶさを、同じ観測地点・数値 JD で比較した。[10 組の対照表](p1-2-legacy-attitude.tsv)には、現行地平図に描いた対象の方位・高度、旧版の注視命令後に保存したカメラの向き、旧式の地球姿勢を使った独立計算を併記した。
 
 旧版は `Camera:look("Asteroid.Ceres")`、`Camera:look("Spacecraft.VoyagerI")`、`Camera:look("Spacecraft.Hayabusa")` を実行し、描画後に `State:storeAsInit()` で保存した。表の `legacy_exe_phase` と `state_sha256` はこの状態ファイルを特定する。旧版の HUD は、例えば保存方位 −90° を 90° と表示した。`legacy_api_az_negated_mod360_deg` は保存値をこの符号に換算した値である。旧版の高度・方位の測定対象は注視後のカメラであり、対象の点がその位置に描かれたかは別途、表示切替前後の実画面で判定する。
 
