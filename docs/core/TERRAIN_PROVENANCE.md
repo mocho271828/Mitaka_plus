@@ -4,10 +4,10 @@
 
 ## 原資料と適用範囲
 
-- 公式保存ソース `vendor/mitaka/sources/official/mitaka_source/common/graphics/topograph.h` の `TopoGrid` / `TopoPatch` / `TopoSphere` と同 `.cpp` の reader・座標式を参照した。原本は変更していない。
+- [公式 Mitaka 1.3.1](../sources/README.md) の `common/graphics/topograph.h` の `TopoGrid` / `TopoPatch` / `TopoSphere` と同 `.cpp` の reader・座標式を参照した。原本は変更していない。
 - `topograph.h:49–50` は最大格子寸法 256、最大レベル数 10。`.cpp:104–113` は格子 header と signed short payload、`:477–492` は patch と `lvN+1` 個の格子、`:689–706` は全体 header と patch 読み込み。
 - `.cpp:386–418` の標高補間、`:535–568` の半径・球座標式を参照した。既存原版の float 演算と short への切り捨てをそのまま再現する API ではない（下記）。
-- `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_topography.cpp:109–118` の通常版登録は Earth / Moon / Mars の 3 種。ローカル Mercury ファイルも同じ形式で読めるが、この通常版登録の証拠だけで旧 Plus の Mercury 表示を認定しない。
+- `Mitaka/mtk_topography.cpp:109–118` の通常版登録は Earth / Moon / Mars の 3 種。ローカル Mercury ファイルも同じ形式で読めるが、この通常版登録の証拠だけで旧 Plus の Mercury 表示を認定しない。
 - 表示倍率の 5 段階と描画時の LOD 選択は [GUI の地形描画](../gui/TERRAIN_SURFACE_PROVENANCE.md) を参照。上記の通常版 C++ との比較は読込・座標計算の範囲に限る。
 
 ## ファイル形式

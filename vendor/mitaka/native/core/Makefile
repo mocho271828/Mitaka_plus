@@ -1,14 +1,10 @@
 CXX = xcrun clang++
 export DATA_ROOT ?= $(abspath ../../../../resources)
-export CF96_DATA ?= $(abspath ../../../../resources/data/cf96.dat)
 AR = xcrun ar
 BUILD_DIR ?= build
 CXXFLAGS ?= -O2 -g
 CPPFLAGS += -Iinclude
 CXXFLAGS += -std=c++17 -Wall -Wextra -Wpedantic -Werror
-UPSTREAM ?= ../../sources/official/mitaka_source
-# 原本の CP932 コメントと vector3 の無名 struct は、比較用ビルドだけ許容する。
-REFERENCE_FLAGS = -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types
 
 ifneq ($(ARCH),)
 CXXFLAGS += -arch $(ARCH)
@@ -32,7 +28,7 @@ TESTS += $(BUILD_DIR)/test_constellation_art
 TESTS += $(BUILD_DIR)/test_eclipse $(BUILD_DIR)/test_terrain
 TESTS += $(BUILD_DIR)/test_galaxy_catalog $(BUILD_DIR)/test_our_galaxy_model $(BUILD_DIR)/test_our_galaxy_radiative
 
-.PHONY: all test data-test reference-test rotation-reference-test lunar-reference-test universal
+.PHONY: all test data-test universal
 all: $(LIBRARY) $(BUILD_DIR)/core_probe
 
 $(BUILD_DIR):
@@ -56,40 +52,6 @@ test: $(TESTS)
 data-test: $(BUILD_DIR)/test_data
 	$(BUILD_DIR)/test_data "$${DATA_ROOT:?Set DATA_ROOT to an existing Mitaka application data root}"
 
-# 原本は比較用バイナリにだけリンクする。ライブラリの実行時依存にはしない。
-$(BUILD_DIR)/reference_cf96.o: $(UPSTREAM)/common/astro/cf96.cpp | $(BUILD_DIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(REFERENCE_FLAGS) -Wno-unused-variable -c $< -o $@
-
-$(BUILD_DIR)/test_upstream: tests/test_upstream.cpp $(BUILD_DIR)/reference_cf96.o $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I$(UPSTREAM)/common/astro $(CXXFLAGS) $(REFERENCE_FLAGS) $< $(BUILD_DIR)/reference_cf96.o $(LIBRARY) $(LDFLAGS) -o $@
-
-reference-test: $(BUILD_DIR)/test_upstream
-	$(BUILD_DIR)/test_upstream "$${CF96_DATA:?Set CF96_DATA to an existing cf96.dat}"
-
-# Windows/OpenGL 層から独立した三関数のみ、本文を変えず比較用に取り出す。
-$(BUILD_DIR)/reference_rotation.cpp: $(UPSTREAM)/Mitaka/mtk_planet_orientation.cpp tests/extract_rotation.awk | $(BUILD_DIR)
-	LC_ALL=C awk -f tests/extract_rotation.awk "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-
-$(BUILD_DIR)/test_rotation_upstream: tests/test_rotation_upstream.cpp $(BUILD_DIR)/reference_rotation.cpp $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I$(UPSTREAM)/common/math -I$(UPSTREAM)/common/astro $(CXXFLAGS) $(REFERENCE_FLAGS) $< $(BUILD_DIR)/reference_rotation.cpp $(LIBRARY) $(LDFLAGS) -o $@
-
-rotation-reference-test: $(BUILD_DIR)/test_rotation_upstream
-	$(BUILD_DIR)/test_rotation_upstream
-
-$(BUILD_DIR)/reference_lunar_pos.o: $(UPSTREAM)/Mitaka/mtk_lunar_pos.cpp | $(BUILD_DIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(REFERENCE_FLAGS) -Wno-missing-braces -c $< -o $@
-
-$(BUILD_DIR)/reference_lunar_orientation.cpp: $(UPSTREAM)/Mitaka/mtk_satellite_orientation.cpp tests/extract_lunar_orientation.awk | $(BUILD_DIR)
-	LC_ALL=C awk -f tests/extract_lunar_orientation.awk "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-
-$(BUILD_DIR)/test_lunar_upstream: tests/test_lunar_upstream.cpp $(BUILD_DIR)/reference_lunar_pos.o $(BUILD_DIR)/reference_lunar_orientation.cpp $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I$(UPSTREAM)/common/math -I$(UPSTREAM)/common/astro $(CXXFLAGS) $(REFERENCE_FLAGS) $< $(BUILD_DIR)/reference_lunar_pos.o $(BUILD_DIR)/reference_lunar_orientation.cpp $(LIBRARY) $(LDFLAGS) -o $@
-
-lunar-reference-test: $(BUILD_DIR)/test_lunar_upstream
-	$(BUILD_DIR)/test_lunar_upstream
-
 universal:
 	$(MAKE) BUILD_DIR=build/arm64 ARCH=arm64 all
 	$(MAKE) BUILD_DIR=build/x86_64 ARCH=x86_64 all
@@ -98,41 +60,3 @@ universal:
 	xcrun lipo -create build/arm64/core_probe build/x86_64/core_probe -output build/universal/core_probe
 
 -include $(OBJECTS:.o=.d)
-
-# N12: 大気の単一散乱・多重散乱と原 emmap の保持。
-
-.PHONY: atmosphere-reference-test
-$(BUILD_DIR)/reference_atmosphere.cpp: $(UPSTREAM)/Mitaka/mtk_atmosphere.cpp tests/extract_atmosphere.awk | $(BUILD_DIR)
-	LC_ALL=C awk -f tests/extract_atmosphere.awk "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-
-$(BUILD_DIR)/reference_atmosphere.o: $(BUILD_DIR)/reference_atmosphere.cpp $(UPSTREAM)/Mitaka/mtk_approx_func.h $(UPSTREAM)/common/math/vector3.h
-	$(CXX) $(CPPFLAGS) -I$(UPSTREAM)/common/math -I$(UPSTREAM)/Mitaka $(CXXFLAGS) $(REFERENCE_FLAGS) -Wno-unused-variable -c $< -o $@
-
-$(BUILD_DIR)/test_atmosphere_upstream: tests/test_atmosphere_upstream.cpp $(BUILD_DIR)/reference_atmosphere.o $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I$(UPSTREAM)/common/math $(CXXFLAGS) $(REFERENCE_FLAGS) $< $(BUILD_DIR)/reference_atmosphere.o $(LIBRARY) $(LDFLAGS) -o $@
-
-atmosphere-reference-test: $(BUILD_DIR)/test_atmosphere_upstream
-	$(BUILD_DIR)/test_atmosphere_upstream
-
-.PHONY: eclipse-reference-test
-$(BUILD_DIR)/eclipse_upstream.inc: $(UPSTREAM)/Mitaka/mtk_eclipse.cpp tests/extract_eclipse.awk | $(BUILD_DIR)
-	LC_ALL=C awk -f tests/extract_eclipse.awk "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-
-$(BUILD_DIR)/test_eclipse_upstream: tests/test_eclipse_upstream.cpp $(BUILD_DIR)/eclipse_upstream.inc $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I"$(BUILD_DIR)" $(CXXFLAGS) $< $(LIBRARY) $(LDFLAGS) -o $@
-
-eclipse-reference-test: $(BUILD_DIR)/test_eclipse_upstream
-	$(BUILD_DIR)/test_eclipse_upstream
-
-.PHONY: our-galaxy-reference-test
-$(BUILD_DIR)/our_galaxy_upstream.inc: $(UPSTREAM)/Mitaka/mtk_our_galaxy_rt.cpp tests/extract_our_galaxy.awk | $(BUILD_DIR)
-	LC_ALL=C awk -f tests/extract_our_galaxy.awk "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-
-$(BUILD_DIR)/test_our_galaxy_radiative_upstream: tests/test_our_galaxy_radiative_upstream.cpp $(BUILD_DIR)/our_galaxy_upstream.inc $(LIBRARY)
-	$(CXX) $(CPPFLAGS) -I"$(BUILD_DIR)" -I$(UPSTREAM)/Mitaka $(CXXFLAGS) $(REFERENCE_FLAGS) -Wno-unused-variable $< $(LIBRARY) $(LDFLAGS) -o $@
-
-our-galaxy-reference-test: $(BUILD_DIR)/test_our_galaxy_radiative_upstream
-	$(BUILD_DIR)/test_our_galaxy_radiative_upstream

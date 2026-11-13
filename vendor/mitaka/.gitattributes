@@ -1,2 +1,0 @@
-# 公式原本の CP932・CRLF を含むバイト列を checkout 時も保持する。
-/sources/official/** -text

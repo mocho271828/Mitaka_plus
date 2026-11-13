@@ -8,7 +8,7 @@
 多数の星を描くときは、一つのフレームを再利用する。
 
 地球の歳差・自転は公式 Mitaka 1.3.1 から抽出済みの実装を利用し、新しい係数や別の歳差モデルへ置き換えていない。
-原典は `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_planet_orientation.cpp` の `calc_Earth_ec_to_pl_matrix_Captine2003`。
+原典は `Mitaka/mtk_planet_orientation.cpp` の `calc_Earth_ec_to_pl_matrix_Captine2003`。
 許諾と抽出履歴は [ROTATION_PROVENANCE.md](ROTATION_PROVENANCE.md) に記録している。
 新しい地平変換部分は内積と三角関数による実装であり、追加ライブラリを必要としない。
 

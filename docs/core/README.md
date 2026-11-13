@@ -2,7 +2,7 @@
 
 公式 Mitaka 1.3.1 から天文計算とデータ読み込みを分離した、開発中の C++17 静的ライブラリ。
 macOS の UI や描画機能とは独立してビルド・テストできる。
-比較用の公式 1.3.1 は [同梱ソース](../sources/README.md) に収録する。
+移植元の配布ファイルと SHA-256 は [公式ソースの出典](../sources/README.md) を参照。
 既存データへの書き込み、移行、重複削除は行わない。
 
 ## ビルドと通常テスト
@@ -129,55 +129,18 @@ HIP の負視差・独自 ID・未知の名称も保持する。
 計算の不正引数、範囲外、非有限の結果も例外とし、暗黙のゼロ座標・平均軌道への代替・軌道端点への固定は行わない。
 CF96 と軌道の読み込み後データは不変で、所有期間はオブジェクトが管理する。
 
-## 公式コードとの比較
+## 回帰テストと参照値
 
-```sh
-# Plus リポジトリのルートから実行
-cd vendor/mitaka/native/core
-export CF96_DATA="$(cd ../../../.. && pwd)/resources/data/cf96.dat"
-make reference-test
-```
+`make test` は、公式 Mitaka 1.3.1 の出力から採取した固定値と合成データを使う。天体の位置・速度、惑星の姿勢、月の位置・姿勢について、固定値を採取した条件と比較許容差を以下に記載する。
 
-このターゲットだけが、未変更の公式 `common/astro/cf96.cpp` を比較用にコンパイルする。
-原本には固定配列を無検査で読み込む処理があるため、比較テストの入力は検証済みの CF96 ファイルに制限する。
-対象は 461,300 bytes、SHA-256 `22edc2b9e4a0170bb805b2d564dbe90afb1ef7a17370db457887d28d0135dfb4` のファイル。
-ハッシュ計算には macOS SDK の CommonCrypto を比較テストだけで使用し、検証したバイト列の一時コピーを両ローダーへ渡す。
-この制限と依存は比較用プログラムに閉じ、新しいコアのローダーには課さない。
-9 惑星・201 時刻・3 軸で位置と速度を比較する。
-許容差は位置 `1e-12 AU`、速度 `1e-13 AU/day`。
-これは実装の回帰比較であり、天体の観測精度を示す値ではない。
-通常のライブラリとテストには原本をリンクしない。
+- [天文計算](ASTRONOMY_PROVENANCE.md)では J2000 の9天体の位置・速度と座標変換を確認する。
+- [惑星姿勢](ROTATION_PROVENANCE.md)では基底の直交性・右手性、北極方向、自転方向、地球の歳差を確認する。
+- [月](LUNAR_PROVENANCE.md)では位置・姿勢の固定値、距離単位、同時刻の地心視線による秤動を確認する。
 
-惑星姿勢はデータファイルを使わず、次のコマンドで公式の関数と比較できる。
-
-```sh
-make rotation-reference-test
-make BUILD_DIR=build/sanitize SANITIZE=address,undefined rotation-reference-test
-```
-
-`tests/extract_rotation.awk` が、公式 `mtk_planet_orientation.cpp` の許諾表示と計算用の 3 関数を本文変更なしで `build/` 内へ取り出す。
-9 惑星の基底 33,129 成分を比較する。
-角度を一周以内へ還元する実装差を考慮し、許容差は J2000 で `2e-14`、1700..2100 年で `2e-9`、対応暦全域で `5e-8` とする。
-これらは単位ベクトル成分の回帰許容差であり、観測精度を示さない。
-通常テストは原本なしで直交性・右手性・逆変換・北極方向・自転方向・地球の歳差・不正入力も検証する。
-
-月の位置・姿勢も、原本を比較用にコンパイルして検証できる。
-
-```sh
-make lunar-reference-test
-make BUILD_DIR=build/sanitize SANITIZE=address,undefined lunar-reference-test
-```
-
-位置は未変更の `mtk_lunar_pos.cpp`、姿勢は `mtk_satellite_orientation.cpp` から本文を変えず抽出した月の関数と比較する。
-通常テストには原本から生成した固定値、月距離の単位、基底の直交性・右手性、同時刻の地心視線による秤動、入力境界を含む。
-比較の許容差と固定値の再生成方法は [LUNAR_PROVENANCE.md](LUNAR_PROVENANCE.md) を参照。
-
-天文計算の原本回帰値を再生成する手順は [ASTRONOMY_PROVENANCE.md](ASTRONOMY_PROVENANCE.md) に記載した。
-合成データのテストには日付の既知値、軌道エネルギー、解析的速度と有限差分、補間多項式の再現、切断・不正入力を含む。
+移植時の CF96 比較には、461,300 bytes、SHA-256 `22edc2b9e4a0170bb805b2d564dbe90afb1ef7a17370db457887d28d0135dfb4` のデータを使用した。9 惑星・201 時刻で照合した位置と速度の許容差は、それぞれ `1e-12 AU` と `1e-13 AU/day`。現在の自動テストで扱う補間、単位、入力境界は [暦表の仕様](EPHEMERIS_PROVENANCE.md) に記載する。
 
 ## ソースの由来
 
-公式 1.3.1 の ZIP・展開原本は `vendor/mitaka/sources/official/` に保持する。
 改変ソースには原著作権表示と MIT 許諾文を残した。
 ファイルごとの抽出箇所と変更内容:
 

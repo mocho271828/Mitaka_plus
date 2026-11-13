@@ -4,7 +4,7 @@
 
 ## 原典と式
 
-ローカル原典は `vendor/mitaka/sources/official/mitaka_source/Mitaka/`。読み取りのみで、原コードや同梱画像は変更していない。
+表のファイル名と行番号は [公式 Mitaka 1.3.1 の ZIP](../sources/README.md) 内の `mitaka_source/Mitaka/` を基準とする。
 
 | 原典 | 確認した処理 / native の採用 |
 | --- | --- |

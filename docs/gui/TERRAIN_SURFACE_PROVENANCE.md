@@ -4,7 +4,7 @@
 
 ## 根拠と計算
 
-原資料はローカルの `vendor/mitaka/sources/official/mitaka_source/common/graphics/topograph.cpp`。原資料のバイト列は不変で、派生した `terrain_mesh.cpp` に MIT notice を保持した。
+原資料は [公式 Mitaka 1.3.1](../sources/README.md) の `common/graphics/topograph.cpp`。派生した `terrain_mesh.cpp` に MIT notice を保持している。
 
 | 項目 | 原資料の位置 | 採用範囲 |
 |---|---|---|

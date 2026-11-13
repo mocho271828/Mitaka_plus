@@ -6,10 +6,10 @@
 
 | 参照した公式ソース | 対象処理 | 原本 SHA-256 |
 | --- | --- | --- |
-| `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_stars.cpp` | `read_a_Hipparcos_star`、205行以降 | `0d864869c5ffb570701c553ed7634bb885b425d22bcf9431b66a5c3fb8c547a9` |
-| `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_constellation.cpp` | `read_a_constellation`、115行以降 | `007c0553e78c1ca3737d7882880e149a61e3f2fd50e8a275959549e02b879cf6` |
+| `Mitaka/mtk_stars.cpp` | `read_a_Hipparcos_star`、205行以降 | `0d864869c5ffb570701c553ed7634bb885b425d22bcf9431b66a5c3fb8c547a9` |
+| `Mitaka/mtk_constellation.cpp` | `read_a_constellation`、115行以降 | `007c0553e78c1ca3737d7882880e149a61e3f2fd50e8a275959549e02b879cf6` |
 
-上表のパスはこのリポジトリのルートからの相対パス。
+上表のパスは [公式 Mitaka 1.3.1](../sources/README.md) の ZIP 内の `mitaka_source/` からの相対パス。
 カタログファイル自体はライブラリへコピー、埋め込み、再配布していない。
 ソースコードの MIT 許諾を天文データへ自動的に適用する判断も行っていない。
 ユーザーのローカル原本・独自追加データを優先し、公式ソースは形式の参照に使う。公開データへの置換、既知の件数への切り詰め、原本の変換は行わない。

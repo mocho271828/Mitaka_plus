@@ -7,7 +7,7 @@
 
 取得元: <https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/mitaka_source_131.zip>
 
-原本パスは `vendor/mitaka/sources/official/mitaka_source/` からの相対パス。
+原本パスは公式 ZIP 内の `mitaka_source/` からの相対パス。
 
 | 原本 | 抽出・参照した機能 | SHA-256 |
 | --- | --- | --- |
@@ -90,23 +90,7 @@ T = dt + (0.0317*dt + 1.43) * 1e-6
 ## 回帰検証
 
 通常テストは原本を必要とせず、固定値、距離の単位、直交性・右手性・逆変換、順行の自転、同時刻の位置と姿勢から求める地心秤動、両端と範囲外・非有限入力を確認する。
-固定値は原本を独立にコンパイルする次のプログラムで再生成できる。
-
-```sh
-# このリポジトリのルートから実行
-cd vendor/mitaka/native/core
-make lunar-reference-test
-build/test_lunar_upstream --dump
-make BUILD_DIR=build/sanitize SANITIZE=address,undefined lunar-reference-test
-```
-
-`mtk_lunar_pos.cpp` は未変更で比較用オブジェクトにコンパイルする。
-`tests/extract_lunar_orientation.awk` は公式の許諾文と月の姿勢関数を本文変更なしで `build/` へ取り出す。
-比較プログラムは公式の `vector3.h` の回転行列と公式 AU 基礎式で出力座標・単位をそろえる。
-通常ライブラリには原本をリンクせず、実行時依存は C++17 標準ライブラリだけである。
-比較許容差は実装の回帰確認のためのもので、天文学的な予測精度とは区別する。
-1,009 時刻の位置・姿勢 12,108 成分を比較する。
-許容差は位置 `2e-15 AU`、姿勢基底の各成分 `1e-11`。J2000 ではそれぞれ `2e-17 AU`、`2e-14` とする。
+移植時に `mtk_lunar_pos.cpp` と `mtk_satellite_orientation.cpp` の月の関数から位置・姿勢の参照値を採取した。1,009 時刻・12,108 成分の比較で用いた許容差は位置 `2e-15 AU`、姿勢基底の各成分 `1e-11`、J2000 ではそれぞれ `2e-17 AU`、`2e-14`。これらは移植時の数値差を判定した値である。
 
 ## ARM64 / x86_64 の演算プロファイル
 
@@ -134,33 +118,6 @@ x86_64 原本と最大 `2.168404344971009e-19 AU` で一致した（最初の 3 
 成分ごとのプロファイル混在は認めない。姿勢の固定値と、位置・姿勢の許容差は変更していない。
 `src/lunar.cpp` と通常ビルドの演算条件も変更していない。
 失敗時には実値・期待値・差・許容差を 17 桁で表示する。
-
-採取コマンド（`vendor/mitaka/native/core` から実行、公式位置原本は上表の SHA-256 のまま）:
-
-```sh
-make -j4 BUILD_DIR=build-unit4-absolute lunar-reference-test
-build-unit4-absolute/test_lunar_upstream --dump
-make -j4 BUILD_DIR=build-unit4-absolute-x86 ARCH=x86_64 lunar-reference-test
-build-unit4-absolute-x86/test_lunar_upstream --dump
-
-xcrun clang++ -Iinclude -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror \
-  -ffp-contract=off -Wno-invalid-utf8 -Wno-gnu-anonymous-struct \
-  -Wno-nested-anon-types -Wno-missing-braces \
-  -c ../../sources/official/mitaka_source/Mitaka/mtk_lunar_pos.cpp \
-  -o /tmp/mitaka-unit4-lunar-reference-arm-off.o
-xcrun clang++ -Iinclude \
-  -I../../sources/official/mitaka_source/common/math \
-  -I../../sources/official/mitaka_source/common/astro \
-  -O2 -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -ffp-contract=off \
-  -Wno-invalid-utf8 -Wno-gnu-anonymous-struct -Wno-nested-anon-types \
-  tests/test_lunar_upstream.cpp /tmp/mitaka-unit4-lunar-reference-arm-off.o \
-  build-unit4-absolute/reference_lunar_orientation.cpp \
-  build-unit4-absolute/libmitaka_core.a -o /tmp/mitaka-unit4-lunar-reference-arm-off
-/tmp/mitaka-unit4-lunar-reference-arm-off --dump
-```
-
-`--dump` の期待値生成は公式原本だけを呼ぶ。新コアを参照値の生成には使わない。
-上の縮約無効バイナリは原本の切り分け用で、通常演算条件の新コアとの比較試験には使わない。
 
 最終結果は通常 / ASan+UBSan の月試験が各 14,172 checks PASS、
 `make BUILD_DIR=build-unit4-root-x86 ARCH=x86_64 test` は月を含む全 16 テストが PASS。

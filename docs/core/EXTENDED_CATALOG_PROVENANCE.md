@@ -1,11 +1,11 @@
 # 追加カタログの入力契約と由来
 
 この文書は `extended_catalog.hpp` / `extended_catalog.cpp` の根拠を記録する。
-元の配布データおよび公式ソースは読み取り専用で扱う。
+元の配布データは読み取り専用で扱う。
 
 ## 参照した原典
 
-`vendor/mitaka/sources/official/mitaka_source/` にある公式 Mitaka 1.3.1 ソースを参照した。
+表のパスは [公式 Mitaka 1.3.1](../sources/README.md) の ZIP 内の `mitaka_source/` を基準とする。
 Windows ABI に依存する `fread(sizeof(...))` を移植せず、ファイル上の幅と
 little-endian を明示して復号する。公式ソースの許諾表示を実装に保持する。
 

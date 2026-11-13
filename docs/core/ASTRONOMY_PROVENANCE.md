@@ -7,7 +7,7 @@
 
 取得元: <https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/mitaka_source_131.zip>
 
-原本パスは `vendor/mitaka/sources/official/mitaka_source/` からの相対パス。
+原本パスは公式 ZIP 内の `mitaka_source/` からの相対パス。
 
 | 原本 | 抽出した機能 | 原本 SHA-256 |
 |---|---|---|
@@ -45,20 +45,6 @@ CF96 と trajectory は別のローダー API で扱い、平均軌道 API が�
 9 天体の位置と速度は、未変更の公式 `cele_mech.cpp` と `vector3.h` を Apple Clang 21 で実行して得た JD 2451545.0 の値と比較する。
 位置の許容誤差 4e-7 AU、速度の許容誤差 1e-9 AU/day は、原本の反復停止精度を考慮した回帰比較用であり、物理的な予測精度を表さない。
 B1950→J2000 は原本の float 出力と比較し、赤緯だけ上記契約に正規化して比較する。
-
-原本から回帰値を再生成する補助プログラムは `tools/generate_astronomy_reference.cpp`。
-`vendor/mitaka/native/core` から以下で実行できる。出力は stdout のみで、元データを書き換えない。
-
-```sh
-mkdir -p build/reference
-xcrun clang++ -std=c++17 -Wno-invalid-utf8 \
-  -I ../../sources/official/mitaka_source/common \
-  tools/generate_astronomy_reference.cpp \
-  ../../sources/official/mitaka_source/common/astro/cele_mech.cpp \
-  ../../sources/official/mitaka_source/common/astro/astrometry.cpp \
-  -o build/reference/generate_astronomy_reference
-build/reference/generate_astronomy_reference
-```
 
 ライブラリ本体は C++17 標準ライブラリのみで構築する。
 非公式 macOS 移植のコードはこのモジュールにコピーしていない。

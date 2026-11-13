@@ -19,7 +19,6 @@
 | --- | --- |
 | `make test` | 計算コア、GUI、コントローラーの自動テスト |
 | `make data-test` | 実データを使うカタログ・画像の読み込みと描画モデル |
-| `make reference-test` | 公式 Mitaka 1.3.1 と暦表、自転、月、大気、食、天の川の計算結果を比較 |
 | `make smoke` | macOS の GUI セッションでアプリを起動し、描画、状態復元、画像出力、再生、飛行、Lua 連携を確認 |
 
 実データを使う試験の既定の入力は `resources/data` です。地球・火星の地形は `git lfs pull` で取得できます。独自のデータで確認する場合は `make data-test DATA_ROOT="/absolute/path/to/data"` のように、`hip.dat` と `cf96.dat` が入ったディレクトリの絶対パスを指定してください。同梱データの件数・版を期待する試験もあります。

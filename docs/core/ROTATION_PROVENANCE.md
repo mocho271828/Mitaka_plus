@@ -7,7 +7,7 @@
 
 取得元: <https://4d2u.nao.ac.jp/wp-content/uploads/mitaka/software/mitaka_source_131.zip>
 
-原本パスは `vendor/mitaka/sources/official/mitaka_source/` からの相対パス。
+原本パスは公式 ZIP 内の `mitaka_source/` からの相対パス。
 
 | 原本 | 参照・抽出した機能 | SHA-256 |
 | --- | --- | --- |
@@ -71,27 +71,13 @@ spin = 360 * (0.7790572732640 + 1.00273781191135448 * (jd-2451545))
 公式の球メッシュは `longitude=360u`、`latitude=180v-90` で、惑星表面描画は火星に 0 度、他の 8 惑星に 180 度の画像回転を適用する。
 この画像差分を基底へ重ねて適用すると、経度が二重にずれる。
 
-## 検証と再生成
+## 固定値による回帰テスト
 
 通常の `make test` は原本を必要としない。
 `tests/test_rotation.cpp` は全 9 惑星と対応暦の端点を含む複数時刻で、基底の単位長・直交性・右手性・逆変換を検証する。
 J2000 の北極、地球の傾斜と Greenwich 方向、金星・天王星の負の自転率、地球の歳差、公式から生成した固定値、不正入力も検証する。
 
-公式との比較は次のコマンドで再実行できる。
-
-```sh
-# このリポジトリのルートから実行
-cd vendor/mitaka/native/core
-make rotation-reference-test
-make BUILD_DIR=build/sanitize SANITIZE=address,undefined rotation-reference-test
-build/test_rotation_upstream --dump
-```
-
-`tests/extract_rotation.awk` は上記原本から許諾表示と 3 関数を本文変更なしで `build/reference_rotation.cpp` へ抽出する。
-必要な関数や終端が欠けていれば失敗する。
-比較用プログラムだけが原本の `vector3.h` と `astro_const.h` を使い、コア本体は C++17 標準ライブラリのみを使う。
-`--dump` は通常テストの固定値を再生成し、17 桁の値を標準出力へ表示する。
-
-比較範囲は J2000、1700..2100 年の 201 時刻、対応暦全域の 201 時刻、J2000 前後の秒・日・世紀単位の時差で、合計 33,129 成分を照合する。
+移植時に公式 1.3.1 の3つの姿勢計算関数を使って参照値を採取した。
+比較範囲は J2000、1700..2100 年の 201 時刻、対応暦全域の 201 時刻、J2000 前後の秒・日・世紀単位の時差で、合計 33,129 成分を照合した。
 単位ベクトル成分の許容差は J2000 で `2e-14`、1700..2100 年で `2e-9`、対応暦全域で `5e-8` とする。
 これは角度還元と演算順序の差を含む実装回帰の基準であり、天体姿勢の観測精度を表す値ではない。

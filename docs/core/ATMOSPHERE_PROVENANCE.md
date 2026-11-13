@@ -1,14 +1,14 @@
 # 大気散乱と emmap の出典・数値契約
 
-N12 は保存済み公式 Mitaka 1.3.1 の scalar 単一散乱・多重散乱を移植し、ローカル Plus と通常版の `data/emmap.dat` を読み取り専用で利用する。Plus の旧実行ファイルと画素単位で同じ描画になることや、観測に対する物理精度は主張しない。座標系から表示色までの計算と適用範囲は [大気描画](../gui/ATMOSPHERE_RENDERING.md) に記録する。
+N12 は[公式 Mitaka 1.3.1](../sources/README.md) の scalar 単一散乱・多重散乱を移植し、ローカル Plus と通常版の `data/emmap.dat` を読み取り専用で利用する。Plus の旧実行ファイルと画素単位で同じ描画になることや、観測に対する物理精度は主張しない。座標系から表示色までの計算と適用範囲は [大気描画](../gui/ATMOSPHERE_RENDERING.md) に記録する。
 
 ## 根拠と保持する入力
 
 | 公式ファイル | 用途 | SHA-256 |
 | --- | --- | --- |
-| `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_atmosphere.cpp` | scalar 計算、map loader、描画 RGB | `e9cef8417960ea795b6d40f49c9778a130d508a65de6a8635f7709f783c08e89` |
-| `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_approx_func.h` | `exp_d` | `025b8e8904959c2e0eece00f73c20a079fcc9a3d7220b507015f832ede23c298` |
-| `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_planets.cpp` | Earth / Mars の通常描画パラメータ | `a8a1343409790b23fa69dcc852a5a36ca111e3fc7f78861ef9344690fd23bb41` |
+| `Mitaka/mtk_atmosphere.cpp` | scalar 計算、map loader、描画 RGB | `e9cef8417960ea795b6d40f49c9778a130d508a65de6a8635f7709f783c08e89` |
+| `Mitaka/mtk_approx_func.h` | `exp_d` | `025b8e8904959c2e0eece00f73c20a079fcc9a3d7220b507015f832ede23c298` |
+| `Mitaka/mtk_planets.cpp` | Earth / Mars の通常描画パラメータ | `a8a1343409790b23fa69dcc852a5a36ca111e3fc7f78861ef9344690fd23bb41` |
 
 原版由来の計算ファイルには許諾表示を保持する。新しい依存は追加せず、既存の `Vec3`、`CatalogLoadLimits`、`CatalogError` と C++17 標準ライブラリを利用する。
 
@@ -60,7 +60,7 @@ N12 は保存済み公式 Mitaka 1.3.1 の scalar 単一散乱・多重散乱を
 
 arm64 の通常 / SAN の多重散乱は 1,584 成分中 1,385 成分が完全一致、最大絶対差 `3.0517578125e-05`、最大相対差 `1.63027751399e-07`。x86_64 は 1,584 成分すべて完全一致。上限は `8 * float epsilon * max(abs(actual),abs(expected))` で、ゼロを通す固定の絶対許容差は使わない。float 演算の最下位差を扱う比較であり、物理精度を表す数値ではない。
 
-公式参照は awk で関数本文を変更せず抽出し、原 `vector3.h` / `mtk_approx_func.h` を利用する。SSE 経路は false に固定し、誤到達した stub は失敗する。最初の参照実行で地表内向きの微小負値が見つかり、上記の公開境界を追加してから最終 3 構成を再実行した。数値比較はリポジトリルートの `make reference-test` で再実行できる。
+移植時の比較では、公式版の scalar 関数と `vector3.h`・`mtk_approx_func.h` を使い、SSE 経路を無効にした。地表から内向きの光線は上記の境界条件で個別に検証した。
 
 ## 今回の対象外
 

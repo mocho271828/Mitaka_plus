@@ -61,7 +61,7 @@ CP932の2バイト文字は組として保持し、「ソ」「能」「表」�
 
 ## 公式ソースとの差異
 
-公式1.3.1の `vendor/mitaka/sources/official/mitaka_source/Mitaka/mtk_places.cpp:84 load_places`
+公式1.3.1の `Mitaka/mtk_places.cpp:84 load_places`
 と `mtk_places.h:49 PlaceItem` を照合した。
 この実装は `OBJECT:` / `TYPE:` と地名キーのテキスト形式を読み、
 旧Plusの `Places:addPlace` 形式は扱わない。したがって今回の解析器は、

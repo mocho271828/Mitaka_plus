@@ -1,5 +1,4 @@
-# 天文データと公式原本は改行やエンコーディングを変えず原バイトを保持する。
+# 天文データは改行やエンコーディングを変えず原バイトを保持する。
 /resources/** -text -whitespace
 /resources/data/earth_topo/earth_topo.dat filter=lfs diff=lfs merge=lfs -text
 /resources/data/mars_topo/mars_topo.dat filter=lfs diff=lfs merge=lfs -text
-/vendor/mitaka/sources/official/** -text -whitespace
