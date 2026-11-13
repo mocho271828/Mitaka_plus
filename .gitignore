@@ -22,3 +22,5 @@ verification/
 AGENTS.md
 vendor/mitaka/investigation/
 /docs/research/
+temp_gates/
+policy_gates/
