@@ -1,5 +1,4 @@
 #import "AppControllerInternal.h"
-#import "HoverMenuView.h"
 static NSTextField *label(NSString *text, CGFloat size) {
     NSTextField *field = [NSTextField labelWithString:text];
     field.font = [NSFont systemFontOfSize:size];
@@ -92,12 +91,6 @@ static void addControlCommands(NSMenu *menu, NSArray<NSButton *> *controls) {
     windowItem.submenu = windowMenu;
     [menu addItem:windowItem];
     NSApp.mainMenu = menu;
-    NSView *canvas = _window.contentView;
-    HoverMenuView *content = [[HoverMenuView alloc] initWithFrame:canvas.frame menu:menu];
-    canvas.frame = content.bounds;
-    canvas.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    [content addSubview:canvas];
-    _window.contentView = content;
 }
 
 - (void)addOperationMenu:(NSMenu *)menu {

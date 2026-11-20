@@ -1,7 +1,6 @@
 #import "AppControllerInternal.h"
 #import "SolarSystemViewInternal.h"
 #import "SolarDateUpdate.h"
-#import "HoverMenuView.h"
 #import <objc/runtime.h>
 #include "surface_navigation.hpp"
 #include "satellite_scene.hpp"
@@ -27,10 +26,15 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
 
 @implementation AppController (SmokeTests)
 - (BOOL)runWindowLayoutSmokeTest {
-    HoverMenuView *content = (HoverMenuView *)_window.contentView;
-    if (![content isKindOfClass:HoverMenuView.class] || _controlsPanel.visible ||
+    NSView *content = _window.contentView;
+    NSMenu *operations = [NSApp.mainMenu itemWithTitle:@"操作"].submenu;
+    NSMenu *modes = [operations itemWithTitle:@"表示モード"].submenu;
+    NSMenuItem *controls = [operations itemWithTitle:@"操作パネル…"];
+    if (content.subviews.count != 3 || ![content.subviews containsObject:_sky] ||
+        ![content.subviews containsObject:_solar] || ![content.subviews containsObject:_horizon] ||
+        modes.numberOfItems != 3 || !controls || _controlsPanel.visible ||
         _mode.window == _window || _status.window == _window || _timeInfoVisible) {
-        [self showError:@"smoke: main window must contain only the canvas and hidden menu"];
+        [self showError:@"smoke: main window must contain only the canvas, with controls in the native menu"];
         return NO;
     }
     const NSRect savedFrame = _window.frame;
@@ -40,20 +44,21 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
         [_window setContentSize:size.sizeValue];
         [_window.contentView layoutSubtreeIfNeeded];
         for (NSInteger mode = 0; mode < 3; ++mode) {
-            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(selectViewMode:) keyEquivalent:@""];
-            item.tag = mode;
-            [self selectViewMode:item];
+            NSMenuItem *item = [modes itemAtIndex:mode];
+            [modes update];
+            if (!item.enabled || item.target != self || item.action != @selector(selectViewMode:) ||
+                item.tag != mode || ![NSApp sendAction:item.action to:item.target from:item]) {
+                [self showError:@"smoke: native menu must dispatch each view mode"];
+                return NO;
+            }
             [content layoutSubtreeIfNeeded];
             NSView *view = mode == 0 ? _sky : mode == 1 ? _solar : _horizon;
             const NSRect frame = [view convertRect:view.bounds toView:content];
-            [content showMenu];
-            [content layoutSubtreeIfNeeded];
+            [modes update];
             const BOOL valid = NSEqualRects(frame, content.bounds) &&
-                NSEqualRects(frame, [view convertRect:view.bounds toView:content]) &&
-                [self validateOperationMenuItem:item] && item.state == NSControlStateValueOn;
-            [content hideMenu];
+                _mode.selectedSegment == mode && item.state == NSControlStateValueOn;
             if (!valid) {
-                [self showError:@"smoke: hover menu or view mode changed the full-window canvas"];
+                [self showError:@"smoke: native menu mode selection must preserve the full-window canvas"];
                 return NO;
             }
         }
@@ -61,7 +66,10 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
     [_window setFrame:savedFrame display:NO];
     _mode.selectedSegment = savedMode;
     [self changeMode:nil];
-    [self showControls:nil];
+    if (![NSApp sendAction:controls.action to:controls.target from:controls]) {
+        [self showError:@"smoke: native menu must open the controls panel"];
+        return NO;
+    }
     [_controlsPanel.contentView layoutSubtreeIfNeeded];
     if (!_controlsPanel.visible || _mode.window != _controlsPanel) {
         [self showError:@"smoke: controls must remain available in a separate panel"];
@@ -69,7 +77,7 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
     }
     [_controlsPanel close];
     [_window makeKeyAndOrderFront:nil];
-    std::fprintf(stdout, "SMOKE immersive_layout=passed modes=3 sizes=2 overlay=stable controls=separate\n");
+    std::fprintf(stdout, "SMOKE immersive_layout=passed modes=3 sizes=2 menu=native controls=separate\n");
     return YES;
 }
 

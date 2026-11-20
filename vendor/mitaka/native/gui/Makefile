@@ -38,7 +38,6 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,AppGalaxyCommands.o surface_depth.o Terrain
 OBJECTS += $(BUILD_DIR)/ScriptConsoleController.o
 OBJECTS += $(BUILD_DIR)/SolarScriptTarget.o $(BUILD_DIR)/SolarScriptOrientation.o
 OBJECTS += $(BUILD_DIR)/RendererOptionsController.o
-OBJECTS += $(BUILD_DIR)/HoverMenuView.o
 
 ifneq ($(ARCH),)
 CXXFLAGS += -arch $(ARCH)
@@ -97,14 +96,6 @@ $(BUILD_DIR)/test_renderer_quality: tests/test_renderer_quality.mm $(BUILD_DIR)/
 
 $(BUILD_DIR)/test_window_presentation: tests/test_window_presentation.mm $(BUILD_DIR)/WindowPresentationController.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
-
-$(BUILD_DIR)/test_hover_menu: tests/test_hover_menu.mm $(BUILD_DIR)/HoverMenuView.o
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework AppKit -o "$@"
-
-.PHONY: hover-menu-test
-hover-menu-test: $(BUILD_DIR)/test_hover_menu
-	"$(BUILD_DIR)/test_hover_menu"
-controller-test: hover-menu-test
 
 $(BUILD_DIR)/test_html_bridge_policy: tests/test_html_bridge_policy.mm $(BUILD_DIR)/html_bridge_policy.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc $^ $(LDFLAGS) -framework Foundation -o "$@"
