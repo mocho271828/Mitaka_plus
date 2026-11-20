@@ -189,7 +189,7 @@ void click_object(HorizonView *view, EquatorialCoordinates coordinates, double j
     const auto horizontal = ObservationFrame([view observerSite], jd).to_horizontal(coordinates);
     [view setViewport:{horizontal.azimuth_deg, horizontal.altitude_deg, 45}];
     const auto viewport = [view viewport];
-    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const NSRect map = view.bounds;
     const auto point = project_horizon({360 - horizontal.azimuth_deg, horizontal.altitude_deg},
         {360 - viewport.center_azimuth_deg, viewport.center_altitude_deg, viewport.vertical_fov_deg},
         map.size.width, map.size.height);
@@ -362,7 +362,7 @@ void test_nearby_object_parallax(HorizonView *view, const SkyModel& model, const
     check(hidden != nil, "cannot capture background for ellipsoid target");
     [view cacheDisplayInRect:view.bounds toBitmapImageRep:hidden];
     bool centerChanged = false;
-    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const NSRect map = view.bounds;
     const double sx = visible.pixelsWide / view.bounds.size.width;
     const double sy = visible.pixelsHigh / view.bounds.size.height;
     for (int y = -8; y <= 8 && !centerChanged; ++y) {
@@ -482,7 +482,7 @@ void test_landscape_selection(HorizonView *view, const SkyModel& model, const Sk
     click_object(view, objects[0].coordinates, jd, 7);
     const bool rightSelected = view.selectedSmallBodyIndex == 0;
     check(leftSelected != rightSelected, "landscape must test click location, not object center");
-    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const NSRect map = view.bounds;
     const auto projected = render_horizon_landscape(edgeModel->image(0),
         &edgeModel->definitions().landscapes()[0].definition, [view viewport], map.size.width, map.size.height);
     const auto alphaAt = [&](int offset) {
@@ -801,7 +801,7 @@ void test_data(HorizonView *view, const char *directory) {
     view.selectionChanged = ^(NSString *text) { description = text; };
     check([view selectStarHIP:32349], "Sirius HIP could not be selected");
     const auto viewportBeforeOutsideClick = [view viewport];
-    NSEvent *outsideDoubleClick = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:NSMakePoint(0, 0)
+    NSEvent *outsideDoubleClick = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:NSMakePoint(-1, -1)
         modifierFlags:0 timestamp:0 windowNumber:0 context:nil eventNumber:0 clickCount:2 pressure:0];
     [view mouseUp:outsideDoubleClick];
     check([view viewport].vertical_fov_deg == viewportBeforeOutsideClick.vertical_fov_deg,

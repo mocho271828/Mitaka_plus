@@ -19,7 +19,7 @@ static NSBitmapImageRep *snapshot(SkyView *view) {
 }
 
 static NSColor *backgroundSample(SkyView *view) {
-    const NSRect map = NSInsetRect(view.bounds, 42, 34);
+    const NSRect map = view.bounds;
     NSBitmapImageRep *image = snapshot(view);
     check(image != nil, "background snapshot failed");
     const NSInteger x = (map.origin.x + map.size.width * 0.31) / view.bounds.size.width * image.pixelsWide;
@@ -38,6 +38,13 @@ static void backgroundTests() {
     view.milkyWayMode = MilkyWayMode::normal;
     const NSColor *normal = backgroundSample(view);
     check(normal.redComponent > empty.redComponent + 0.2, "Normal background is missing");
+    NSBitmapImageRep *fullCanvas = snapshot(view);
+    for (NSInteger x : {NSInteger{2}, fullCanvas.pixelsWide - 3}) {
+        NSColor *edge = [[fullCanvas colorAtX:x y:fullCanvas.pixelsHigh / 3]
+            colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+        check(edge.redComponent > empty.redComponent + 0.2,
+            "sky background must reach both window edges without control margins");
+    }
     view.milkyWayMode = MilkyWayMode::bright;
     const NSColor *bright = backgroundSample(view);
     check(bright.greenComponent > empty.greenComponent + 0.2 && bright.redComponent < normal.redComponent - 0.2,
@@ -162,7 +169,7 @@ int main(int argc, char **argv) {
             view.showsGalaxies = YES;
             NSBitmapImageRep *image = snapshot(view);
             check(image != nil, "sky snapshot failed");
-            const NSRect map = NSInsetRect(view.bounds, 42, 34);
+            const NSRect map = view.bounds;
             const auto galaxy = *project_sky({90, 30}, {}, map.size.width, map.size.height);
             const NSInteger x = static_cast<NSInteger>((map.origin.x + galaxy.x) / view.bounds.size.width * image.pixelsWide);
             const NSInteger y = static_cast<NSInteger>((map.origin.y + galaxy.y) / view.bounds.size.height * image.pixelsHigh);

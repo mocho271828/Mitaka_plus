@@ -1,4 +1,5 @@
 #import "AppControllerInternal.h"
+#import "HoverMenuView.h"
 static NSTextField *label(NSString *text, CGFloat size) {
     NSTextField *field = [NSTextField labelWithString:text];
     field.font = [NSFont systemFontOfSize:size];
@@ -15,6 +16,22 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     view.spacing = 10;
     view.alignment = orientation == NSUserInterfaceLayoutOrientationVertical ? NSLayoutAttributeLeading : NSLayoutAttributeCenterY;
     return view;
+}
+
+static NSMenu *submenu(NSMenu *parent, NSString *title) {
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:nil keyEquivalent:@""];
+    item.submenu = [[NSMenu alloc] initWithTitle:title];
+    [parent addItem:item];
+    return item.submenu;
+}
+
+static void addControlCommands(NSMenu *menu, NSArray<NSButton *> *controls) {
+    for (NSButton *control in controls) {
+        NSMenuItem *item = [menu addItemWithTitle:control.title action:control.action keyEquivalent:@""];
+        item.target = control.target;
+        item.tag = control.tag;
+        item.toolTip = control.toolTip;
+    }
 }
 
 @interface MitakaMainWindow : NSWindow
@@ -65,6 +82,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     editItem.submenu = editMenu;
     [menu addItem:editItem];
     [self addPlusMenus:menu fileMenu:fileMenu];
+    [self addOperationMenu:menu];
     NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:@"ウィンドウ" action:nil keyEquivalent:@""];
     NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:@"ウィンドウ"];
     NSMenuItem *fullScreenItem = [windowMenu addItemWithTitle:@"主画面を全画面表示"
@@ -74,15 +92,93 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     windowItem.submenu = windowMenu;
     [menu addItem:windowItem];
     NSApp.mainMenu = menu;
+    NSView *canvas = _window.contentView;
+    HoverMenuView *content = [[HoverMenuView alloc] initWithFrame:canvas.frame menu:menu];
+    canvas.frame = content.bounds;
+    canvas.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [content addSubview:canvas];
+    _window.contentView = content;
+}
+
+- (void)addOperationMenu:(NSMenu *)menu {
+    NSMenu *operations = submenu(menu, @"操作");
+    NSMenu *modes = submenu(operations, @"表示モード");
+    for (NSInteger index = 0; index < _mode.segmentCount; ++index) {
+        NSMenuItem *item = [modes addItemWithTitle:[_mode labelForSegment:index]
+            action:@selector(selectViewMode:) keyEquivalent:@""];
+        item.target = self;
+        item.tag = index;
+    }
+    addControlCommands(submenu(operations, @"カメラ"), _cameraButtons);
+    addControlCommands(submenu(operations, @"太陽系天体を選択"), _bodyButtons);
+    NSMenu *flight = submenu(operations, @"飛行");
+    addControlCommands(flight, _travelButtons);
+    addControlCommands(flight, @[_journeyButton, _resumeJourneyButton]);
+    [operations addItem:NSMenuItem.separatorItem];
+    [operations addItemWithTitle:@"操作パネル…" action:@selector(showControls:) keyEquivalent:@""].target = self;
+    [operations addItemWithTitle:@"選択天体の情報…" action:@selector(showSelectionInfo:) keyEquivalent:@""].target = self;
+    [operations addItemWithTitle:@"描画の情報…" action:@selector(showRenderInfo:) keyEquivalent:@""].target = self;
+}
+
+- (void)showControls:(id)sender {
+    (void)sender;
+    if (!_controlsPanel.visible) [_controlsPanel center];
+    [_controlsPanel makeKeyAndOrderFront:nil];
+}
+
+- (void)showSelectionInfo:(id)sender {
+    (void)sender;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"選択天体の情報";
+    alert.informativeText = _selectionLabel.stringValue;
+    [alert beginSheetModalForWindow:_window completionHandler:nil];
+}
+
+- (void)showRenderInfo:(id)sender {
+    (void)sender;
+    NSView *view = _mode.selectedSegment == 0 ? _sky : _mode.selectedSegment == 1 ? _solar : _horizon;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"描画の情報";
+    alert.informativeText = view.accessibilityHelp.length ? view.accessibilityHelp : _note.stringValue;
+    [alert beginSheetModalForWindow:_window completionHandler:nil];
+}
+
+- (void)selectViewMode:(NSMenuItem *)sender {
+    if (!_mode.enabled || sender.tag < 0 || sender.tag >= _mode.segmentCount) return;
+    _mode.selectedSegment = sender.tag;
+    [self changeMode:sender];
+    [_window makeFirstResponder:[self activeView]];
+}
+
+- (BOOL)validateOperationMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(showControls:)) return YES;
+    if (item.action == @selector(showSelectionInfo:) || item.action == @selector(showRenderInfo:))
+        return _model && !_loading && !_window.attachedSheet;
+    if (item.action == @selector(selectViewMode:)) {
+        item.state = item.tag == _mode.selectedSegment ? NSControlStateValueOn : NSControlStateValueOff;
+        return _mode.enabled;
+    }
+    if (item.action == @selector(selectBody:)) {
+        if (item.tag < 0 || static_cast<NSUInteger>(item.tag) >= _bodyButtons.count) return NO;
+        return _bodyButtons[item.tag].enabled && !_bodyButtons[item.tag].hidden;
+    }
+    for (NSButton *control in [_cameraButtons arrayByAddingObjectsFromArray:
+        [_travelButtons arrayByAddingObjectsFromArray:@[_journeyButton, _resumeJourneyButton]]]) {
+        if (item.action == control.action) return control.enabled;
+    }
+    return NO;
 }
 
 - (void)buildWindow {
     _window = [[MitakaMainWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1280, 800)
-        styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable
+        styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
+            NSWindowStyleMaskResizable | NSWindowStyleMaskFullSizeContentView
         backing:NSBackingStoreBuffered defer:NO];
     _window.title = @"Mitaka Native — 星と惑星";
     if (!_smokeTest) [_window setFrameAutosaveName:@"MitakaMainWindow"];
-    _window.minSize = NSMakeSize(1100, 850);
+    _window.minSize = NSMakeSize(640, 480);
+    _window.titleVisibility = NSWindowTitleHidden;
+    _window.titlebarAppearsTransparent = YES;
     _window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
     _window.releasedWhenClosed = NO;
     _window.delegate = self;
@@ -90,13 +186,6 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     _windowPresentation = [[WindowPresentationController alloc] initWithWindow:_window];
     [_window center];
 
-    NSTextField *title = label(@"Mitaka Native", 22);
-    title.font = [NSFont systemFontOfSize:22 weight:NSFontWeightSemibold];
-    NSTextField *subtitle = label(@"星・惑星・月の公転と自転、地球から目的地への連続飛行", 12);
-    subtitle.textColor = NSColor.secondaryLabelColor;
-    NSStackView *heading = stack(@[title, subtitle], NSUserInterfaceLayoutOrientationVertical);
-    heading.spacing = 3;
-    [heading.heightAnchor constraintEqualToConstant:48].active = YES;
     _pathLabel = label(@"データ未選択 — hip.dat / cf96.dat のあるフォルダを開いてください", 12);
     _pathLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
     [_pathLabel setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
@@ -131,6 +220,7 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
     [controls.heightAnchor constraintEqualToConstant:28].active = YES;
     _dateLabel = label(@"暦表時刻 JD 2451545.0 · 2000-01-01 12:00", 12);
     _dateLabel.textColor = NSColor.secondaryLabelColor;
+    _dateLabel.hidden = !_timeInfoVisible;
     [_dateLabel.heightAnchor constraintEqualToConstant:18].active = YES;
 
     _sky = [[SkyView alloc] initWithFrame:NSZeroRect];
@@ -251,16 +341,19 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
         [_bodyButtons addObject:item];
         [sidebarItems addObject:item];
     }
-    [sidebarItems addObject:_selectionLabel];
     _note = [NSTextField wrappingLabelWithString:@""];
     _note.font = [NSFont systemFontOfSize:11];
     _note.textColor = NSColor.secondaryLabelColor;
-    [sidebarItems addObject:_note];
     NSStackView *sidebar = stack(sidebarItems, NSUserInterfaceLayoutOrientationVertical);
     sidebar.spacing = 6;
     [sidebar.widthAnchor constraintEqualToConstant:224].active = YES;
     for (NSView *item in sidebarItems) [item.widthAnchor constraintEqualToAnchor:sidebar.widthAnchor].active = YES;
+    NSStackView *details = stack(@[_selectionLabel, _note], NSUserInterfaceLayoutOrientationVertical);
+    // 詳細情報は必要時に開くパネルへ集め、主画面の描画サイズと切り離す。
+    NSStackView *information = stack(@[sidebar, details], NSUserInterfaceLayoutOrientationHorizontal);
+    information.alignment = NSLayoutAttributeTop;
     NSView *canvas = [[NSView alloc] init];
+    _window.contentView = canvas;
     for (NSView *view in @[_sky, _solar, _horizon]) {
         view.translatesAutoresizingMaskIntoConstraints = NO;
         [canvas addSubview:view];
@@ -270,25 +363,33 @@ static NSStackView *stack(NSArray<NSView *> *views, NSUserInterfaceLayoutOrienta
             [view.topAnchor constraintEqualToAnchor:canvas.topAnchor],
             [view.bottomAnchor constraintEqualToAnchor:canvas.bottomAnchor]]];
     }
-    NSStackView *mapRow = stack(@[canvas, sidebar], NSUserInterfaceLayoutOrientationHorizontal);
-    mapRow.alignment = NSLayoutAttributeTop;
-    mapRow.spacing = 16;
-    [canvas.heightAnchor constraintEqualToAnchor:mapRow.heightAnchor].active = YES;
-    [canvas.widthAnchor constraintGreaterThanOrEqualToConstant:680].active = YES;
     _status = [NSTextField wrappingLabelWithString:@"データは読み取り専用で利用します。元ファイルの変換・移動・更新は行いません。"];
     _status.font = [NSFont systemFontOfSize:11];
     _status.textColor = NSColor.secondaryLabelColor;
     _status.selectable = YES;
     [_status.heightAnchor constraintEqualToConstant:42].active = YES;
-    NSStackView *layout = stack(@[heading, source, controls, _dateLabel, _playback.view, viewControls, travelControls, journeyControls, mapRow, _status], NSUserInterfaceLayoutOrientationVertical);
+    _controlsPanel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, 1120, 700)
+        styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
+        backing:NSBackingStoreBuffered defer:NO];
+    _controlsPanel.title = @"操作パネル";
+    _controlsPanel.releasedWhenClosed = NO;
+    _controlsPanel.floatingPanel = NO;
+    _controlsPanel.collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
+    _controlsPanel.minSize = NSMakeSize(1100, 650);
+    _controlsPanel.appearance = _window.appearance;
+    NSStackView *layout = stack(@[source, controls, _dateLabel, _playback.view, viewControls,
+        travelControls, journeyControls, information, _status], NSUserInterfaceLayoutOrientationVertical);
     layout.translatesAutoresizingMaskIntoConstraints = NO;
-    [_window.contentView addSubview:layout];
-    for (NSView *row in @[source, controls, _dateLabel, _playback.view, viewControls, travelControls, journeyControls, mapRow, _status]) [row.widthAnchor constraintEqualToAnchor:layout.widthAnchor].active = YES;
+    [_controlsPanel.contentView addSubview:layout];
+    for (NSView *row in @[source, controls, _dateLabel, _playback.view, viewControls, travelControls,
+        journeyControls, information, _status]) [row.widthAnchor constraintEqualToAnchor:layout.widthAnchor].active = YES;
+    for (NSView *field in @[_selectionLabel, _note])
+        [field.widthAnchor constraintEqualToAnchor:details.widthAnchor].active = YES;
     [NSLayoutConstraint activateConstraints:@[
-        [layout.leadingAnchor constraintEqualToAnchor:_window.contentView.leadingAnchor constant:20],
-        [layout.trailingAnchor constraintEqualToAnchor:_window.contentView.trailingAnchor constant:-20],
-        [layout.topAnchor constraintEqualToAnchor:_window.contentView.topAnchor constant:18],
-        [layout.bottomAnchor constraintEqualToAnchor:_window.contentView.bottomAnchor constant:-12]
+        [layout.leadingAnchor constraintEqualToAnchor:_controlsPanel.contentView.leadingAnchor constant:20],
+        [layout.trailingAnchor constraintEqualToAnchor:_controlsPanel.contentView.trailingAnchor constant:-20],
+        [layout.topAnchor constraintEqualToAnchor:_controlsPanel.contentView.topAnchor constant:18],
+        [layout.bottomAnchor constraintLessThanOrEqualToAnchor:_controlsPanel.contentView.bottomAnchor constant:-12]
     ]];
     [self changeMode:nil];
 }

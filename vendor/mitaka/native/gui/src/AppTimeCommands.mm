@@ -51,6 +51,7 @@ double fieldNumber(NSTextField *field, bool integer) {
     timeCommand(time, @"現在 UTC を一度適用", @selector(setCurrentTime:), self);
     timeCommand(time, @"現在 UTC に継続追従", @selector(toggleClockTracking:), self);
     timeCommand(time, @"日時情報を表示", @selector(toggleTimeInfo:), self);
+    timeCommand(time, @"再生・日時の操作パネル…", @selector(showControls:), self);
     [time addItem:NSMenuItem.separatorItem];
     timeCommand(time, @"順方向に再生", @selector(playForward), _playback);
     timeCommand(time, @"逆方向に再生", @selector(playBackward), _playback);

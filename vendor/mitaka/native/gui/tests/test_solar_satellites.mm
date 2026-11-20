@@ -320,7 +320,7 @@ void viewTests(std::shared_ptr<const SatelliteBrowserModel> source) {
     auto planets = view.planetDisplayOptions;
     planets.visible = false;
     view.planetDisplayOptions = planets;
-    const NSRect map = NSInsetRect(view.bounds, 18, 40);
+    const NSRect map = view.bounds;
     auto projected = visible_satellites(*recovered, [view cameraState], map);
     const auto callbacksBeforeClick = selectionCallbacks;
     [view pickBodyAtPoint:NSMakePoint(projected[0].point.x, projected[0].point.y)];

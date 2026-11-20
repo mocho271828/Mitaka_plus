@@ -84,7 +84,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         _smallBodiesVisible = YES;
         _terrainAmplification = TerrainAmplification::x1;
         _spacecraftVisible = YES;
-        _showsTimeInfo = YES;
+        _showsTimeInfo = NO;
         _julianDate = 2451545.0;
         _notifiedOverviewVisible = YES;
         self.accessibilityElement = YES;
@@ -193,7 +193,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             [self refreshTerrain];
     }
 }
-- (NSRect)mapRect { return NSInsetRect(self.bounds, 18, 40); }
+- (NSRect)mapRect { return self.bounds; }
 - (Vec3)displayPosition:(NSUInteger)index {
     return solar_display_position([self scene], index);
 }
@@ -905,7 +905,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
     if (map.size.width < 160 || map.size.height < 100) return;
     RendererQualityScope text(context, _rendererDisplayOptions, RendererPrimitive::text);
     if (!_hasData) {
-        self.toolTip = nil;
+        self.accessibilityHelp = @"データを開くと太陽系を表示します。";
         [@"データを開くと太陽系を表示します。" drawAtPoint:NSMakePoint(map.origin.x + 20, NSMidY(map))
                                                     withAttributes:textStyle(NSColor.labelColor, 13)];
         return;
@@ -919,11 +919,7 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
         else if (frame.surface_body) title = @"実半径とローカル地形 · 木土天海は基準球面 · 周囲の微小天体は記号";
         else if (frame.preview_body) title = @"選択天体の表面観察 · 模式半径 · ドラッグで観察方向を変更";
         else if (frame.earth_moon) title = @"地球と月 · 距離と半径は実比率 · 1.5 pt 未満は位置の記号 · 月軌道は地心相対";
-        if (_showsTimeInfo || _terrainSceneCoordinator.has_active())
-            title = [title stringByAppendingFormat:@" · 表示 JD %.5f", frame.julian_date];
         if (_terrainSceneCoordinator.has_active()) title = [title stringByAppendingString:@" · 地形更新中"];
-        if (!self.horizonTitleVisible)
-            [title drawAtPoint:NSMakePoint(18, 10) withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
         NSString *galaxyStatus = nil;
         bool galaxyDrawn = false;
         // 地表は同じ公開フレーム内の天体姿勢を使い、星・星座と3Dカメラを揃える。
@@ -1080,47 +1076,28 @@ static bool sameCamera(const SolarCamera& a, const SolarCamera& b) {
             NSString *note = @"天の川: 座標仮定・低解像度の放射吸収。旧 Plus との一致、星や銀河個別の吸収は未検証";
             galaxyStatus = galaxyStatus.length ? [galaxyStatus stringByAppendingFormat:@" · %@", note] : note;
         }
-        if (galaxyStatus.length)
-            [galaxyStatus drawAtPoint:NSMakePoint(map.origin.x + 8, NSMaxY(map) - 20)
-                                withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
         const auto terrain = [self terrainDiagnostics];
         diagnostics.insert(diagnostics.end(), terrain.begin(), terrain.end());
-        NSMutableArray<NSString *> *messages = [NSMutableArray arrayWithCapacity:diagnostics.size()];
+        NSMutableArray<NSString *> *messages = [NSMutableArray arrayWithObject:title];
+        if (galaxyStatus.length) [messages addObject:galaxyStatus];
+        if (frame.small_bodies)
+            [messages addObject:[NSString stringWithFormat:@"小天体 %lu / 原本 %lu 件を位置評価 · 二体近似（時系変換なし）",
+                frame.small_bodies->positioned_count, frame.small_bodies->positions.size()]];
         for (const auto& diagnostic : diagnostics) {
             NSString *message = [[NSString alloc] initWithBytes:diagnostic.data() length:diagnostic.size()
                 encoding:NSUTF8StringEncoding];
             [messages addObject:message ? message : @"診断の文字コードを表示できません。"];
         }
-        self.toolTip = messages.count ? [messages componentsJoinedByString:@"\n"] : nil;
-        if (messages.count) {
-            NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
-            paragraph.lineBreakMode = NSLineBreakByTruncatingTail;
-            NSMutableDictionary *style = [textStyle(NSColor.systemOrangeColor, 11) mutableCopy];
-            style[NSParagraphStyleAttributeName] = paragraph;
-            [[NSString stringWithFormat:@"描画の診断 %lu 件（詳細はポインタを置いて表示）: %@",
-                messages.count, messages.firstObject]
-                drawInRect:NSMakeRect(map.origin.x + 8, map.origin.y + 8, map.size.width - 16, 18)
-                withAttributes:style];
-        }
+        self.accessibilityHelp = [messages componentsJoinedByString:@"\n"];
+        if (_showsTimeInfo && !self.horizonTitleVisible)
+            [[NSString stringWithFormat:@"JD %.5f", frame.julian_date]
+                drawAtPoint:NSMakePoint(NSMinX(map) + 12, NSMinY(map) + 10)
+                withAttributes:textStyle(NSColor.secondaryLabelColor, 11)];
     }
     catch (const std::exception& error) {
-        self.toolTip = [NSString stringWithUTF8String:error.what()];
+        self.accessibilityHelp = [NSString stringWithUTF8String:error.what()];
         [[NSString stringWithFormat:@"描画できません: %s", error.what()] drawAtPoint:NSMakePoint(map.origin.x + 20, NSMidY(map))
             withAttributes:textStyle(NSColor.labelColor, 12)];
-    }
-    const auto helpOwner = _publishedScene;
-    const auto helpScene = helpOwner ? helpOwner->scene() : [self scene];
-    NSString *help = [NSString stringWithFormat:@"ドラッグ: 回転   Optionドラッグ: ロール   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮   格子: %d AU", helpScene.camera.distance_au < 15 ? 1 : 10];
-    if (_journeyActive && helpScene.physical_navigation && !helpScene.surface_body) help = @"飛行中は手動の視点操作を固定 · 一覧の選択は次の目的地 · 全体表示で飛行を終了";
-    else if (helpScene.surface_body) help = @"ドラッグ: 見回す   スクロール / ピンチ: 高度変更   天体の選択: 右の一覧   操作すると飛行を中断";
-    else if (helpScene.preview_body) help = @"ドラッグ: 回転   Optionドラッグ: ロール   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮";
-    else if (helpScene.earth_moon) help = @"ドラッグ: 回転   Optionドラッグ: ロール   Shift / 右ドラッグ: 移動   スクロール / ピンチ: 拡縮";
-    [help drawAtPoint:NSMakePoint(18, NSMaxY(self.bounds) - 24) withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
-    if (helpScene.small_bodies) {
-        NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · 数値 JD %.5f", helpScene.small_bodies->julian_date] : @"";
-        NSString *status = [NSString stringWithFormat:@"小天体 %lu / 原本 %lu 件を位置評価 · 二体近似%@（時系変換なし）",
-            helpScene.small_bodies->positioned_count, helpScene.small_bodies->positions.size(), time];
-        [status drawAtPoint:NSMakePoint(18, NSMaxY(self.bounds) - 39) withAttributes:textStyle(NSColor.secondaryLabelColor, 10)];
     }
 }
 @end

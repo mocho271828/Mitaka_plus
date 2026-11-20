@@ -30,7 +30,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         _initialPath = [path copy];
         _smokeTest = smokeTest;
         _jd = 2451545.0;
-        _timeInfoVisible = YES;
+        _timeInfoVisible = NO;
         _scriptCameraDuration = 9.0;
         _scriptCameraZoomMode = 2;
         _scriptTargetSelectionMode = 2;
@@ -100,6 +100,7 @@ static bool finishDatePresentation(const char *name, Action&& action) {
 }
 - (void)windowWillClose:(NSNotification *)notification {
     (void)notification;
+    [_controlsPanel close];
     _terminating = YES;
     [self invalidateSmallBodyOrbits];
     [self invalidateGalaxy];
@@ -243,6 +244,19 @@ static bool finishDatePresentation(const char *name, Action&& action) {
         std::fprintf(stderr, "%s\n", message.UTF8String);
         std::exit(EXIT_FAILURE);
     }
+    // 常設ステータスをなくしても、失敗はその操作の直後に確認できるようにする。
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self->_smokeTest || self->_terminating || !self->_window.visible || self->_controlsPanel.visible) return;
+        if (self->_window.attachedSheet) {
+            [self showControls:nil];
+            return;
+        }
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = NSAlertStyleWarning;
+        alert.messageText = @"操作を完了できませんでした";
+        alert.informativeText = message;
+        [alert beginSheetModalForWindow:self->_window completionHandler:nil];
+    });
 }
 
 - (void)loadData:(NSString *)path {

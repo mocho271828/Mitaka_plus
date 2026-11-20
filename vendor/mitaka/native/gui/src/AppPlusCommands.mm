@@ -184,6 +184,17 @@ static NSMenu *submenu(NSMenu *parent, NSString *title) {
     [self setMilkyWayMode:static_cast<MilkyWayMode>(sender.tag)];
 }
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
+    if (item.action == @selector(showControls:) || item.action == @selector(showSelectionInfo:) ||
+        item.action == @selector(showRenderInfo:) ||
+        item.action == @selector(selectViewMode:) || item.action == @selector(selectBody:) ||
+        item.action == @selector(resetCamera:) || item.action == @selector(innerPlanets:) ||
+        item.action == @selector(zoomOut:) || item.action == @selector(zoomIn:) ||
+        item.action == @selector(focusSelection:) || item.action == @selector(showSurface:) ||
+        item.action == @selector(earthMoon:) || item.action == @selector(land:) ||
+        item.action == @selector(takeOff:) || item.action == @selector(takeOffFromEarth:) ||
+        item.action == @selector(stopFlight:) || item.action == @selector(takeOffFromHorizon:) ||
+        item.action == @selector(descendToHorizon:) || item.action == @selector(startJourney:) ||
+        item.action == @selector(resumeJourney:)) return [self validateOperationMenuItem:item];
     if (item.action == @selector(toggleFlightMode:)) return [self canToggleFlightMode];
     if (item.action == @selector(resetViewAngle:))
         return _model && !_loading && _mode.selectedSegment == 2 && !_horizonFlightView &&

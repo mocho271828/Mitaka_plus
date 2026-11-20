@@ -122,7 +122,7 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
 - (BOOL)isFlipped { return YES; }
 - (BOOL)isOpaque { return YES; }
 - (BOOL)acceptsFirstResponder { return YES; }
-- (NSRect)mapRect { return NSInsetRect(self.bounds, 42, 34); }
+- (NSRect)mapRect { return self.bounds; }
 - (RendererDisplayOptions)rendererDisplayOptions { return _rendererDisplayOptions; }
 - (void)setRendererDisplayOptions:(RendererDisplayOptions)options {
     _rendererDisplayOptions = options;
@@ -482,8 +482,6 @@ static void drawText(NSString *text, NSPoint point, NSColor *color, CGFloat size
     if (map.size.width <= 0 || map.size.height <= 0) return;
     [self drawSkyBackgroundInRect:map];
     draw_sky_grids(context, map, _viewport, _gridDisplayOptions, _gridCache, false, _rendererDisplayOptions);
-    drawText([NSString stringWithFormat:@"J2000 赤道座標  ·  %.1f×  ·  ドラッグで移動 / ホイール・ピンチで拡大", _viewport.zoom],
-             NSMakePoint(map.origin.x, 10), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
     if (!_model) {
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);
         return;

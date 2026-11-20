@@ -184,7 +184,7 @@ void selection_reload_and_picking() {
     [solar selectSpacecraft:1]; exclusive(solar, NSNotFound, NSNotFound, NSNotFound, 1);
     PlanetDisplayOptions planets; planets.visible = false;
     solar.planetDisplayOptions = planets;
-    const NSRect map = NSInsetRect(solar.bounds, 18, 40);
+    const NSRect map = solar.bounds;
     const auto p = project_solar(*frame->positions[0], [solar cameraState], map.size.width, map.size.height);
     require(p.has_value(), "fixture spacecraft projects inside solar map");
     const NSPoint click = NSMakePoint(map.origin.x+p->x, map.origin.y+p->y);

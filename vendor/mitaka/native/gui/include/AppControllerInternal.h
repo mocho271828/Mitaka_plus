@@ -79,6 +79,7 @@ struct ScriptLookTarget {
 
 @interface AppController () {
     NSWindow *_window;
+    NSPanel *_controlsPanel;
     WindowPresentationController *_windowPresentation;
     SkyView *_sky;
     HorizonView *_horizon;
@@ -230,6 +231,12 @@ struct ScriptLookTarget {
 @interface AppController (Window)
 - (void)buildMenu;
 - (void)buildWindow;
+- (void)addOperationMenu:(NSMenu *)menu;
+- (void)showControls:(id)sender;
+- (void)showSelectionInfo:(id)sender;
+- (void)showRenderInfo:(id)sender;
+- (void)selectViewMode:(NSMenuItem *)sender;
+- (BOOL)validateOperationMenuItem:(NSMenuItem *)item;
 @end
 
 @interface AppController (WindowCommands)

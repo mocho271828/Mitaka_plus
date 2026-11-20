@@ -104,6 +104,11 @@ void nearby_galaxy_radius_tests() {
     }
     auto model = std::make_shared<const GalaxySpatialModel>(std::vector<GalaxySpatialSource>{catalog});
     SolarSystemView *view = [[SolarSystemView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    require(!view.showsTimeInfo, "solar time text must be opt-in");
+    require(NSEqualRects([view mapRect], view.bounds), "solar projection fills the canvas");
+    [view setFrameSize:NSMakeSize(960, 640)];
+    require(NSEqualRects([view mapRect], view.bounds), "solar projection follows the resized canvas");
+    [view setFrameSize:NSMakeSize(800, 600)];
     [view setGalaxyModel:model];
     NSString *error = nil;
     require([view selectScriptGalaxyRecord:{GalaxySpatialFamily::nearby_galaxy, 0, 0} error:&error],
@@ -301,7 +306,7 @@ void tests() {
     catch (const std::invalid_argument&) { rejectedMalformedOrbits = true; }
     require(rejectedMalformedOrbits, "orbit snapshot rejects mismatched minor-planet path count");
     require(view.visibleSmallBodyCount == 1, "solar view displays valid small body positions");
-    const auto viewMap = NSInsetRect(view.bounds, 18, 40);
+    const auto viewMap = view.bounds;
     const auto viewPoints = visible_small_bodies(*frame, *display, camera, viewMap);
     require(viewPoints.size() == 1, "click fixture has a visible small body");
     const auto click = NSMakePoint(viewPoints[0].point.x, viewPoints[0].point.y);

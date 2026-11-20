@@ -138,7 +138,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
         _julianDate = 2451545;
         _frame.emplace(_site, _julianDate);
         _magnitudeLimit = 6.5;
-        _showsTimeInfo = YES;
+        _showsTimeInfo = NO;
         _landscapeRenderer = [[HorizonLandscapeRenderer alloc] init];
         self.accessibilityElement = YES;
         self.accessibilityRole = NSAccessibilityImageRole;
@@ -153,10 +153,7 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
 - (NSView *)hitTest:(NSPoint)point {
     return self.flightOverlay ? nil : [super hitTest:point];
 }
-- (NSRect)mapRect {
-    const double blend = _viewport.perspective_blend;
-    return NSInsetRect(self.bounds, 42 - 24 * blend, 34 + 6 * blend);
-}
+- (NSRect)mapRect { return self.bounds; }
 - (RendererDisplayOptions)rendererDisplayOptions { return _rendererDisplayOptions; }
 - (void)setRendererDisplayOptions:(RendererDisplayOptions)options {
     _rendererDisplayOptions = options;
@@ -754,12 +751,10 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     if (map.size.width <= 0 || map.size.height <= 0) return;
     [self drawSkyBackgroundInRect:map];
     [self drawGrid:context inRect:map];
-    NSString *time = _showsTimeInfo ? [NSString stringWithFormat:@" · JD %.5f", _julianDate] : @"";
-    if (!self.flightOverlay || self.drawsFlightTitle) {
-        drawText([NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f°%@ · %.6g°", _site.latitude_deg,
-            _site.longitude_deg, time, self.verticalFovDegrees], NSMakePoint(map.origin.x, 8), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
-    }
+    self.accessibilityHelp = [NSString stringWithFormat:@"地平座標（小天体・PTH 以外の視差なし、大気差なし） · 緯度 %+.2f° 東経 %+.2f° · %.6g°",
+        _site.latitude_deg, _site.longitude_deg, self.verticalFovDegrees];
     if (!_model) {
+        self.accessibilityHelp = @"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択してください。";
         drawText(@"「データを開く」で hip.dat と cf96.dat のあるフォルダを選択", NSMakePoint(map.origin.x + 20, NSMidY(map)), NSColor.labelColor, 13, _rendererDisplayOptions);
         return;
     }
@@ -768,9 +763,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     const auto constellationStats = draw_horizon_constellations(context, *_model, _constellationDisplayOptions,
         _rendererDisplayOptions, *_frame, _viewport, map);
     if (constellationStats.omitted_intervals || artStats.omitted_intervals) {
-        drawText([NSString stringWithFormat:@"星座: 投影の分割上限で %lu 区間を省略",
-            static_cast<unsigned long>(constellationStats.omitted_intervals + artStats.omitted_intervals)],
-            NSMakePoint(map.origin.x, NSMaxY(map) + 10), NSColor.secondaryLabelColor, 10, _rendererDisplayOptions);
+        self.accessibilityHelp = [self.accessibilityHelp stringByAppendingFormat:@"\n星座: 投影の分割上限で %lu 区間を省略",
+            static_cast<unsigned long>(constellationStats.omitted_intervals + artStats.omitted_intervals)];
     }
     RendererQualityScope clipped(context, _rendererDisplayOptions);
     CGContextClipToRect(context, map);
@@ -848,5 +842,8 @@ NSColor *bodyColor(Body body, bool belowHorizon) {
     [_landscapeRenderer drawInRect:map viewport:_viewport quality:_rendererDisplayOptions];
     if (_landscapeRenderer.hasModel)
         draw_horizon_grids(context, map, skyViewport(_viewport), _gridDisplayOptions, _gridCache, _rendererDisplayOptions);
+    if (_showsTimeInfo && (!self.flightOverlay || self.drawsFlightTitle))
+        drawText([NSString stringWithFormat:@"JD %.5f", _julianDate],
+            NSMakePoint(NSMinX(map) + 12, NSMinY(map) + 10), NSColor.secondaryLabelColor, 11, _rendererDisplayOptions);
 }
 @end

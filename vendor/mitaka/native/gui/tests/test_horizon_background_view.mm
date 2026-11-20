@@ -86,7 +86,7 @@ void compositing_tests() {
         for (std::size_t channel = 0; channel < 3; ++channel)
             check(std::abs(delta[channel] - (channel == mode ? 96.0 / 255 : 0)) < 0.02,
                 "background must add the selected local image to the base color");
-        const NSRect map = NSInsetRect(view.bounds, 42, 34);
+        const NSRect map = view.bounds;
         for (NSInteger y = 0; y < image.pixelsHigh; ++y) {
             for (NSInteger x = 0; x < image.pixelsWide; ++x) {
                 const NSPoint point = NSMakePoint((x + 0.5) * view.bounds.size.width / image.pixelsWide,
@@ -111,6 +111,20 @@ void compositing_tests() {
         "available Infrared must remain independently usable");
     [view setSkyBackgrounds:nullptr];
     check(cached_image(view) == nil, "unload must release the old cached image");
+}
+
+void full_canvas_tests() {
+    HorizonView* view = make_view();
+    check(!view.showsTimeInfo, "time text must be opt-in on the observation canvas");
+    [view setSkyBackgrounds:solid_backgrounds()];
+    view.milkyWayMode = MilkyWayMode::normal;
+    for (const NSSize size : {NSMakeSize(600, 400), NSMakeSize(900, 500)}) {
+        [view setFrameSize:size];
+        NSBitmapImageRep* image = snapshot(view);
+        for (double x : {2.0, size.width - 3})
+            check(color(image, view, x, size.height / 4).redComponent > 0.35,
+                "horizon sky must reach both edges before and after resizing");
+    }
 }
 
 void cache_tests() {
@@ -197,7 +211,7 @@ void orientation_tests() {
             NSBitmapImageRep* base = snapshot(view);
             view.milkyWayMode = MilkyWayMode::normal;
             NSBitmapImageRep* actual = snapshot(view);
-            const NSRect map = NSInsetRect(view.bounds, 42, 34);
+            const NSRect map = view.bounds;
             const auto expected = render_horizon_background(gradient, [view viewport], ObservationFrame(site, jd),
                 map.size.width, map.size.height);
             for (double fraction_y : {0.2, 0.4}) for (double fraction_x : {0.2, 0.5, 0.8}) {
@@ -220,6 +234,7 @@ int main() {
         try {
             compositing_tests();
             cache_tests();
+            full_canvas_tests();
             orientation_tests();
             std::cout << "horizon background view: " << checks << " checks passed (no windows)\n";
             return 0;

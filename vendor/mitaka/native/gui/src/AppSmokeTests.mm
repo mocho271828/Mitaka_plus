@@ -1,6 +1,7 @@
 #import "AppControllerInternal.h"
 #import "SolarSystemViewInternal.h"
 #import "SolarDateUpdate.h"
+#import "HoverMenuView.h"
 #import <objc/runtime.h>
 #include "surface_navigation.hpp"
 #include "satellite_scene.hpp"
@@ -25,7 +26,55 @@ static void recordHorizonDatePresentation(id receiver, SEL selector) {
 }
 
 @implementation AppController (SmokeTests)
+- (BOOL)runWindowLayoutSmokeTest {
+    HoverMenuView *content = (HoverMenuView *)_window.contentView;
+    if (![content isKindOfClass:HoverMenuView.class] || _controlsPanel.visible ||
+        _mode.window == _window || _status.window == _window || _timeInfoVisible) {
+        [self showError:@"smoke: main window must contain only the canvas and hidden menu"];
+        return NO;
+    }
+    const NSRect savedFrame = _window.frame;
+    const NSInteger savedMode = _mode.selectedSegment;
+    for (NSValue *size in @[[NSValue valueWithSize:NSMakeSize(640, 480)],
+                            [NSValue valueWithSize:NSMakeSize(1280, 800)]]) {
+        [_window setContentSize:size.sizeValue];
+        [_window.contentView layoutSubtreeIfNeeded];
+        for (NSInteger mode = 0; mode < 3; ++mode) {
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(selectViewMode:) keyEquivalent:@""];
+            item.tag = mode;
+            [self selectViewMode:item];
+            [content layoutSubtreeIfNeeded];
+            NSView *view = mode == 0 ? _sky : mode == 1 ? _solar : _horizon;
+            const NSRect frame = [view convertRect:view.bounds toView:content];
+            [content showMenu];
+            [content layoutSubtreeIfNeeded];
+            const BOOL valid = NSEqualRects(frame, content.bounds) &&
+                NSEqualRects(frame, [view convertRect:view.bounds toView:content]) &&
+                [self validateOperationMenuItem:item] && item.state == NSControlStateValueOn;
+            [content hideMenu];
+            if (!valid) {
+                [self showError:@"smoke: hover menu or view mode changed the full-window canvas"];
+                return NO;
+            }
+        }
+    }
+    [_window setFrame:savedFrame display:NO];
+    _mode.selectedSegment = savedMode;
+    [self changeMode:nil];
+    [self showControls:nil];
+    [_controlsPanel.contentView layoutSubtreeIfNeeded];
+    if (!_controlsPanel.visible || _mode.window != _controlsPanel) {
+        [self showError:@"smoke: controls must remain available in a separate panel"];
+        return NO;
+    }
+    [_controlsPanel close];
+    [_window makeKeyAndOrderFront:nil];
+    std::fprintf(stdout, "SMOKE immersive_layout=passed modes=3 sizes=2 overlay=stable controls=separate\n");
+    return YES;
+}
+
 - (void)runSmokeTest {
+    if (![self runWindowLayoutSmokeTest]) return;
     [self runScriptSmokeTestWithCompletion:^{
         [self runSmallBodySmokeTestWithCompletion:^{
             [self runGalaxySmokeTestWithCompletion:^{
